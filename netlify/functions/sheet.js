@@ -1,0 +1,985 @@
+// ================================================================
+// TREKKR — Netlify Function: Google Sheets Bridge (Full System)
+// ================================================================
+// ENV VARS (Netlify dashboard):
+//   GOOGLE_SERVICE_ACCOUNT_EMAIL
+//   GOOGLE_PRIVATE_KEY
+//   GOOGLE_SHEET_ID
+// ================================================================
+
+const { google } = require("googleapis");
+
+function getAuth() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const key = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+  return new google.auth.JWT(email, null, key, [
+    "https://www.googleapis.com/auth/spreadsheets",
+  ]);
+}
+
+function getSheets() {
+  return google.sheets({ version: "v4", auth: getAuth() });
+}
+
+const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+
+const TABS = {
+  players: "Players",
+  sessions: "Sessions",
+  elo_log: "ELO_Log",
+  venues: "Venues",
+  admins: "Admins",
+  claims: "Claims",
+};
+
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Content-Type": "application/json",
+};
+
+// ================================================================
+// MAIN HANDLER
+// ================================================================
+exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers, body: "" };
+  }
+
+  try {
+    const path = event.path
+      .replace("/.netlify/functions/sheet", "")
+      .replace("/api", "") // Tambahkan baris ini untuk menghapus awalan /api
+      .replace(/^\//, "");
+    const method = event.httpMethod;
+    const body = method === "POST" || method === "PUT"
+      ? JSON.parse(event.body || "{}")
+      : {};
+    const params = event.queryStringParameters || {};
+
+    // ── Auth Routes ──────────────────────────────────────────
+    if (path === "auth/login") return await login(body);
+
+    // ── Player Routes ────────────────────────────────────────
+    if (path === "players" && method === "GET") return await getPlayers(params);
+    if (path === "players" && method === "POST") return await addPlayer(body);
+    if (path === "players/update" && method === "PUT") return await updatePlayer(body);
+    if (path === "players/claim" && method === "POST") return await claimProfile(body);
+    if (path.startsWith("players/") && method === "GET") {
+      const name = decodeURIComponent(path.replace("players/", ""));
+      return await getPlayerDetail(name);
+    }
+
+    // ── Venue Routes ─────────────────────────────────────────
+    if (path === "venues" && method === "GET") return await getVenues();
+    if (path === "venues" && method === "POST") return await addVenue(body);
+    if (path === "venues/update" && method === "PUT") return await updateVenue(body);
+    if (path.startsWith("venues/") && path.endsWith("/matches") && method === "GET") {
+      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
+      return await getVenueMatches(venueName, params);
+    }
+    if (path.startsWith("venues/") && path.endsWith("/matches") && method === "POST") {
+      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
+      return await addVenueMatch(venueName, body);
+    }
+    if (path.startsWith("venues/") && path.endsWith("/ranking") && method === "GET") {
+      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/ranking", ""));
+      return await getVenueWeeklyRanking(venueName, params);
+    }
+
+    // ── Session Routes ───────────────────────────────────────
+    if (path === "sessions" && method === "POST") return await saveSession(body);
+    if (path === "sessions" && method === "GET") return await listSessions(params);
+
+    // ── ELO Routes ───────────────────────────────────────────
+    if (path === "elo/latest" && method === "GET") return await getLatestElo();
+    if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
+    if (path === "elo/leaderboard" && method === "GET") return await getNationalLeaderboard(params);
+
+    // ── Admin Routes ─────────────────────────────────────────
+    if (path === "admins" && method === "GET") return await getAdmins();
+    if (path === "admins" && method === "POST") return await addAdmin(body);
+
+    return respond(404, { error: "Not found", route: path });
+  } catch (err) {
+    console.error("Function error:", err);
+    return respond(500, { error: err.message });
+  }
+};
+
+// ================================================================
+// AUTH
+// ================================================================
+// Admins tab: Username | Password | Role | Venue | Created_At
+// Role: "superadmin" or "venue_admin"
+async function login({ username, password }) {
+  if (!username || !password) {
+    return respond(400, { error: "Username and password required" });
+  }
+
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.admins}!A2:E`,
+  });
+
+  const rows = res.data.values || [];
+  const match = rows.find(
+    (r) => r[0] === username && r[1] === password
+  );
+
+  if (!match) {
+    return respond(401, { error: "Invalid credentials" });
+  }
+
+  // Simple token = base64(username:role:timestamp)
+  const role = match[2] || "venue_admin";
+  const venue = match[3] || "";
+  const token = Buffer.from(`${username}:${role}:${venue}:${Date.now()}`).toString("base64");
+
+  return respond(200, { token, role, venue, username });
+}
+
+// ================================================================
+// PLAYERS
+// ================================================================
+// Players tab: Name | IG_Handle | Verified | Display_Name | Gender | Region | Photo_URL | Clubs | Created_At
+async function getPlayers(params = {}) {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:I`,
+  });
+
+  const rows = res.data.values || [];
+  let players = rows.map((r) => ({
+    name: r[0] || "",
+    ig: r[1] || "",
+    verified: r[2] === "TRUE",
+    displayName: r[3] || r[0] || "",
+    gender: (r[4] || "M").toUpperCase(),
+    region: r[5] || "",
+    photoUrl: r[6] || "",
+    clubs: r[7] || "",
+    createdAt: r[8] || "",
+  }));
+
+  // Filters
+  if (params.gender) {
+    players = players.filter((p) => p.gender === params.gender.toUpperCase());
+  }
+  if (params.region) {
+    players = players.filter((p) =>
+      p.region.toLowerCase().includes(params.region.toLowerCase())
+    );
+  }
+  if (params.search) {
+    const q = params.search.toLowerCase();
+    players = players.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q) ||
+        p.ig.toLowerCase().includes(q)
+    );
+  }
+
+  return respond(200, { players });
+}
+
+async function getPlayerDetail(name) {
+  const sheets = getSheets();
+
+  // Get player info
+  const pRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:I`,
+  });
+  const pRows = pRes.data.values || [];
+  const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
+
+  if (!pRow) {
+    return respond(404, { error: "Player not found" });
+  }
+
+  const player = {
+    name: pRow[0],
+    ig: pRow[1] || "",
+    verified: pRow[2] === "TRUE",
+    displayName: pRow[3] || pRow[0],
+    gender: (pRow[4] || "M").toUpperCase(),
+    region: pRow[5] || "",
+    photoUrl: pRow[6] || "",
+    clubs: pRow[7] || "",
+    createdAt: pRow[8] || "",
+  };
+
+  // Get ELO history
+  const eRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+  const eRows = eRes.data.values || [];
+  const history = eRows
+    .filter((r) => r[1]?.toLowerCase() === name.toLowerCase())
+    .map((r) => ({
+      sessionId: r[0],
+      elo: parseInt(r[2]) || 1350,
+      delta: parseInt(r[3]) || 0,
+      w: parseInt(r[4]) || 0,
+      l: parseInt(r[5]) || 0,
+      timestamp: r[6] || "",
+    }));
+
+  // Calculate aggregate stats
+  const totalW = history.reduce((s, h) => s + h.w, 0);
+  const totalL = history.reduce((s, h) => s + h.l, 0);
+  const totalMatches = totalW + totalL;
+  const winRate = totalMatches > 0 ? Math.round((totalW / totalMatches) * 100) : 0;
+  const currentElo = history.length > 0 ? history[history.length - 1].elo : 1350;
+
+  // Calculate streak
+  let streak = 0;
+  let streakType = "";
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    if (h.delta > 0) {
+      if (streakType === "" || streakType === "W") { streak++; streakType = "W"; }
+      else break;
+    } else if (h.delta < 0) {
+      if (streakType === "" || streakType === "L") { streak++; streakType = "L"; }
+      else break;
+    }
+  }
+
+  return respond(200, {
+    player,
+    stats: {
+      currentElo,
+      totalMatches,
+      totalW,
+      totalL,
+      winRate,
+      streak: `${streak}${streakType}`,
+    },
+    history,
+  });
+}
+
+async function addPlayer(body) {
+  const { name, gender, ig, displayName, region, photoUrl, clubs } = body;
+  if (!name) return respond(400, { error: "Name is required" });
+
+  const sheets = getSheets();
+  const now = new Date().toISOString();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A:I`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        name,
+        ig || "",
+        ig ? "TRUE" : "FALSE",
+        displayName || name,
+        (gender || "M").toUpperCase(),
+        region || "",
+        photoUrl || "",
+        clubs || "",
+        now,
+      ]],
+    },
+  });
+
+  // Also add initial ELO entry at 1350
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A:G`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [["INITIAL", name, 1350, 0, 0, 0, now]],
+    },
+  });
+
+  return respond(200, { success: true });
+}
+
+async function updatePlayer(body) {
+  const { name, updates } = body;
+  if (!name || !updates) return respond(400, { error: "name and updates required" });
+
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:I`,
+  });
+
+  const rows = res.data.values || [];
+  const rowIndex = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
+
+  if (rowIndex === -1) return respond(404, { error: "Player not found" });
+
+  const sheetRow = rowIndex + 2;
+  const current = rows[rowIndex];
+
+  const updated = [
+    updates.name || current[0] || "",
+    updates.ig || current[1] || "",
+    updates.ig ? "TRUE" : (current[2] || "FALSE"),
+    updates.displayName || current[3] || current[0] || "",
+    (updates.gender || current[4] || "M").toUpperCase(),
+    updates.region || current[5] || "",
+    updates.photoUrl || current[6] || "",
+    updates.clubs || current[7] || "",
+    current[8] || "",
+  ];
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A${sheetRow}:I${sheetRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [updated] },
+  });
+
+  return respond(200, { success: true });
+}
+
+async function claimProfile({ name, ig_handle, session_id }) {
+  if (!name || !ig_handle) {
+    return respond(400, { error: "name and ig_handle required" });
+  }
+
+  const sheets = getSheets();
+  const now = new Date().toISOString();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.claims}!A:E`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[name, ig_handle, session_id || "", "PENDING", now]],
+    },
+  });
+
+  // Check if player exists, update or create
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:I`,
+  });
+
+  const rows = existing.data.values || [];
+  const rowIndex = rows.findIndex(
+    (r) => r[0]?.toLowerCase() === name.toLowerCase()
+  );
+
+  if (rowIndex === -1) {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${TABS.players}!A:I`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[name, ig_handle, "TRUE", name, "M", "", "", "", now]],
+      },
+    });
+  } else {
+    const sheetRow = rowIndex + 2;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${TABS.players}!B${sheetRow}:C${sheetRow}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[ig_handle, "TRUE"]] },
+    });
+  }
+
+  // Fuzzy matches
+  const fuzzy = rows
+    .filter(
+      (r) =>
+        r[0] &&
+        r[0].toLowerCase() !== name.toLowerCase() &&
+        r[0].toLowerCase().slice(0, 3) === name.toLowerCase().slice(0, 3)
+    )
+    .map((r) => ({ name: r[0], ig: r[1] || null }));
+
+  return respond(200, { success: true, fuzzyMatches: fuzzy });
+}
+
+// ================================================================
+// VENUES
+// ================================================================
+// Venues tab: Name | Location | Region | Schedule | Prize_Pool | Contact | Logo_URL | Created_At
+async function getVenues() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.venues}!A2:H`,
+  });
+
+  const rows = res.data.values || [];
+  const venues = rows.map((r) => ({
+    name: r[0] || "",
+    location: r[1] || "",
+    region: r[2] || "",
+    schedule: r[3] || "",
+    prizePool: r[4] || "",
+    contact: r[5] || "",
+    logoUrl: r[6] || "",
+    createdAt: r[7] || "",
+  }));
+
+  return respond(200, { venues });
+}
+
+async function addVenue(body) {
+  const { name, location, region, schedule, prizePool, contact, logoUrl } = body;
+  if (!name) return respond(400, { error: "Venue name required" });
+
+  const sheets = getSheets();
+  const now = new Date().toISOString();
+
+  // Add to Venues tab
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.venues}!A:H`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[name, location || "", region || "", schedule || "", prizePool || "", contact || "", logoUrl || "", now]],
+    },
+  });
+
+  // Create dedicated venue tab for weekly matches
+  const tabName = `Venue_${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  try {
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const exists = spreadsheet.data.sheets.some(
+      (s) => s.properties.title === tabName
+    );
+
+    if (!exists) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: tabName } } }],
+        },
+      });
+
+      // Add headers
+      // Columns: Week | Date | P1_Team1 | P2_Team1 | P1_Team2 | P2_Team2 | Score_T1 | Score_T2 | Gender | Source_URL
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${tabName}!A1:J1`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]],
+        },
+      });
+    }
+  } catch (err) {
+    console.error("Error creating venue tab:", err.message);
+  }
+
+  return respond(200, { success: true, tabName });
+}
+
+async function updateVenue(body) {
+  const { name, updates } = body;
+  if (!name || !updates) return respond(400, { error: "name and updates required" });
+
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.venues}!A2:H`,
+  });
+
+  const rows = res.data.values || [];
+  const rowIndex = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  if (rowIndex === -1) return respond(404, { error: "Venue not found" });
+
+  const sheetRow = rowIndex + 2;
+  const c = rows[rowIndex];
+
+  const updated = [
+    updates.name || c[0] || "",
+    updates.location || c[1] || "",
+    updates.region || c[2] || "",
+    updates.schedule || c[3] || "",
+    updates.prizePool || c[4] || "",
+    updates.contact || c[5] || "",
+    updates.logoUrl || c[6] || "",
+    c[7] || "",
+  ];
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.venues}!A${sheetRow}:H${sheetRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [updated] },
+  });
+
+  return respond(200, { success: true });
+}
+
+// ================================================================
+// VENUE MATCHES (per-venue tab)
+// ================================================================
+function venueTabName(venueName) {
+  return `Venue_${venueName.replace(/[^a-zA-Z0-9]/g, "_")}`;
+}
+
+async function getVenueMatches(venueName, params = {}) {
+  const sheets = getSheets();
+  const tab = venueTabName(venueName);
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${tab}!A2:J`,
+  });
+
+  const rows = res.data.values || [];
+  let matches = rows.map((r) => ({
+    week: r[0] || "",
+    date: r[1] || "",
+    p1t1: r[2] || "",
+    p2t1: r[3] || "",
+    p1t2: r[4] || "",
+    p2t2: r[5] || "",
+    scoreT1: parseInt(r[6]) || 0,
+    scoreT2: parseInt(r[7]) || 0,
+    gender: (r[8] || "M").toUpperCase(),
+    sourceUrl: r[9] || "",
+  }));
+
+  if (params.week) {
+    matches = matches.filter((m) => m.week === params.week);
+  }
+  if (params.gender) {
+    matches = matches.filter((m) => m.gender === params.gender.toUpperCase());
+  }
+
+  return respond(200, { matches, venue: venueName });
+}
+
+async function addVenueMatch(venueName, body) {
+  const { matches } = body;
+  if (!matches || !matches.length) {
+    return respond(400, { error: "matches array required" });
+  }
+
+  const sheets = getSheets();
+  const tab = venueTabName(venueName);
+  const now = new Date().toISOString().split("T")[0];
+
+  // Calculate current week number
+  const weekNum = getWeekNumber(new Date());
+
+  const rows = matches.map((m) => [
+    m.week || `W${weekNum}`,
+    m.date || now,
+    m.p1t1 || "",
+    m.p2t1 || "",
+    m.p1t2 || "",
+    m.p2t2 || "",
+    m.scoreT1 || 0,
+    m.scoreT2 || 0,
+    (m.gender || "M").toUpperCase(),
+    m.sourceUrl || "",
+  ]);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${tab}!A:J`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: rows },
+  });
+
+  // Auto-ensure players exist in Players tab
+  const allPlayerNames = [
+    ...new Set(matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2].filter(Boolean)))
+  ];
+
+  const pRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:A`,
+  });
+  const existingNames = (pRes.data.values || []).map((r) => r[0]?.toLowerCase());
+
+  const newPlayers = allPlayerNames.filter(
+    (n) => !existingNames.includes(n.toLowerCase())
+  );
+
+  if (newPlayers.length > 0) {
+    const ts = new Date().toISOString();
+    const newRows = newPlayers.map((n) => {
+      const gender = matches.find(
+        (m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2].includes(n)
+      )?.gender || "M";
+      return [n, "", "FALSE", n, gender.toUpperCase(), "", "", venueName, ts];
+    });
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${TABS.players}!A:I`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: newRows },
+    });
+
+    // Add initial ELO entries
+    const eloRows = newPlayers.map((n) => ["INITIAL", n, 1350, 0, 0, 0, ts]);
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${TABS.elo_log}!A:G`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: eloRows },
+    });
+  }
+
+  return respond(200, { success: true, added: matches.length, newPlayers });
+}
+
+async function getVenueWeeklyRanking(venueName, params = {}) {
+  const sheets = getSheets();
+  const tab = venueTabName(venueName);
+
+  const week = params.week || `W${getWeekNumber(new Date())}`;
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${tab}!A2:J`,
+  });
+
+  const rows = res.data.values || [];
+  const weekMatches = rows.filter((r) => r[0] === week);
+
+  // Build W/L per player for this week
+  const stats = {};
+  weekMatches.forEach((r) => {
+    const t1 = [r[2], r[3]].filter(Boolean);
+    const t2 = [r[4], r[5]].filter(Boolean);
+    const s1 = parseInt(r[6]) || 0;
+    const s2 = parseInt(r[7]) || 0;
+    const gender = (r[8] || "M").toUpperCase();
+
+    const allP = [...t1, ...t2];
+    allP.forEach((p) => {
+      if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, gender };
+    });
+
+    if (s1 > s2) {
+      t1.forEach((p) => { stats[p].w++; stats[p].played++; });
+      t2.forEach((p) => { stats[p].l++; stats[p].played++; });
+    } else if (s2 > s1) {
+      t2.forEach((p) => { stats[p].w++; stats[p].played++; });
+      t1.forEach((p) => { stats[p].l++; stats[p].played++; });
+    } else {
+      allP.forEach((p) => { stats[p].played++; });
+    }
+  });
+
+  // Get current ELO for each player
+  const eRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+  const eRows = eRes.data.values || [];
+  const latestElo = {};
+  eRows.forEach((r) => {
+    if (r[1]) latestElo[r[1]] = parseInt(r[2]) || 1350;
+  });
+
+  // Get player photos
+  const pRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:G`,
+  });
+  const pRows = pRes.data.values || [];
+  const playerPhotos = {};
+  const playerLevels = {};
+  pRows.forEach((r) => {
+    if (r[0]) {
+      playerPhotos[r[0]] = r[6] || "";
+      const elo = latestElo[r[0]] || 1350;
+      playerLevels[r[0]] = getTierName(elo);
+    }
+  });
+
+  // Build ranking sorted by wins (then W/L ratio)
+  let ranking = Object.entries(stats).map(([name, s]) => ({
+    name,
+    w: s.w,
+    l: s.l,
+    played: s.played,
+    gender: s.gender,
+    elo: latestElo[name] || 1350,
+    level: getTierName(latestElo[name] || 1350),
+    photoUrl: playerPhotos[name] || "",
+  }));
+
+  // Sort by wins desc, then by fewer losses
+  ranking.sort((a, b) => b.w - a.w || a.l - b.l);
+
+  // Filter by gender if specified
+  if (params.gender) {
+    ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
+  }
+
+  return respond(200, { ranking, week, venue: venueName });
+}
+
+// ================================================================
+// SESSIONS
+// ================================================================
+async function saveSession(body) {
+  const { session_name, source_url, format, courts, venue, players, rounds, elo_results } = body;
+  if (!session_name || !elo_results?.length) {
+    return respond(400, { error: "session_name and elo_results required" });
+  }
+
+  const sheets = getSheets();
+  const now = new Date().toISOString();
+  const sessionId = `S-${Date.now().toString(36).toUpperCase()}`;
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.sessions}!A:I`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        sessionId, session_name, source_url || "", format || "Mexicano",
+        courts || 2, venue || "", players?.length || elo_results.length,
+        rounds?.length || 0, now,
+      ]],
+    },
+  });
+
+  const eloRows = elo_results.map((p) => [
+    sessionId, p.name, p.elo, p.delta, p.w ?? 0, p.l ?? 0, now,
+  ]);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A:G`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: eloRows },
+  });
+
+  return respond(200, { success: true, sessionId });
+}
+
+async function listSessions(params = {}) {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.sessions}!A2:I`,
+  });
+
+  const rows = res.data.values || [];
+  let sessions = rows.map((r) => ({
+    id: r[0], name: r[1], sourceUrl: r[2], format: r[3],
+    courts: r[4], venue: r[5], playerCount: r[6],
+    roundCount: r[7], createdAt: r[8],
+  }));
+
+  if (params.venue) {
+    sessions = sessions.filter((s) =>
+      s.venue.toLowerCase().includes(params.venue.toLowerCase())
+    );
+  }
+
+  return respond(200, { sessions });
+}
+
+// ================================================================
+// ELO / LEADERBOARD
+// ================================================================
+async function getLatestElo() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+
+  const rows = res.data.values || [];
+  const latest = {};
+  rows.forEach((r) => {
+    if (r[1]) {
+      latest[r[1]] = {
+        sessionId: r[0], elo: parseInt(r[2]) || 1350,
+        delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0,
+        l: parseInt(r[5]) || 0, timestamp: r[6] || "",
+      };
+    }
+  });
+
+  return respond(200, { players: latest });
+}
+
+async function getEloHistory(player) {
+  if (!player) return respond(400, { error: "player param required" });
+
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+
+  const rows = res.data.values || [];
+  const history = rows
+    .filter((r) => r[1]?.toLowerCase() === player.toLowerCase())
+    .map((r) => ({
+      sessionId: r[0], elo: parseInt(r[2]) || 1350,
+      delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0,
+      l: parseInt(r[5]) || 0, timestamp: r[6] || "",
+    }));
+
+  return respond(200, { player, history });
+}
+
+async function getNationalLeaderboard(params = {}) {
+  const sheets = getSheets();
+
+  // Get all players
+  const pRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.players}!A2:I`,
+  });
+  const pRows = pRes.data.values || [];
+
+  // Get latest ELO per player
+  const eRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+  const eRows = eRes.data.values || [];
+
+  const latestElo = {};
+  const totalStats = {};
+  eRows.forEach((r) => {
+    const name = r[1];
+    if (!name) return;
+    latestElo[name] = parseInt(r[2]) || 1350;
+    if (!totalStats[name]) totalStats[name] = { w: 0, l: 0 };
+    totalStats[name].w += parseInt(r[4]) || 0;
+    totalStats[name].l += parseInt(r[5]) || 0;
+  });
+
+  let leaderboard = pRows.map((r) => {
+    const name = r[0] || "";
+    const elo = latestElo[name] || 1350;
+    const s = totalStats[name] || { w: 0, l: 0 };
+    return {
+      name,
+      displayName: r[3] || name,
+      gender: (r[4] || "M").toUpperCase(),
+      region: r[5] || "",
+      photoUrl: r[6] || "",
+      ig: r[1] || "",
+      verified: r[2] === "TRUE",
+      elo,
+      level: getTierName(elo),
+      w: s.w,
+      l: s.l,
+      played: s.w + s.l,
+    };
+  });
+
+  // Sort by ELO desc
+  leaderboard.sort((a, b) => b.elo - a.elo);
+
+  // Filters
+  if (params.gender) {
+    leaderboard = leaderboard.filter((p) => p.gender === params.gender.toUpperCase());
+  }
+  if (params.region) {
+    leaderboard = leaderboard.filter((p) =>
+      p.region.toLowerCase().includes(params.region.toLowerCase())
+    );
+  }
+  if (params.level) {
+    leaderboard = leaderboard.filter((p) =>
+      p.level.toLowerCase().replace(/\s/g, "") === params.level.toLowerCase().replace(/\s/g, "")
+    );
+  }
+  if (params.search) {
+    const q = params.search.toLowerCase();
+    leaderboard = leaderboard.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.displayName.toLowerCase().includes(q)
+    );
+  }
+
+  // Pagination
+  const page = parseInt(params.page) || 1;
+  const limit = parseInt(params.limit) || 20;
+  const start = (page - 1) * limit;
+  const paginated = leaderboard.slice(start, start + limit);
+
+  return respond(200, {
+    leaderboard: paginated,
+    total: leaderboard.length,
+    page,
+    limit,
+    totalPages: Math.ceil(leaderboard.length / limit),
+  });
+}
+
+// ================================================================
+// ADMINS
+// ================================================================
+async function getAdmins() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.admins}!A2:E`,
+  });
+
+  const rows = res.data.values || [];
+  const admins = rows.map((r) => ({
+    username: r[0], role: r[2] || "venue_admin",
+    venue: r[3] || "", createdAt: r[4] || "",
+  }));
+
+  return respond(200, { admins });
+}
+
+async function addAdmin(body) {
+  const { username, password, role, venue } = body;
+  if (!username || !password) return respond(400, { error: "username and password required" });
+
+  const sheets = getSheets();
+  const now = new Date().toISOString();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.admins}!A:E`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[username, password, role || "venue_admin", venue || "", now]],
+    },
+  });
+
+  return respond(200, { success: true });
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function getTierName(elo) {
+  if (elo >= 3000) return "Platinum";
+  if (elo >= 2500) return "Gold";
+  if (elo >= 2100) return "Silver";
+  if (elo >= 1800) return "Upper Bronze";
+  if (elo >= 1500) return "Bronze";
+  if (elo >= 1200) return "Lower Bronze";
+  if (elo >= 900) return "Upper Beginner";
+  return "Beginner";
+}
+
+function getWeekNumber(d) {
+  const start = new Date(d.getFullYear(), 0, 1);
+  const diff = d - start + (start.getTimezoneOffset() - d.getTimezoneOffset()) * 60000;
+  return Math.ceil((diff / 86400000 + start.getDay() + 1) / 7);
+}
+
+function respond(statusCode, body) {
+  return { statusCode, headers, body: JSON.stringify(body) };
+}

@@ -1,0 +1,30 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# API routing
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/sheet/:splat"
+  status = 200
+
+# Clean URL routing for SPA-style pages
+[[redirects]]
+  from = "/venue/*"
+  to = "/venue/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/player/*"
+  to = "/player/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/superadmin"
+  to = "/superadmin/index.html"
+  status = 200

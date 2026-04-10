@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trekkr — Player Passport</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070709; --s1: #0f0f14; --s2: #16161f; --s3: #1e1e2a;
+  --border: #252535; --border2: #32324a;
+  --lime: #d4f53c; --lime2: #aacb2a; --coral: #ff5757; --sky: #38bdf8;
+  --text: #eeeef5; --muted: #5a5a7a; --muted2: #7a7a9a;
+  --bronze-c: #e08430; --silver-c: #b0b3be; --gold-c: #f5cc40; --plat-c: #38bdf8;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 9999; opacity: 0.4; }
+
+.wrap { max-width: 580px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
+
+/* ── Header ── */
+.back-bar {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.back-bar a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.back-bar a:hover { color: var(--lime); }
+
+.passport-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--lime);
+}
+
+/* ── Player Hero ── */
+.hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.hero-photo {
+  width: 100px; height: 100px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid var(--border2);
+  margin-bottom: 14px;
+  background: var(--s2);
+}
+
+.hero-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(212,245,60,0.1);
+  border: 1px solid rgba(212,245,60,0.3);
+  color: var(--lime);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.hero-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px;
+  letter-spacing: 4px;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.hero-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+.hero-meta .lime { color: var(--lime); }
+
+/* ── Section ── */
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--text);
+  text-align: center;
+  margin: 28px 0 14px;
+}
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.stat-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: var(--lime);
+  line-height: 1;
+}
+
+.stat-val.white { color: var(--text); }
+
+/* ── Tier Progress ── */
+.tier-box {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.tier-current {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+
+.tier-progress-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted2);
+  margin-bottom: 10px;
+}
+
+.tier-bar-bg {
+  height: 8px;
+  background: var(--s3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tier-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+/* ── Info Boxes ── */
+.info-box {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 8px;
+}
+
+.info-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--muted2);
+  margin-bottom: 6px;
+}
+
+.info-val {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ── ELO Chart ── */
+.chart-wrap {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 8px;
+  min-height: 200px;
+  position: relative;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 180px;
+}
+
+/* ── Share Button ── */
+.share-wrap {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 12px 28px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--lime); color: var(--bg); }
+.btn-primary:hover { background: var(--lime2); }
+
+/* Tier colors */
+.tc-beginner { color: #6a6a8a; }
+.tc-ubeginner { color: #8a8aaa; }
+.tc-lbronze { color: #c07028; }
+.tc-bronze { color: var(--bronze-c); }
+.tc-ubronze { color: #f09038; }
+.tc-silver { color: var(--silver-c); }
+.tc-gold { color: var(--gold-c); }
+.tc-platinum { color: var(--plat-c); }
+
+.bar-beginner { background: #6a6a8a; }
+.bar-ubeginner { background: #8a8aaa; }
+.bar-lbronze { background: #c07028; }
+.bar-bronze { background: var(--bronze-c); }
+.bar-ubronze { background: #f09038; }
+.bar-silver { background: var(--silver-c); }
+.bar-gold { background: var(--gold-c); }
+.bar-platinum { background: var(--plat-c); }
+
+.loading-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--muted2); font-family: 'JetBrains Mono', monospace; font-size: 12px;
+}
+.spinner-lg { width: 28px; height: 28px; border: 2px solid var(--border2); border-top-color: var(--lime); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer {
+  border-top: 1px solid var(--border);
+  padding-top: 24px; margin-top: 40px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--muted); letter-spacing: 2px;
+}
+footer span { color: var(--lime); }
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .hero-name { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="back-bar">
+    <a href="/">← Back to Rankings</a>
+    <div class="passport-label">TREKKR PASSPORT</div>
+  </div>
+
+  <div id="content">
+    <div class="loading-state">
+      <div class="spinner-lg"></div>
+      Loading player data...
+    </div>
+  </div>
+
+  <footer>
+    TREKKR · <span>SPORTS ECOSYSTEM</span> · © 2026
+  </footer>
+</div>
+
+<script src="/trekkr-api.js"></script>
+<script>
+const DEFAULT_AVATAR = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231e1e2a'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2332324a'/%3E%3Cpath d='M18 90c0-18 14-32 32-32s32 14 32 32' fill='%2332324a'/%3E%3C/svg%3E`;
+
+function getTierColorClass(elo) {
+  if (elo >= 3000) return 'platinum';
+  if (elo >= 2500) return 'gold';
+  if (elo >= 2100) return 'silver';
+  if (elo >= 1800) return 'ubronze';
+  if (elo >= 1500) return 'bronze';
+  if (elo >= 1200) return 'lbronze';
+  if (elo >= 900) return 'ubeginner';
+  return 'beginner';
+}
+
+function getTierProgress(elo) {
+  const tiers = [
+    { name: 'Beginner', min: 0, max: 899 },
+    { name: 'Upper Beginner', min: 900, max: 1199 },
+    { name: 'Lower Bronze', min: 1200, max: 1499 },
+    { name: 'Bronze', min: 1500, max: 1799 },
+    { name: 'Upper Bronze', min: 1800, max: 2099 },
+    { name: 'Silver', min: 2100, max: 2399 },
+    { name: 'Gold', min: 2500, max: 2999 },
+    { name: 'Platinum', min: 3000, max: 9999 },
+  ];
+
+  const current = tiers.find(t => elo >= t.min && elo <= t.max) || tiers[0];
+  const range = current.max - current.min + 1;
+  const progress = ((elo - current.min) / range) * 100;
+
+  const nextIdx = tiers.indexOf(current) + 1;
+  const next = nextIdx < tiers.length ? tiers[nextIdx] : null;
+  const ptsAway = next ? next.min - elo : 0;
+
+  return { current: current.name, progress: Math.min(progress, 100), next, ptsAway };
+}
+
+async function loadPlayer() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const playerName = decodeURIComponent(pathParts[pathParts.length - 1] || '');
+
+  if (!playerName) {
+    document.getElementById('content').innerHTML = '<div class="loading-state">Player not found</div>';
+    return;
+  }
+
+  try {
+    const data = await TrekkrAPI.getPlayerDetail(playerName);
+    renderPlayer(data);
+  } catch (err) {
+    console.warn('API error:', err);
+    renderDemoPlayer(playerName);
+  }
+}
+
+function renderPlayer({ player, stats, history }) {
+  const p = player;
+  const s = stats;
+  const tierInfo = getTierProgress(s.currentElo);
+  const tierCls = getTierColorClass(s.currentElo);
+
+  document.title = `${p.displayName} — Trekkr Passport`;
+
+  let html = `
+    <div class="hero">
+      <img class="hero-photo" src="${p.photoUrl || DEFAULT_AVATAR}" alt="${p.displayName}" onerror="this.src='${DEFAULT_AVATAR}'">
+      ${p.verified ? `<div class="hero-verified">✓ player verification</div>` : ''}
+      <div class="hero-name">${(p.displayName || p.name).toUpperCase()}</div>
+      <div class="hero-meta">
+        ELO RATING : <span class="lime">${s.currentElo}</span><br>
+        CURRENT LEVEL: <span class="tc-${tierCls}">${tierInfo.current.toUpperCase()}</span><br>
+        GENDER: ${p.gender === 'F' ? 'FEMALE' : 'MALE'}
+        ${p.ig ? `<br>IG: <span class="lime">${p.ig}</span>` : ''}
+      </div>
+    </div>
+
+    <div class="section-title">PLAYER STATS</div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Matches</div>
+        <div class="stat-val white">${s.totalMatches}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-val">${s.winRate}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">W / L</div>
+        <div class="stat-val white" style="font-size:20px">${s.totalW}/${s.totalL}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Streak</div>
+        <div class="stat-val">${s.streak || '—'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ELO</div>
+        <div class="stat-val">${s.currentElo}</div>
+      </div>
+    </div>
+
+    <div class="tier-box">
+      <div class="stat-label">LEVEL</div>
+      <div class="tier-current tc-${tierCls}">${tierInfo.current}</div>
+      ${tierInfo.next ? `<div class="tier-progress-text">${tierInfo.next.name} — ${tierInfo.ptsAway} pts away</div>` : `<div class="tier-progress-text">Maximum tier reached!</div>`}
+      <div class="tier-bar-bg">
+        <div class="tier-bar-fill bar-${tierCls}" style="width: ${tierInfo.progress}%"></div>
+      </div>
+    </div>
+  `;
+
+  if (p.clubs) {
+    html += `
+      <div class="info-box">
+        <div class="info-label">PLAYING AT CLUB/VENUE:</div>
+        <div class="info-val">${p.clubs}</div>
+      </div>
+    `;
+  }
+
+  if (p.region) {
+    html += `
+      <div class="info-box">
+        <div class="info-label">REGION:</div>
+        <div class="info-val">${p.region}</div>
+      </div>
+    `;
+  }
+
+  // ELO History Chart
+  if (history && history.length > 1) {
+    html += `
+      <div class="section-title">ELO RATING PROGRESS</div>
+      <div class="chart-wrap">
+        <canvas class="chart-canvas" id="eloChart"></canvas>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="share-wrap">
+      <button class="btn btn-primary" onclick="alert('Share — coming soon!')">↗ Share</button>
+    </div>
+  `;
+
+  document.getElementById('content').innerHTML = html;
+
+  // Draw chart
+  if (history && history.length > 1) {
+    drawEloChart(history);
+  }
+}
+
+function drawEloChart(history) {
+  const canvas = document.getElementById('eloChart');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width;
+  const h = rect.height;
+  const pad = { t: 10, r: 10, b: 24, l: 40 };
+
+  const elos = history.map(e => e.elo);
+  const minE = Math.min(...elos) - 20;
+  const maxE = Math.max(...elos) + 20;
+
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
+
+  // Grid lines
+  ctx.strokeStyle = '#252535';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (plotH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(w - pad.r, y);
+    ctx.stroke();
+
+    const val = Math.round(maxE - ((maxE - minE) / 4) * i);
+    ctx.fillStyle = '#5a5a7a';
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(val, pad.l - 6, y + 3);
+  }
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#d4f53c';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+
+  history.forEach((e, i) => {
+    const x = pad.l + (plotW / (history.length - 1)) * i;
+    const y = pad.t + plotH - ((e.elo - minE) / (maxE - minE)) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Dots
+  history.forEach((e, i) => {
+    const x = pad.l + (plotW / (history.length - 1)) * i;
+    const y = pad.t + plotH - ((e.elo - minE) / (maxE - minE)) * plotH;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#d4f53c';
+    ctx.fill();
+  });
+}
+
+function renderDemoPlayer(name) {
+  renderPlayer({
+    player: {
+      name, displayName: name, gender: 'M', ig: '', verified: false,
+      photoUrl: '', region: 'Jakarta', clubs: 'Stellar Squad, Padelized Bintaro',
+    },
+    stats: {
+      currentElo: 1389, totalMatches: 89, totalW: 70, totalL: 19,
+      winRate: 85, streak: '6W',
+    },
+    history: [
+      { elo: 1350, delta: 0 },
+      { elo: 1360, delta: 10 },
+      { elo: 1355, delta: -5 },
+      { elo: 1370, delta: 15 },
+      { elo: 1365, delta: -5 },
+      { elo: 1380, delta: 15 },
+      { elo: 1389, delta: 9 },
+    ],
+  });
+}
+
+window.addEventListener('load', loadPlayer);
+</script>
+</body>
+</html>

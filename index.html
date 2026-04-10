@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trekkr — National Padel ELO Leaderboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070709;
+  --s1: #0f0f14;
+  --s2: #16161f;
+  --s3: #1e1e2a;
+  --border: #252535;
+  --border2: #32324a;
+  --lime: #d4f53c;
+  --lime2: #aacb2a;
+  --coral: #ff5757;
+  --sky: #38bdf8;
+  --purple: #a78bfa;
+  --text: #eeeef5;
+  --muted: #5a5a7a;
+  --muted2: #7a7a9a;
+  --bronze-c: #e08430;
+  --silver-c: #b0b3be;
+  --gold-c: #f5cc40;
+  --plat-c: #38bdf8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+.glow-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-orb.g1 { width: 500px; height: 500px; top: -200px; right: -100px; background: rgba(212,245,60,0.04); }
+.glow-orb.g2 { width: 400px; height: 400px; bottom: 100px; left: -150px; background: rgba(56,189,248,0.03); }
+
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 28px 0 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.logo-mark { display: flex; flex-direction: column; gap: 2px; }
+
+.logo-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  letter-spacing: 6px;
+  color: var(--lime);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(212,245,60,0.3);
+  text-decoration: none;
+}
+
+.logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+nav { display: flex; gap: 6px; }
+nav a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+nav a:hover, nav a.active { border-color: var(--lime); color: var(--lime); background: rgba(212,245,60,0.05); }
+
+/* ── GENDER TABS ── */
+.gender-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.g-tab {
+  flex: 1;
+  padding: 14px 20px;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--s1);
+  color: var(--muted);
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.g-tab:first-child { border-radius: 10px 0 0 10px; }
+.g-tab:last-child { border-radius: 0 10px 10px 0; }
+
+.g-tab.active {
+  background: linear-gradient(135deg, rgba(212,245,60,0.12), rgba(212,245,60,0.04));
+  border-color: rgba(212,245,60,0.4);
+  color: var(--lime);
+}
+
+.g-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--lime);
+  border-radius: 2px;
+}
+
+/* ── FILTERS ── */
+.filters-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-select, .search-input {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+
+.filter-select { padding-right: 30px; cursor: pointer; min-width: 130px; }
+.filter-select:focus, .search-input:focus { border-color: var(--lime); }
+.search-input { flex: 1; min-width: 160px; }
+.search-input::placeholder { color: var(--muted); }
+
+.select-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.select-wrap::after {
+  content: '▾';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── LEADERBOARD ── */
+.lb-list { display: flex; flex-direction: column; gap: 5px; }
+
+.lb-item {
+  display: grid;
+  grid-template-columns: 42px 52px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s;
+  animation: fadeUp 0.35s ease both;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.lb-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 10px 0 0 10px;
+}
+
+.lb-item.top-1::before { background: var(--gold-c); }
+.lb-item.top-2::before { background: var(--silver-c); }
+.lb-item.top-3::before { background: var(--bronze-c); }
+
+.lb-item.top-1, .lb-item.top-2, .lb-item.top-3 {
+  padding: 14px 14px;
+}
+
+.lb-item.top-1 .p-name { font-size: 16px; }
+.lb-item.top-2 .p-name, .lb-item.top-3 .p-name { font-size: 15px; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lb-item:hover {
+  background: var(--s2);
+  border-color: var(--border2);
+  transform: translateX(3px);
+}
+
+.rank-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.top-1 .rank-num { color: var(--gold-c); font-size: 28px; }
+.top-2 .rank-num { color: var(--silver-c); font-size: 26px; }
+.top-3 .rank-num { color: var(--bronze-c); font-size: 24px; }
+
+.player-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--s3);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.top-1 .player-photo, .top-2 .player-photo, .top-3 .player-photo {
+  width: 52px;
+  height: 52px;
+}
+
+.player-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.p-name {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tier-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tier-beginner { background: rgba(90,90,120,0.15); color: #6a6a8a; border: 1px solid rgba(90,90,120,0.25); }
+.tier-ubeginner { background: rgba(90,90,120,0.2); color: #8a8aaa; border: 1px solid rgba(90,90,120,0.35); }
+.tier-lbronze { background: rgba(224,132,48,0.08); color: #c07028; border: 1px solid rgba(224,132,48,0.2); }
+.tier-bronze { background: rgba(224,132,48,0.12); color: var(--bronze-c); border: 1px solid rgba(224,132,48,0.3); }
+.tier-ubronze { background: rgba(224,132,48,0.16); color: #f09038; border: 1px solid rgba(224,132,48,0.4); }
+.tier-silver { background: rgba(176,179,190,0.1); color: var(--silver-c); border: 1px solid rgba(176,179,190,0.25); }
+.tier-gold { background: rgba(245,204,64,0.08); color: var(--gold-c); border: 1px solid rgba(245,204,64,0.25); }
+.tier-platinum { background: rgba(56,189,248,0.08); color: var(--plat-c); border: 1px solid rgba(56,189,248,0.25); }
+
+.elo-display {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.elo-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--lime);
+}
+
+.elo-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+/* ── LOAD MORE ── */
+.load-more-wrap { text-align: center; margin-top: 20px; }
+
+.btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--lime); color: var(--bg); }
+.btn-primary:hover { background: var(--lime2); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  font-size: 12px;
+}
+.btn-ghost:hover { border-color: var(--lime); color: var(--lime); }
+
+/* ── EMPTY / LOADING ── */
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.spinner-lg {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+footer span { color: var(--lime); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .lb-item { grid-template-columns: 36px 44px 1fr auto; gap: 8px; padding: 8px 10px; }
+  .player-photo { width: 40px; height: 40px; }
+  .elo-num { font-size: 20px; }
+  .logo-text { font-size: 36px; }
+  header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  nav { width: 100%; overflow-x: auto; }
+  .gender-tabs { margin-bottom: 14px; }
+  .g-tab { font-size: 18px; padding: 10px 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="glow-orb g1"></div>
+<div class="glow-orb g2"></div>
+
+<div class="wrap">
+  <header>
+    <a href="/" style="text-decoration:none">
+      <div class="logo-mark">
+        <div class="logo-text">TREKKR</div>
+        <div class="logo-sub">National Padel ELO Rankings</div>
+      </div>
+    </a>
+    <nav>
+      <a href="/" class="active">Rankings</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </header>
+
+  <!-- Gender Tabs -->
+  <div class="gender-tabs">
+    <div class="g-tab active" data-gender="M" onclick="switchGender('M')">MEN CATEGORY</div>
+    <div class="g-tab" data-gender="F" onclick="switchGender('F')">WOMEN CATEGORY</div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-row">
+    <div class="select-wrap">
+      <select class="filter-select" id="levelFilter" onchange="applyFilters()">
+        <option value="">All Level</option>
+        <option value="Platinum">Platinum</option>
+        <option value="Gold">Gold</option>
+        <option value="Silver">Silver</option>
+        <option value="Upper Bronze">Upper Bronze</option>
+        <option value="Bronze">Bronze</option>
+        <option value="Lower Bronze">Lower Bronze</option>
+        <option value="Upper Beginner">Upper Beginner</option>
+        <option value="Beginner">Beginner</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <select class="filter-select" id="regionFilter" onchange="applyFilters()">
+        <option value="">All Region</option>
+      </select>
+    </div>
+    <input class="search-input" id="searchInput" type="text" placeholder="search player" oninput="debounceSearch()">
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="leaderboardContainer">
+    <div class="loading-state">
+      <div class="spinner-lg"></div>
+      Loading rankings...
+    </div>
+  </div>
+
+  <div class="load-more-wrap" id="loadMoreWrap" style="display:none">
+    <button class="btn btn-ghost" onclick="loadMore()">load more...</button>
+  </div>
+
+  <footer>
+    <div>TREKKR · <span>SPORTS ECOSYSTEM</span> · © 2026</div>
+    <div>ELO ENGINE v2.0 · NATIONAL RANKING</div>
+  </footer>
+</div>
+
+<script src="/trekkr-api.js"></script>
+<script>
+let currentGender = 'M';
+let currentPage = 1;
+let allData = [];
+let searchTimeout = null;
+const PER_PAGE = 20;
+
+// Default avatar as inline SVG data URI
+const DEFAULT_AVATAR = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='8' fill='%231e1e2a'/%3E%3Ccircle cx='22' cy='17' r='8' fill='%2332324a'/%3E%3Cpath d='M8 40c0-8 6-14 14-14s14 6 14 14' fill='%2332324a'/%3E%3C/svg%3E`;
+
+function switchGender(g) {
+  currentGender = g;
+  currentPage = 1;
+  document.querySelectorAll('.g-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.gender === g);
+  });
+  loadLeaderboard();
+}
+
+function applyFilters() {
+  currentPage = 1;
+  loadLeaderboard();
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    currentPage = 1;
+    loadLeaderboard();
+  }, 300);
+}
+
+async function loadLeaderboard() {
+  const container = document.getElementById('leaderboardContainer');
+
+  if (currentPage === 1) {
+    container.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div>Loading rankings...</div>';
+  }
+
+  const params = {
+    gender: currentGender,
+    page: currentPage,
+    limit: PER_PAGE,
+  };
+
+  const level = document.getElementById('levelFilter').value;
+  const region = document.getElementById('regionFilter').value;
+  const search = document.getElementById('searchInput').value;
+
+  if (level) params.level = level;
+  if (region) params.region = region;
+  if (search) params.search = search;
+
+  try {
+    const data = await TrekkrAPI.getNationalLeaderboard(params);
+
+    if (currentPage === 1) {
+      allData = data.leaderboard;
+      container.innerHTML = '';
+    } else {
+      allData = [...allData, ...data.leaderboard];
+    }
+
+    renderLeaderboard(container, currentPage === 1 ? data.leaderboard : allData, currentPage > 1);
+
+    // Show/hide load more
+    const wrap = document.getElementById('loadMoreWrap');
+    wrap.style.display = (data.page < data.totalPages) ? 'block' : 'none';
+
+    // Populate regions from data if first load
+    if (currentPage === 1) populateRegions(data.leaderboard);
+
+  } catch (err) {
+    console.warn('API error, showing demo data:', err);
+    showDemoData(container);
+  }
+}
+
+function renderLeaderboard(container, players, append) {
+  if (!append) container.innerHTML = '';
+
+  if (players.length === 0) {
+    container.innerHTML = '<div class="empty-state">No players found</div>';
+    return;
+  }
+
+  const list = append ? container.querySelector('.lb-list') || createList(container) : createList(container);
+
+  const startIndex = append ? list.children.length : 0;
+
+  players.slice(startIndex).forEach((p, i) => {
+    const rank = startIndex + i + 1;
+    const tierCls = TrekkrAPI.getTierClass(p.elo);
+    const tierName = p.level || TrekkrAPI.getTierName(p.elo);
+    const topCls = rank <= 3 ? ` top-${rank}` : '';
+
+    const item = document.createElement('a');
+    item.href = `/player/${encodeURIComponent(p.name)}`;
+    item.className = `lb-item${topCls}`;
+    item.style.animationDelay = `${(i % 20) * 0.03}s`;
+
+    const photo = p.photoUrl || DEFAULT_AVATAR;
+
+    item.innerHTML = `
+      <div class="rank-num">${rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}</div>
+      <img class="player-photo" src="${photo}" alt="${p.displayName}" onerror="this.src='${DEFAULT_AVATAR}'">
+      <div class="player-info">
+        <div class="p-name">${p.displayName || p.name}</div>
+        <div class="p-meta">
+          <span class="tier-tag ${tierCls}">${tierName}</span>
+        </div>
+      </div>
+      <div class="elo-display">
+        <div class="elo-num">${p.elo}</div>
+        <div class="elo-label">ELO · ${tierName}</div>
+      </div>
+    `;
+
+    list.appendChild(item);
+  });
+}
+
+function createList(container) {
+  const list = document.createElement('div');
+  list.className = 'lb-list';
+  container.appendChild(list);
+  return list;
+}
+
+function loadMore() {
+  currentPage++;
+  loadLeaderboard();
+}
+
+function populateRegions(players) {
+  const regions = [...new Set(players.map(p => p.region).filter(Boolean))].sort();
+  const select = document.getElementById('regionFilter');
+  const current = select.value;
+
+  // Keep first option
+  while (select.options.length > 1) select.remove(1);
+
+  regions.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r;
+    opt.textContent = r;
+    select.appendChild(opt);
+  });
+
+  if (current) select.value = current;
+}
+
+// ── Demo fallback (when API not configured) ──
+function showDemoData(container) {
+  const demo = [
+    { name: "Freddy Liam", displayName: "FREDDY LIAM", elo: 1389, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Jakarta" },
+    { name: "Reza Rangkuti", displayName: "REZA RANGKUTI", elo: 1385, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Jakarta" },
+    { name: "Tom Doe", displayName: "TOM DOE", elo: 1380, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Tangerang" },
+    { name: "Azrin R D", displayName: "AZRIN R D", elo: 1375, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Bekasi" },
+    { name: "Sundeep Khan", displayName: "SUNDEEP KHAN", elo: 1370, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Jakarta" },
+    { name: "Richard Bern", displayName: "RICHARD BERN", elo: 1368, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Tangerang" },
+    { name: "Tommy Frans", displayName: "TOMMY FRANS", elo: 1365, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Bintaro" },
+    { name: "Toto Sumarno", displayName: "TOTO SUMARNO", elo: 1362, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Cikarang" },
+    { name: "Doni Guam", displayName: "DONI GUAM", elo: 1358, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Jakarta" },
+    { name: "Wahyu Sihombing", displayName: "WAHYU SIHOMBING", elo: 1355, level: "Lower Bronze", gender: "M", photoUrl: "", region: "Bekasi" },
+  ].filter(p => p.gender === currentGender);
+
+  renderLeaderboard(container, demo, false);
+  document.getElementById('loadMoreWrap').style.display = 'none';
+}
+
+// Init
+window.addEventListener('load', () => {
+  loadLeaderboard();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "trekkr-functions",
+  "version": "2.0.0",
+  "description": "Trekkr Netlify Functions — Google Sheets bridge",
+  "dependencies": {
+    "googleapis": "^131.0.0"
+  }
+}

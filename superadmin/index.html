@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trekkr — Superadmin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#070709; --s1:#0f0f14; --s2:#16161f; --s3:#1e1e2a; --border:#252535; --border2:#32324a; --lime:#d4f53c; --lime2:#aacb2a; --coral:#ff5757; --text:#eeeef5; --muted:#5a5a7a; --muted2:#7a7a9a; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+.wrap { max-width:860px; margin:0 auto; padding:20px 20px 80px; }
+
+.page-title { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:5px; color:var(--lime); margin-bottom:4px; }
+.page-sub { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; margin-bottom:20px; }
+
+/* Login */
+.login-card { background:var(--s1); border:1px solid var(--border2); border-radius:12px; padding:32px; max-width:380px; margin:60px auto; }
+.login-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:4px; color:var(--lime); margin-bottom:20px; text-align:center; }
+
+.field { margin-bottom:12px; }
+.field-label { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:5px; display:block; }
+.field-input,.field-select,.field-textarea {
+  width:100%; background:var(--s3); border:1px solid var(--border2); border-radius:8px;
+  padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); outline:none; transition:border-color 0.2s;
+}
+.field-input:focus,.field-select:focus,.field-textarea:focus { border-color:var(--lime); }
+.field-input::placeholder,.field-textarea::placeholder { color:var(--muted); }
+.field-select { appearance:none; cursor:pointer; }
+.field-textarea { min-height:60px; resize:vertical; }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+.btn { padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; transition:all 0.15s; }
+.btn-primary { background:var(--lime); color:var(--bg); }
+.btn-primary:hover { background:var(--lime2); }
+.btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--muted2); font-size:12px; }
+.btn-ghost:hover { border-color:var(--lime); color:var(--lime); }
+.btn-sm { padding:6px 14px; font-size:11px; }
+.btn-full { width:100%; }
+
+/* Tabs */
+.admin-tabs { display:flex; gap:2px; margin-bottom:20px; border-bottom:1px solid var(--border); }
+.a-tab {
+  padding:10px 20px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px;
+  text-transform:uppercase; cursor:pointer; border:none; background:transparent; color:var(--muted);
+  border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s;
+}
+.a-tab:hover { color:var(--text); }
+.a-tab.active { color:var(--lime); border-bottom-color:var(--lime); }
+
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* Section */
+.section { background:var(--s1); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:16px; }
+.section-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:var(--text); margin-bottom:14px; }
+
+/* Table */
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th {
+  font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--muted);
+  text-transform:uppercase; text-align:left; padding:8px 10px; border-bottom:1px solid var(--border);
+}
+.data-table td {
+  font-size:12px; padding:10px; border-bottom:1px solid var(--border); vertical-align:middle;
+}
+.data-table tr:hover td { background:var(--s2); }
+.data-table .photo-cell img { width:32px; height:32px; border-radius:6px; object-fit:cover; background:var(--s3); }
+
+.status-msg { padding:10px 14px; border-radius:8px; margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:11px; display:none; }
+.status-msg.success { display:block; background:rgba(212,245,60,0.08); border:1px solid rgba(212,245,60,0.3); color:var(--lime); }
+.status-msg.error { display:block; background:rgba(255,87,87,0.08); border:1px solid rgba(255,87,87,0.3); color:var(--coral); }
+
+.logout-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.logout-bar .user-info { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted2); }
+
+.badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:8px; padding:2px 6px; border-radius:3px; letter-spacing:1px; }
+.badge-lime { background:rgba(212,245,60,0.1); border:1px solid rgba(212,245,60,0.3); color:var(--lime); }
+.badge-muted { background:rgba(90,90,120,0.15); border:1px solid rgba(90,90,120,0.3); color:var(--muted2); }
+
+footer { border-top:1px solid var(--border); padding-top:24px; margin-top:40px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:2px; }
+footer span { color:var(--lime); }
+
+@media (max-width:640px) { .field-row { grid-template-columns:1fr; } .data-table { font-size:10px; } .a-tab { padding:8px 12px; font-size:8px; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Login -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-title">SUPERADMIN</div>
+      <div class="field">
+        <label class="field-label">Username</label>
+        <input class="field-input" id="loginUser" type="text" placeholder="superadmin">
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input class="field-input" id="loginPass" type="password" placeholder="••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
+      <div class="status-msg" id="loginStatus"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="adminScreen" style="display:none">
+    <div class="page-title">SUPERADMIN</div>
+    <div class="page-sub">FULL SYSTEM MANAGEMENT</div>
+
+    <div class="logout-bar">
+      <span class="user-info" id="userLabel">—</span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="a-tab active" onclick="switchTab('players')">Players</button>
+      <button class="a-tab" onclick="switchTab('venues')">Venues</button>
+      <button class="a-tab" onclick="switchTab('admins')">Admins</button>
+      <button class="a-tab" onclick="switchTab('sessions')">Sessions</button>
+    </div>
+
+    <!-- PLAYERS TAB -->
+    <div class="tab-pane active" id="tab-players">
+      <div class="section">
+        <div class="section-title">ADD PLAYER</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Name *</label>
+            <input class="field-input" id="ap-name" placeholder="Player name">
+          </div>
+          <div class="field">
+            <label class="field-label">Display Name</label>
+            <input class="field-input" id="ap-display" placeholder="Display name">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Gender</label>
+            <select class="field-select" id="ap-gender">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Instagram</label>
+            <input class="field-input" id="ap-ig" placeholder="@handle">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Region</label>
+            <input class="field-input" id="ap-region" placeholder="Jakarta, Tangerang, etc.">
+          </div>
+          <div class="field">
+            <label class="field-label">Photo URL (Google Drive)</label>
+            <input class="field-input" id="ap-photo" placeholder="https://drive.google.com/...">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Clubs / Venues</label>
+          <input class="field-input" id="ap-clubs" placeholder="Stellar Squad, Padelized Bintaro">
+        </div>
+        <button class="btn btn-primary" onclick="addPlayer()">Add Player →</button>
+        <div class="status-msg" id="addPlayerStatus"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">ALL PLAYERS</div>
+        <div style="margin-bottom:12px">
+          <input class="field-input" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="playersTable">
+            <thead>
+              <tr><th>Photo</th><th>Name</th><th>Gender</th><th>ELO</th><th>IG</th><th>Region</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="playersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VENUES TAB -->
+    <div class="tab-pane" id="tab-venues">
+      <div class="section">
+        <div class="section-title">ADD VENUE</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Venue Name *</label>
+            <input class="field-input" id="av-name" placeholder="Venue name">
+          </div>
+          <div class="field">
+            <label class="field-label">Location</label>
+            <input class="field-input" id="av-location" placeholder="Address">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Region</label>
+            <input class="field-input" id="av-region" placeholder="Jakarta, Tangerang">
+          </div>
+          <div class="field">
+            <label class="field-label">Prize Pool</label>
+            <input class="field-input" id="av-prize" placeholder="IDR 2.5 Million">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Schedule</label>
+          <textarea class="field-textarea" id="av-schedule" placeholder="Every Monday 8am-10am"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addVenue()">Add Venue →</button>
+        <div class="status-msg" id="addVenueStatus"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">ALL VENUES</div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Location</th><th>Region</th><th>Prize Pool</th><th>Link</th></tr></thead>
+            <tbody id="venuesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMINS TAB -->
+    <div class="tab-pane" id="tab-admins">
+      <div class="section">
+        <div class="section-title">ADD ADMIN ACCOUNT</div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Username *</label>
+            <input class="field-input" id="aa-user" placeholder="username">
+          </div>
+          <div class="field">
+            <label class="field-label">Password *</label>
+            <input class="field-input" id="aa-pass" type="password" placeholder="password">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Role</label>
+            <select class="field-select" id="aa-role">
+              <option value="venue_admin">Venue Admin</option>
+              <option value="superadmin">Superadmin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Assigned Venue</label>
+            <select class="field-select" id="aa-venue"><option value="">— None —</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addAdmin()">Create Admin →</button>
+        <div class="status-msg" id="addAdminStatus"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">ALL ADMINS</div>
+        <table class="data-table">
+          <thead><tr><th>Username</th><th>Role</th><th>Venue</th></tr></thead>
+          <tbody id="adminsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SESSIONS TAB -->
+    <div class="tab-pane" id="tab-sessions">
+      <div class="section">
+        <div class="section-title">ALL SESSIONS</div>
+        <table class="data-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Venue</th><th>Players</th><th>Rounds</th><th>Date</th></tr></thead>
+          <tbody id="sessionsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>TREKKR · <span>SUPERADMIN</span> · © 2026</footer>
+</div>
+
+<script src="/trekkr-api.js"></script>
+<script>
+const DEFAULT_AVATAR = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e1e2a'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%2332324a'/%3E%3Cpath d='M6 28c0-6 4-10 10-10s10 4 10 10' fill='%2332324a'/%3E%3C/svg%3E`;
+let allPlayersCache = [];
+
+// ── Auth ──
+function checkAuth() {
+  const session = TrekkrAPI.getSession();
+  if (session.token && session.role === 'superadmin') {
+    showDashboard(session);
+  }
+}
+
+async function doLogin() {
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPass').value;
+  const status = document.getElementById('loginStatus');
+
+  try {
+    const data = await TrekkrAPI.login(user, pass);
+    if (data.role !== 'superadmin') {
+      status.className = 'status-msg error';
+      status.textContent = 'Access denied — superadmin only';
+      return;
+    }
+    showDashboard(data);
+  } catch (err) {
+    status.className = 'status-msg error';
+    status.textContent = err.message || 'Login failed';
+  }
+}
+
+function showDashboard(session) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('userLabel').textContent = `Logged in as ${session.username || ''}`;
+  loadAllData();
+}
+
+function doLogout() { TrekkrAPI.logout(); location.reload(); }
+
+function switchTab(id) {
+  document.querySelectorAll('.a-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');
+  document.getElementById(`tab-${id}`).classList.add('active');
+}
+
+// ── Load All Data ──
+async function loadAllData() {
+  await Promise.all([loadPlayers(), loadVenues(), loadAdmins(), loadSessions()]);
+}
+
+async function loadPlayers() {
+  try {
+    const data = await TrekkrAPI.getPlayers();
+    const eloData = await TrekkrAPI.getLatestElo();
+    allPlayersCache = data.players.map(p => ({
+      ...p,
+      elo: eloData.players?.[p.name]?.elo || 1350,
+    }));
+    renderPlayers(allPlayersCache);
+  } catch (err) { console.warn('Failed to load players:', err); }
+}
+
+function renderPlayers(players) {
+  const tbody = document.getElementById('playersTbody');
+  tbody.innerHTML = players.map(p => `
+    <tr>
+      <td class="photo-cell"><img src="${p.photoUrl || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'"></td>
+      <td><strong>${p.displayName || p.name}</strong></td>
+      <td><span class="badge ${p.gender === 'F' ? 'badge-lime' : 'badge-muted'}">${p.gender}</span></td>
+      <td>${p.elo}</td>
+      <td>${p.ig || '—'}</td>
+      <td>${p.region || '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="editPlayerPrompt('${p.name}')">Edit</button></td>
+    </tr>
+  `).join('');
+}
+
+function filterPlayers() {
+  const q = document.getElementById('playerSearch').value.toLowerCase();
+  const filtered = allPlayersCache.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.displayName || '').toLowerCase().includes(q) || (p.ig || '').toLowerCase().includes(q)
+  );
+  renderPlayers(filtered);
+}
+
+async function addPlayer() {
+  const status = document.getElementById('addPlayerStatus');
+  const name = document.getElementById('ap-name').value.trim();
+  if (!name) { status.className='status-msg error'; status.textContent='Name is required'; return; }
+
+  try {
+    await TrekkrAPI.addPlayer({
+      name,
+      displayName: document.getElementById('ap-display').value.trim() || name,
+      gender: document.getElementById('ap-gender').value,
+      ig: document.getElementById('ap-ig').value.trim(),
+      region: document.getElementById('ap-region').value.trim(),
+      photoUrl: document.getElementById('ap-photo').value.trim(),
+      clubs: document.getElementById('ap-clubs').value.trim(),
+    });
+    status.className = 'status-msg success';
+    status.textContent = `✓ Player "${name}" added with ELO 1350 (Lower Bronze)`;
+    ['ap-name','ap-display','ap-ig','ap-region','ap-photo','ap-clubs'].forEach(id => document.getElementById(id).value = '');
+    await loadPlayers();
+  } catch (err) {
+    status.className = 'status-msg error';
+    status.textContent = err.message;
+  }
+}
+
+function editPlayerPrompt(name) {
+  const p = allPlayersCache.find(x => x.name === name);
+  if (!p) return;
+
+  const newDisplay = prompt('Display Name:', p.displayName || p.name);
+  if (newDisplay === null) return;
+  const newIG = prompt('Instagram:', p.ig || '');
+  if (newIG === null) return;
+  const newRegion = prompt('Region:', p.region || '');
+  if (newRegion === null) return;
+  const newPhoto = prompt('Photo URL:', p.photoUrl || '');
+  if (newPhoto === null) return;
+  const newGender = prompt('Gender (M/F):', p.gender || 'M');
+  if (newGender === null) return;
+
+  TrekkrAPI.updatePlayer(name, {
+    displayName: newDisplay, ig: newIG, region: newRegion,
+    photoUrl: newPhoto, gender: newGender.toUpperCase(),
+  }).then(() => loadPlayers()).catch(err => alert(err.message));
+}
+
+// ── Venues ──
+async function loadVenues() {
+  try {
+    const data = await TrekkrAPI.getVenues();
+    const tbody = document.getElementById('venuesTbody');
+    tbody.innerHTML = data.venues.map(v => `
+      <tr>
+        <td><strong>${v.name}</strong></td>
+        <td>${v.location || '—'}</td>
+        <td>${v.region || '—'}</td>
+        <td>${v.prizePool || '—'}</td>
+        <td><a href="/venue/${encodeURIComponent(v.name)}" style="color:var(--lime); font-size:11px;">View →</a></td>
+      </tr>
+    `).join('');
+
+    // Populate admin venue dropdown
+    const select = document.getElementById('aa-venue');
+    while (select.options.length > 1) select.remove(1);
+    data.venues.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
+  } catch (err) { console.warn('Failed to load venues:', err); }
+}
+
+async function addVenue() {
+  const status = document.getElementById('addVenueStatus');
+  const name = document.getElementById('av-name').value.trim();
+  if (!name) { status.className='status-msg error'; status.textContent='Name is required'; return; }
+
+  try {
+    await TrekkrAPI.addVenue({
+      name,
+      location: document.getElementById('av-location').value.trim(),
+      region: document.getElementById('av-region').value.trim(),
+      prizePool: document.getElementById('av-prize').value.trim(),
+      schedule: document.getElementById('av-schedule').value.trim(),
+    });
+    status.className = 'status-msg success';
+    status.textContent = `✓ Venue "${name}" created with dedicated sheet tab`;
+    ['av-name','av-location','av-region','av-prize','av-schedule'].forEach(id => document.getElementById(id).value = '');
+    await loadVenues();
+  } catch (err) { status.className='status-msg error'; status.textContent=err.message; }
+}
+
+// ── Admins ──
+async function loadAdmins() {
+  try {
+    const data = await TrekkrAPI.getAdmins();
+    document.getElementById('adminsTbody').innerHTML = data.admins.map(a => `
+      <tr>
+        <td><strong>${a.username}</strong></td>
+        <td><span class="badge ${a.role === 'superadmin' ? 'badge-lime' : 'badge-muted'}">${a.role}</span></td>
+        <td>${a.venue || '—'}</td>
+      </tr>
+    `).join('');
+  } catch (err) { console.warn('Failed to load admins:', err); }
+}
+
+async function addAdmin() {
+  const status = document.getElementById('addAdminStatus');
+  const user = document.getElementById('aa-user').value.trim();
+  const pass = document.getElementById('aa-pass').value;
+  if (!user || !pass) { status.className='status-msg error'; status.textContent='Username and password required'; return; }
+
+  try {
+    await TrekkrAPI.addAdmin({
+      username: user, password: pass,
+      role: document.getElementById('aa-role').value,
+      venue: document.getElementById('aa-venue').value,
+    });
+    status.className = 'status-msg success';
+    status.textContent = `✓ Admin "${user}" created`;
+    document.getElementById('aa-user').value = '';
+    document.getElementById('aa-pass').value = '';
+    await loadAdmins();
+  } catch (err) { status.className='status-msg error'; status.textContent=err.message; }
+}
+
+// ── Sessions ──
+async function loadSessions() {
+  try {
+    const data = await TrekkrAPI.listSessions();
+    document.getElementById('sessionsTbody').innerHTML = data.sessions.map(s => `
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:10px">${s.id}</td>
+        <td>${s.name}</td>
+        <td>${s.venue || '—'}</td>
+        <td>${s.playerCount || '—'}</td>
+        <td>${s.roundCount || '—'}</td>
+        <td style="font-size:10px">${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—'}</td>
+      </tr>
+    `).join('');
+  } catch (err) { console.warn('Failed to load sessions:', err); }
+}
+
+window.addEventListener('load', checkAuth);
+</script>
+</body>
+</html>
