@@ -50,11 +50,16 @@ exports.handler = async (event) => {
   try {
     const path = event.path
       .replace("/.netlify/functions/sheet", "")
-      .replace("/api", "") // Tambahkan baris ini untuk menghapus awalan /api
       .replace(/^\//, "");
     const method = event.httpMethod;
-    const body = method === "POST" || method === "PUT"
-      ? JSON.parse(event.body || "{}")
+
+    // Netlify may base64-encode the body
+    let rawBody = event.body || "{}";
+    if (event.isBase64Encoded && event.body) {
+      rawBody = Buffer.from(event.body, "base64").toString("utf-8");
+    }
+    const body = (method === "POST" || method === "PUT")
+      ? JSON.parse(rawBody)
       : {};
     const params = event.queryStringParameters || {};
 
@@ -114,8 +119,9 @@ exports.handler = async (event) => {
 // Admins tab: Username | Password | Role | Venue | Created_At
 // Role: "superadmin" or "venue_admin"
 async function login({ username, password }) {
+  console.log("Login attempt:", { username, hasPassword: !!password });
   if (!username || !password) {
-    return respond(400, { error: "Username and password required" });
+    return respond(400, { error: "Username and password required", received: { username: username || null, password: password ? "[set]" : null } });
   }
 
   const sheets = getSheets();
