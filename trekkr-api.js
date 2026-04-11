@@ -1,8 +1,5 @@
-// ================================================================
-// TREKKR — Frontend API Client v2
-// ================================================================
 const TrekkrAPI = (() => {
-  const BASE = "/api";
+  const BASE = "https://trekkr.online/api";
 
   function getToken() {
     return localStorage.getItem("trekkr_token") || "";
@@ -17,15 +14,18 @@ const TrekkrAPI = (() => {
       },
       ...options,
     };
-
-    const res = await fetch(url, config);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+    try {
+      const res = await fetch(url, config);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } catch (err) {
+      console.error(`[TrekkrAPI] ${path} failed:`, err);
+      throw err;
+    }
   }
 
   return {
-    // Auth
     async login(username, password) {
       const data = await request("auth/login", {
         method: "POST",
@@ -39,14 +39,12 @@ const TrekkrAPI = (() => {
       }
       return data;
     },
-
     logout() {
       localStorage.removeItem("trekkr_token");
       localStorage.removeItem("trekkr_role");
       localStorage.removeItem("trekkr_venue");
       localStorage.removeItem("trekkr_user");
     },
-
     getSession() {
       return {
         token: getToken(),
@@ -56,7 +54,6 @@ const TrekkrAPI = (() => {
       };
     },
 
-    // Players
     async getPlayers(params = {}) {
       const qs = new URLSearchParams(params).toString();
       return request(`players${qs ? `?${qs}` : ""}`);
@@ -80,8 +77,9 @@ const TrekkrAPI = (() => {
       });
     },
 
-    // Venues
-    async getVenues() { return request("venues"); },
+    async getVenues() {
+      return request("venues");
+    },
     async addVenue(data) {
       return request("venues", { method: "POST", body: JSON.stringify(data) });
     },
@@ -93,7 +91,9 @@ const TrekkrAPI = (() => {
     },
     async getVenueMatches(venue, params = {}) {
       const qs = new URLSearchParams(params).toString();
-      return request(`venues/${encodeURIComponent(venue)}/matches${qs ? `?${qs}` : ""}`);
+      return request(
+        `venues/${encodeURIComponent(venue)}/matches${qs ? `?${qs}` : ""}`
+      );
     },
     async addVenueMatch(venue, matches) {
       return request(`venues/${encodeURIComponent(venue)}/matches`, {
@@ -103,20 +103,25 @@ const TrekkrAPI = (() => {
     },
     async getVenueWeeklyRanking(venue, params = {}) {
       const qs = new URLSearchParams(params).toString();
-      return request(`venues/${encodeURIComponent(venue)}/ranking${qs ? `?${qs}` : ""}`);
+      return request(
+        `venues/${encodeURIComponent(venue)}/ranking${qs ? `?${qs}` : ""}`
+      );
     },
 
-    // Sessions
     async saveSession(data) {
-      return request("sessions", { method: "POST", body: JSON.stringify(data) });
+      return request("sessions", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
     },
     async listSessions(params = {}) {
       const qs = new URLSearchParams(params).toString();
       return request(`sessions${qs ? `?${qs}` : ""}`);
     },
 
-    // ELO
-    async getLatestElo() { return request("elo/latest"); },
+    async getLatestElo() {
+      return request("elo/latest");
+    },
     async getEloHistory(player) {
       return request(`elo/history?player=${encodeURIComponent(player)}`);
     },
@@ -125,13 +130,23 @@ const TrekkrAPI = (() => {
       return request(`elo/leaderboard${qs ? `?${qs}` : ""}`);
     },
 
-    // Admins
-    async getAdmins() { return request("admins"); },
-    async addAdmin(data) {
-      return request("admins", { method: "POST", body: JSON.stringify(data) });
+    async parseUrl(url, venue, gender) {
+      return request("parse", {
+        method: "POST",
+        body: JSON.stringify({ url, venue, gender }),
+      });
     },
 
-    // Helpers
+    async getAdmins() {
+      return request("admins");
+    },
+    async addAdmin(data) {
+      return request("admins", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+
     getTierName(elo) {
       if (elo >= 3000) return "Platinum";
       if (elo >= 2500) return "Gold";
@@ -142,7 +157,6 @@ const TrekkrAPI = (() => {
       if (elo >= 900) return "Upper Beginner";
       return "Beginner";
     },
-
     getTierClass(elo) {
       if (elo >= 3000) return "tier-platinum";
       if (elo >= 2500) return "tier-gold";
@@ -153,7 +167,6 @@ const TrekkrAPI = (() => {
       if (elo >= 900) return "tier-ubeginner";
       return "tier-beginner";
     },
-
     getNextTier(elo) {
       const tiers = [
         { name: "Upper Beginner", min: 900 },
@@ -167,7 +180,7 @@ const TrekkrAPI = (() => {
       for (const t of tiers) {
         if (elo < t.min) return { name: t.name, ptsAway: t.min - elo };
       }
-      return null; // Already Platinum
+      return null;
     },
   };
 })();

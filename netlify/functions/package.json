@@ -1,0 +1,7 @@
+{
+  "name": "trekkr-functions",
+  "version": "3.0.0",
+  "dependencies": {
+    "googleapis": "^131.0.0"
+  }
+}

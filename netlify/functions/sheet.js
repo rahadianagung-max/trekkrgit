@@ -1,12 +1,3 @@
-// ================================================================
-// TREKKR — Netlify Function: Google Sheets Bridge (Full System)
-// ================================================================
-// ENV VARS (Netlify dashboard):
-//   GOOGLE_SERVICE_ACCOUNT_EMAIL
-//   GOOGLE_PRIVATE_KEY
-//   GOOGLE_SHEET_ID
-// ================================================================
-
 const { google } = require("googleapis");
 
 function getAuth() {
@@ -39,9 +30,6 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-// ================================================================
-// MAIN HANDLER
-// ================================================================
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };
@@ -50,54 +38,79 @@ exports.handler = async (event) => {
   try {
     const path = event.path
       .replace("/.netlify/functions/sheet", "")
-      .replace("/api", "") // Tambahkan baris ini untuk menghapus awalan /api
+      .replace("/api", "")
       .replace(/^\//, "");
     const method = event.httpMethod;
-    const body = method === "POST" || method === "PUT"
-      ? JSON.parse(event.body || "{}")
-      : {};
+
+    let rawBody = event.body || "{}";
+    if (event.isBase64Encoded && event.body) {
+      rawBody = Buffer.from(event.body, "base64").toString("utf-8");
+    }
+    const body =
+      method === "POST" || method === "PUT" ? JSON.parse(rawBody) : {};
     const params = event.queryStringParameters || {};
 
-    // ── Auth Routes ──────────────────────────────────────────
     if (path === "auth/login") return await login(body);
 
-    // ── Player Routes ────────────────────────────────────────
     if (path === "players" && method === "GET") return await getPlayers(params);
     if (path === "players" && method === "POST") return await addPlayer(body);
-    if (path === "players/update" && method === "PUT") return await updatePlayer(body);
-    if (path === "players/claim" && method === "POST") return await claimProfile(body);
+    if (path === "players/update" && method === "PUT")
+      return await updatePlayer(body);
+    if (path === "players/claim" && method === "POST")
+      return await claimProfile(body);
     if (path.startsWith("players/") && method === "GET") {
       const name = decodeURIComponent(path.replace("players/", ""));
       return await getPlayerDetail(name);
     }
 
-    // ── Venue Routes ─────────────────────────────────────────
     if (path === "venues" && method === "GET") return await getVenues();
     if (path === "venues" && method === "POST") return await addVenue(body);
-    if (path === "venues/update" && method === "PUT") return await updateVenue(body);
-    if (path.startsWith("venues/") && path.endsWith("/matches") && method === "GET") {
-      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
-      return await getVenueMatches(venueName, params);
+    if (path === "venues/update" && method === "PUT")
+      return await updateVenue(body);
+    if (
+      path.startsWith("venues/") &&
+      path.endsWith("/matches") &&
+      method === "GET"
+    ) {
+      const v = decodeURIComponent(
+        path.replace("venues/", "").replace("/matches", "")
+      );
+      return await getVenueMatches(v, params);
     }
-    if (path.startsWith("venues/") && path.endsWith("/matches") && method === "POST") {
-      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
-      return await addVenueMatch(venueName, body);
+    if (
+      path.startsWith("venues/") &&
+      path.endsWith("/matches") &&
+      method === "POST"
+    ) {
+      const v = decodeURIComponent(
+        path.replace("venues/", "").replace("/matches", "")
+      );
+      return await addVenueMatch(v, body);
     }
-    if (path.startsWith("venues/") && path.endsWith("/ranking") && method === "GET") {
-      const venueName = decodeURIComponent(path.replace("venues/", "").replace("/ranking", ""));
-      return await getVenueWeeklyRanking(venueName, params);
+    if (
+      path.startsWith("venues/") &&
+      path.endsWith("/ranking") &&
+      method === "GET"
+    ) {
+      const v = decodeURIComponent(
+        path.replace("venues/", "").replace("/ranking", "")
+      );
+      return await getVenueWeeklyRanking(v, params);
     }
 
-    // ── Session Routes ───────────────────────────────────────
     if (path === "sessions" && method === "POST") return await saveSession(body);
-    if (path === "sessions" && method === "GET") return await listSessions(params);
+    if (path === "sessions" && method === "GET")
+      return await listSessions(params);
 
-    // ── ELO Routes ───────────────────────────────────────────
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
-    if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
-    if (path === "elo/leaderboard" && method === "GET") return await getNationalLeaderboard(params);
+    if (path === "elo/history" && method === "GET")
+      return await getEloHistory(params.player);
+    if (path === "elo/leaderboard" && method === "GET")
+      return await getNationalLeaderboard(params);
 
-    // ── Admin Routes ─────────────────────────────────────────
+    if (path === "parse" && method === "POST")
+      return await parseAmericanoUrl(body);
+
     if (path === "admins" && method === "GET") return await getAdmins();
     if (path === "admins" && method === "POST") return await addAdmin(body);
 
@@ -108,50 +121,36 @@ exports.handler = async (event) => {
   }
 };
 
-// ================================================================
-// AUTH
-// ================================================================
-// Admins tab: Username | Password | Role | Venue | Created_At
-// Role: "superadmin" or "venue_admin"
+// ── AUTH ──
 async function login({ username, password }) {
   if (!username || !password) {
     return respond(400, { error: "Username and password required" });
   }
-
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.admins}!A2:E`,
   });
-
   const rows = res.data.values || [];
-  const match = rows.find(
-    (r) => r[0] === username && r[1] === password
-  );
+  const match = rows.find((r) => r[0] === username && r[1] === password);
+  if (!match) return respond(401, { error: "Invalid credentials" });
 
-  if (!match) {
-    return respond(401, { error: "Invalid credentials" });
-  }
-
-  // Simple token = base64(username:role:timestamp)
   const role = match[2] || "venue_admin";
   const venue = match[3] || "";
-  const token = Buffer.from(`${username}:${role}:${venue}:${Date.now()}`).toString("base64");
-
+  const token = Buffer.from(
+    `${username}:${role}:${venue}:${Date.now()}`
+  ).toString("base64");
   return respond(200, { token, role, venue, username });
 }
 
-// ================================================================
-// PLAYERS
-// ================================================================
-// Players tab: Name | IG_Handle | Verified | Display_Name | Gender | Region | Photo_URL | Clubs | Created_At
-async function getPlayers(params = {}) {
+// ── PLAYERS ──
+// Columns: Name | IG_Handle | Verified | Display_Name | Gender | Region | Photo_URL | Clubs | Created_At
+async function getPlayers(params) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:I`,
   });
-
   const rows = res.data.values || [];
   let players = rows.map((r) => ({
     name: r[0] || "",
@@ -164,16 +163,12 @@ async function getPlayers(params = {}) {
     clubs: r[7] || "",
     createdAt: r[8] || "",
   }));
-
-  // Filters
-  if (params.gender) {
+  if (params.gender)
     players = players.filter((p) => p.gender === params.gender.toUpperCase());
-  }
-  if (params.region) {
+  if (params.region)
     players = players.filter((p) =>
       p.region.toLowerCase().includes(params.region.toLowerCase())
     );
-  }
   if (params.search) {
     const q = params.search.toLowerCase();
     players = players.filter(
@@ -183,24 +178,18 @@ async function getPlayers(params = {}) {
         p.ig.toLowerCase().includes(q)
     );
   }
-
   return respond(200, { players });
 }
 
 async function getPlayerDetail(name) {
   const sheets = getSheets();
-
-  // Get player info
   const pRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:I`,
   });
   const pRows = pRes.data.values || [];
   const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
-
-  if (!pRow) {
-    return respond(404, { error: "Player not found" });
-  }
+  if (!pRow) return respond(404, { error: "Player not found" });
 
   const player = {
     name: pRow[0],
@@ -214,7 +203,6 @@ async function getPlayerDetail(name) {
     createdAt: pRow[8] || "",
   };
 
-  // Get ELO history
   const eRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A2:G`,
@@ -231,37 +219,33 @@ async function getPlayerDetail(name) {
       timestamp: r[6] || "",
     }));
 
-  // Calculate aggregate stats
   const totalW = history.reduce((s, h) => s + h.w, 0);
   const totalL = history.reduce((s, h) => s + h.l, 0);
   const totalMatches = totalW + totalL;
-  const winRate = totalMatches > 0 ? Math.round((totalW / totalMatches) * 100) : 0;
-  const currentElo = history.length > 0 ? history[history.length - 1].elo : 1350;
+  const winRate =
+    totalMatches > 0 ? Math.round((totalW / totalMatches) * 100) : 0;
+  const currentElo =
+    history.length > 0 ? history[history.length - 1].elo : 1350;
 
-  // Calculate streak
   let streak = 0;
   let streakType = "";
   for (let i = history.length - 1; i >= 0; i--) {
-    const h = history[i];
-    if (h.delta > 0) {
-      if (streakType === "" || streakType === "W") { streak++; streakType = "W"; }
-      else break;
-    } else if (h.delta < 0) {
-      if (streakType === "" || streakType === "L") { streak++; streakType = "L"; }
-      else break;
+    if (history[i].delta > 0) {
+      if (streakType === "" || streakType === "W") {
+        streak++;
+        streakType = "W";
+      } else break;
+    } else if (history[i].delta < 0) {
+      if (streakType === "" || streakType === "L") {
+        streak++;
+        streakType = "L";
+      } else break;
     }
   }
 
   return respond(200, {
     player,
-    stats: {
-      currentElo,
-      totalMatches,
-      totalW,
-      totalL,
-      winRate,
-      streak: `${streak}${streakType}`,
-    },
+    stats: { currentElo, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` },
     history,
   });
 }
@@ -269,90 +253,70 @@ async function getPlayerDetail(name) {
 async function addPlayer(body) {
   const { name, gender, ig, displayName, region, photoUrl, clubs } = body;
   if (!name) return respond(400, { error: "Name is required" });
-
   const sheets = getSheets();
   const now = new Date().toISOString();
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A:I`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[
-        name,
-        ig || "",
-        ig ? "TRUE" : "FALSE",
-        displayName || name,
-        (gender || "M").toUpperCase(),
-        region || "",
-        photoUrl || "",
-        clubs || "",
-        now,
-      ]],
+      values: [
+        [
+          name, ig || "", ig ? "TRUE" : "FALSE", displayName || name,
+          (gender || "M").toUpperCase(), region || "", photoUrl || "",
+          clubs || "", now,
+        ],
+      ],
     },
   });
-
-  // Also add initial ELO entry at 1350
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A:G`,
     valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [["INITIAL", name, 1350, 0, 0, 0, now]],
-    },
+    requestBody: { values: [["INITIAL", name, 1350, 0, 0, 0, now]] },
   });
-
   return respond(200, { success: true });
 }
 
 async function updatePlayer(body) {
   const { name, updates } = body;
-  if (!name || !updates) return respond(400, { error: "name and updates required" });
-
+  if (!name || !updates)
+    return respond(400, { error: "name and updates required" });
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:I`,
   });
-
   const rows = res.data.values || [];
-  const rowIndex = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
-
-  if (rowIndex === -1) return respond(404, { error: "Player not found" });
-
-  const sheetRow = rowIndex + 2;
-  const current = rows[rowIndex];
-
+  const ri = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  if (ri === -1) return respond(404, { error: "Player not found" });
+  const sr = ri + 2;
+  const c = rows[ri];
   const updated = [
-    updates.name || current[0] || "",
-    updates.ig || current[1] || "",
-    updates.ig ? "TRUE" : (current[2] || "FALSE"),
-    updates.displayName || current[3] || current[0] || "",
-    (updates.gender || current[4] || "M").toUpperCase(),
-    updates.region || current[5] || "",
-    updates.photoUrl || current[6] || "",
-    updates.clubs || current[7] || "",
-    current[8] || "",
+    updates.name || c[0] || "",
+    updates.ig || c[1] || "",
+    updates.ig ? "TRUE" : c[2] || "FALSE",
+    updates.displayName || c[3] || c[0] || "",
+    (updates.gender || c[4] || "M").toUpperCase(),
+    updates.region || c[5] || "",
+    updates.photoUrl || c[6] || "",
+    updates.clubs || c[7] || "",
+    c[8] || "",
   ];
-
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `${TABS.players}!A${sheetRow}:I${sheetRow}`,
+    range: `${TABS.players}!A${sr}:I${sr}`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [updated] },
   });
-
   return respond(200, { success: true });
 }
 
 async function claimProfile({ name, ig_handle, session_id }) {
-  if (!name || !ig_handle) {
+  if (!name || !ig_handle)
     return respond(400, { error: "name and ig_handle required" });
-  }
-
   const sheets = getSheets();
   const now = new Date().toISOString();
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.claims}!A:E`,
@@ -361,19 +325,15 @@ async function claimProfile({ name, ig_handle, session_id }) {
       values: [[name, ig_handle, session_id || "", "PENDING", now]],
     },
   });
-
-  // Check if player exists, update or create
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:I`,
   });
-
   const rows = existing.data.values || [];
-  const rowIndex = rows.findIndex(
+  const ri = rows.findIndex(
     (r) => r[0]?.toLowerCase() === name.toLowerCase()
   );
-
-  if (rowIndex === -1) {
+  if (ri === -1) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${TABS.players}!A:I`,
@@ -383,16 +343,14 @@ async function claimProfile({ name, ig_handle, session_id }) {
       },
     });
   } else {
-    const sheetRow = rowIndex + 2;
+    const sr = ri + 2;
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${TABS.players}!B${sheetRow}:C${sheetRow}`,
+      range: `${TABS.players}!B${sr}:C${sr}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [[ig_handle, "TRUE"]] },
     });
   }
-
-  // Fuzzy matches
   const fuzzy = rows
     .filter(
       (r) =>
@@ -401,21 +359,17 @@ async function claimProfile({ name, ig_handle, session_id }) {
         r[0].toLowerCase().slice(0, 3) === name.toLowerCase().slice(0, 3)
     )
     .map((r) => ({ name: r[0], ig: r[1] || null }));
-
   return respond(200, { success: true, fuzzyMatches: fuzzy });
 }
 
-// ================================================================
-// VENUES
-// ================================================================
-// Venues tab: Name | Location | Region | Schedule | Prize_Pool | Contact | Logo_URL | Created_At
+// ── VENUES ──
+// Columns: Name | Location | Region | Schedule | Prize_Pool | Contact | Logo_URL | Created_At | Register_URL
 async function getVenues() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${TABS.venues}!A2:H`,
+    range: `${TABS.venues}!A2:I`,
   });
-
   const rows = res.data.values || [];
   const venues = rows.map((r) => ({
     name: r[0] || "",
@@ -426,36 +380,39 @@ async function getVenues() {
     contact: r[5] || "",
     logoUrl: r[6] || "",
     createdAt: r[7] || "",
+    registerUrl: r[8] || "",
   }));
-
   return respond(200, { venues });
 }
 
 async function addVenue(body) {
-  const { name, location, region, schedule, prizePool, contact, logoUrl } = body;
+  const { name, location, region, schedule, prizePool, contact, logoUrl, registerUrl } =
+    body;
   if (!name) return respond(400, { error: "Venue name required" });
-
   const sheets = getSheets();
   const now = new Date().toISOString();
-
-  // Add to Venues tab
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${TABS.venues}!A:H`,
+    range: `${TABS.venues}!A:I`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[name, location || "", region || "", schedule || "", prizePool || "", contact || "", logoUrl || "", now]],
+      values: [
+        [
+          name, location || "", region || "", schedule || "",
+          prizePool || "", contact || "", logoUrl || "", now,
+          registerUrl || "",
+        ],
+      ],
     },
   });
-
-  // Create dedicated venue tab for weekly matches
   const tabName = `Venue_${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
   try {
-    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId: SHEET_ID,
+    });
     const exists = spreadsheet.data.sheets.some(
       (s) => s.properties.title === tabName
     );
-
     if (!exists) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: SHEET_ID,
@@ -463,168 +420,142 @@ async function addVenue(body) {
           requests: [{ addSheet: { properties: { title: tabName } } }],
         },
       });
-
-      // Add headers
-      // Columns: Week | Date | P1_Team1 | P2_Team1 | P1_Team2 | P2_Team2 | Score_T1 | Score_T2 | Gender | Source_URL
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
         range: `${tabName}!A1:J1`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]],
+          values: [
+            [
+              "Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2",
+              "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL",
+            ],
+          ],
         },
       });
     }
   } catch (err) {
     console.error("Error creating venue tab:", err.message);
   }
-
   return respond(200, { success: true, tabName });
 }
 
 async function updateVenue(body) {
   const { name, updates } = body;
-  if (!name || !updates) return respond(400, { error: "name and updates required" });
-
+  if (!name || !updates)
+    return respond(400, { error: "name and updates required" });
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${TABS.venues}!A2:H`,
+    range: `${TABS.venues}!A2:I`,
   });
-
   const rows = res.data.values || [];
-  const rowIndex = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
-  if (rowIndex === -1) return respond(404, { error: "Venue not found" });
-
-  const sheetRow = rowIndex + 2;
-  const c = rows[rowIndex];
-
+  const ri = rows.findIndex(
+    (r) => r[0]?.toLowerCase() === name.toLowerCase()
+  );
+  if (ri === -1) return respond(404, { error: "Venue not found" });
+  const sr = ri + 2;
+  const c = rows[ri];
   const updated = [
     updates.name || c[0] || "",
-    updates.location || c[1] || "",
-    updates.region || c[2] || "",
-    updates.schedule || c[3] || "",
-    updates.prizePool || c[4] || "",
-    updates.contact || c[5] || "",
-    updates.logoUrl || c[6] || "",
+    updates.location !== undefined ? updates.location : c[1] || "",
+    updates.region !== undefined ? updates.region : c[2] || "",
+    updates.schedule !== undefined ? updates.schedule : c[3] || "",
+    updates.prizePool !== undefined ? updates.prizePool : c[4] || "",
+    updates.contact !== undefined ? updates.contact : c[5] || "",
+    updates.logoUrl !== undefined ? updates.logoUrl : c[6] || "",
     c[7] || "",
+    updates.registerUrl !== undefined ? updates.registerUrl : c[8] || "",
   ];
-
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `${TABS.venues}!A${sheetRow}:H${sheetRow}`,
+    range: `${TABS.venues}!A${sr}:I${sr}`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [updated] },
   });
-
   return respond(200, { success: true });
 }
 
-// ================================================================
-// VENUE MATCHES (per-venue tab)
-// ================================================================
-function venueTabName(venueName) {
-  return `Venue_${venueName.replace(/[^a-zA-Z0-9]/g, "_")}`;
+// ── VENUE MATCHES ──
+function venueTabName(n) {
+  return `Venue_${n.replace(/[^a-zA-Z0-9]/g, "_")}`;
 }
 
-async function getVenueMatches(venueName, params = {}) {
+async function getVenueMatches(venueName, params) {
   const sheets = getSheets();
   const tab = venueTabName(venueName);
-
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${tab}!A2:J`,
   });
-
   const rows = res.data.values || [];
   let matches = rows.map((r) => ({
-    week: r[0] || "",
-    date: r[1] || "",
-    p1t1: r[2] || "",
-    p2t1: r[3] || "",
-    p1t2: r[4] || "",
-    p2t2: r[5] || "",
-    scoreT1: parseInt(r[6]) || 0,
-    scoreT2: parseInt(r[7]) || 0,
-    gender: (r[8] || "M").toUpperCase(),
-    sourceUrl: r[9] || "",
+    week: r[0] || "", date: r[1] || "",
+    p1t1: r[2] || "", p2t1: r[3] || "",
+    p1t2: r[4] || "", p2t2: r[5] || "",
+    scoreT1: parseInt(r[6]) || 0, scoreT2: parseInt(r[7]) || 0,
+    gender: (r[8] || "M").toUpperCase(), sourceUrl: r[9] || "",
   }));
-
-  if (params.week) {
-    matches = matches.filter((m) => m.week === params.week);
-  }
-  if (params.gender) {
+  if (params.week) matches = matches.filter((m) => m.week === params.week);
+  if (params.gender)
     matches = matches.filter((m) => m.gender === params.gender.toUpperCase());
-  }
-
   return respond(200, { matches, venue: venueName });
 }
 
 async function addVenueMatch(venueName, body) {
   const { matches } = body;
-  if (!matches || !matches.length) {
+  if (!matches || !matches.length)
     return respond(400, { error: "matches array required" });
-  }
-
   const sheets = getSheets();
   const tab = venueTabName(venueName);
   const now = new Date().toISOString().split("T")[0];
-
-  // Calculate current week number
   const weekNum = getWeekNumber(new Date());
-
   const rows = matches.map((m) => [
-    m.week || `W${weekNum}`,
-    m.date || now,
-    m.p1t1 || "",
-    m.p2t1 || "",
-    m.p1t2 || "",
-    m.p2t2 || "",
-    m.scoreT1 || 0,
-    m.scoreT2 || 0,
-    (m.gender || "M").toUpperCase(),
-    m.sourceUrl || "",
+    m.week || `W${weekNum}`, m.date || now,
+    m.p1t1 || "", m.p2t1 || "", m.p1t2 || "", m.p2t2 || "",
+    m.scoreT1 || 0, m.scoreT2 || 0,
+    (m.gender || "M").toUpperCase(), m.sourceUrl || "",
   ]);
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${tab}!A:J`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: rows },
   });
-
-  // Auto-ensure players exist in Players tab
   const allPlayerNames = [
-    ...new Set(matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2].filter(Boolean)))
+    ...new Set(
+      matches.flatMap((m) =>
+        [m.p1t1, m.p2t1, m.p1t2, m.p2t2].filter(Boolean)
+      )
+    ),
   ];
-
   const pRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:A`,
   });
-  const existingNames = (pRes.data.values || []).map((r) => r[0]?.toLowerCase());
-
+  const existingNames = (pRes.data.values || []).map((r) =>
+    r[0]?.toLowerCase()
+  );
   const newPlayers = allPlayerNames.filter(
     (n) => !existingNames.includes(n.toLowerCase())
   );
-
   if (newPlayers.length > 0) {
     const ts = new Date().toISOString();
     const newRows = newPlayers.map((n) => {
-      const gender = matches.find(
-        (m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2].includes(n)
-      )?.gender || "M";
-      return [n, "", "FALSE", n, gender.toUpperCase(), "", "", venueName, ts];
+      const gender =
+        matches.find((m) =>
+          [m.p1t1, m.p2t1, m.p1t2, m.p2t2].includes(n)
+        )?.gender || "M";
+      return [
+        n, "", "FALSE", n, gender.toUpperCase(), "", "", venueName, ts,
+      ];
     });
-
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${TABS.players}!A:I`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: newRows },
     });
-
-    // Add initial ELO entries
     const eloRows = newPlayers.map((n) => ["INITIAL", n, 1350, 0, 0, 0, ts]);
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -633,25 +564,19 @@ async function addVenueMatch(venueName, body) {
       requestBody: { values: eloRows },
     });
   }
-
   return respond(200, { success: true, added: matches.length, newPlayers });
 }
 
-async function getVenueWeeklyRanking(venueName, params = {}) {
+async function getVenueWeeklyRanking(venueName, params) {
   const sheets = getSheets();
   const tab = venueTabName(venueName);
-
   const week = params.week || `W${getWeekNumber(new Date())}`;
-
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${tab}!A2:J`,
   });
-
   const rows = res.data.values || [];
   const weekMatches = rows.filter((r) => r[0] === week);
-
-  // Build W/L per player for this week
   const stats = {};
   weekMatches.forEach((r) => {
     const t1 = [r[2], r[3]].filter(Boolean);
@@ -659,12 +584,9 @@ async function getVenueWeeklyRanking(venueName, params = {}) {
     const s1 = parseInt(r[6]) || 0;
     const s2 = parseInt(r[7]) || 0;
     const gender = (r[8] || "M").toUpperCase();
-
-    const allP = [...t1, ...t2];
-    allP.forEach((p) => {
+    [...t1, ...t2].forEach((p) => {
       if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, gender };
     });
-
     if (s1 > s2) {
       t1.forEach((p) => { stats[p].w++; stats[p].played++; });
       t2.forEach((p) => { stats[p].l++; stats[p].played++; });
@@ -672,133 +594,95 @@ async function getVenueWeeklyRanking(venueName, params = {}) {
       t2.forEach((p) => { stats[p].w++; stats[p].played++; });
       t1.forEach((p) => { stats[p].l++; stats[p].played++; });
     } else {
-      allP.forEach((p) => { stats[p].played++; });
+      [...t1, ...t2].forEach((p) => { stats[p].played++; });
     }
   });
-
-  // Get current ELO for each player
   const eRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A2:G`,
   });
   const eRows = eRes.data.values || [];
   const latestElo = {};
-  eRows.forEach((r) => {
-    if (r[1]) latestElo[r[1]] = parseInt(r[2]) || 1350;
-  });
-
-  // Get player photos
+  eRows.forEach((r) => { if (r[1]) latestElo[r[1]] = parseInt(r[2]) || 1350; });
   const pRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:G`,
   });
   const pRows = pRes.data.values || [];
   const playerPhotos = {};
-  const playerLevels = {};
-  pRows.forEach((r) => {
-    if (r[0]) {
-      playerPhotos[r[0]] = r[6] || "";
-      const elo = latestElo[r[0]] || 1350;
-      playerLevels[r[0]] = getTierName(elo);
-    }
-  });
-
-  // Build ranking sorted by wins (then W/L ratio)
+  pRows.forEach((r) => { if (r[0]) playerPhotos[r[0]] = r[6] || ""; });
   let ranking = Object.entries(stats).map(([name, s]) => ({
-    name,
-    w: s.w,
-    l: s.l,
-    played: s.played,
-    gender: s.gender,
+    name, w: s.w, l: s.l, played: s.played, gender: s.gender,
     elo: latestElo[name] || 1350,
     level: getTierName(latestElo[name] || 1350),
     photoUrl: playerPhotos[name] || "",
   }));
-
-  // Sort by wins desc, then by fewer losses
   ranking.sort((a, b) => b.w - a.w || a.l - b.l);
-
-  // Filter by gender if specified
-  if (params.gender) {
+  if (params.gender)
     ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
-  }
-
   return respond(200, { ranking, week, venue: venueName });
 }
 
-// ================================================================
-// SESSIONS
-// ================================================================
+// ── SESSIONS ──
 async function saveSession(body) {
   const { session_name, source_url, format, courts, venue, players, rounds, elo_results } = body;
-  if (!session_name || !elo_results?.length) {
+  if (!session_name || !elo_results?.length)
     return respond(400, { error: "session_name and elo_results required" });
-  }
-
   const sheets = getSheets();
   const now = new Date().toISOString();
   const sessionId = `S-${Date.now().toString(36).toUpperCase()}`;
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.sessions}!A:I`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[
-        sessionId, session_name, source_url || "", format || "Mexicano",
-        courts || 2, venue || "", players?.length || elo_results.length,
-        rounds?.length || 0, now,
-      ]],
+      values: [
+        [
+          sessionId, session_name, source_url || "", format || "Mexicano",
+          courts || 2, venue || "", players?.length || elo_results.length,
+          rounds?.length || 0, now,
+        ],
+      ],
     },
   });
-
   const eloRows = elo_results.map((p) => [
     sessionId, p.name, p.elo, p.delta, p.w ?? 0, p.l ?? 0, now,
   ]);
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A:G`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: eloRows },
   });
-
   return respond(200, { success: true, sessionId });
 }
 
-async function listSessions(params = {}) {
+async function listSessions(params) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.sessions}!A2:I`,
   });
-
   const rows = res.data.values || [];
   let sessions = rows.map((r) => ({
     id: r[0], name: r[1], sourceUrl: r[2], format: r[3],
     courts: r[4], venue: r[5], playerCount: r[6],
     roundCount: r[7], createdAt: r[8],
   }));
-
-  if (params.venue) {
+  if (params.venue)
     sessions = sessions.filter((s) =>
       s.venue.toLowerCase().includes(params.venue.toLowerCase())
     );
-  }
-
   return respond(200, { sessions });
 }
 
-// ================================================================
-// ELO / LEADERBOARD
-// ================================================================
+// ── ELO / LEADERBOARD ──
 async function getLatestElo() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A2:G`,
   });
-
   const rows = res.data.values || [];
   const latest = {};
   rows.forEach((r) => {
@@ -810,19 +694,16 @@ async function getLatestElo() {
       };
     }
   });
-
   return respond(200, { players: latest });
 }
 
 async function getEloHistory(player) {
   if (!player) return respond(400, { error: "player param required" });
-
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A2:G`,
   });
-
   const rows = res.data.values || [];
   const history = rows
     .filter((r) => r[1]?.toLowerCase() === player.toLowerCase())
@@ -831,27 +712,21 @@ async function getEloHistory(player) {
       delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0,
       l: parseInt(r[5]) || 0, timestamp: r[6] || "",
     }));
-
   return respond(200, { player, history });
 }
 
-async function getNationalLeaderboard(params = {}) {
+async function getNationalLeaderboard(params) {
   const sheets = getSheets();
-
-  // Get all players
   const pRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:I`,
   });
   const pRows = pRes.data.values || [];
-
-  // Get latest ELO per player
   const eRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.elo_log}!A2:G`,
   });
   const eRows = eRes.data.values || [];
-
   const latestElo = {};
   const totalStats = {};
   eRows.forEach((r) => {
@@ -862,92 +737,164 @@ async function getNationalLeaderboard(params = {}) {
     totalStats[name].w += parseInt(r[4]) || 0;
     totalStats[name].l += parseInt(r[5]) || 0;
   });
-
   let leaderboard = pRows.map((r) => {
     const name = r[0] || "";
     const elo = latestElo[name] || 1350;
     const s = totalStats[name] || { w: 0, l: 0 };
     return {
-      name,
-      displayName: r[3] || name,
+      name, displayName: r[3] || name,
       gender: (r[4] || "M").toUpperCase(),
-      region: r[5] || "",
-      photoUrl: r[6] || "",
-      ig: r[1] || "",
-      verified: r[2] === "TRUE",
-      elo,
-      level: getTierName(elo),
-      w: s.w,
-      l: s.l,
-      played: s.w + s.l,
+      region: r[5] || "", photoUrl: r[6] || "",
+      ig: r[1] || "", verified: r[2] === "TRUE",
+      clubs: r[7] || "",
+      elo, level: getTierName(elo),
+      w: s.w, l: s.l, played: s.w + s.l,
     };
   });
-
-  // Sort by ELO desc
   leaderboard.sort((a, b) => b.elo - a.elo);
-
-  // Filters
-  if (params.gender) {
-    leaderboard = leaderboard.filter((p) => p.gender === params.gender.toUpperCase());
-  }
-  if (params.region) {
+  if (params.gender)
+    leaderboard = leaderboard.filter(
+      (p) => p.gender === params.gender.toUpperCase()
+    );
+  if (params.region)
     leaderboard = leaderboard.filter((p) =>
       p.region.toLowerCase().includes(params.region.toLowerCase())
     );
-  }
-  if (params.level) {
-    leaderboard = leaderboard.filter((p) =>
-      p.level.toLowerCase().replace(/\s/g, "") === params.level.toLowerCase().replace(/\s/g, "")
+  if (params.level)
+    leaderboard = leaderboard.filter(
+      (p) =>
+        p.level.toLowerCase().replace(/\s/g, "") ===
+        params.level.toLowerCase().replace(/\s/g, "")
     );
-  }
   if (params.search) {
     const q = params.search.toLowerCase();
     leaderboard = leaderboard.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.displayName.toLowerCase().includes(q)
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q)
     );
   }
-
-  // Pagination
+  if (params.venue) {
+    const v = params.venue.toLowerCase();
+    leaderboard = leaderboard.filter((p) =>
+      (p.clubs || "").toLowerCase().includes(v)
+    );
+  }
   const page = parseInt(params.page) || 1;
   const limit = parseInt(params.limit) || 20;
   const start = (page - 1) * limit;
   const paginated = leaderboard.slice(start, start + limit);
-
   return respond(200, {
-    leaderboard: paginated,
-    total: leaderboard.length,
-    page,
-    limit,
-    totalPages: Math.ceil(leaderboard.length / limit),
+    leaderboard: paginated, total: leaderboard.length,
+    page, limit, totalPages: Math.ceil(leaderboard.length / limit),
   });
 }
 
-// ================================================================
-// ADMINS
-// ================================================================
+// ── PARSE AMERICANO-PADEL.COM ──
+async function parseAmericanoUrl({ url, venue, gender }) {
+  if (!url) return respond(400, { error: "URL is required" });
+  if (!url.includes("americano-padel.com/r/"))
+    return respond(400, { error: "Only americano-padel.com URLs supported" });
+  try {
+    const https = require("https");
+    const fetchUrl = url.includes("?ln=") ? url : `${url}?ln=en`;
+    const html = await new Promise((resolve, reject) => {
+      https
+        .get(fetchUrl, { headers: { "User-Agent": "Trekkr/3.0" } }, (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => resolve(data));
+          res.on("error", reject);
+        })
+        .on("error", reject);
+    });
+    const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
+    const sessionName = titleMatch ? titleMatch[1].trim() : "Imported Session";
+    const standings = [];
+    const standingsRegex =
+      /<td[^>]*>\s*(\d+)\.\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>(\d+)-(\d+)-(\d+)<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>[^)]*\)\s*(\d+)/g;
+    let sM;
+    while ((sM = standingsRegex.exec(html)) !== null) {
+      standings.push({
+        rank: parseInt(sM[1]), name: sM[2].trim(),
+        w: parseInt(sM[3]), l: parseInt(sM[4]), t: parseInt(sM[5]),
+        diff: parseInt(sM[6]), points: parseInt(sM[7]),
+      });
+    }
+    const matches = [];
+    const roundBlocks = html.split(/Round #(\d+)/);
+    for (let i = 1; i < roundBlocks.length; i += 2) {
+      const roundNum = parseInt(roundBlocks[i]);
+      const block = roundBlocks[i + 1] || "";
+      const courtBlocks = block.split(/Court (\d+)/);
+      for (let j = 1; j < courtBlocks.length; j += 2) {
+        const courtNum = parseInt(courtBlocks[j]);
+        const cb = courtBlocks[j + 1] || "";
+        const nameMatches = cb.match(
+          /<td[^>]*class="[^"]*(?:name|player)[^"]*"[^>]*>([^<]+)<\/td>/gi
+        );
+        const scoreMatches = cb.match(
+          /<td[^>]*class="[^"]*score[^"]*"[^>]*>(\d+)<\/td>/gi
+        );
+        const names = nameMatches
+          ? nameMatches
+              .map((m) => m.replace(/<[^>]+>/g, "").trim())
+              .filter((n) => n && !n.match(/^\d+$/))
+          : [];
+        const scores = scoreMatches
+          ? scoreMatches.map((m) => parseInt(m.replace(/<[^>]+>/g, "")))
+          : [];
+        if (names.length >= 4 && scores.length >= 2) {
+          matches.push({
+            round: roundNum, court: courtNum,
+            p1t1: names[0], p2t1: names[1],
+            p1t2: names[2], p2t2: names[3],
+            scoreT1: scores[0], scoreT2: scores[1],
+            gender: gender || "M",
+          });
+        }
+      }
+    }
+    const allPlayers =
+      standings.length > 0
+        ? standings.map((s) => s.name)
+        : [
+            ...new Set(
+              matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2])
+            ),
+          ];
+    return respond(200, {
+      success: true, sessionName, sourceUrl: url,
+      playerCount: allPlayers.length, matchCount: matches.length,
+      players: allPlayers, standings, matches,
+    });
+  } catch (err) {
+    console.error("Parse error:", err);
+    return respond(500, { error: `Failed to parse: ${err.message}` });
+  }
+}
+
+// ── ADMINS ──
 async function getAdmins() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.admins}!A2:E`,
   });
-
   const rows = res.data.values || [];
   const admins = rows.map((r) => ({
     username: r[0], role: r[2] || "venue_admin",
     venue: r[3] || "", createdAt: r[4] || "",
   }));
-
   return respond(200, { admins });
 }
 
 async function addAdmin(body) {
   const { username, password, role, venue } = body;
-  if (!username || !password) return respond(400, { error: "username and password required" });
-
+  if (!username || !password)
+    return respond(400, { error: "username and password required" });
   const sheets = getSheets();
   const now = new Date().toISOString();
-
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.admins}!A:E`,
@@ -956,13 +903,10 @@ async function addAdmin(body) {
       values: [[username, password, role || "venue_admin", venue || "", now]],
     },
   });
-
   return respond(200, { success: true });
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
+// ── HELPERS ──
 function getTierName(elo) {
   if (elo >= 3000) return "Platinum";
   if (elo >= 2500) return "Gold";
@@ -976,7 +920,8 @@ function getTierName(elo) {
 
 function getWeekNumber(d) {
   const start = new Date(d.getFullYear(), 0, 1);
-  const diff = d - start + (start.getTimezoneOffset() - d.getTimezoneOffset()) * 60000;
+  const diff =
+    d - start + (start.getTimezoneOffset() - d.getTimezoneOffset()) * 60000;
   return Math.ceil((diff / 86400000 + start.getDay() + 1) / 7);
 }
 

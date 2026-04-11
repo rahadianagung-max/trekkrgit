@@ -3,391 +3,167 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trekkr — Venue Ranking</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Trekkr — Venues</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #070709; --s1: #0f0f14; --s2: #16161f; --s3: #1e1e2a;
-  --border: #252535; --border2: #32324a;
-  --lime: #d4f53c; --lime2: #aacb2a; --coral: #ff5757; --sky: #38bdf8;
-  --text: #eeeef5; --muted: #5a5a7a; --muted2: #7a7a9a;
-  --bronze-c: #e08430; --silver-c: #b0b3be; --gold-c: #f5cc40; --plat-c: #38bdf8;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
-body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; opacity:0.4; }
-
-.wrap { max-width: 680px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
-
-/* Header */
-.back-bar { padding: 20px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
-.back-bar a { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted2); text-decoration: none; }
-.back-bar a:hover { color: var(--lime); }
-
-/* Venue Hero */
-.venue-hero {
-  background: var(--s1);
-  border: 1px solid var(--border2);
-  border-radius: 14px;
-  padding: 28px;
-  margin-bottom: 24px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-.venue-hero::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--lime), transparent); opacity:0.6; }
-
-.venue-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  letter-spacing: 4px;
-  color: var(--lime);
-  margin-bottom: 6px;
-}
-
-.venue-subtitle {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--muted2);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.schedule-box {
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px;
-  margin: 16px 0;
-  text-align: left;
-}
-
-.schedule-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 3px;
-  color: var(--lime);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.schedule-lines {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--muted2);
-  line-height: 1.7;
-  white-space: pre-line;
-}
-
-.prize-tag {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  color: var(--gold-c);
-  margin-top: 8px;
-  letter-spacing: 2px;
-}
-
-.btn { padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; transition: all 0.15s; display: inline-block; text-decoration: none; }
-.btn-primary { background: var(--lime); color: var(--bg); }
-.btn-primary:hover { background: var(--lime2); }
-.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--muted2); font-size: 12px; }
-.btn-ghost:hover { border-color: var(--lime); color: var(--lime); }
-
-/* Week selector */
-.week-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.week-label {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 3px;
-  color: var(--text);
-}
-
-.week-nav { display: flex; gap: 6px; }
-.week-btn {
-  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
-  padding: 6px 12px; cursor: pointer; color: var(--muted2); font-size: 14px;
-  font-family: 'JetBrains Mono', monospace; transition: all 0.15s;
-}
-.week-btn:hover { border-color: var(--lime); color: var(--lime); }
-
-/* Gender tabs (smaller) */
-.g-tabs { display: flex; gap: 0; margin-bottom: 16px; }
-.g-tab {
-  flex: 1; padding: 10px; text-align: center;
-  font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 3px;
-  cursor: pointer; border: 1px solid var(--border); background: var(--s1); color: var(--muted); transition: all 0.2s;
-}
-.g-tab:first-child { border-radius: 8px 0 0 8px; }
-.g-tab:last-child { border-radius: 0 8px 8px 0; }
-.g-tab.active { background: rgba(212,245,60,0.08); border-color: rgba(212,245,60,0.3); color: var(--lime); }
-
-/* Ranking list */
-.rank-list { display: flex; flex-direction: column; gap: 4px; }
-
-.rank-item {
-  display: grid;
-  grid-template-columns: 36px 44px 1fr 70px 70px;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-  animation: fadeUp 0.3s ease both;
-  text-decoration: none;
-  color: inherit;
-}
-
-.rank-item.top-1 { border-left: 3px solid var(--gold-c); }
-.rank-item.top-2 { border-left: 3px solid var(--silver-c); }
-.rank-item.top-3 { border-left: 3px solid var(--bronze-c); }
-
-@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-.rank-item:hover { background: var(--s2); transform: translateX(2px); }
-
-.r-rank { font-family: 'Bebas Neue', sans-serif; font-size: 20px; text-align: center; color: var(--muted); }
-.top-1 .r-rank { color: var(--gold-c); }
-.top-2 .r-rank { color: var(--silver-c); }
-.top-3 .r-rank { color: var(--bronze-c); }
-
-.r-photo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--s3); border: 1px solid var(--border); }
-
-.r-info { min-width: 0; }
-.r-name { font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.r-tier {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px; letter-spacing: 1px; color: var(--muted2); text-transform: uppercase;
-}
-
-.r-wl { text-align: center; }
-.r-wl-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); }
-.r-wl-label { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-
-.r-elo { text-align: right; }
-.r-elo-val { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--lime); line-height: 1; }
-.r-elo-label { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: var(--muted); letter-spacing: 1px; }
-
-.match-history-link {
-  text-align: center; margin-top: 16px;
-}
-.match-history-link a { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--lime); text-decoration: none; letter-spacing: 1px; }
-.match-history-link a:hover { text-decoration: underline; }
-
-.loading-state { text-align:center; padding:50px 20px; color:var(--muted2); font-family:'JetBrains Mono',monospace; font-size:12px; }
-.spinner-lg { width:24px; height:24px; border:2px solid var(--border2); border-top-color:var(--lime); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 10px; }
-@keyframes spin { to { transform:rotate(360deg); } }
-.empty-state { text-align:center; padding:40px 20px; color:var(--muted2); font-size:12px; }
-
-footer { border-top:1px solid var(--border); padding-top:24px; margin-top:40px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:2px; }
-footer span { color:var(--lime); }
-
-@media (max-width: 480px) {
-  .rank-item { grid-template-columns: 30px 38px 1fr 56px; }
-  .r-wl { display: none; }
-}
+:root{--bg:#0a0c12;--s1:#10131a;--s2:#161a24;--s3:#1c2130;--border:#1e2333;--border2:#2a3045;--lime:#d4f53c;--lime2:#b8d930;--coral:#ff5757;--text:#eeeef5;--muted:#4a5068;--muted2:#6b7394;--gold-c:#f5cc40;--silver-c:#b0b3be;--bronze-c:#e08430}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5}
+.wrap{max-width:800px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+.top-bar{padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:28px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.top-nav{display:flex;gap:6px;flex-wrap:wrap}
+.top-nav a{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);color:var(--muted2);text-decoration:none;transition:all 0.15s}
+.top-nav a:hover,.top-nav a.active{border-color:var(--lime);color:var(--lime);background:rgba(212,245,60,0.04)}
+.page-logo{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:6px;color:var(--lime);text-shadow:0 0 40px rgba(212,245,60,0.2);text-decoration:none}
+.page-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:500;letter-spacing:3px;color:var(--muted2);text-transform:uppercase}
+/* Venue List */
+.venue-list{display:flex;flex-direction:column;gap:8px}
+.venue-card{display:flex;align-items:center;gap:16px;padding:18px 22px;background:var(--s1);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s;text-decoration:none;color:inherit;animation:fadeUp .35s ease both}
+.venue-card:hover{background:var(--s2);border-color:var(--lime);transform:translateX(4px)}
+.vc-icon{width:48px;height:48px;border-radius:10px;background:var(--s3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--lime);flex-shrink:0}
+.vc-info{flex:1;min-width:0}
+.vc-name{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:1px}
+.vc-detail{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);margin-top:2px}
+.vc-arrow{color:var(--muted);font-size:18px;flex-shrink:0}
+/* Venue Detail */
+.venue-hero{background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:28px;margin-bottom:24px;text-align:center;position:relative;overflow:hidden}
+.venue-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:0.6}
+.vh-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--lime);margin-bottom:6px}
+.vh-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase}
+.sched-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px;margin:16px 0;text-align:left}
+.sched-title{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--lime);text-transform:uppercase;margin-bottom:8px}
+.sched-lines{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted2);line-height:1.7;white-space:pre-line}
+.prize{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold-c);margin-top:8px;letter-spacing:2px}
+.btn{padding:10px 24px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;transition:all 0.15s;display:inline-block;text-decoration:none}
+.btn-primary{background:var(--lime);color:var(--bg)}.btn-primary:hover{background:var(--lime2)}
+.week-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.week-label{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--text)}
+.week-nav{display:flex;gap:6px}
+.week-btn{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;color:var(--muted2);font-size:14px;font-family:'JetBrains Mono',monospace;transition:all 0.15s}
+.week-btn:hover{border-color:var(--lime);color:var(--lime)}
+.g-tabs{display:flex;gap:0;margin-bottom:16px}
+.g-tab{flex:1;padding:10px;text-align:center;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:3px;cursor:pointer;border:1px solid var(--border);background:var(--s1);color:var(--muted);transition:all 0.2s;text-transform:uppercase}
+.g-tab:first-child{border-radius:8px 0 0 8px}.g-tab:last-child{border-radius:0 8px 8px 0}
+.g-tab.active{background:rgba(212,245,60,0.08);border-color:rgba(212,245,60,0.3);color:var(--lime)}
+.rank-list{display:flex;flex-direction:column;gap:4px}
+.rank-item{display:grid;grid-template-columns:36px 44px 1fr 70px 70px;gap:10px;align-items:center;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;animation:fadeUp .3s ease both;text-decoration:none;color:inherit}
+.rank-item.top-1{border-left:3px solid var(--gold-c)}.rank-item.top-2{border-left:3px solid var(--silver-c)}.rank-item.top-3{border-left:3px solid var(--bronze-c)}
+.rank-item:hover{background:var(--s2);transform:translateX(2px)}
+.r-rank{font-family:'Bebas Neue',sans-serif;font-size:20px;text-align:center;color:var(--muted)}
+.top-1 .r-rank{color:var(--gold-c)}.top-2 .r-rank{color:var(--silver-c)}.top-3 .r-rank{color:var(--bronze-c)}
+.r-photo{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--s3);border:1px solid var(--border)}
+.r-info{min-width:0}.r-name{font-family:'Oswald',sans-serif;font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-tier{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase}
+.r-wl{text-align:center}.r-wl-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text)}
+.r-wl-label{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:1px}
+.r-elo .r-wl-val{color:var(--lime)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.loading-state{text-align:center;padding:50px 20px;color:var(--muted2);font-family:'JetBrains Mono',monospace;font-size:12px}
+.spinner{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--lime);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted2);font-size:12px}
+footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
+footer span{color:var(--lime)}
+@media(max-width:480px){.rank-item{grid-template-columns:30px 38px 1fr 56px}.r-wl{display:none}}
 </style>
 </head>
 <body>
-
 <div class="wrap">
-  <div class="back-bar">
-    <a href="/">← Back to National Rankings</a>
-    <a href="/admin">Venue Admin</a>
-  </div>
-
-  <div id="venueHero"></div>
-
-  <div class="week-row">
-    <div class="week-label" id="weekLabel">WEEKLY RANKING</div>
-    <div class="week-nav">
-      <button class="week-btn" onclick="changeWeek(-1)">◂</button>
-      <button class="week-btn" onclick="changeWeek(1)">▸</button>
+  <div class="top-bar">
+    <a href="https://trekkr.online" class="page-logo">TREKKR</a>
+    <div class="top-nav">
+      <a href="https://trekkr.online">National Ranking</a>
+      <a href="https://venue.trekkr.online" class="active">Venue</a>
+      <a href="https://sportsactvd.com/trekkr" target="_blank">About</a>
     </div>
   </div>
-
-  <div class="g-tabs">
-    <div class="g-tab active" data-gender="M" onclick="switchGender('M')">MEN</div>
-    <div class="g-tab" data-gender="F" onclick="switchGender('F')">WOMEN</div>
-  </div>
-
-  <div id="rankingContainer">
-    <div class="loading-state"><div class="spinner-lg"></div>Loading ranking...</div>
-  </div>
-
-  <div class="match-history-link">
-    <a href="#" onclick="alert('Match History — coming soon!'); return false;">Match History →</a>
-  </div>
-
-  <footer>
-    TREKKR · <span>SPORTS ECOSYSTEM</span> · © 2026
-  </footer>
+  <div id="mainContent"><div class="loading-state"><div class="spinner"></div>Loading...</div></div>
+  <footer>TREKKR · <span>SPORTS ECOSYSTEM</span> · © 2026</footer>
 </div>
-
 <script src="/trekkr-api.js"></script>
 <script>
-const DEFAULT_AVATAR = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231e1e2a'/%3E%3Ccircle cx='20' cy='15' r='7' fill='%2332324a'/%3E%3Cpath d='M7 36c0-7 6-13 13-13s13 6 13 13' fill='%2332324a'/%3E%3C/svg%3E`;
+const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231c2130'/%3E%3Ccircle cx='20' cy='15' r='7' fill='%232a3045'/%3E%3Cpath d='M7 36c0-7 6-13 13-13s13 6 13 13' fill='%232a3045'/%3E%3C/svg%3E";
+let cG='M',cW=getCW(),vName='',vData=null;
 
-let currentGender = 'M';
-let currentWeek = getCurrentWeekNum();
-let venueName = '';
-let venueData = null;
+function getCW(){const d=new Date(),s=new Date(d.getFullYear(),0,1),df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;return Math.ceil((df/86400000+s.getDay()+1)/7)}
+function switchGender(g){cG=g;document.querySelectorAll('.g-tab').forEach(t=>t.classList.toggle('active',t.dataset.gender===g));loadRanking()}
+function changeWeek(d){cW+=d;if(cW<1)cW=1;document.getElementById('weekLabel').textContent=`WEEKLY RANKING (Wk ${cW})`;loadRanking()}
 
-function getCurrentWeekNum() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const diff = now - start + (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60000;
-  return Math.ceil((diff / 86400000 + start.getDay() + 1) / 7);
+async function init(){
+  const p=window.location.pathname.replace(/\/$/,'').split('/').filter(Boolean);
+  // On venue.trekkr.online, path is / or /VenueName
+  vName=p.length>0&&p[0]!=='venue'?decodeURIComponent(p[p.length-1]):(p.length>1?decodeURIComponent(p[1]):'');
+  if(!vName||vName==='venue'){await showVenueList();return}
+  document.title=`${vName} — Trekkr Venue`;
+  await loadVenueDetail();
 }
 
-function switchGender(g) {
-  currentGender = g;
-  document.querySelectorAll('.g-tab').forEach(t => t.classList.toggle('active', t.dataset.gender === g));
-  loadRanking();
+async function showVenueList(){
+  document.title='Trekkr — Venue Directory';
+  try{
+    const d=await TrekkrAPI.getVenues();
+    const sorted=d.venues.sort((a,b)=>a.name.localeCompare(b.name));
+    let h='<div class="page-title" style="text-align:center;margin-bottom:24px">VENUE DIRECTORY</div><div class="venue-list">';
+    sorted.forEach((v,i)=>{
+      h+=`<a href="/${encodeURIComponent(v.name)}" class="venue-card" style="animation-delay:${i*0.04}s">
+        <div class="vc-icon">${v.name.charAt(0).toUpperCase()}</div>
+        <div class="vc-info"><div class="vc-name">${v.name}</div><div class="vc-detail">${[v.location,v.region].filter(Boolean).join(' · ')||'—'}</div></div>
+        <div class="vc-arrow">→</div></a>`;
+    });
+    if(sorted.length===0)h+='<div class="empty-state">No venues configured yet</div>';
+    h+='</div>';
+    document.getElementById('mainContent').innerHTML=h;
+  }catch(e){document.getElementById('mainContent').innerHTML='<div class="empty-state">Could not load venues</div>'}
 }
 
-function changeWeek(delta) {
-  currentWeek += delta;
-  if (currentWeek < 1) currentWeek = 1;
-  document.getElementById('weekLabel').textContent = `WEEKLY RANKING (Wk ${currentWeek})`;
-  loadRanking();
-}
-
-async function init() {
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-  venueName = decodeURIComponent(pathParts[pathParts.length - 1] || pathParts[0] || '');
-
-  if (!venueName || venueName === 'venue') {
-    // Show venue list
-    await loadVenueList();
-    return;
-  }
-
-  document.title = `${venueName} — Trekkr Venue Ranking`;
-  document.getElementById('weekLabel').textContent = `WEEKLY RANKING (Wk ${currentWeek})`;
-
-  await loadVenueInfo();
+async function loadVenueDetail(){
+  try{const d=await TrekkrAPI.getVenues();vData=d.venues.find(v=>v.name.toLowerCase()===vName.toLowerCase())}catch(e){}
+  const v=vData||{name:vName};
+  let h=`<div class="venue-hero">
+    <div class="vh-name">${(v.name||vName).toUpperCase()}</div>
+    <div class="vh-sub">${[v.location,v.region].filter(Boolean).join(' · ')}</div>
+    ${v.schedule?`<div class="sched-box"><div class="sched-title">Rating Game Schedule</div><div class="sched-lines">${v.schedule}</div></div>`:''}
+    ${v.prizePool?`<div class="prize">PRIZE POOL: ${v.prizePool}</div>`:''}
+    <div style="margin-top:14px">
+      ${v.registerUrl?`<a href="${v.registerUrl}" class="btn btn-primary" target="_blank">Register Now →</a>`:`<button class="btn btn-primary" onclick="alert('Registration link not set yet')">Register Now →</button>`}
+    </div>
+  </div>
+  <div class="week-row">
+    <div class="week-label" id="weekLabel">WEEKLY RANKING (Wk ${cW})</div>
+    <div class="week-nav"><button class="week-btn" onclick="changeWeek(-1)">◂</button><button class="week-btn" onclick="changeWeek(1)">▸</button></div>
+  </div>
+  <div class="g-tabs">
+    <div class="g-tab active" data-gender="M" onclick="switchGender('M')">Men</div>
+    <div class="g-tab" data-gender="F" onclick="switchGender('F')">Women</div>
+  </div>
+  <div id="rankingContainer"><div class="loading-state"><div class="spinner"></div>Loading ranking...</div></div>`;
+  document.getElementById('mainContent').innerHTML=h;
   await loadRanking();
 }
 
-async function loadVenueList() {
-  try {
-    const data = await TrekkrAPI.getVenues();
-    const hero = document.getElementById('venueHero');
-    hero.innerHTML = `
-      <div class="venue-hero">
-        <div class="venue-name">SELECT VENUE</div>
-        <div class="venue-subtitle">Choose a venue to see weekly rankings</div>
-        <div style="margin-top:16px; display:flex; flex-direction:column; gap:6px;">
-          ${data.venues.map(v => `
-            <a href="/venue/${encodeURIComponent(v.name)}" class="btn btn-ghost" style="display:block; text-align:left; padding:12px 16px;">
-              <strong>${v.name}</strong><br>
-              <span style="font-size:10px; color:var(--muted)">${v.location || v.region || ''}</span>
-            </a>
-          `).join('')}
-        </div>
-      </div>
-    `;
-    document.getElementById('rankingContainer').innerHTML = '';
-    document.querySelector('.week-row').style.display = 'none';
-    document.querySelector('.g-tabs').style.display = 'none';
-  } catch (err) {
-    document.getElementById('venueHero').innerHTML = '<div class="venue-hero"><div class="venue-name">NO VENUES</div><div class="venue-subtitle">No venues configured yet</div></div>';
-  }
-}
-
-async function loadVenueInfo() {
-  try {
-    const data = await TrekkrAPI.getVenues();
-    venueData = data.venues.find(v => v.name.toLowerCase() === venueName.toLowerCase());
-  } catch (err) {
-    console.warn('Could not load venue info');
-  }
-
-  const hero = document.getElementById('venueHero');
-  const v = venueData || { name: venueName };
-
-  hero.innerHTML = `
-    <div class="venue-hero">
-      <div class="venue-name">${(v.name || venueName).toUpperCase()}</div>
-      <div class="venue-subtitle">${v.location || ''} ${v.region ? '· ' + v.region : ''}</div>
-      ${v.schedule ? `
-        <div class="schedule-box">
-          <div class="schedule-title">Rating Game Schedule</div>
-          <div class="schedule-lines">${v.schedule}</div>
-        </div>
-      ` : ''}
-      ${v.prizePool ? `<div class="prize-tag">PRIZE POOL: ${v.prizePool}</div>` : ''}
-      <div style="margin-top:12px">
-        <button class="btn btn-primary" onclick="alert('Register — coming soon!')">Register Now →</button>
-      </div>
-    </div>
-  `;
-}
-
-async function loadRanking() {
-  const container = document.getElementById('rankingContainer');
-  container.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div>Loading ranking...</div>';
-
-  try {
-    const data = await TrekkrAPI.getVenueWeeklyRanking(venueName, {
-      week: `W${currentWeek}`,
-      gender: currentGender,
+async function loadRanking(){
+  const c=document.getElementById('rankingContainer');
+  if(!c)return;
+  c.innerHTML='<div class="loading-state"><div class="spinner"></div>Loading ranking...</div>';
+  try{
+    const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
+    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="empty-state">No matches found for this week</div>';return}
+    let h='<div class="rank-list">';
+    d.ranking.forEach((p,i)=>{
+      const r=i+1,tc=r<=3?' top-'+r:'';
+      h+=`<a href="https://trekkr.online/player/${encodeURIComponent(p.name)}" class="rank-item${tc}" style="animation-delay:${i*0.03}s">
+        <div class="r-rank">${r}</div>
+        <img class="r-photo" src="${p.photoUrl||DA}" alt="${p.name}" onerror="this.src='${DA}'">
+        <div class="r-info"><div class="r-name">${p.name}</div><div class="r-tier">ELO: ${p.elo} · ${p.level}</div></div>
+        <div class="r-wl"><div class="r-wl-val">${p.played}</div><div class="r-wl-label">Played</div></div>
+        <div class="r-elo"><div class="r-wl-val" style="color:var(--lime)">${p.w}W</div><div class="r-wl-val" style="color:var(--coral);font-size:10px">${p.l}L</div></div></a>`;
     });
-    renderRanking(data.ranking);
-  } catch (err) {
-    console.warn('API error:', err);
-    container.innerHTML = '<div class="empty-state">No matches found for this week</div>';
-  }
+    h+='</div>';c.innerHTML=h;
+  }catch(e){c.innerHTML='<div class="empty-state">No matches found for this week</div>'}
 }
 
-function renderRanking(ranking) {
-  const container = document.getElementById('rankingContainer');
-
-  if (!ranking || ranking.length === 0) {
-    container.innerHTML = '<div class="empty-state">No matches found for this week</div>';
-    return;
-  }
-
-  const list = document.createElement('div');
-  list.className = 'rank-list';
-
-  ranking.forEach((p, i) => {
-    const rank = i + 1;
-    const topCls = rank <= 3 ? ` top-${rank}` : '';
-
-    const item = document.createElement('a');
-    item.href = `/player/${encodeURIComponent(p.name)}`;
-    item.className = `rank-item${topCls}`;
-    item.style.animationDelay = `${i * 0.03}s`;
-
-    item.innerHTML = `
-      <div class="r-rank">${rank}</div>
-      <img class="r-photo" src="${p.photoUrl || DEFAULT_AVATAR}" alt="${p.name}" onerror="this.src='${DEFAULT_AVATAR}'">
-      <div class="r-info">
-        <div class="r-name">${p.name}</div>
-        <div class="r-tier">ELO: ${p.elo} · LEVEL: ${p.level}</div>
-      </div>
-      <div class="r-wl">
-        <div class="r-wl-val">${p.played}</div>
-        <div class="r-wl-label">Played</div>
-      </div>
-      <div class="r-elo">
-        <div class="r-wl-val" style="color: var(--lime)">${p.w}W</div>
-        <div class="r-wl-val" style="color: var(--coral); font-size:10px">${p.l}L</div>
-      </div>
-    `;
-
-    list.appendChild(item);
-  });
-
-  container.innerHTML = '';
-  container.appendChild(list);
-}
-
-window.addEventListener('load', init);
+window.addEventListener('load',init);
 </script>
 </body>
 </html>

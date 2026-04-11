@@ -2,29 +2,48 @@
   functions = "netlify/functions"
   publish = "."
 
-# API routing
+# ── API routing (works from all subdomains) ──
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/sheet/:splat"
   status = 200
 
-# Clean URL routing for SPA-style pages
+# ── Subdomain routing ──
 [[redirects]]
-  from = "/venue/*"
-  to = "/venue/index.html"
+  from = "https://admin.trekkr.online/*"
+  to = "/admin/:splat"
   status = 200
+  force = true
 
+[[redirects]]
+  from = "https://superadmin.trekkr.online/*"
+  to = "/superadmin/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://venue.trekkr.online/*"
+  to = "/venue/:splat"
+  status = 200
+  force = true
+
+# ── Clean URL routing ──
 [[redirects]]
   from = "/player/*"
   to = "/player/index.html"
   status = 200
 
 [[redirects]]
-  from = "/admin"
+  from = "/venue/*"
+  to = "/venue/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
   to = "/admin/index.html"
   status = 200
 
 [[redirects]]
-  from = "/superadmin"
+  from = "/superadmin/*"
   to = "/superadmin/index.html"
   status = 200
