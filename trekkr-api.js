@@ -1,5 +1,5 @@
 const TrekkrAPI = (() => {
-  const BASE = "https://trekkr.online/api";
+  const BASE = "/api";
 
   function getToken() {
     return localStorage.getItem("trekkr_token") || "";

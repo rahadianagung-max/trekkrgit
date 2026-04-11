@@ -1,7 +1,14 @@
 [build]
+  functions = "netlify/functions"
   publish = "."
 
-# ── 1. Subdomain routing (Paling spesifik) ──
+# ── API routing (works from all subdomains) ──
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/sheet/:splat"
+  status = 200
+
+# ── Subdomain routing ──
 [[redirects]]
   from = "https://admin.trekkr.online/*"
   to = "/admin/:splat"
@@ -20,13 +27,7 @@
   status = 200
   force = true
 
-# ── 2. API routing ──
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/sheet/:splat"
-  status = 200
-
-# ── 3. Clean URL routing (Untuk masing-masing folder) ──
+# ── Clean URL routing ──
 [[redirects]]
   from = "/player/*"
   to = "/player/index.html"
@@ -45,10 +46,4 @@
 [[redirects]]
   from = "/superadmin/*"
   to = "/superadmin/index.html"
-  status = 200
-
-# ── 4. Catch-all routing (Paling umum, WAJIB paling bawah) ──
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
   status = 200
