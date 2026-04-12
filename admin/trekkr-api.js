@@ -1,5 +1,8 @@
 const TrekkrAPI = (() => {
-  const BASE = "/api";
+  // Always call API on main domain — subdomains rewrite paths and break /api/
+  const BASE = window.location.hostname === "trekkr.online"
+    ? "/api"
+    : "https://trekkr.online/api";
 
   function getToken() {
     return localStorage.getItem("trekkr_token") || "";
