@@ -2,15 +2,36 @@
   functions = "netlify/functions"
   publish = "."
 
-# ── API routing (highest priority) ──
+# ══════════════════════════════════════════
+# API must be handled FIRST for ALL domains
+# ══════════════════════════════════════════
+[[redirects]]
+  from = "https://venue.trekkr.online/api/*"
+  to = "/.netlify/functions/sheet/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://admin.trekkr.online/api/*"
+  to = "/.netlify/functions/sheet/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://superadmin.trekkr.online/api/*"
+  to = "/.netlify/functions/sheet/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/sheet/:splat"
   status = 200
   force = true
 
-# ── Subdomain routing ──
-# Without force=true, Netlify serves existing files first, then falls back to rewrite
+# ══════════════════════════════════════════
+# Subdomain routing (after API is handled)
+# ══════════════════════════════════════════
 [[redirects]]
   from = "https://venue.trekkr.online/*"
   to = "/venue/:splat"
@@ -26,7 +47,9 @@
   to = "/superadmin/:splat"
   status = 200
 
-# ── SPA fallbacks (main domain) ──
+# ══════════════════════════════════════════
+# SPA fallbacks (main domain)
+# ══════════════════════════════════════════
 [[redirects]]
   from = "/player/*"
   to = "/player/index.html"
