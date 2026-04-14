@@ -812,49 +812,59 @@ async function parseAmericanoUrl({ url, venue, gender }) {
 
     const html = await response.text();
 
-    console.log("=== DEBUG HTML DARI AMERICANO ===");
-    console.log(html.substring(0, 1500)); 
-    console.log("=================================");
+    const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i) || html.match(/<title>([^<]+)<\/title>/i);
+    let sessionName = titleMatch ? titleMatch[1].replace("Americano Padel app - ", "").trim() : "Imported Session";
 
-    const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
-    const sessionName = titleMatch ? titleMatch[1].trim() : "Imported Session";
+    // 1. EKSTRAK KLASEMEN (STANDINGS)
     const standings = [];
-    const standingsRegex =
-      /<td[^>]*>\s*(\d+)\.\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>(\d+)-(\d+)-(\d+)<\/td>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>[^)]*\)\s*(\d+)/g;
+    const standingsRegex = /<td[^>]*player-pos[^>]*>\s*(\d+)\.\s*<\/td>\s*<td>([^<]+)<\/td>\s*<td[^>]*win-loss-tie[^>]*>\s*(\d+)-(\d+)-(\d+)\s*<\/td>\s*<td[^>]*points-diff[^>]*>\s*([^<]+)<\/td>[\s\S]*?<span class="points">\s*(\d+)\s*<\/span>/gi;
     let sM;
     while ((sM = standingsRegex.exec(html)) !== null) {
       standings.push({
-        rank: parseInt(sM[1]), name: sM[2].trim(),
-        w: parseInt(sM[3]), l: parseInt(sM[4]), t: parseInt(sM[5]),
-        diff: parseInt(sM[6]), points: parseInt(sM[7]),
+        rank: parseInt(sM[1]), 
+        name: sM[2].trim(),
+        w: parseInt(sM[3]), 
+        l: parseInt(sM[4]), 
+        t: parseInt(sM[5]),
+        diff: parseInt(sM[6]), 
+        points: parseInt(sM[7]),
       });
     }
+
+    // 2. EKSTRAK PERTANDINGAN (MATCHES)
     const matches = [];
-    const roundBlocks = html.split(/Round #(\d+)/);
+    const roundBlocks = html.split(/Round\s+#(\d+)/i);
+    
     for (let i = 1; i < roundBlocks.length; i += 2) {
       const roundNum = parseInt(roundBlocks[i]);
       const block = roundBlocks[i + 1] || "";
-      const courtBlocks = block.split(/Court (\d+)/);
+      const courtBlocks = block.split(/Court\s+(\d+)/i);
+      
       for (let j = 1; j < courtBlocks.length; j += 2) {
         const courtNum = parseInt(courtBlocks[j]);
         const cb = courtBlocks[j + 1] || "";
-        const nameMatches = cb.match(
-          /<td[^>]*class="[^"]*(?:name|player)[^"]*"[^>]*>([^<]+)<\/td>/gi
-        );
-        const scoreMatches = cb.match(
-          /<td[^>]*class="[^"]*score[^"]*"[^>]*>(\d+)<\/td>/gi
-        );
-        const names = nameMatches
-          ? nameMatches
-              .map((m) => m.replace(/<[^>]+>/g, "").trim())
-              .filter((n) => n && !n.match(/^\d+$/))
-          : [];
-        const scores = scoreMatches
-          ? scoreMatches.map((m) => parseInt(m.replace(/<[^>]+>/g, "")))
-          : [];
+
+        // Cari Nama Pemain (menggunakan class team1 / team2)
+        const nameRegex = /<div[^>]*class="[^"]*team[12][^"]*"[^>]*>\s*([^<]+)\s*<\/div>/gi;
+        const names = [];
+        let nM;
+        while ((nM = nameRegex.exec(cb)) !== null) {
+            names.push(nM[1].trim());
+        }
+
+        // Cari Skor (menggunakan ID match_X_team_X_result)
+        const scoreRegex = /<div[^>]*id="match_\d+_team_[12]_result"[^>]*>\s*(\d+)\s*<\/div>/gi;
+        const scores = [];
+        let scM;
+        while ((scM = scoreRegex.exec(cb)) !== null) {
+            scores.push(parseInt(scM[1], 10)); // Ubah "01" jadi 1
+        }
+
+        // Jika menemukan 4 pemain dan 2 skor, masukkan ke daftar match
         if (names.length >= 4 && scores.length >= 2) {
           matches.push({
-            round: roundNum, court: courtNum,
+            round: roundNum, 
+            court: courtNum,
             p1t1: names[0], p2t1: names[1],
             p1t2: names[2], p2t2: names[3],
             scoreT1: scores[0], scoreT2: scores[1],
@@ -863,19 +873,23 @@ async function parseAmericanoUrl({ url, venue, gender }) {
         }
       }
     }
-    const allPlayers =
-      standings.length > 0
+
+    // Gabungkan nama pemain dari Klasemen dan Match untuk menghitung total pemain
+    const allPlayers = standings.length > 0
         ? standings.map((s) => s.name)
-        : [
-            ...new Set(
-              matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2])
-            ),
-          ];
+        : [...new Set(matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
+
     return respond(200, {
-      success: true, sessionName, sourceUrl: url,
-      playerCount: allPlayers.length, matchCount: matches.length,
-      players: allPlayers, standings, matches,
+      success: true, 
+      sessionName, 
+      sourceUrl: url,
+      playerCount: allPlayers.length, 
+      matchCount: matches.length,
+      players: allPlayers, 
+      standings, 
+      matches,
     });
+    
   } catch (err) {
     console.error("Parse error:", err);
     return respond(500, { error: `Failed to parse: ${err.message}` });
