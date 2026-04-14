@@ -796,18 +796,26 @@ async function parseAmericanoUrl({ url, venue, gender }) {
   if (!url.includes("americano-padel.com/r/"))
     return respond(400, { error: "Only americano-padel.com URLs supported" });
   try {
-    const https = require("https");
     const fetchUrl = url.includes("?ln=") ? url : `${url}?ln=en`;
-    const html = await new Promise((resolve, reject) => {
-      https
-        .get(fetchUrl, { headers: { "User-Agent": "Trekkr/3.0" } }, (res) => {
-          let data = "";
-          res.on("data", (chunk) => (data += chunk));
-          res.on("end", () => resolve(data));
-          res.on("error", reject);
-        })
-        .on("error", reject);
+    
+    // Menggunakan fetch untuk handle redirect & menyamarkan bot
+    const response = await fetch(fetchUrl, {
+      headers: { 
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+      }
     });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+
+    const html = await response.text();
+
+    console.log("=== DEBUG HTML DARI AMERICANO ===");
+    console.log(html.substring(0, 1500)); 
+    console.log("=================================");
+
     const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
     const sessionName = titleMatch ? titleMatch[1].trim() : "Imported Session";
     const standings = [];
