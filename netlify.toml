@@ -14,16 +14,19 @@
   from = "https://venue.trekkr.online/*"
   to = "/venue/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "https://admin.trekkr.online/*"
   to = "/admin/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "https://superadmin.trekkr.online/*"
   to = "/superadmin/:splat"
   status = 200
+  force = true
 
 # ── SPA fallbacks ──
 [[redirects]]
@@ -34,4 +37,14 @@
 [[redirects]]
   from = "/venue/*"
   to = "/venue/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/superadmin/*"
+  to = "/superadmin/index.html"
   status = 200
