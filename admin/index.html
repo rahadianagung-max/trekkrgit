@@ -46,7 +46,7 @@ footer span{color:var(--lime)}
 </style>
 </head>
 <body>
-  <datalist id="existing-players"></datalist>
+<datalist id="existing-players"></datalist>
 <div class="wrap">
   <div id="loginScreen">
     <div class="login-card">
@@ -125,9 +125,9 @@ async function parseUrl(){
           <div class="gender-toggle"><div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div><div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div><div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div></div>
           <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button></div>
           <input type="hidden" id="match-${matchCount}-gender" value="M">
-          <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" value="${m.p1t1}"><input class="field-input" id="match-${matchCount}-p2t1" value="${m.p2t1}"><input class="field-input" id="match-${matchCount}-s1" type="number" value="${m.scoreT1}" min="0"></div>
+          <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" value="${m.p1t1}" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t1" value="${m.p2t1}" list="existing-players"><input class="field-input" id="match-${matchCount}-s1" type="number" value="${m.scoreT1}" min="0"></div>
           <div class="vs-row">VS</div>
-          <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" value="${m.p1t2}"><input class="field-input" id="match-${matchCount}-p2t2" value="${m.p2t2}"><input class="field-input" id="match-${matchCount}-s2" type="number" value="${m.scoreT2}" min="0"></div>`;
+          <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" value="${m.p1t2}" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t2" value="${m.p2t2}" list="existing-players"><input class="field-input" id="match-${matchCount}-s2" type="number" value="${m.scoreT2}" min="0"></div>`;
         document.getElementById('matchEntries').appendChild(e);
       });
       st.textContent=`✓ Parsed "${r.sessionName}" — ${r.matchCount} matches, ${r.playerCount} players. Review & submit below.`;
@@ -137,16 +137,15 @@ async function parseUrl(){
 }
 
 function addMatchEntry(){
-  <input type="text" id="match-${matchCount}-p1t1" placeholder="P1" list="existing-players">
   matchCount++;const c=document.getElementById('matchEntries'),e=document.createElement('div');
   e.className='match-entry';e.id=`match-${matchCount}`;
   e.innerHTML=`<div class="match-header"><span class="match-num">MATCH #${matchCount}</span>
     <div class="gender-toggle"><div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div><div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div><div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div></div>
     <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button></div>
     <input type="hidden" id="match-${matchCount}-gender" value="M">
-    <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" placeholder="Player 1"><input class="field-input" id="match-${matchCount}-p2t1" placeholder="Player 2"><input class="field-input" id="match-${matchCount}-s1" type="number" placeholder="Score" min="0"></div>
+    <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" placeholder="Player 1" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t1" placeholder="Player 2" list="existing-players"><input class="field-input" id="match-${matchCount}-s1" type="number" placeholder="Score" min="0"></div>
     <div class="vs-row">VS</div>
-    <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" placeholder="Player 1"><input class="field-input" id="match-${matchCount}-p2t2" placeholder="Player 2"><input class="field-input" id="match-${matchCount}-s2" type="number" placeholder="Score" min="0"></div>`;
+    <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" placeholder="Player 1" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t2" placeholder="Player 2" list="existing-players"><input class="field-input" id="match-${matchCount}-s2" type="number" placeholder="Score" min="0"></div>`;
   c.appendChild(e);
 }
 
@@ -154,7 +153,6 @@ function setMG(id,g,el){document.getElementById(`match-${id}-gender`).value=g;el
 function rmMatch(id){const e=document.getElementById(`match-${id}`);if(e)e.remove()}
 
 // --- 1. RUMUS ELO TREKKR (2v2 PADEL ENGINE) ---
-// Taruh rumus ini di luar, tepat di atas fungsi submitMatches yang baru
 function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2, isProvisional = false) {
     const expected1 = 1 / (1 + Math.pow(10, (avgRatingTeam2 - avgRatingTeam1) / 400));
     const expected2 = 1 / (1 + Math.pow(10, (avgRatingTeam1 - avgRatingTeam2) / 400));
@@ -177,7 +175,7 @@ function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2
 async function submitMatches(){
   const st=document.getElementById('matchStatus'),entries=document.querySelectorAll('.match-entry'),matches=[];
   
-  // A. Mengambil data dari layar
+  // Mengambil data dari layar
   entries.forEach(entry=>{const id=entry.id.replace('match-','');
     const p1t1=document.getElementById(`match-${id}-p1t1`)?.value.trim(),p2t1=document.getElementById(`match-${id}-p2t1`)?.value.trim(),p1t2=document.getElementById(`match-${id}-p1t2`)?.value.trim(),p2t2=document.getElementById(`match-${id}-p2t2`)?.value.trim();
     const s1=parseInt(document.getElementById(`match-${id}-s1`)?.value)||0,s2=parseInt(document.getElementById(`match-${id}-s2`)?.value)||0;
@@ -199,7 +197,7 @@ async function submitMatches(){
     const elo_results = [];
     const uniquePlayers = [...new Set(matches.flatMap(m => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
 
-    // C. Set ELO awal (dari database, atau 1350 jika pemain baru)
+    // C. Set ELO awal
     uniquePlayers.forEach(p => {
         playerRatings[p] = eloMap[p] ? eloMap[p].elo : 1350;
     });
@@ -251,6 +249,7 @@ async function submitMatches(){
     st.className='status-msg error';
     st.textContent=e.message||'Failed to submit';
   }
+} // <- Penutup kurung fungsi submitMatches yang sebelumnya hilang ada di sini
 
 async function loadVenueInfo(){
   if(!adminVenue)return;
@@ -266,8 +265,6 @@ async function updateVenueInfo(){
   catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to update'}
 }
 
-window.addEventListener('load',checkAuth);
-</script>
 async function loadPlayerAutocomplete() {
     try {
         const eloData = await TrekkrAPI.getLatestElo();
@@ -281,9 +278,11 @@ async function loadPlayerAutocomplete() {
     }
 }
 
-// Panggil fungsi ini saat halaman pertama kali dibuka
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
+    checkAuth();
     loadPlayerAutocomplete();
 });
+
+</script>
 </body>
 </html>
