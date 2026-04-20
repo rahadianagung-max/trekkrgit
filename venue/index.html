@@ -76,7 +76,7 @@
 <header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online" class="brand">Trekkr</a><nav class="nav-links"><a class="nav-link" href="https://trekkr.online">National Ranking</a><a class="nav-link is-active" href="https://venue.trekkr.online">Venue</a><a class="nav-link" href="https://sportsactvd.com/trekkr" target="_blank">About</a></nav><div class="header-actions"><button class="btn btn--text" onclick="location.href='https://admin.trekkr.online'">Sign In</button></div></div></header>
 <main><div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
-<script src="trekkr-api.js"></script>
+<script src="https://trekkr.online/trekkr-api.js"></script>
 <script>
 let cG='M',cW=getCW(),vName='',vData=null;
 
@@ -147,16 +147,19 @@ async function loadRanking(){
     d.ranking.forEach((p,i)=>{
       const r=i+1;
       
-      // Menerjemahkan angka ELO pemain (p.elo) menjadi nama tier memanggil fungsi di atas
+      // Menerjemahkan angka ELO pemain (p.elo) menjadi nama tier
       const tierName = getTierName(p.elo);
+
+      // PERBAIKAN: Menghitung total played berdasarkan Win + Loss agar selalu akurat 100%
+      const truePlayed = p.w + p.l;
 
       h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
         <td><span class="v-rank${r<=3?' v-rank--1':''}">${String(r).padStart(2,'0')}</span></td>
         <td><strong>${p.name}</strong></td>
         
-        <td><span style="font-size:11px;color:var(--on-surface-variant)">${tierName}</span><br><span class="v-elo">${p.elo}</span></td>
+        <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tierName}</span><br><span class="v-elo">${p.elo}</span></td>
         
-        <td>${p.played}</td><td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
+        <td>${truePlayed}</td><td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
     });
     h+='</tbody></table></div>';c.innerHTML=h;
   }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>'}
