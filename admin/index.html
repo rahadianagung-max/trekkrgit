@@ -46,6 +46,7 @@ footer span{color:var(--lime)}
 </style>
 </head>
 <body>
+  <datalist id="existing-players"></datalist>
 <div class="wrap">
   <div id="loginScreen">
     <div class="login-card">
@@ -136,6 +137,7 @@ async function parseUrl(){
 }
 
 function addMatchEntry(){
+  <input type="text" id="match-${matchCount}-p1t1" placeholder="P1" list="existing-players">
   matchCount++;const c=document.getElementById('matchEntries'),e=document.createElement('div');
   e.className='match-entry';e.id=`match-${matchCount}`;
   e.innerHTML=`<div class="match-header"><span class="match-num">MATCH #${matchCount}</span>
@@ -151,8 +153,31 @@ function addMatchEntry(){
 function setMG(id,g,el){document.getElementById(`match-${id}-gender`).value=g;el.parentElement.querySelectorAll('.gender-opt').forEach(o=>o.classList.remove('active'));el.classList.add('active')}
 function rmMatch(id){const e=document.getElementById(`match-${id}`);if(e)e.remove()}
 
+// --- 1. RUMUS ELO TREKKR (2v2 PADEL ENGINE) ---
+// Taruh rumus ini di luar, tepat di atas fungsi submitMatches yang baru
+function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2, isProvisional = false) {
+    const expected1 = 1 / (1 + Math.pow(10, (avgRatingTeam2 - avgRatingTeam1) / 400));
+    const expected2 = 1 / (1 + Math.pow(10, (avgRatingTeam1 - avgRatingTeam2) / 400));
+
+    let actual1 = 0.5, actual2 = 0.5; 
+    const margin = Math.abs(score1 - score2);
+    if (score1 > score2) { actual1 = 1; actual2 = 0; }
+    else if (score2 > score1) { actual1 = 0; actual2 = 1; }
+
+    const mov = margin === 0 ? 1 : 1 + (margin * 0.1); 
+    const K = isProvisional ? 50 : 32;
+
+    const change1 = Math.round(K * mov * (actual1 - expected1));
+    const change2 = Math.round(K * mov * (actual2 - expected2));
+
+    return { change1, change2 };
+}
+
+// --- 2. FUNGSI SUBMIT MATCHES TERBARU ---
 async function submitMatches(){
   const st=document.getElementById('matchStatus'),entries=document.querySelectorAll('.match-entry'),matches=[];
+  
+  // A. Mengambil data dari layar
   entries.forEach(entry=>{const id=entry.id.replace('match-','');
     const p1t1=document.getElementById(`match-${id}-p1t1`)?.value.trim(),p2t1=document.getElementById(`match-${id}-p2t1`)?.value.trim(),p1t2=document.getElementById(`match-${id}-p1t2`)?.value.trim(),p2t2=document.getElementById(`match-${id}-p2t2`)?.value.trim();
     const s1=parseInt(document.getElementById(`match-${id}-s1`)?.value)||0,s2=parseInt(document.getElementById(`match-${id}-s2`)?.value)||0;
@@ -161,16 +186,71 @@ async function submitMatches(){
   });
   if(!matches.length){st.className='status-msg error';st.textContent='No valid matches. Fill all player names.';return}
   if(!adminVenue){st.className='status-msg error';st.textContent='No venue assigned to this account';return}
-  try{
-    const r=await TrekkrAPI.addVenueMatch(adminVenue,matches);
+  
+  st.className='status-msg success';
+  st.textContent='Calculating ELO and Submitting (This may take a few seconds)...';
+
+  try {
+    // B. Ambil data ELO terbaru dari server MENGGUNAKAN TrekkrAPI
+    const eloData = await TrekkrAPI.getLatestElo();
+    const eloMap = eloData.players || {};
+
+    let playerRatings = {};
+    const elo_results = [];
+    const uniquePlayers = [...new Set(matches.flatMap(m => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
+
+    // C. Set ELO awal (dari database, atau 1350 jika pemain baru)
+    uniquePlayers.forEach(p => {
+        playerRatings[p] = eloMap[p] ? eloMap[p].elo : 1350;
+    });
+
+    // D. Kalkulasi ELO per game (Berurutan)
+    matches.forEach(m => {
+        const avgEloT1 = (playerRatings[m.p1t1] + playerRatings[m.p2t1]) / 2;
+        const avgEloT2 = (playerRatings[m.p1t2] + playerRatings[m.p2t2]) / 2;
+        const isProv = (playerRatings[m.p1t1] === 1350 || playerRatings[m.p2t1] === 1350 || playerRatings[m.p1t2] === 1350 || playerRatings[m.p2t2] === 1350);
+        
+        const { change1, change2 } = calculateTrekkrELOChange(avgEloT1, avgEloT2, m.scoreT1, m.scoreT2, isProv);
+        
+        // Update rating sementara agar game berikutnya menggunakan rating baru
+        playerRatings[m.p1t1] += change1;
+        playerRatings[m.p2t1] += change1;
+        playerRatings[m.p1t2] += change2;
+        playerRatings[m.p2t2] += change2;
+        
+        elo_results.push(
+            { player: m.p1t1, new_elo: playerRatings[m.p1t1], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
+            { player: m.p2t1, new_elo: playerRatings[m.p2t1], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
+            { player: m.p1t2, new_elo: playerRatings[m.p1t2], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 },
+            { player: m.p2t2, new_elo: playerRatings[m.p2t2], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 }
+        );
+    });
+
+    // E. Simpan ke tab Sessions & ELO Log MENGGUNAKAN TrekkrAPI
+    const sessionPayload = {
+        sessionName: document.getElementById('parseUrl')?.value ? "Americano Import" : "Manual Match Entry",
+        venue: adminVenue,
+        sourceUrl: document.getElementById('parseUrl')?.value || "",
+        matchCount: matches.length,
+        playerCount: uniquePlayers.length,
+        players: uniquePlayers,
+        matches: matches,
+        elo_results: elo_results
+    };
+    
+    await TrekkrAPI.saveSession(sessionPayload);
+
+    // F. Simpan ke tab Venue_X (Untuk history per venue) MENGGUNAKAN TrekkrAPI
+    const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
+    
     st.className='status-msg success';
-    let msg=`✓ ${r.added} matches submitted!`;
-    if(r.newPlayers?.length)msg+=` New players: ${r.newPlayers.join(', ')}.`;
-    if(r.eloUpdates?.length){msg+=`\n\nELO Updates:`;r.eloUpdates.forEach(u=>{const sign=u.delta>=0?'+':'';msg+=`\n  ${u.name}: ${u.elo} (${sign}${u.delta}) [${u.w}W/${u.l}L]`})}
-    st.textContent=msg;st.style.whiteSpace='pre-line';
+    st.textContent=`✓ ${r.added} matches & ELO successfully submitted!`;
     document.getElementById('matchEntries').innerHTML='';matchCount=0;addMatchEntry();
-  }catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to submit'}
-}
+    
+  } catch(e) {
+    st.className='status-msg error';
+    st.textContent=e.message||'Failed to submit';
+  }
 
 async function loadVenueInfo(){
   if(!adminVenue)return;
@@ -188,5 +268,22 @@ async function updateVenueInfo(){
 
 window.addEventListener('load',checkAuth);
 </script>
+async function loadPlayerAutocomplete() {
+    try {
+        const eloData = await TrekkrAPI.getLatestElo();
+        const players = Object.keys(eloData.players || {});
+
+        const datalist = document.getElementById('existing-players');
+        // Masukkan semua nama pemain ke dalam daftar dropdown
+        datalist.innerHTML = players.map(p => `<option value="${p}">`).join('');
+    } catch (e) {
+        console.warn("Gagal memuat daftar pemain untuk autocomplete");
+    }
+}
+
+// Panggil fungsi ini saat halaman pertama kali dibuka
+window.addEventListener('DOMContentLoaded', () => {
+    loadPlayerAutocomplete();
+});
 </body>
 </html>
