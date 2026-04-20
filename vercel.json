@@ -1,0 +1,27 @@
+{
+  "rewrites": [
+    { 
+      "source": "/api/:match*", 
+      "destination": "/api/sheet" 
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "venue.trekkr.online" }],
+      "destination": "/venue/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "admin.trekkr.online" }],
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "superadmin.trekkr.online" }],
+      "destination": "/superadmin/index.html"
+    },
+    { "source": "/player/(.*)", "destination": "/player/index.html" },
+    { "source": "/venue/(.*)", "destination": "/venue/index.html" },
+    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
+    { "source": "/superadmin/(.*)", "destination": "/superadmin/index.html" }
+  ]
+}
