@@ -1,126 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trekkr — National Padel ELO Rankings</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>National Rankings | Trekkr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#0a0c12;--s1:#10131a;--s2:#161a24;--s3:#1c2130;--border:#1e2333;--border2:#2a3045;--lime:#d4f53c;--lime2:#b8d930;--coral:#ff5757;--text:#eeeef5;--muted:#4a5068;--muted2:#6b7394;--gold-c:#f5cc40;--silver-c:#b0b3be;--bronze-c:#e08430}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
-body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5}
-.hero-banner{background:linear-gradient(180deg,#0d1018 0%,var(--bg) 100%);border-bottom:1px solid var(--border);padding:40px 24px 32px;text-align:center;position:relative;overflow:hidden}
-.hero-banner::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(212,245,60,0.06) 0%,transparent 70%);pointer-events:none}
-.hero-logo{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:8px;color:var(--lime);text-shadow:0 0 60px rgba(212,245,60,0.25);line-height:1;text-decoration:none;display:inline-block}
-.hero-sub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--muted2);text-transform:uppercase;margin-top:6px}
-.hero-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:12px}
-nav{display:flex;justify-content:center;gap:6px;margin-top:18px;flex-wrap:wrap}
-nav a{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;padding:6px 16px;border-radius:6px;border:1px solid var(--border);color:var(--muted2);text-decoration:none;transition:all 0.15s}
-nav a:hover,nav a.active{border-color:var(--lime);color:var(--lime);background:rgba(212,245,60,0.04)}
-.container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
-.gender-toggle{display:flex;justify-content:center;gap:0;margin:32px auto 0;max-width:280px}
-.g-btn{flex:1;padding:14px 24px;text-align:center;font-family:'Oswald',sans-serif;font-size:16px;font-weight:500;letter-spacing:4px;text-transform:uppercase;cursor:pointer;border:1px solid var(--border2);background:var(--s1);color:var(--muted);transition:all 0.25s}
-.g-btn:first-child{border-radius:8px 0 0 8px}.g-btn:last-child{border-radius:0 8px 8px 0}
-.g-btn.active{background:var(--lime);color:var(--bg);border-color:var(--lime);font-weight:600}
-.filters-bar{display:flex;gap:8px;margin:24px 0 8px;flex-wrap:wrap;align-items:center}
-.filter-select,.search-input{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);outline:none;transition:border-color 0.2s;appearance:none}
-.filter-select:focus,.search-input:focus{border-color:var(--lime)}.search-input{flex:1;min-width:140px}.search-input::placeholder{color:var(--muted)}
-.select-wrap{position:relative}.select-wrap::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);pointer-events:none}
-.filter-select{padding-right:28px;cursor:pointer;min-width:110px}
-.top-grid{display:flex;flex-direction:column;gap:6px;margin:28px 0 36px}
-.hero-card{display:flex;align-items:center;gap:20px;padding:18px 22px;background:var(--s1);border:1px solid var(--border2);border-radius:14px;position:relative;overflow:hidden;cursor:pointer;transition:all 0.2s;text-decoration:none;color:inherit}
-.hero-card:hover{background:var(--s2);border-color:var(--lime);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
-.hero-card.rank-1{background:linear-gradient(135deg,var(--s1) 0%,rgba(212,245,60,0.05) 100%);border-color:rgba(212,245,60,0.3);padding:22px 26px}
-.hero-card.rank-1::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent)}
-.hero-card.rank-2{border-left:3px solid var(--silver-c)}.hero-card.rank-3{border-left:3px solid var(--bronze-c)}
-.hc-rank{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--muted);min-width:36px;text-align:center;line-height:1;flex-shrink:0}
-.rank-1 .hc-rank{color:var(--gold-c);font-size:46px}.rank-2 .hc-rank{color:var(--silver-c);font-size:38px}.rank-3 .hc-rank{color:var(--bronze-c);font-size:38px}
-.hc-photo{width:60px;height:60px;border-radius:12px;object-fit:cover;background:var(--s3);border:2px solid var(--border2);flex-shrink:0}
-.rank-1 .hc-photo{width:76px;height:76px;border-color:rgba(212,245,60,0.4)}
-.hc-info{flex:1;min-width:0}
-.hc-name{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rank-1 .hc-name{font-size:21px;color:var(--lime)}
-.hc-meta{display:flex;align-items:center;gap:8px;margin-top:3px}
-.hc-region{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase}
-.tp{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;padding:2px 8px;border-radius:3px;text-transform:uppercase}
-.tp-beginner{background:rgba(90,90,120,0.15);color:#6a6a8a}.tp-ubeginner{background:rgba(90,90,120,0.2);color:#8a8aaa}
-.tp-lbronze{background:rgba(224,132,48,0.08);color:#c07028}.tp-bronze{background:rgba(224,132,48,0.12);color:var(--bronze-c)}
-.tp-ubronze{background:rgba(224,132,48,0.16);color:#f09038}.tp-silver{background:rgba(176,179,190,0.1);color:var(--silver-c)}
-.tp-gold{background:rgba(245,204,64,0.08);color:var(--gold-c)}.tp-platinum{background:rgba(56,189,248,0.08);color:#38bdf8}
-.hc-points{text-align:right;flex-shrink:0}
-.hc-pts-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
-.hc-pts-val{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--lime);line-height:1}.rank-1 .hc-pts-val{font-size:38px}
-.hc-tier-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2);text-align:right}
-.table-section{margin:0 0 40px}
-.rank-table{width:100%;border-collapse:separate;border-spacing:0 3px}
-.rank-table th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;text-align:left;padding:8px 12px}
-.rank-table th:first-child{width:50px;text-align:center}.rank-table th:last-child{text-align:right}
-.rank-table td{padding:12px;background:var(--s1);border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
-.rank-table tr td:first-child{border-left:1px solid var(--border);border-radius:8px 0 0 8px}
-.rank-table tr td:last-child{border-right:1px solid var(--border);border-radius:0 8px 8px 0}
-.rank-table tbody tr{cursor:pointer;transition:all 0.15s}
-.rank-table tbody tr:hover td{background:var(--s2);border-color:var(--border2)}
-.rt-rank{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);text-align:center}
-.rt-player{display:flex;align-items:center;gap:12px}
-.rt-photo{width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--s3);border:1px solid var(--border);flex-shrink:0}
-.rt-name{font-family:'Oswald',sans-serif;font-weight:500;font-size:14px;letter-spacing:0.5px}
-.rt-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);letter-spacing:1px}
-.rt-points{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--lime);text-align:right}
-.load-more-wrap{text-align:center;margin:20px 0 40px}
-.btn-load{padding:12px 40px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s}
-.btn-load:hover{border-color:var(--lime);color:var(--lime);background:rgba(212,245,60,0.04)}
-.loading-state{text-align:center;padding:60px 20px;color:var(--muted2);font-family:'JetBrains Mono',monospace;font-size:12px}
-.spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--lime);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-footer{border-top:1px solid var(--border);padding:28px 24px;text-align:center}
-.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:6px;color:var(--lime);opacity:0.6;margin-bottom:8px}
-.footer-text{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
-@media(max-width:640px){.hero-logo{font-size:40px}.hero-card{gap:12px;padding:14px 16px}.hc-rank{font-size:26px;min-width:28px}.rank-1 .hc-rank{font-size:34px}.hc-photo{width:46px;height:46px}.rank-1 .hc-photo{width:56px;height:56px}.hc-name{font-size:14px}.rank-1 .hc-name{font-size:17px}.hc-pts-val{font-size:24px}.rank-1 .hc-pts-val{font-size:30px}.rank-table td{padding:10px 8px}.rt-photo{width:30px;height:30px}.rt-name{font-size:12px}}
+:root{--primary:#003ec7;--primary-container:#0052ff;--secondary:#a33800;--secondary-container:#cd4800;--on-surface:#0b1c30;--on-surface-variant:#434656;--on-inverse:#eaf1ff;--on-primary:#fff;--surface:#f8f9ff;--surface-low:#eff4ff;--surface-container:#e5eeff;--surface-high:#dce9ff;--surface-highest:#d3e4fe;--surface-lowest:#fff;--surface-inverse:#213145;--ok:#1f9d63;--warn:#c17c00;--danger:#ba1a1a;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--space-8:40px;--space-9:56px;--space-10:72px;--rhythm-section:32px;--rhythm-major:48px;--shadow-soft:0 16px 34px rgba(11,28,48,0.08);--motion-base:220ms;--ease-out:cubic-bezier(0.22,0.61,0.36,1)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,0.11),transparent 58%),radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,0.1),transparent 54%),var(--surface)}
+a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p{margin:0}
+.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+/* Header */
+.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}
+.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
+.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.03em;text-transform:uppercase}
+.nav-links{display:flex;gap:6px}
+.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base) var(--ease-out)}
+.nav-link:hover{background:var(--surface-container)}
+.nav-link.is-active{color:var(--primary);background:var(--surface-container)}
+.header-actions{display:flex;align-items:center;gap:12px}
+.btn{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base) var(--ease-out)}
+.btn--primary{background:var(--primary);color:var(--on-primary)}
+.btn--primary:hover{background:var(--primary-container)}
+.btn--ghost{background:var(--surface-container);color:var(--primary)}
+.btn--ghost:hover{background:var(--surface-highest)}
+.btn--text{background:transparent;color:var(--on-surface-variant)}
+/* Hero */
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(0,62,199,0.08),rgba(0,82,255,0.05));padding:var(--rhythm-major) 0}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(140deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),url("https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1800&q=80");background-size:cover;background-position:center;pointer-events:none}
+.hero>.container{position:relative;z-index:1}
+.hero__eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;background:var(--secondary-container);color:#fff;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
+.hero__title{margin:14px 0 12px;font-family:'Space Grotesk',sans-serif;font-size:clamp(48px,10vw,88px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
+.hero__subtitle{max-width:720px;color:var(--on-surface-variant);font-size:clamp(15px,2.4vw,20px)}
+/* Controls bar */
+.controls{margin-top:24px;background:var(--surface-lowest);border-radius:var(--radius-xl);padding:10px;box-shadow:var(--shadow-soft);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.segmented{display:flex;padding:4px;border-radius:var(--radius-lg);background:var(--surface-low)}
+.segmented__button{border:0;background:transparent;padding:10px 18px;border-radius:var(--radius-md);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--on-surface-variant);cursor:pointer}
+.segmented__button.is-active{color:var(--primary);background:var(--surface-lowest);box-shadow:0 10px 20px rgba(11,28,48,0.08)}
+.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1}
+.controls .select,.search-input{border:0;background:var(--surface-low);border-radius:var(--radius-md);padding:11px 14px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--on-surface);min-height:44px;font-size:14px}
+.controls .select{width:auto;min-width:140px}
+.search-wrap{margin-left:auto}
+.search-input{min-width:220px}
+/* Section */
+.section{margin-top:var(--rhythm-section)}.section-title{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--on-surface-variant);text-transform:uppercase}
+/* Spotlight: #1 hero + #2 #3 cards */
+.spotlight{margin-top:var(--space-4);display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+.spotlight-feature{position:relative;border-radius:var(--radius-xl);overflow:hidden;min-height:420px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:28px;cursor:pointer;transition:box-shadow var(--motion-base)}
+.spotlight-feature:hover{box-shadow:0 24px 48px rgba(0,42,155,0.22)}
+.spotlight-feature__rank{font-family:'Space Grotesk',sans-serif;font-size:92px;font-weight:900;line-height:0.8;opacity:0.24}
+.spotlight-feature__points{position:absolute;top:24px;right:24px;text-align:right}
+.points-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.82}
+.points-value{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:800}
+.spotlight-feature__name{margin-top:120px;font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,4vw,56px);line-height:0.92;letter-spacing:-0.03em;text-transform:uppercase;font-weight:900}
+.spotlight-feature__meta{margin-top:8px;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.85}
+.spotlight-col{display:grid;gap:12px}
+.player-card{border-radius:var(--radius-lg);background:var(--surface-container);padding:16px;transition:background var(--motion-base);cursor:pointer}
+.player-card:hover{background:var(--surface-highest)}
+.player-card__top{display:flex;justify-content:space-between;align-items:center}
+.player-card__rank{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:900;color:rgba(11,28,48,0.18);line-height:0.9}
+.player-card__points{text-align:right}
+.player-card__name{margin-top:12px;font-family:'Space Grotesk',sans-serif;font-size:26px;line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
+.player-card__meta{margin-top:4px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
+/* Top 4-10 grid */
+.topten-grid{margin-top:var(--space-4);display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.topten-item{background:var(--surface-low);border-radius:var(--radius-md);padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background var(--motion-base)}
+.topten-item:hover{background:var(--surface-high)}
+.topten-item__left{display:flex;gap:10px;align-items:center}
+.topten-item__rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--on-surface-variant)}
+.topten-item__name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.01em}
+.topten-item__meta{font-family:'Inter',sans-serif;font-size:10px;color:var(--on-surface-variant);letter-spacing:0.09em;text-transform:uppercase}
+.topten-item__points{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--primary)}
+/* Table 11+ */
+.table-wrap{margin-top:var(--space-4);overflow-x:auto;border-radius:var(--radius-xl);background:var(--surface-low)}
+.rank-table{width:100%;border-collapse:separate;border-spacing:0}
+.rank-table thead{background:rgba(203,219,245,0.5)}
+.rank-table th{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--on-surface-variant);text-align:left;padding:14px 18px}
+.rank-table th.th-right{text-align:right}
+.rank-table td{padding:14px 18px;font-size:14px}
+.rank-table tbody tr{background:var(--surface-lowest);cursor:pointer;transition:background var(--motion-base)}
+.rank-table tbody tr:nth-child(even){background:rgba(239,244,255,0.6)}
+.rank-table tbody tr:hover{background:var(--surface-highest)}
+.rank-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:var(--primary)}
+.rank-player{font-weight:700}
+.rank-tier{margin-top:2px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
+.rank-points{text-align:right;font-family:'Inter',sans-serif;font-weight:800}
+.load-more{margin-top:16px;display:flex;justify-content:center}
+/* States */
+.state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
+.state-icon{width:64px;height:64px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:var(--surface-high);color:var(--primary);font-size:28px;font-family:'Space Grotesk',sans-serif;font-weight:800}
+.state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
+.state-copy{margin:10px auto 24px;max-width:700px;color:var(--on-surface-variant);font-size:16px}
+/* Footer */
+.site-footer{margin-top:var(--space-10);border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
+.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase}
+.footer-links{display:flex;gap:20px;font-size:13px;color:var(--on-surface-variant)}
+.footer-copy{font-size:12px;color:var(--on-surface-variant)}
+/* Skeleton loading */
+.skeleton{border-radius:var(--radius-md);background:linear-gradient(90deg,#eff4ff 0%,#e5eeff 50%,#eff4ff 100%);background-size:220% 100%;animation:shimmer 1.3s linear infinite}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* Responsive */
+@media(max-width:1199px){.spotlight{grid-template-columns:1fr}}
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.search-wrap{margin-left:0;width:100%}.search-input{width:100%;min-width:0}.topten-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.hero{padding:var(--rhythm-section) 0}.hero__title{font-size:54px}.state-panel{padding:var(--rhythm-section) var(--space-5)}}
 </style>
 </head>
 <body>
-<div class="hero-banner">
-  <a href="https://trekkr.online" class="hero-logo">TREKKR</a>
-  <div class="hero-sub">National Padel ELO Rankings</div>
-  <div class="hero-date" id="dateLabel"></div>
-  <nav>
-    <a href="https://trekkr.online" class="active">National Ranking</a>
-    <a href="https://venue.trekkr.online">Venue</a>
-    <a href="https://sportsactvd.com/trekkr" target="_blank">About</a>
-  </nav>
-</div>
-<div class="container">
-  <div class="gender-toggle">
-    <div class="g-btn active" data-gender="M" onclick="switchGender('M')">Men</div>
-    <div class="g-btn" data-gender="F" onclick="switchGender('F')">Women</div>
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a href="https://trekkr.online" class="brand">Trekkr</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link is-active" href="https://trekkr.online">National Ranking</a>
+      <a class="nav-link" href="https://venue.trekkr.online">Venue</a>
+      <a class="nav-link" href="https://sportsactvd.com/trekkr" target="_blank">About</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn--text" type="button" onclick="location.href='https://admin.trekkr.online'">Sign In</button>
+    </div>
   </div>
-  <div class="filters-bar">
-    <div class="select-wrap"><select class="filter-select" id="levelFilter" onchange="applyFilters()"><option value="">All Levels</option><option value="Platinum">Platinum</option><option value="Gold">Gold</option><option value="Silver">Silver</option><option value="Upper Bronze">Upper Bronze</option><option value="Bronze">Bronze</option><option value="Lower Bronze">Lower Bronze</option><option value="Upper Beginner">Upper Beginner</option><option value="Beginner">Beginner</option></select></div>
-    <div class="select-wrap"><select class="filter-select" id="regionFilter" onchange="applyFilters()"><option value="">All Regions</option></select></div>
-    <div class="select-wrap"><select class="filter-select" id="venueFilter" onchange="applyFilters()"><option value="">All Venues</option></select></div>
-    <input class="search-input" id="searchInput" type="text" placeholder="Search player..." oninput="debounceSearch()">
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <span class="hero__eyebrow">Official Data</span>
+      <h1 class="hero__title">National<br/>Rankings</h1>
+      <p class="hero__subtitle">The definitive padel ELO ranking system for Indonesia. Track performance, compare players, and follow the national circuit.</p>
+
+      <div class="controls" role="group" aria-label="Ranking filters">
+        <div class="segmented" aria-label="Gender selector">
+          <button class="segmented__button is-active" data-gender="M" type="button" onclick="switchGender('M')">Men</button>
+          <button class="segmented__button" data-gender="F" type="button" onclick="switchGender('F')">Women</button>
+        </div>
+        <div class="filters">
+          <select class="select" id="levelFilter" aria-label="Level" onchange="applyFilters()">
+            <option value="">All Levels</option>
+            <option value="Platinum">Platinum</option><option value="Gold">Gold</option><option value="Silver">Silver</option>
+            <option value="Upper Bronze">Upper Bronze</option><option value="Bronze">Bronze</option><option value="Lower Bronze">Lower Bronze</option>
+            <option value="Upper Beginner">Upper Beginner</option><option value="Beginner">Beginner</option>
+          </select>
+          <select class="select" id="regionFilter" aria-label="Region" onchange="applyFilters()"><option value="">All Regions</option></select>
+          <select class="select" id="venueFilter" aria-label="Venue" onchange="applyFilters()"><option value="">All Venues</option></select>
+        </div>
+        <div class="search-wrap">
+          <input class="search-input" id="searchInput" type="search" placeholder="Search player..." aria-label="Search player" oninput="debounceSearch()"/>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div id="topSection">
+        <div class="state-panel">
+          <div class="state-icon"><div class="skeleton" style="width:28px;height:28px;border-radius:50%"></div></div>
+          <h2 class="state-title">Loading Rankings</h2>
+          <p class="state-copy">Fetching the latest ELO data from the national circuit...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tableSection" style="display:none">
+    <div class="container" id="tableContainer"></div>
+  </section>
+
+  <div id="loadMoreWrap" style="display:none">
+    <div class="container"><div class="load-more"><button class="btn btn--ghost" type="button" onclick="loadMore()">Load More</button></div></div>
   </div>
-  <div id="topSection"><div class="loading-state"><div class="spinner"></div>Loading rankings...</div></div>
-  <div class="table-section" id="tableSection" style="display:none"></div>
-  <div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="btn-load" onclick="loadMore()">Load More</button></div>
-</div>
-<footer><div class="footer-logo">TREKKR</div><div class="footer-text">NATIONAL PADEL ELO RANKINGS · SPORTS ECOSYSTEM · © 2026</div></footer>
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="footer-brand">Trekkr</div>
+    <div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a><a href="https://venue.trekkr.online">Venues</a></div>
+    <div class="footer-copy">© 2026 Trekkr. All rights reserved.</div>
+  </div>
+</footer>
+
 <script src="/trekkr-api.js"></script>
 <script>
-const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='12' fill='%231c2130'/%3E%3Ccircle cx='40' cy='30' r='14' fill='%232a3045'/%3E%3Cpath d='M14 72c0-14 12-26 26-26s26 12 26 26' fill='%232a3045'/%3E%3C/svg%3E";
 let cG='M',cP=1,sT=null;
-document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
 
-function tpc(e){if(e>=3000)return'tp-platinum';if(e>=2500)return'tp-gold';if(e>=2100)return'tp-silver';if(e>=1800)return'tp-ubronze';if(e>=1500)return'tp-bronze';if(e>=1200)return'tp-lbronze';if(e>=900)return'tp-ubeginner';return'tp-beginner'}
-function switchGender(g){cG=g;cP=1;document.querySelectorAll('.g-btn').forEach(b=>b.classList.toggle('active',b.dataset.gender===g));loadLB()}
+function switchGender(g){
+  cG=g;cP=1;
+  document.querySelectorAll('.segmented__button').forEach(b=>{
+    b.classList.toggle('is-active',b.dataset.gender===g);
+  });
+  loadLB();
+}
 function applyFilters(){cP=1;loadLB()}
 function debounceSearch(){clearTimeout(sT);sT=setTimeout(()=>{cP=1;loadLB()},300)}
 
 async function loadLB(){
-  const t=document.getElementById('topSection'),tb=document.getElementById('tableSection');
-  if(cP===1){t.innerHTML='<div class="loading-state"><div class="spinner"></div>Loading rankings...</div>';tb.style.display='none'}
+  const t=document.getElementById('topSection'),tc=document.getElementById('tableContainer'),ts=document.getElementById('tableSection');
+  if(cP===1){
+    t.innerHTML='<div class="state-panel"><div class="state-icon"><div class="skeleton" style="width:28px;height:28px;border-radius:50%"></div></div><h2 class="state-title">Loading Rankings</h2><p class="state-copy">Fetching the latest ELO data from the national circuit...</p></div>';
+    ts.style.display='none';
+  }
   const p={gender:cG,page:1,limit:100};
   const lv=document.getElementById('levelFilter').value;
   const rg=document.getElementById('regionFilter').value;
@@ -129,39 +211,78 @@ async function loadLB(){
   if(lv)p.level=lv;if(rg)p.region=rg;if(sr)p.search=sr;if(vn)p.venue=vn;
   try{
     const d=await TrekkrAPI.getNationalLeaderboard(p);
-    renderFIP(d.leaderboard);
+    renderRanking(d.leaderboard);
     if(cP===1){popReg(d.leaderboard);popVenues()}
-  }catch(e){console.warn('API err:',e);renderFIP(demo())}
+  }catch(e){
+    console.warn('API err:',e);
+    t.innerHTML='<div class="state-panel"><div class="state-icon" style="color:var(--danger)">!</div><h2 class="state-title">Connection Error</h2><p class="state-copy">Unable to load ranking data. Showing demo data.</p></div>';
+    setTimeout(()=>renderRanking(demo()),800);
+  }
 }
 
-function renderFIP(pl){
-  const t=document.getElementById('topSection'),tb=document.getElementById('tableSection'),ld=document.getElementById('loadMoreWrap');
-  if(!pl.length){t.innerHTML='<div class="loading-state">No players found</div>';tb.style.display='none';ld.style.display='none';return}
+function renderRanking(pl){
+  const t=document.getElementById('topSection'),tc=document.getElementById('tableContainer'),ts=document.getElementById('tableSection'),lm=document.getElementById('loadMoreWrap');
+  if(!pl.length){
+    t.innerHTML='<div class="state-panel"><div class="state-icon">∅</div><h2 class="state-title">No Players Found</h2><p class="state-copy">Try adjusting your filters or search term.</p></div>';
+    ts.style.display='none';lm.style.display='none';return;
+  }
   const top=pl.slice(0,10),rest=pl.slice(10);
-  let h='<div class="top-grid">';
-  top.forEach((p,i)=>{
-    const r=i+1,tn=p.level||TrekkrAPI.getTierName(p.elo),tc=tpc(p.elo),rc=r<=3?' rank-'+r:'';
-    h+=`<a href="https://trekkr.online/player/${encodeURIComponent(p.name)}" class="hero-card${rc}" style="animation:fadeUp .4s ease ${i*.05}s both">
-      <div class="hc-rank">${r}</div>
-      <img class="hc-photo" src="${p.photoUrl||DA}" alt="${p.displayName}" onerror="this.src='${DA}'">
-      <div class="hc-info"><div class="hc-name">${p.displayName||p.name}</div><div class="hc-meta"><span class="hc-region">${p.region||''}</span><span class="tp ${tc}">${tn}</span></div></div>
-      <div class="hc-points"><div class="hc-pts-label">ELO</div><div class="hc-pts-val">${p.elo}</div><div class="hc-tier-sub">${tn}</div></div></a>`;
-  });
-  h+='</div>';t.innerHTML=h;
-  if(rest.length){
-    tb.style.display='block';
-    let x='<table class="rank-table"><thead><tr><th>Rank</th><th>Player</th><th>Region</th><th style="text-align:right">ELO</th></tr></thead><tbody>';
-    rest.forEach((p,i)=>{
-      const r=11+i,tn=p.level||TrekkrAPI.getTierName(p.elo);
-      x+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .3s ease ${i*.03}s both">
-        <td><div class="rt-rank">${r}</div></td>
-        <td><div class="rt-player"><img class="rt-photo" src="${p.photoUrl||DA}" alt="${p.displayName}" onerror="this.src='${DA}'"><div><div class="rt-name">${p.displayName||p.name}</div><div class="rt-sub">${tn}</div></div></div></td>
-        <td><span class="rt-sub">${p.region||''}</span></td>
-        <td><div class="rt-points">${p.elo}</div></td></tr>`;
+  let h='';
+
+  // Top 1-3: Spotlight
+  if(top.length>=1){
+    const p1=top[0];
+    h+=`<p class="section-title">The Elite Ten</p><div class="spotlight">`;
+    h+=`<article class="spotlight-feature" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'" style="animation:fadeUp .5s ease both">
+      <div class="spotlight-feature__rank">01</div>
+      <div class="spotlight-feature__points"><div class="points-label">ELO</div><div class="points-value">${p1.elo}</div></div>
+      <h2 class="spotlight-feature__name">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
+      <p class="spotlight-feature__meta">${p1.level||TrekkrAPI.getTierName(p1.elo)} • ${p1.region||'Indonesia'}</p>
+    </article>`;
+    h+=`<div class="spotlight-col">`;
+    [1,2].forEach(i=>{
+      if(!top[i])return;
+      const p=top[i],rk=String(i+1).padStart(2,'0');
+      h+=`<article class="player-card" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .5s ease ${i*.1}s both">
+        <div class="player-card__top"><div class="player-card__rank">${rk}</div><div class="player-card__points"><div class="points-label">ELO</div><div class="points-value">${p.elo}</div></div></div>
+        <h3 class="player-card__name">${(p.displayName||p.name).replace(/ /,'<br/>')}</h3>
+        <p class="player-card__meta">${p.level||TrekkrAPI.getTierName(p.elo)} • ${p.region||'Indonesia'}</p>
+      </article>`;
     });
-    x+='</tbody></table>';tb.innerHTML=x;
-  }else tb.style.display='none';
-  ld.style.display=pl.length>30?'block':'none';
+    h+=`</div></div>`;
+  }
+
+  // Top 4-10: Grid
+  if(top.length>3){
+    h+=`<div class="topten-grid">`;
+    for(let i=3;i<top.length;i++){
+      const p=top[i],rk=String(i+1).padStart(2,'0');
+      h+=`<article class="topten-item" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .4s ease ${(i-3)*.06}s both">
+        <div class="topten-item__left"><div class="topten-item__rank">${rk}</div><div><div class="topten-item__name">${p.displayName||p.name}</div><div class="topten-item__meta">${p.region||'Indonesia'}</div></div></div>
+        <div class="topten-item__points">${p.elo}</div>
+      </article>`;
+    }
+    h+=`</div>`;
+  }
+  t.innerHTML=h;
+
+  // Table 11+
+  if(rest.length){
+    ts.style.display='block';
+    let x=`<p class="section-title">National Circuit ${top.length+1}–${top.length+rest.length}</p>
+    <div class="table-wrap"><table class="rank-table"><thead><tr><th>Rank</th><th>Player</th><th>Region</th><th class="th-right">ELO</th></tr></thead><tbody>`;
+    rest.forEach((p,i)=>{
+      const r=top.length+1+i,tn=p.level||TrekkrAPI.getTierName(p.elo);
+      x+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .3s ease ${i*.03}s both">
+        <td><span class="rank-num">${r}</span></td>
+        <td><div class="rank-player">${p.displayName||p.name}</div><div class="rank-tier">${tn}</div></td>
+        <td>${p.region||''}</td>
+        <td class="rank-points">${p.elo}</td></tr>`;
+    });
+    x+=`</tbody></table></div>`;
+    tc.innerHTML=x;
+  }else ts.style.display='none';
+  lm.style.display=pl.length>30?'block':'none';
 }
 
 function loadMore(){cP++;loadLB()}
