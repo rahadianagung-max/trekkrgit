@@ -30,7 +30,6 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-const { google } = require("googleapis");
 
 // ... (Biarkan fungsi getAuth, getSheets, dan TABS tetap sama persis) ...
 
