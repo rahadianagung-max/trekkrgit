@@ -1,18 +1,37 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/sheet"
+    },
+    
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "venue.trekkr.online" }],
+      "destination": "/venue/index.html"
     },
     {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "venue.trekkr.online" }],
       "destination": "/venue/$1"
     },
+
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "admin.trekkr.online" }],
+      "destination": "/admin/index.html"
+    },
     {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "admin.trekkr.online" }],
       "destination": "/admin/$1"
+    },
+
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "superadmin.trekkr.online" }],
+      "destination": "/superadmin/index.html"
     },
     {
       "source": "/(.*)",
