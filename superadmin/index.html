@@ -65,6 +65,7 @@ footer span{color:var(--lime)}
       <button class="a-tab" onclick="switchTab('venues')">Venues</button>
       <button class="a-tab" onclick="switchTab('admins')">Admins</button>
       <button class="a-tab" onclick="switchTab('sessions')">Sessions</button>
+      <button class="a-tab" onclick="switchTab('settings')">Site Settings</button>
     </div>
     <!-- PLAYERS -->
     <div class="tab-pane active" id="tab-players">
@@ -107,6 +108,32 @@ footer span{color:var(--lime)}
     <div class="tab-pane" id="tab-sessions">
       <div class="section"><div class="section-title">ALL SESSIONS</div><table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Venue</th><th>Players</th><th>Rounds</th><th>Date</th></tr></thead><tbody id="sessionsTbody"></tbody></table></div>
     </div>
+
+    <!-- SITE SETTINGS TAB -->
+    <div class="tab-pane" id="tab-settings">
+      <div class="section">
+        <div class="section-title">NATIONAL RANKING PAGE</div>
+        <div class="field"><label class="field-label">Eyebrow Text</label><input class="field-input" id="st-hero-eyebrow" placeholder="Official Data"></div>
+        <div class="field"><label class="field-label">Hero Title (use \n for line break)</label><input class="field-input" id="st-hero-title" placeholder="National\nRankings"></div>
+        <div class="field"><label class="field-label">Hero Subtitle</label><textarea class="field-textarea" id="st-hero-subtitle" placeholder="The definitive padel ELO ranking system..."></textarea></div>
+        <div class="field"><label class="field-label">Hero Background Image URL</label><input class="field-input" id="st-hero-image" placeholder="https://images.unsplash.com/..."></div>
+      </div>
+      <div class="section">
+        <div class="section-title">VENUE DIRECTORY PAGE</div>
+        <div class="field"><label class="field-label">Eyebrow Text</label><input class="field-input" id="st-venue-eyebrow" placeholder="Official Listings"></div>
+        <div class="field"><label class="field-label">Hero Title</label><input class="field-input" id="st-venue-title" placeholder="Venue\nDirectory"></div>
+        <div class="field"><label class="field-label">Hero Subtitle</label><textarea class="field-textarea" id="st-venue-subtitle" placeholder="Discover verified courts..."></textarea></div>
+        <div class="field"><label class="field-label">Hero Background Image URL</label><input class="field-input" id="st-venue-image" placeholder="https://images.unsplash.com/..."></div>
+      </div>
+      <div class="section">
+        <div class="section-title">PLAYER PASSPORT PAGE</div>
+        <div class="field"><label class="field-label">Label Badge Text</label><input class="field-input" id="st-passport-label" placeholder="Trekkr Passport"></div>
+        <div class="field"><label class="field-label">Page Title</label><input class="field-input" id="st-passport-title" placeholder="Player Passport"></div>
+        <div class="field"><label class="field-label">Header Background Image URL</label><input class="field-input" id="st-passport-image" placeholder="https://images.unsplash.com/..."></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save All Settings →</button>
+      <div class="status-msg" id="settingsStatus"></div>
+    </div>
   </div>
   <footer>TREKKR · <span>SUPERADMIN</span> · © 2026</footer>
 </div>
@@ -121,7 +148,7 @@ function showDash(s){document.getElementById('loginScreen').style.display='none'
 function doLogout(){TrekkrAPI.logout();location.reload()}
 function switchTab(id){document.querySelectorAll('.a-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');document.getElementById(`tab-${id}`).classList.add('active')}
 
-async function loadAll(){await Promise.all([loadPlayers(),loadVenues(),loadAdmins(),loadSessions()])}
+async function loadAll(){await Promise.all([loadPlayers(),loadVenues(),loadAdmins(),loadSessions(),loadSettings()])}
 
 async function loadPlayers(){
   try{const d=await TrekkrAPI.getPlayers(),e=await TrekkrAPI.getLatestElo();
@@ -180,6 +207,31 @@ function editVenue(name){
 async function loadAdmins(){try{const d=await TrekkrAPI.getAdmins();document.getElementById('adminsTbody').innerHTML=d.admins.map(a=>`<tr><td><strong>${a.username}</strong></td><td><span class="badge ${a.role==='superadmin'?'badge-lime':'badge-muted'}">${a.role}</span></td><td>${a.venue||'—'}</td></tr>`).join('')}catch(e){console.warn(e)}}
 async function addAdmin(){const st=document.getElementById('addAdminStatus'),u=document.getElementById('aa-user').value.trim(),p=document.getElementById('aa-pass').value;if(!u||!p){st.className='status-msg error';st.textContent='Username and password required';return}try{await TrekkrAPI.addAdmin({username:u,password:p,role:document.getElementById('aa-role').value,venue:document.getElementById('aa-venue').value});st.className='status-msg success';st.textContent=`✓ "${u}" created`;document.getElementById('aa-user').value='';document.getElementById('aa-pass').value='';await loadAdmins()}catch(e){st.className='status-msg error';st.textContent=e.message}}
 async function loadSessions(){try{const d=await TrekkrAPI.listSessions();document.getElementById('sessionsTbody').innerHTML=d.sessions.map(s=>`<tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px">${s.id}</td><td>${s.name}</td><td>${s.venue||'—'}</td><td>${s.playerCount||'—'}</td><td>${s.roundCount||'—'}</td><td style="font-size:10px">${s.createdAt?new Date(s.createdAt).toLocaleDateString():''}</td></tr>`).join('')}catch(e){console.warn(e)}}
+
+// Site Settings
+const SETTINGS_KEYS=['hero_eyebrow','hero_title','hero_subtitle','hero_image','venue_eyebrow','venue_title','venue_subtitle','venue_image','passport_label','passport_title','passport_image'];
+async function loadSettings(){
+  try{
+    const d=await TrekkrAPI.getSettings();
+    const st=d.settings||{};
+    SETTINGS_KEYS.forEach(k=>{
+      const el=document.getElementById('st-'+k.replace(/_/g,'-'));
+      if(el)el.value=st[k]||'';
+    });
+  }catch(e){console.warn('Could not load settings:',e)}
+}
+async function saveSettings(){
+  const st=document.getElementById('settingsStatus');
+  const settings={};
+  SETTINGS_KEYS.forEach(k=>{
+    const el=document.getElementById('st-'+k.replace(/_/g,'-'));
+    if(el&&el.value.trim())settings[k]=el.value.trim();
+  });
+  try{
+    await TrekkrAPI.updateSettings(settings);
+    st.className='status-msg success';st.textContent='✓ Settings saved! Changes will appear on public pages immediately.';
+  }catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to save settings'}
+}
 
 window.addEventListener('load',checkAuth);
 </script>

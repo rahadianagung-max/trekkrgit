@@ -114,6 +114,9 @@ exports.handler = async (event) => {
     if (path === "admins" && method === "GET") return await getAdmins();
     if (path === "admins" && method === "POST") return await addAdmin(body);
 
+    if (path === "settings" && method === "GET") return await getSettings();
+    if (path === "settings" && method === "PUT") return await updateSettings(body);
+
     return respond(404, { error: "Not found", route: path });
   } catch (err) {
     console.error("Function error:", err);
@@ -1014,6 +1017,69 @@ async function addAdmin(body) {
       values: [[username, password, role || "venue_admin", venue || "", now]],
     },
   });
+  return respond(200, { success: true });
+}
+
+// ── SITE SETTINGS ──
+// Settings tab: Key | Value
+// Keys: hero_eyebrow, hero_title, hero_subtitle, hero_image,
+//       venue_eyebrow, venue_title, venue_subtitle, venue_image,
+//       passport_label, passport_title, passport_subtitle, passport_image
+async function getSettings() {
+  const sheets = getSheets();
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "Settings!A2:B",
+    });
+    const rows = res.data.values || [];
+    const settings = {};
+    rows.forEach((r) => { if (r[0]) settings[r[0]] = r[1] || ""; });
+    return respond(200, { settings });
+  } catch (e) {
+    // Settings tab may not exist yet — return defaults
+    return respond(200, { settings: {} });
+  }
+}
+
+async function updateSettings(body) {
+  const { settings } = body;
+  if (!settings) return respond(400, { error: "settings object required" });
+  const sheets = getSheets();
+  // Ensure Settings tab exists
+  try {
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const exists = spreadsheet.data.sheets.some((s) => s.properties.title === "Settings");
+    if (!exists) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: "Settings" } } }] },
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: "Settings!A1:B1",
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [["Key", "Value"]] },
+      });
+    }
+  } catch (e) { console.error("Settings tab check error:", e.message); }
+  // Write all settings as key-value rows
+  const rows = Object.entries(settings).map(([k, v]) => [k, v]);
+  // Clear existing and write fresh
+  try {
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: SHEET_ID,
+      range: "Settings!A2:B",
+    });
+  } catch (e) { /* first time, nothing to clear */ }
+  if (rows.length > 0) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `Settings!A2:B${rows.length + 1}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: rows },
+    });
+  }
   return respond(200, { success: true });
 }
 

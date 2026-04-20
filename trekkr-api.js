@@ -150,6 +150,16 @@ const TrekkrAPI = (() => {
       });
     },
 
+    async getSettings() {
+      return request("settings");
+    },
+    async updateSettings(settings) {
+      return request("settings", {
+        method: "PUT",
+        body: JSON.stringify({ settings }),
+      });
+    },
+
     getTierName(elo) {
       if (elo >= 3000) return "Platinum";
       if (elo >= 2500) return "Gold";

@@ -30,7 +30,7 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
 .btn--text{background:transparent;color:var(--on-surface-variant)}
 /* Hero */
 .hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(0,62,199,0.08),rgba(0,82,255,0.05));padding:var(--rhythm-major) 0}
-.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(140deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),url("https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1800&q=80");background-size:cover;background-position:center;pointer-events:none}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(140deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),var(--hero-bg,url("https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1800&q=80"));background-size:cover;background-position:center;pointer-events:none}
 .hero>.container{position:relative;z-index:1}
 .hero__eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;background:var(--secondary-container);color:#fff;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
 .hero__title{margin:14px 0 12px;font-family:'Space Grotesk',sans-serif;font-size:clamp(48px,10vw,88px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
@@ -128,9 +128,9 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
 <main>
   <section class="hero">
     <div class="container">
-      <span class="hero__eyebrow">Official Data</span>
-      <h1 class="hero__title">National<br/>Rankings</h1>
-      <p class="hero__subtitle">The definitive padel ELO ranking system for Indonesia. Track performance, compare players, and follow the national circuit.</p>
+      <span class="hero__eyebrow" id="heroEyebrow">Official Data</span>
+      <h1 class="hero__title" id="heroTitle">National<br/>Rankings</h1>
+      <p class="hero__subtitle" id="heroSubtitle">The definitive padel ELO ranking system for Indonesia. Track performance, compare players, and follow the national circuit.</p>
 
       <div class="controls" role="group" aria-label="Ranking filters">
         <div class="segmented" aria-label="Gender selector">
@@ -312,7 +312,17 @@ function demo(){
   return(cG==='M'?m:f).map((n,i)=>({name:n,displayName:n,elo:1389-i*3,level:"Lower Bronze",gender:cG,region:["Jakarta","Tangerang","Bekasi","Bintaro"][i%4],photoUrl:"",clubs:""}));
 }
 
-window.addEventListener('load',loadLB);
+window.addEventListener('load',async()=>{
+  try{
+    const s=await TrekkrAPI.getSettings();
+    const st=s.settings||{};
+    if(st.hero_eyebrow)document.getElementById('heroEyebrow').textContent=st.hero_eyebrow;
+    if(st.hero_title)document.getElementById('heroTitle').innerHTML=st.hero_title.replace(/\\n/g,'<br/>');
+    if(st.hero_subtitle)document.getElementById('heroSubtitle').textContent=st.hero_subtitle;
+    if(st.hero_image){const hero=document.querySelector('.hero');hero.style.setProperty('--hero-bg','url('+st.hero_image+')')}
+  }catch(e){console.warn('Settings not loaded:',e)}
+  loadLB();
+});
 </script>
 </body>
 </html>
