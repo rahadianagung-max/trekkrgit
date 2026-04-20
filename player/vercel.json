@@ -1,8 +1,12 @@
 {
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+    { 
+      "source": "/api/(.*)", 
+      "destination": "/api/sheet" 
+    },
+    { 
+      "source": "/player/(.*)", 
+      "destination": "/player/index.html" 
     }
   ]
 }
