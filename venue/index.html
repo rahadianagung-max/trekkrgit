@@ -1,463 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trekkr — Venue Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Venue | Trekkr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#0a0c12;--s1:#10131a;--s2:#161a24;--s3:#1c2130;--border:#1e2333;--border2:#2a3045;--lime:#d4f53c;--lime2:#b8d930;--coral:#ff5757;--text:#eeeef5;--muted:#4a5068;--muted2:#6b7394}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
-.wrap{max-width:680px;margin:0 auto;padding:20px 20px 80px;position:relative;z-index:1}
-.page-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;color:var(--lime);margin-bottom:6px}
-.page-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:24px}
-.login-card{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:32px;max-width:380px;margin:60px auto}
-.login-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--lime);margin-bottom:20px;text-align:center}
-.field{margin-bottom:14px}
-.field-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
-.field-input,.field-select,.field-textarea{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color 0.2s}
-.field-input:focus,.field-textarea:focus{border-color:var(--lime)}.field-input::placeholder,.field-textarea::placeholder{color:var(--muted)}
-.field-textarea{min-height:60px;resize:vertical}
-.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;transition:all 0.15s}
-.btn-primary{background:var(--lime);color:var(--bg)}.btn-primary:hover{background:var(--lime2)}
-.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted2);font-size:12px}.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
-.btn-sm{padding:6px 14px;font-size:11px}.btn-full{width:100%}
-.section{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
-.section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section-title .dot{width:6px;height:6px;border-radius:50%;background:var(--lime)}
-.match-entry{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.match-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
-.match-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--lime);letter-spacing:2px}
-.team-row{display:grid;grid-template-columns:1fr 1fr 60px;gap:8px;align-items:end;margin-bottom:8px}
-.team-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:4px}
-.vs-row{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--muted);margin:6px 0;letter-spacing:4px}
-.gender-toggle{display:flex;gap:0}
-.gender-opt{padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border:1px solid var(--border);background:var(--s3);color:var(--muted);cursor:pointer;transition:all 0.15s}
-.gender-opt:first-child{border-radius:4px 0 0 4px}.gender-opt:last-child{border-radius:0 4px 4px 0}
-.gender-opt.active{background:rgba(212,245,60,0.1);border-color:rgba(212,245,60,0.3);color:var(--lime)}
-.status-msg{padding:10px 14px;border-radius:8px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none}
-.status-msg.success{display:block;background:rgba(212,245,60,0.08);border:1px solid rgba(212,245,60,0.3);color:var(--lime)}
-.status-msg.error{display:block;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.3);color:var(--coral)}
-.logout-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.logout-bar .user-info{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)}
-footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
-footer span{color:var(--lime)}
+:root{--primary:#003ec7;--primary-container:#0052ff;--secondary-container:#cd4800;--on-surface:#0b1c30;--on-surface-variant:#434656;--on-inverse:#eaf1ff;--on-primary:#fff;--surface:#f8f9ff;--surface-low:#eff4ff;--surface-container:#e5eeff;--surface-high:#dce9ff;--surface-highest:#d3e4fe;--surface-lowest:#fff;--surface-inverse:#213145;--ok:#1f9d63;--danger:#ba1a1a;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--rhythm-section:32px;--rhythm-major:48px;--shadow-soft:0 16px 34px rgba(11,28,48,0.08);--motion-base:220ms;--ease-out:cubic-bezier(0.22,0.61,0.36,1)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,0.11),transparent 58%),radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,0.1),transparent 54%),var(--surface)}a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p{margin:0}
+.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.03em;text-transform:uppercase}.nav-links{display:flex;gap:6px}.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base)}.nav-link:hover{background:var(--surface-container)}.nav-link.is-active{color:var(--primary);background:var(--surface-container)}.header-actions{display:flex;gap:12px}.btn{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base)}.btn--primary{background:var(--primary);color:var(--on-primary)}.btn--primary:hover{background:var(--primary-container)}.btn--ghost{background:var(--surface-container);color:var(--primary)}.btn--text{background:transparent;color:var(--on-surface-variant)}
+/* Venue hero */
+.v-hero{position:relative;overflow:hidden;background:linear-gradient(140deg,rgba(0,62,199,0.08),rgba(205,72,0,0.08));padding:var(--rhythm-major) 0}
+.v-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(145deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),var(--v-bg,url("https://images.unsplash.com/photo-1471295253337-3ceaaedca402?auto=format&fit=crop&w=1800&q=80"));background-size:cover;background-position:center;pointer-events:none}
+.v-hero>.container{position:relative;z-index:1}
+.v-eyebrow{display:inline-flex;padding:5px 12px;border-radius:999px;background:var(--secondary-container);color:#fff;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
+.v-title{margin-top:14px;font-family:'Space Grotesk',sans-serif;font-size:clamp(48px,10vw,88px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
+.v-subtitle{margin-top:12px;max-width:740px;color:var(--on-surface-variant);font-size:clamp(15px,2.3vw,20px)}
+/* Venue grid */
+.section{margin-top:var(--rhythm-section)}.section-title{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--on-surface-variant);text-transform:uppercase}
+.v-grid{margin-top:16px;display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.v-card{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface-low);box-shadow:var(--shadow-soft);transition:transform var(--motion-base),background var(--motion-base);cursor:pointer}
+.v-card:hover{transform:translateY(-2px);background:var(--surface-high)}
+.v-card__body{padding:18px;display:grid;gap:8px}
+.v-card__region{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
+.v-card__title{font-family:'Space Grotesk',sans-serif;font-size:24px;line-height:0.94;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
+.v-card__meta{color:var(--on-surface-variant);font-size:13px}
+.v-card__footer{margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.v-card__init{width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary);color:#fff;display:grid;place-items:center;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:900;flex-shrink:0}
+/* Venue detail */
+.vd-hero{position:relative;overflow:hidden;min-height:280px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:var(--rhythm-major) 0}
+.vd-hero>.container{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
+.vd-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(36px,6vw,64px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
+.vd-subtitle{margin-top:8px;font-size:14px;opacity:0.8}
+.vd-info{background:rgba(255,255,255,0.08);border-radius:var(--radius-lg);padding:18px;min-width:240px;backdrop-filter:blur(8px)}
+.vd-info-title{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7}
+.vd-info-line{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}
+.vd-info-kpi{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vd-info-label{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.6}
+.vd-info-value{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;margin-top:2px}
+/* Controls */
+.vd-controls{padding:16px 0;border-bottom:1px solid rgba(115,118,136,0.12);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.vd-week{display:flex;align-items:center;gap:12px}
+.vd-week-btn{width:36px;height:36px;border:0;border-radius:var(--radius-md);background:var(--surface-container);color:var(--primary);font-size:16px;font-weight:700;cursor:pointer}
+.vd-week-label{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800}
+.seg-control{background:var(--surface-container);border-radius:var(--radius-md);padding:4px;display:flex;gap:4px}
+.seg-control__item{flex:1;border:0;background:transparent;border-radius:8px;min-height:36px;padding:0 16px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);cursor:pointer}
+.seg-control__item.is-active{color:var(--primary);background:var(--surface-lowest)}
+/* Ranking table */
+.data-table-wrap{margin-top:16px;background:var(--surface-low);border-radius:var(--radius-lg);overflow:auto}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--on-surface-variant);background:rgba(203,219,245,0.5);padding:12px 14px}
+.data-table td{padding:14px;background:var(--surface-lowest);font-size:14px}
+.data-table tr:nth-child(even) td{background:rgba(239,244,255,0.65)}
+.data-table tr:hover td{background:var(--surface-highest)}
+.data-table tr{cursor:pointer;transition:background var(--motion-base)}
+.v-rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--primary)}
+.v-rank--1{color:var(--secondary-container)}
+.v-elo{font-family:'Inter',sans-serif;font-weight:700;color:var(--primary)}
+/* States */
+.state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
+.state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
+.state-copy{margin:10px auto 0;max-width:700px;color:var(--on-surface-variant);font-size:16px}
+/* Footer */
+.site-footer{margin-top:72px;border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
+.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase}
+.footer-links{display:flex;gap:20px;font-size:13px;color:var(--on-surface-variant)}
+.footer-copy{font-size:12px;color:var(--on-surface-variant)}
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.v-grid{grid-template-columns:repeat(2,1fr)}.vd-hero>.container{grid-template-columns:1fr}}
+@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.v-grid{grid-template-columns:1fr}.vd-hero>.container{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<datalist id="existing-players"></datalist>
-<div class="wrap">
-  <div id="loginScreen">
-    <div class="login-card">
-      <div class="login-title">VENUE ADMIN</div>
-      <div class="field">
-        <label class="field-label">Username</label>
-        <input class="field-input" id="loginUser" type="text" placeholder="admin">
-      </div>
-      <div class="field">
-        <label class="field-label">Password</label>
-        <input class="field-input" id="loginPass" type="password" placeholder="••••••">
-      </div>
-      <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
-      <div class="status-msg" id="loginStatus"></div>
-    </div>
-  </div>
-
-  <div id="adminScreen" style="display:none">
-    <div class="page-title">VENUE ADMIN</div>
-    <div class="page-sub" id="adminVenueLabel">MANAGING: —</div>
-    <div class="logout-bar">
-      <span class="user-info" id="userLabel">—</span>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
-    </div>
-
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>IMPORT FROM URL</div>
-      <div class="field">
-        <label class="field-label">Americano-Padel.com URL</label>
-        <input class="field-input" id="parseUrl" type="text" placeholder="https://americano-padel.com/r/...">
-      </div>
-      <button class="btn btn-primary" onclick="parseUrl()">Parse & Import →</button>
-      <div class="status-msg" id="parseStatus"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>MANUAL MATCH ENTRY</div>
-      <div id="matchEntries"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn btn-ghost btn-sm" onclick="addMatchEntry()">+ Add Match</button>
-        <button class="btn btn-primary" onclick="submitMatches()">Submit All Matches →</button>
-      </div>
-      <div class="status-msg" id="matchStatus"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>EDIT VENUE INFO</div>
-      <div class="field">
-        <label class="field-label">Schedule</label>
-        <textarea class="field-textarea" id="venueSchedule" placeholder="Every Monday 8am-10am"></textarea>
-      </div>
-      <div class="field">
-        <label class="field-label">Prize Pool</label>
-        <input class="field-input" id="venuePrize" placeholder="IDR 2.5 Million">
-      </div>
-      <div class="field">
-        <label class="field-label">Contact</label>
-        <input class="field-input" id="venueContact" placeholder="@instagram or phone">
-      </div>
-      <button class="btn btn-primary" onclick="updateVenueInfo()">Save Changes →</button>
-      <div class="status-msg" id="venueStatus"></div>
-    </div>
-  </div>
-  <footer>TREKKR · <span>VENUE ADMIN</span> · © 2026</footer>
-</div>
-
-<script src="https://trekkr.online/trekkr-api.js"></script>
-
+<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online" class="brand">Trekkr</a><nav class="nav-links"><a class="nav-link" href="https://trekkr.online">National Ranking</a><a class="nav-link is-active" href="https://venue.trekkr.online">Venue</a><a class="nav-link" href="https://sportsactvd.com/trekkr" target="_blank">About</a></nav><div class="header-actions"><button class="btn btn--text" onclick="location.href='https://admin.trekkr.online'">Sign In</button></div></div></header>
+<main><div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
+<footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
+<script src="trekkr-api.js"></script>
 <script>
-let matchCount = 0;
-let adminVenue = '';
+let cG='M',cW=getCW(),vName='',vData=null;
 
-function checkAuth() {
-    const s = TrekkrAPI.getSession();
-    if (s.token && (s.role === 'venue_admin' || s.role === 'superadmin')) {
-        adminVenue = s.venue;
-        showDash(s);
-    }
+function getCW(){const d=new Date(),s=new Date(d.getFullYear(),0,1),df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;return Math.ceil((df/86400000+s.getDay()+1)/7)}
+function switchGender(g){cG=g;document.querySelectorAll('.seg-control__item').forEach(t=>t.classList.toggle('is-active',t.dataset.gender===g));loadRanking()}
+function changeWeek(d){cW+=d;if(cW<1)cW=1;document.getElementById('weekLabel').textContent=`Week ${cW}`;loadRanking()}
+
+// --- FUNGSI MENGUBAH ANGKA ELO MENJADI TEKS LEVEL (TIER) ---
+function getTierName(elo) {
+  if (elo >= 3000) return "Platinum";
+  if (elo >= 2500) return "Gold";
+  if (elo >= 2100) return "Silver";
+  if (elo >= 1800) return "Upper Bronze";
+  if (elo >= 1500) return "Bronze";
+  if (elo >= 1200) return "Lower Bronze";
+  if (elo >= 900) return "Upper Beginner";
+  return "Beginner";
 }
 
-async function doLogin() {
-    const u = document.getElementById('loginUser').value;
-    const p = document.getElementById('loginPass').value;
-    const st = document.getElementById('loginStatus');
-    
-    try {
-        const d = await TrekkrAPI.login(u, p);
-        if (d.role !== 'venue_admin' && d.role !== 'superadmin') {
-            st.className = 'status-msg error';
-            st.textContent = 'Access denied';
-            return;
-        }
-        adminVenue = d.venue;
-        showDash(d);
-    } catch (e) {
-        st.className = 'status-msg error';
-        st.textContent = e.message || 'Login failed';
-    }
+async function init(){
+  const p=window.location.pathname.replace(/\/$/,'').split('/').filter(Boolean);
+  vName=p.length>0&&p[0]!=='venue'?decodeURIComponent(p[p.length-1]):(p.length>1?decodeURIComponent(p[1]):'');
+  if(!vName||vName==='venue'){await showVenueList();return}
+  document.title=`${vName} — Trekkr Venue`;await loadVenueDetail();
 }
 
-function showDash(s) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminScreen').style.display = 'block';
-    document.getElementById('adminVenueLabel').textContent = `MANAGING: ${adminVenue || 'ALL'}`;
-    document.getElementById('userLabel').textContent = `Logged in as ${s.username || ''}`;
-    addMatchEntry();
-    loadVenueInfo();
-}
-
-function doLogout() {
-    TrekkrAPI.logout();
-    location.reload();
-}
-
-async function parseUrl() {
-    const url = document.getElementById('parseUrl').value;
-    const st = document.getElementById('parseStatus');
-    
-    if (!url) {
-        st.className = 'status-msg error';
-        st.textContent = 'Please enter a URL';
-        return;
-    }
-    
-    if (!url.includes('americano-padel.com/r/')) {
-        st.className = 'status-msg error';
-        st.textContent = 'Only americano-padel.com URLs supported';
-        return;
-    }
-    
-    st.className = 'status-msg success';
-    st.textContent = 'Fetching and parsing...';
-    
-    try {
-        const r = await TrekkrAPI.parseUrl(url, adminVenue, 'M');
-        if (!r.success) {
-            st.className = 'status-msg error';
-            st.textContent = r.error || 'Parse failed';
-            return;
-        }
-        if (r.matches && r.matches.length > 0) {
-            document.getElementById('matchEntries').innerHTML = '';
-            matchCount = 0;
-            
-            r.matches.forEach(m => {
-                matchCount++;
-                const e = document.createElement('div');
-                e.className = 'match-entry';
-                e.id = `match-${matchCount}`;
-                e.innerHTML = `
-                  <div class="match-header">
-                    <span class="match-num">R${m.round || matchCount} C${m.court || 1}</span>
-                    <div class="gender-toggle">
-                      <div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div>
-                      <div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div>
-                      <div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div>
-                    </div>
-                    <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button>
-                  </div>
-                  <input type="hidden" id="match-${matchCount}-gender" value="M">
-                  <div class="team-label">TEAM 1</div>
-                  <div class="team-row">
-                    <input class="field-input" id="match-${matchCount}-p1t1" value="${m.p1t1}" list="existing-players">
-                    <input class="field-input" id="match-${matchCount}-p2t1" value="${m.p2t1}" list="existing-players">
-                    <input class="field-input" id="match-${matchCount}-s1" type="number" value="${m.scoreT1}" min="0">
-                  </div>
-                  <div class="vs-row">VS</div>
-                  <div class="team-label">TEAM 2</div>
-                  <div class="team-row">
-                    <input class="field-input" id="match-${matchCount}-p1t2" value="${m.p1t2}" list="existing-players">
-                    <input class="field-input" id="match-${matchCount}-p2t2" value="${m.p2t2}" list="existing-players">
-                    <input class="field-input" id="match-${matchCount}-s2" type="number" value="${m.scoreT2}" min="0">
-                  </div>`;
-                document.getElementById('matchEntries').appendChild(e);
-            });
-            st.textContent = `✓ Parsed "${r.sessionName}" — ${r.matchCount} matches, ${r.playerCount} players. Review & submit below.`;
-        } else if (r.standings && r.standings.length > 0) {
-            st.textContent = `✓ Found ${r.playerCount} players in standings. Individual matches not extractable — use manual entry.`;
-        } else {
-            st.className = 'status-msg error';
-            st.textContent = 'Could not extract match data. Try manual entry.';
-        }
-    } catch (e) {
-        st.className = 'status-msg error';
-        st.textContent = `Parse failed: ${e.message}`;
-    }
-}
-
-function addMatchEntry() {
-    matchCount++;
-    const c = document.getElementById('matchEntries');
-    const e = document.createElement('div');
-    e.className = 'match-entry';
-    e.id = `match-${matchCount}`;
-    e.innerHTML = `
-      <div class="match-header">
-        <span class="match-num">MATCH #${matchCount}</span>
-        <div class="gender-toggle">
-          <div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div>
-          <div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div>
-          <div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button>
-      </div>
-      <input type="hidden" id="match-${matchCount}-gender" value="M">
-      <div class="team-label">TEAM 1</div>
-      <div class="team-row">
-        <input class="field-input" id="match-${matchCount}-p1t1" placeholder="Player 1" list="existing-players">
-        <input class="field-input" id="match-${matchCount}-p2t1" placeholder="Player 2" list="existing-players">
-        <input class="field-input" id="match-${matchCount}-s1" type="number" placeholder="Score" min="0">
-      </div>
-      <div class="vs-row">VS</div>
-      <div class="team-label">TEAM 2</div>
-      <div class="team-row">
-        <input class="field-input" id="match-${matchCount}-p1t2" placeholder="Player 1" list="existing-players">
-        <input class="field-input" id="match-${matchCount}-p2t2" placeholder="Player 2" list="existing-players">
-        <input class="field-input" id="match-${matchCount}-s2" type="number" placeholder="Score" min="0">
-      </div>`;
-    c.appendChild(e);
-}
-
-function setMG(id, g, el) {
-    document.getElementById(`match-${id}-gender`).value = g;
-    el.parentElement.querySelectorAll('.gender-opt').forEach(o => o.classList.remove('active'));
-    el.classList.add('active');
-}
-
-function rmMatch(id) {
-    const e = document.getElementById(`match-${id}`);
-    if (e) e.remove();
-}
-
-function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2, isProvisional = false) {
-    const expected1 = 1 / (1 + Math.pow(10, (avgRatingTeam2 - avgRatingTeam1) / 400));
-    const expected2 = 1 / (1 + Math.pow(10, (avgRatingTeam1 - avgRatingTeam2) / 400));
-
-    let actual1 = 0.5, actual2 = 0.5; 
-    const margin = Math.abs(score1 - score2);
-    if (score1 > score2) { actual1 = 1; actual2 = 0; }
-    else if (score2 > score1) { actual1 = 0; actual2 = 1; }
-
-    const mov = margin === 0 ? 1 : 1 + (margin * 0.1); 
-    const K = isProvisional ? 50 : 32;
-
-    const change1 = Math.round(K * mov * (actual1 - expected1));
-    const change2 = Math.round(K * mov * (actual2 - expected2));
-
-    return { change1, change2 };
-}
-
-async function submitMatches() {
-    const st = document.getElementById('matchStatus');
-    const entries = document.querySelectorAll('.match-entry');
-    const matches = [];
-    
-    entries.forEach(entry => {
-        const id = entry.id.replace('match-', '');
-        const p1t1 = document.getElementById(`match-${id}-p1t1`)?.value.trim();
-        const p2t1 = document.getElementById(`match-${id}-p2t1`)?.value.trim();
-        const p1t2 = document.getElementById(`match-${id}-p1t2`)?.value.trim();
-        const p2t2 = document.getElementById(`match-${id}-p2t2`)?.value.trim();
-        const s1 = parseInt(document.getElementById(`match-${id}-s1`)?.value) || 0;
-        const s2 = parseInt(document.getElementById(`match-${id}-s2`)?.value) || 0;
-        const g = document.getElementById(`match-${id}-gender`)?.value || 'M';
-        
-        if (p1t1 && p2t1 && p1t2 && p2t2) {
-            matches.push({ p1t1, p2t1, p1t2, p2t2, scoreT1: s1, scoreT2: s2, gender: g });
-        }
+async function showVenueList(){
+  document.title='Venue Directory — Trekkr';
+  // Load settings for hero
+  let heroEyebrow='Official Listings',heroTitle='Venue\nDirectory',heroSubtitle='Discover verified courts and performance hubs in the Trekkr network.';
+  try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.venue_eyebrow)heroEyebrow=st.venue_eyebrow;if(st.venue_title)heroTitle=st.venue_title;if(st.venue_subtitle)heroSubtitle=st.venue_subtitle;if(st.venue_image)document.documentElement.style.setProperty('--v-bg','url('+st.venue_image+')')}catch(e){}
+  try{
+    const d=await TrekkrAPI.getVenues();
+    const sorted=d.venues.sort((a,b)=>a.name.localeCompare(b.name));
+    let h=`<section class="v-hero"><div class="container"><span class="v-eyebrow">${heroEyebrow}</span><h1 class="v-title">${heroTitle.replace(/\\n/g,'<br/>')}</h1><p class="v-subtitle">${heroSubtitle}</p></div></section>`;
+    h+=`<section class="section"><div class="container"><p class="section-title">All Venues</p><div class="v-grid">`;
+    sorted.forEach(v=>{
+      h+=`<article class="v-card" onclick="location.href='/${encodeURIComponent(v.name)}'"><div class="v-card__body" style="display:flex;gap:14px;align-items:center"><div class="v-card__init">${v.name.charAt(0)}</div><div style="flex:1;min-width:0"><span class="v-card__region">${v.region||'—'}</span><h3 class="v-card__title">${v.name}</h3><p class="v-card__meta">${v.location||'—'}</p></div></div></article>`;
     });
-    
-    if (!matches.length) {
-        st.className = 'status-msg error';
-        st.textContent = 'No valid matches. Fill all player names.';
-        return;
-    }
-    
-    if (!adminVenue) {
-        st.className = 'status-msg error';
-        st.textContent = 'No venue assigned to this account';
-        return;
-    }
-    
-    st.className = 'status-msg success';
-    st.textContent = 'Step 1/2: Saving matches to Venue History...';
-
-    try {
-        const eloData = await TrekkrAPI.getLatestElo();
-        const eloMap = {};
-        
-        Object.keys(eloData.players || {}).forEach(k => {
-            eloMap[k.toLowerCase().trim()] = eloData.players[k];
-        });
-
-        let playerRatings = {};
-        const elo_results = [];
-        const uniquePlayers = [...new Set(matches.flatMap(m => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
-
-        uniquePlayers.forEach(p => {
-            const pKey = p.toLowerCase().trim();
-            playerRatings[pKey] = eloMap[pKey] ? eloMap[pKey].elo : 1350;
-        });
-
-        matches.forEach(m => {
-            const p1t1Key = m.p1t1.toLowerCase().trim();
-            const p2t1Key = m.p2t1.toLowerCase().trim();
-            const p1t2Key = m.p1t2.toLowerCase().trim();
-            const p2t2Key = m.p2t2.toLowerCase().trim();
-
-            const avgEloT1 = (playerRatings[p1t1Key] + playerRatings[p2t1Key]) / 2;
-            const avgEloT2 = (playerRatings[p1t2Key] + playerRatings[p2t2Key]) / 2;
-            const isProv = (playerRatings[p1t1Key] === 1350 || playerRatings[p2t1Key] === 1350 || playerRatings[p1t2Key] === 1350 || playerRatings[p2t2Key] === 1350);
-            
-            const { change1, change2 } = calculateTrekkrELOChange(avgEloT1, avgEloT2, m.scoreT1, m.scoreT2, isProv);
-            
-            playerRatings[p1t1Key] += change1;
-            playerRatings[p2t1Key] += change1;
-            playerRatings[p1t2Key] += change2;
-            playerRatings[p2t2Key] += change2;
-            
-            elo_results.push(
-                { player: m.p1t1, new_elo: playerRatings[p1t1Key], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
-                { player: m.p2t1, new_elo: playerRatings[p2t1Key], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
-                { player: m.p1t2, new_elo: playerRatings[p1t2Key], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 },
-                { player: m.p2t2, new_elo: playerRatings[p2t2Key], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 }
-            );
-        });
-
-        // TEMBAKAN PERTAMA
-        const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
-
-        st.textContent = 'Step 2/2: Calculating ELO updates... (Please wait 2 seconds)';
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // TEMBAKAN KEDUA
-        const sessionPayload = {
-            sessionName: document.getElementById('parseUrl')?.value ? "Americano Import" : "Manual Match Entry",
-            venue: adminVenue,
-            sourceUrl: document.getElementById('parseUrl')?.value || "",
-            matchCount: matches.length,
-            playerCount: uniquePlayers.length,
-            players: uniquePlayers,
-            matches: matches,
-            elo_results: elo_results
-        };
-        
-        await TrekkrAPI.saveSession(sessionPayload);
-        
-        st.className = 'status-msg success';
-        st.textContent = `✓ ${r.added} matches & ELO successfully submitted!`;
-        document.getElementById('matchEntries').innerHTML = '';
-        matchCount = 0;
-        addMatchEntry();
-        
-    } catch(e) {
-        st.className = 'status-msg error';
-        st.textContent = e.message || 'Failed to submit';
-    }
+    if(!sorted.length)h+='<div class="state-panel" style="grid-column:1/-1"><h2 class="state-title">No Venues</h2><p class="state-copy">No venues configured yet</p></div>';
+    h+=`</div></div></section>`;
+    document.getElementById('mainContent').innerHTML=h;
+  }catch(e){document.getElementById('mainContent').innerHTML='<div class="container"><div class="state-panel"><h2 class="state-title">Error</h2><p class="state-copy">Could not load venues</p></div></div>'}
 }
 
-async function loadVenueInfo() {
-    if (!adminVenue) return;
-    try {
-        const d = await TrekkrAPI.getVenues();
-        const v = d.venues.find(x => x.name.toLowerCase() === adminVenue.toLowerCase());
-        if (v) {
-            document.getElementById('venueSchedule').value = v.schedule || '';
-            document.getElementById('venuePrize').value = v.prizePool || '';
-            document.getElementById('venueContact').value = v.contact || '';
-        }
-    } catch (e) {
-        console.warn('Could not load venue info');
-    }
+async function loadVenueDetail(){
+  try{const d=await TrekkrAPI.getVenues();vData=d.venues.find(v=>v.name.toLowerCase()===vName.toLowerCase())}catch(e){}
+  const v=vData||{name:vName};
+  let h=`<section class="vd-hero"><div class="container"><div><h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1><p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>
+    <div style="margin-top:16px;display:flex;gap:8px">${v.registerUrl?`<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>`:''}
+    <a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a></div></div>
+    ${v.schedule||v.prizePool?`<div class="vd-info"><p class="vd-info-title">Info</p>${v.schedule?`<div class="vd-info-line"><span>Schedule</span><strong>${v.schedule}</strong></div>`:''}
+    ${v.prizePool?`<div class="vd-info-kpi"><div><p class="vd-info-label">Prize Pool</p><p class="vd-info-value">${v.prizePool}</p></div></div>`:''}</div>`:''}</div></section>`;
+
+  h+=`<section class="section"><div class="container"><div class="vd-controls"><div class="vd-week"><button class="vd-week-btn" onclick="changeWeek(-1)">←</button><p class="vd-week-label" id="weekLabel">Week ${cW}</p><button class="vd-week-btn" onclick="changeWeek(1)">→</button></div>
+  <div class="seg-control"><button class="seg-control__item is-active" data-gender="M" onclick="switchGender('M')">Men</button><button class="seg-control__item" data-gender="F" onclick="switchGender('F')">Women</button></div></div>
+  <div id="rankingContainer"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading weekly ranking...</p></div></div></div></section>`;
+  document.getElementById('mainContent').innerHTML=h;await loadRanking();
 }
 
-async function updateVenueInfo() {
-    const st = document.getElementById('venueStatus');
-    if (!adminVenue) {
-        st.className = 'status-msg error';
-        st.textContent = 'No venue assigned';
-        return;
-    }
-    
-    try {
-        await TrekkrAPI.updateVenue(adminVenue, {
-            schedule: document.getElementById('venueSchedule').value,
-            prizePool: document.getElementById('venuePrize').value,
-            contact: document.getElementById('venueContact').value
-        });
-        st.className = 'status-msg success';
-        st.textContent = '✓ Venue info updated';
-    } catch (e) {
-        st.className = 'status-msg error';
-        st.textContent = e.message || 'Failed to update';
-    }
+async function loadRanking(){
+  const c=document.getElementById('rankingContainer');if(!c)return;
+  c.innerHTML='<div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading ranking...</p></div>';
+  try{
+    const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
+    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';return}
+    let h='<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Rank</th><th>Player</th><th>Tier / ELO</th><th>Played</th><th>W/L</th></tr></thead><tbody>';
+    d.ranking.forEach((p,i)=>{
+      const r=i+1;
+      
+      // Menerjemahkan angka ELO pemain (p.elo) menjadi nama tier memanggil fungsi di atas
+      const tierName = getTierName(p.elo);
+
+      h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
+        <td><span class="v-rank${r<=3?' v-rank--1':''}">${String(r).padStart(2,'0')}</span></td>
+        <td><strong>${p.name}</strong></td>
+        
+        <td><span style="font-size:11px;color:var(--on-surface-variant)">${tierName}</span><br><span class="v-elo">${p.elo}</span></td>
+        
+        <td>${p.played}</td><td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
+    });
+    h+='</tbody></table></div>';c.innerHTML=h;
+  }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>'}
 }
 
-async function loadPlayerAutocomplete() {
-    try {
-        const eloData = await TrekkrAPI.getLatestElo();
-        const players = Object.keys(eloData.players || {});
-        const datalist = document.getElementById('existing-players');
-        datalist.innerHTML = players.map(p => `<option value="${p}">`).join('');
-    } catch (e) {
-        console.warn("Gagal memuat daftar pemain untuk autocomplete");
-    }
-}
-
-window.addEventListener('load', () => {
-    checkAuth();
-    loadPlayerAutocomplete();
-});
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
