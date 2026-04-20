@@ -51,22 +51,37 @@ footer span{color:var(--lime)}
   <div id="loginScreen">
     <div class="login-card">
       <div class="login-title">VENUE ADMIN</div>
-      <div class="field"><label class="field-label">Username</label><input class="field-input" id="loginUser" type="text" placeholder="admin"></div>
-      <div class="field"><label class="field-label">Password</label><input class="field-input" id="loginPass" type="password" placeholder="••••••"></div>
+      <div class="field">
+        <label class="field-label">Username</label>
+        <input class="field-input" id="loginUser" type="text" placeholder="admin">
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input class="field-input" id="loginPass" type="password" placeholder="••••••">
+      </div>
       <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
       <div class="status-msg" id="loginStatus"></div>
     </div>
   </div>
+
   <div id="adminScreen" style="display:none">
     <div class="page-title">VENUE ADMIN</div>
     <div class="page-sub" id="adminVenueLabel">MANAGING: —</div>
-    <div class="logout-bar"><span class="user-info" id="userLabel">—</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
+    <div class="logout-bar">
+      <span class="user-info" id="userLabel">—</span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+
     <div class="section">
       <div class="section-title"><span class="dot"></span>IMPORT FROM URL</div>
-      <div class="field"><label class="field-label">Americano-Padel.com URL</label><input class="field-input" id="parseUrl" type="text" placeholder="https://americano-padel.com/r/..."></div>
+      <div class="field">
+        <label class="field-label">Americano-Padel.com URL</label>
+        <input class="field-input" id="parseUrl" type="text" placeholder="https://americano-padel.com/r/...">
+      </div>
       <button class="btn btn-primary" onclick="parseUrl()">Parse & Import →</button>
       <div class="status-msg" id="parseStatus"></div>
     </div>
+
     <div class="section">
       <div class="section-title"><span class="dot"></span>MANUAL MATCH ENTRY</div>
       <div id="matchEntries"></div>
@@ -76,11 +91,21 @@ footer span{color:var(--lime)}
       </div>
       <div class="status-msg" id="matchStatus"></div>
     </div>
+
     <div class="section">
       <div class="section-title"><span class="dot"></span>EDIT VENUE INFO</div>
-      <div class="field"><label class="field-label">Schedule</label><textarea class="field-textarea" id="venueSchedule" placeholder="Every Monday 8am-10am"></textarea></div>
-      <div class="field"><label class="field-label">Prize Pool</label><input class="field-input" id="venuePrize" placeholder="IDR 2.5 Million"></div>
-      <div class="field"><label class="field-label">Contact</label><input class="field-input" id="venueContact" placeholder="@instagram or phone"></div>
+      <div class="field">
+        <label class="field-label">Schedule</label>
+        <textarea class="field-textarea" id="venueSchedule" placeholder="Every Monday 8am-10am"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Prize Pool</label>
+        <input class="field-input" id="venuePrize" placeholder="IDR 2.5 Million">
+      </div>
+      <div class="field">
+        <label class="field-label">Contact</label>
+        <input class="field-input" id="venueContact" placeholder="@instagram or phone">
+      </div>
       <button class="btn btn-primary" onclick="updateVenueInfo()">Save Changes →</button>
       <div class="status-msg" id="venueStatus"></div>
     </div>
@@ -91,27 +116,348 @@ footer span{color:var(--lime)}
 <script src="https://trekkr.online/trekkr-api.js"></script>
 
 <script>
-let matchCount=0,adminVenue='';
+let matchCount = 0;
+let adminVenue = '';
 
-function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&(s.role==='venue_admin'||s.role==='superadmin')){adminVenue=s.venue;showDash(s)}}
-
-async function doLogin(){
-  const u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value,st=document.getElementById('loginStatus');
-  try{const d=await TrekkrAPI.login(u,p);if(d.role!=='venue_admin'&&d.role!=='superadmin'){st.className='status-msg error';st.textContent='Access denied';return}adminVenue=d.venue;showDash(d)}
-  catch(e){st.className='status-msg error';st.textContent=e.message||'Login failed'}
+function checkAuth() {
+    const s = TrekkrAPI.getSession();
+    if (s.token && (s.role === 'venue_admin' || s.role === 'superadmin')) {
+        adminVenue = s.venue;
+        showDash(s);
+    }
 }
 
-function showDash(s){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('adminScreen').style.display='block';
-  document.getElementById('adminVenueLabel').textContent=`MANAGING: ${adminVenue||'ALL'}`;
-  document.getElementById('userLabel').textContent=`Logged in as ${s.username||''}`;
-  addMatchEntry();loadVenueInfo();
+async function doLogin() {
+    const u = document.getElementById('loginUser').value;
+    const p = document.getElementById('loginPass').value;
+    const st = document.getElementById('loginStatus');
+    
+    try {
+        const d = await TrekkrAPI.login(u, p);
+        if (d.role !== 'venue_admin' && d.role !== 'superadmin') {
+            st.className = 'status-msg error';
+            st.textContent = 'Access denied';
+            return;
+        }
+        adminVenue = d.venue;
+        showDash(d);
+    } catch (e) {
+        st.className = 'status-msg error';
+        st.textContent = e.message || 'Login failed';
+    }
 }
 
-function doLogout(){TrekkrAPI.logout();location.reload()}
+function showDash(s) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').style.display = 'block';
+    document.getElementById('adminVenueLabel').textContent = `MANAGING: ${adminVenue || 'ALL'}`;
+    document.getElementById('userLabel').textContent = `Logged in as ${s.username || ''}`;
+    addMatchEntry();
+    loadVenueInfo();
+}
 
-async function parseUrl(){
-  const url=document.getElementById('parseUrl').value,st=document.getElementById('parseStatus');
-  if(!url){st.className='status-msg error';st.textContent='Please enter a URL';return}
-  if(!url.includes('americano
+function doLogout() {
+    TrekkrAPI.logout();
+    location.reload();
+}
+
+async function parseUrl() {
+    const url = document.getElementById('parseUrl').value;
+    const st = document.getElementById('parseStatus');
+    
+    if (!url) {
+        st.className = 'status-msg error';
+        st.textContent = 'Please enter a URL';
+        return;
+    }
+    
+    if (!url.includes('americano-padel.com/r/')) {
+        st.className = 'status-msg error';
+        st.textContent = 'Only americano-padel.com URLs supported';
+        return;
+    }
+    
+    st.className = 'status-msg success';
+    st.textContent = 'Fetching and parsing...';
+    
+    try {
+        const r = await TrekkrAPI.parseUrl(url, adminVenue, 'M');
+        if (!r.success) {
+            st.className = 'status-msg error';
+            st.textContent = r.error || 'Parse failed';
+            return;
+        }
+        if (r.matches && r.matches.length > 0) {
+            document.getElementById('matchEntries').innerHTML = '';
+            matchCount = 0;
+            
+            r.matches.forEach(m => {
+                matchCount++;
+                const e = document.createElement('div');
+                e.className = 'match-entry';
+                e.id = `match-${matchCount}`;
+                e.innerHTML = `
+                  <div class="match-header">
+                    <span class="match-num">R${m.round || matchCount} C${m.court || 1}</span>
+                    <div class="gender-toggle">
+                      <div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div>
+                      <div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div>
+                      <div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button>
+                  </div>
+                  <input type="hidden" id="match-${matchCount}-gender" value="M">
+                  <div class="team-label">TEAM 1</div>
+                  <div class="team-row">
+                    <input class="field-input" id="match-${matchCount}-p1t1" value="${m.p1t1}" list="existing-players">
+                    <input class="field-input" id="match-${matchCount}-p2t1" value="${m.p2t1}" list="existing-players">
+                    <input class="field-input" id="match-${matchCount}-s1" type="number" value="${m.scoreT1}" min="0">
+                  </div>
+                  <div class="vs-row">VS</div>
+                  <div class="team-label">TEAM 2</div>
+                  <div class="team-row">
+                    <input class="field-input" id="match-${matchCount}-p1t2" value="${m.p1t2}" list="existing-players">
+                    <input class="field-input" id="match-${matchCount}-p2t2" value="${m.p2t2}" list="existing-players">
+                    <input class="field-input" id="match-${matchCount}-s2" type="number" value="${m.scoreT2}" min="0">
+                  </div>`;
+                document.getElementById('matchEntries').appendChild(e);
+            });
+            st.textContent = `✓ Parsed "${r.sessionName}" — ${r.matchCount} matches, ${r.playerCount} players. Review & submit below.`;
+        } else if (r.standings && r.standings.length > 0) {
+            st.textContent = `✓ Found ${r.playerCount} players in standings. Individual matches not extractable — use manual entry.`;
+        } else {
+            st.className = 'status-msg error';
+            st.textContent = 'Could not extract match data. Try manual entry.';
+        }
+    } catch (e) {
+        st.className = 'status-msg error';
+        st.textContent = `Parse failed: ${e.message}`;
+    }
+}
+
+function addMatchEntry() {
+    matchCount++;
+    const c = document.getElementById('matchEntries');
+    const e = document.createElement('div');
+    e.className = 'match-entry';
+    e.id = `match-${matchCount}`;
+    e.innerHTML = `
+      <div class="match-header">
+        <span class="match-num">MATCH #${matchCount}</span>
+        <div class="gender-toggle">
+          <div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div>
+          <div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div>
+          <div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button>
+      </div>
+      <input type="hidden" id="match-${matchCount}-gender" value="M">
+      <div class="team-label">TEAM 1</div>
+      <div class="team-row">
+        <input class="field-input" id="match-${matchCount}-p1t1" placeholder="Player 1" list="existing-players">
+        <input class="field-input" id="match-${matchCount}-p2t1" placeholder="Player 2" list="existing-players">
+        <input class="field-input" id="match-${matchCount}-s1" type="number" placeholder="Score" min="0">
+      </div>
+      <div class="vs-row">VS</div>
+      <div class="team-label">TEAM 2</div>
+      <div class="team-row">
+        <input class="field-input" id="match-${matchCount}-p1t2" placeholder="Player 1" list="existing-players">
+        <input class="field-input" id="match-${matchCount}-p2t2" placeholder="Player 2" list="existing-players">
+        <input class="field-input" id="match-${matchCount}-s2" type="number" placeholder="Score" min="0">
+      </div>`;
+    c.appendChild(e);
+}
+
+function setMG(id, g, el) {
+    document.getElementById(`match-${id}-gender`).value = g;
+    el.parentElement.querySelectorAll('.gender-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function rmMatch(id) {
+    const e = document.getElementById(`match-${id}`);
+    if (e) e.remove();
+}
+
+function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2, isProvisional = false) {
+    const expected1 = 1 / (1 + Math.pow(10, (avgRatingTeam2 - avgRatingTeam1) / 400));
+    const expected2 = 1 / (1 + Math.pow(10, (avgRatingTeam1 - avgRatingTeam2) / 400));
+
+    let actual1 = 0.5, actual2 = 0.5; 
+    const margin = Math.abs(score1 - score2);
+    if (score1 > score2) { actual1 = 1; actual2 = 0; }
+    else if (score2 > score1) { actual1 = 0; actual2 = 1; }
+
+    const mov = margin === 0 ? 1 : 1 + (margin * 0.1); 
+    const K = isProvisional ? 50 : 32;
+
+    const change1 = Math.round(K * mov * (actual1 - expected1));
+    const change2 = Math.round(K * mov * (actual2 - expected2));
+
+    return { change1, change2 };
+}
+
+async function submitMatches() {
+    const st = document.getElementById('matchStatus');
+    const entries = document.querySelectorAll('.match-entry');
+    const matches = [];
+    
+    entries.forEach(entry => {
+        const id = entry.id.replace('match-', '');
+        const p1t1 = document.getElementById(`match-${id}-p1t1`)?.value.trim();
+        const p2t1 = document.getElementById(`match-${id}-p2t1`)?.value.trim();
+        const p1t2 = document.getElementById(`match-${id}-p1t2`)?.value.trim();
+        const p2t2 = document.getElementById(`match-${id}-p2t2`)?.value.trim();
+        const s1 = parseInt(document.getElementById(`match-${id}-s1`)?.value) || 0;
+        const s2 = parseInt(document.getElementById(`match-${id}-s2`)?.value) || 0;
+        const g = document.getElementById(`match-${id}-gender`)?.value || 'M';
+        
+        if (p1t1 && p2t1 && p1t2 && p2t2) {
+            matches.push({ p1t1, p2t1, p1t2, p2t2, scoreT1: s1, scoreT2: s2, gender: g });
+        }
+    });
+    
+    if (!matches.length) {
+        st.className = 'status-msg error';
+        st.textContent = 'No valid matches. Fill all player names.';
+        return;
+    }
+    
+    if (!adminVenue) {
+        st.className = 'status-msg error';
+        st.textContent = 'No venue assigned to this account';
+        return;
+    }
+    
+    st.className = 'status-msg success';
+    st.textContent = 'Step 1/2: Saving matches to Venue History...';
+
+    try {
+        const eloData = await TrekkrAPI.getLatestElo();
+        const eloMap = {};
+        
+        Object.keys(eloData.players || {}).forEach(k => {
+            eloMap[k.toLowerCase().trim()] = eloData.players[k];
+        });
+
+        let playerRatings = {};
+        const elo_results = [];
+        const uniquePlayers = [...new Set(matches.flatMap(m => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
+
+        uniquePlayers.forEach(p => {
+            const pKey = p.toLowerCase().trim();
+            playerRatings[pKey] = eloMap[pKey] ? eloMap[pKey].elo : 1350;
+        });
+
+        matches.forEach(m => {
+            const p1t1Key = m.p1t1.toLowerCase().trim();
+            const p2t1Key = m.p2t1.toLowerCase().trim();
+            const p1t2Key = m.p1t2.toLowerCase().trim();
+            const p2t2Key = m.p2t2.toLowerCase().trim();
+
+            const avgEloT1 = (playerRatings[p1t1Key] + playerRatings[p2t1Key]) / 2;
+            const avgEloT2 = (playerRatings[p1t2Key] + playerRatings[p2t2Key]) / 2;
+            const isProv = (playerRatings[p1t1Key] === 1350 || playerRatings[p2t1Key] === 1350 || playerRatings[p1t2Key] === 1350 || playerRatings[p2t2Key] === 1350);
+            
+            const { change1, change2 } = calculateTrekkrELOChange(avgEloT1, avgEloT2, m.scoreT1, m.scoreT2, isProv);
+            
+            playerRatings[p1t1Key] += change1;
+            playerRatings[p2t1Key] += change1;
+            playerRatings[p1t2Key] += change2;
+            playerRatings[p2t2Key] += change2;
+            
+            elo_results.push(
+                { player: m.p1t1, new_elo: playerRatings[p1t1Key], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
+                { player: m.p2t1, new_elo: playerRatings[p2t1Key], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
+                { player: m.p1t2, new_elo: playerRatings[p1t2Key], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 },
+                { player: m.p2t2, new_elo: playerRatings[p2t2Key], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 }
+            );
+        });
+
+        // TEMBAKAN PERTAMA
+        const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
+
+        st.textContent = 'Step 2/2: Calculating ELO updates... (Please wait 2 seconds)';
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // TEMBAKAN KEDUA
+        const sessionPayload = {
+            sessionName: document.getElementById('parseUrl')?.value ? "Americano Import" : "Manual Match Entry",
+            venue: adminVenue,
+            sourceUrl: document.getElementById('parseUrl')?.value || "",
+            matchCount: matches.length,
+            playerCount: uniquePlayers.length,
+            players: uniquePlayers,
+            matches: matches,
+            elo_results: elo_results
+        };
+        
+        await TrekkrAPI.saveSession(sessionPayload);
+        
+        st.className = 'status-msg success';
+        st.textContent = `✓ ${r.added} matches & ELO successfully submitted!`;
+        document.getElementById('matchEntries').innerHTML = '';
+        matchCount = 0;
+        addMatchEntry();
+        
+    } catch(e) {
+        st.className = 'status-msg error';
+        st.textContent = e.message || 'Failed to submit';
+    }
+}
+
+async function loadVenueInfo() {
+    if (!adminVenue) return;
+    try {
+        const d = await TrekkrAPI.getVenues();
+        const v = d.venues.find(x => x.name.toLowerCase() === adminVenue.toLowerCase());
+        if (v) {
+            document.getElementById('venueSchedule').value = v.schedule || '';
+            document.getElementById('venuePrize').value = v.prizePool || '';
+            document.getElementById('venueContact').value = v.contact || '';
+        }
+    } catch (e) {
+        console.warn('Could not load venue info');
+    }
+}
+
+async function updateVenueInfo() {
+    const st = document.getElementById('venueStatus');
+    if (!adminVenue) {
+        st.className = 'status-msg error';
+        st.textContent = 'No venue assigned';
+        return;
+    }
+    
+    try {
+        await TrekkrAPI.updateVenue(adminVenue, {
+            schedule: document.getElementById('venueSchedule').value,
+            prizePool: document.getElementById('venuePrize').value,
+            contact: document.getElementById('venueContact').value
+        });
+        st.className = 'status-msg success';
+        st.textContent = '✓ Venue info updated';
+    } catch (e) {
+        st.className = 'status-msg error';
+        st.textContent = e.message || 'Failed to update';
+    }
+}
+
+async function loadPlayerAutocomplete() {
+    try {
+        const eloData = await TrekkrAPI.getLatestElo();
+        const players = Object.keys(eloData.players || {});
+        const datalist = document.getElementById('existing-players');
+        datalist.innerHTML = players.map(p => `<option value="${p}">`).join('');
+    } catch (e) {
+        console.warn("Gagal memuat daftar pemain untuk autocomplete");
+    }
+}
+
+window.addEventListener('load', () => {
+    checkAuth();
+    loadPlayerAutocomplete();
+});
+</script>
+</body>
+</html>
