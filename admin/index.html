@@ -163,7 +163,11 @@ async function submitMatches(){
   if(!adminVenue){st.className='status-msg error';st.textContent='No venue assigned to this account';return}
   try{
     const r=await TrekkrAPI.addVenueMatch(adminVenue,matches);
-    st.className='status-msg success';st.textContent=`✓ ${r.added} matches submitted!${r.newPlayers?.length?` New players: ${r.newPlayers.join(', ')}`:''}`;
+    st.className='status-msg success';
+    let msg=`✓ ${r.added} matches submitted!`;
+    if(r.newPlayers?.length)msg+=` New players: ${r.newPlayers.join(', ')}.`;
+    if(r.eloUpdates?.length){msg+=`\n\nELO Updates:`;r.eloUpdates.forEach(u=>{const sign=u.delta>=0?'+':'';msg+=`\n  ${u.name}: ${u.elo} (${sign}${u.delta}) [${u.w}W/${u.l}L]`})}
+    st.textContent=msg;st.style.whiteSpace='pre-line';
     document.getElementById('matchEntries').innerHTML='';matchCount=0;addMatchEntry();
   }catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to submit'}
 }

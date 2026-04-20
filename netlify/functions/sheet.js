@@ -509,6 +509,7 @@ async function addVenueMatch(venueName, body) {
   const sheets = getSheets();
   const tab = venueTabName(venueName);
   const now = new Date().toISOString().split("T")[0];
+  const ts = new Date().toISOString();
   const weekNum = getWeekNumber(new Date());
   const rows = matches.map((m) => [
     m.week || `W${weekNum}`, m.date || now,
@@ -516,12 +517,16 @@ async function addVenueMatch(venueName, body) {
     m.scoreT1 || 0, m.scoreT2 || 0,
     (m.gender || "M").toUpperCase(), m.sourceUrl || "",
   ]);
+
+  // 1. Save matches to venue tab
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${tab}!A:J`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: rows },
   });
+
+  // 2. Collect all unique player names
   const allPlayerNames = [
     ...new Set(
       matches.flatMap((m) =>
@@ -529,6 +534,8 @@ async function addVenueMatch(venueName, body) {
       )
     ),
   ];
+
+  // 3. Check which players already exist
   const pRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${TABS.players}!A2:A`,
@@ -539,8 +546,9 @@ async function addVenueMatch(venueName, body) {
   const newPlayers = allPlayerNames.filter(
     (n) => !existingNames.includes(n.toLowerCase())
   );
+
+  // 4. Auto-create new players with initial ELO 1350
   if (newPlayers.length > 0) {
-    const ts = new Date().toISOString();
     const newRows = newPlayers.map((n) => {
       const gender =
         matches.find((m) =>
@@ -556,15 +564,96 @@ async function addVenueMatch(venueName, body) {
       valueInputOption: "USER_ENTERED",
       requestBody: { values: newRows },
     });
-    const eloRows = newPlayers.map((n) => ["INITIAL", n, 1350, 0, 0, 0, ts]);
+    const eloInitRows = newPlayers.map((n) => ["INITIAL", n, 1350, 0, 0, 0, ts]);
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${TABS.elo_log}!A:G`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: eloRows },
+      requestBody: { values: eloInitRows },
     });
   }
-  return respond(200, { success: true, added: matches.length, newPlayers });
+
+  // 5. Get current ELO and match counts for all players
+  const eRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.elo_log}!A2:G`,
+  });
+  const eRows = eRes.data.values || [];
+  const currentElo = {};
+  const matchCounts = {};
+  eRows.forEach((r) => {
+    const name = r[1];
+    if (!name) return;
+    currentElo[name] = parseInt(r[2]) || 1350;
+    matchCounts[name] = (matchCounts[name] || 0) + (r[0] !== "INITIAL" ? 1 : 0);
+  });
+
+  // 6. Calculate ELO for each match and collect updates
+  const sessionId = `VM-${Date.now().toString(36).toUpperCase()}`;
+  const eloUpdates = {};
+
+  matches.forEach((m) => {
+    const p1t1 = m.p1t1, p2t1 = m.p2t1, p1t2 = m.p1t2, p2t2 = m.p2t2;
+    if (!p1t1 || !p2t1 || !p1t2 || !p2t2) return;
+
+    const players = {
+      p1t1: { name: p1t1, elo: currentElo[p1t1] || 1350, matches: matchCounts[p1t1] || 0 },
+      p2t1: { name: p2t1, elo: currentElo[p2t1] || 1350, matches: matchCounts[p2t1] || 0 },
+      p1t2: { name: p1t2, elo: currentElo[p1t2] || 1350, matches: matchCounts[p1t2] || 0 },
+      p2t2: { name: p2t2, elo: currentElo[p2t2] || 1350, matches: matchCounts[p2t2] || 0 },
+    };
+
+    const results = calculateMatchElo(players, parseInt(m.scoreT1) || 0, parseInt(m.scoreT2) || 0);
+
+    results.forEach((r) => {
+      if (!eloUpdates[r.name]) {
+        eloUpdates[r.name] = { latestElo: currentElo[r.name] || 1350, totalDelta: 0, w: 0, l: 0 };
+      }
+      eloUpdates[r.name].latestElo = r.newElo;
+      eloUpdates[r.name].totalDelta += r.delta;
+      eloUpdates[r.name].w += r.w;
+      eloUpdates[r.name].l += r.l;
+      // Update running ELO so subsequent matches in the same batch use updated values
+      currentElo[r.name] = r.newElo;
+      matchCounts[r.name] = (matchCounts[r.name] || 0) + 1;
+    });
+  });
+
+  // 7. Write ELO updates to ELO_Log
+  const eloLogRows = Object.entries(eloUpdates).map(([name, u]) => [
+    sessionId, name, u.latestElo, u.totalDelta, u.w, u.l, ts,
+  ]);
+  if (eloLogRows.length > 0) {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${TABS.elo_log}!A:G`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: eloLogRows },
+    });
+  }
+
+  // 8. Also save as a session for tracking
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: `${TABS.sessions}!A:I`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        sessionId, `${venueName} W${weekNum}`, "", "Venue Match",
+        "", venueName, allPlayerNames.length, matches.length, ts,
+      ]],
+    },
+  });
+
+  return respond(200, {
+    success: true,
+    added: matches.length,
+    newPlayers,
+    sessionId,
+    eloUpdates: Object.entries(eloUpdates).map(([name, u]) => ({
+      name, elo: u.latestElo, delta: u.totalDelta, w: u.w, l: u.l,
+    })),
+  });
 }
 
 async function getVenueWeeklyRanking(venueName, params) {
@@ -929,6 +1018,53 @@ async function addAdmin(body) {
 }
 
 // ── HELPERS ──
+
+// ── ELO Calculation Engine ──
+function getKFactor(matchCount) {
+  if (matchCount < 10) return 40;
+  if (matchCount < 30) return 32;
+  if (matchCount < 60) return 24;
+  return 20;
+}
+
+function calculateExpected(ratingA, ratingB) {
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+}
+
+function calculateMatchElo(players, scoreT1, scoreT2) {
+  const t1Avg = (players.p1t1.elo + players.p2t1.elo) / 2;
+  const t2Avg = (players.p1t2.elo + players.p2t2.elo) / 2;
+
+  let t1Result, t2Result;
+  if (scoreT1 > scoreT2) { t1Result = 1; t2Result = 0; }
+  else if (scoreT2 > scoreT1) { t1Result = 0; t2Result = 1; }
+  else { t1Result = 0.5; t2Result = 0.5; }
+
+  const diff = Math.abs(scoreT1 - scoreT2);
+  const marginMult = 1 + Math.min(diff * 0.04, 0.3);
+
+  const expected1 = calculateExpected(t1Avg, t2Avg);
+  const expected2 = 1 - expected1;
+
+  const results = [];
+
+  ["p1t1", "p2t1"].forEach((key) => {
+    const p = players[key];
+    const k = getKFactor(p.matches) * marginMult;
+    const delta = Math.round(k * (t1Result - expected1));
+    results.push({ name: p.name, newElo: p.elo + delta, delta, w: t1Result === 1 ? 1 : 0, l: t1Result === 0 ? 1 : 0 });
+  });
+
+  ["p1t2", "p2t2"].forEach((key) => {
+    const p = players[key];
+    const k = getKFactor(p.matches) * marginMult;
+    const delta = Math.round(k * (t2Result - expected2));
+    results.push({ name: p.name, newElo: p.elo + delta, delta, w: t2Result === 1 ? 1 : 0, l: t2Result === 0 ? 1 : 0 });
+  });
+
+  return results;
+}
+
 function getTierName(elo) {
   if (elo >= 3000) return "Platinum";
   if (elo >= 2500) return "Gold";
