@@ -173,44 +173,14 @@ function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2
 
 // --- 2. FUNGSI SUBMIT MATCHES TERBARU ---
 async function submitMatches(){
-  const st=document.getElementById('matchStatus'),entries=document.querySelectorAll('.match-entry'),matches=[];
-  
-  // Mengambil data dari layar
-  entries.forEach(entry=>{const id=entry.id.replace('match-','');
-    const p1t1=document.getElementById(`match-${id}-p1t1`)?.value.trim(),p2t1=document.getElementById(`match-${id}-p2t1`)?.value.trim(),p1t2=document.getElementById(`match-${id}-p1t2`)?.value.trim(),p2t2=document.getElementById(`match-${id}-p2t2`)?.value.trim();
-    const s1=parseInt(document.getElementById(`match-${id}-s1`)?.value)||0,s2=parseInt(document.getElementById(`match-${id}-s2`)?.value)||0;
-    const g=document.getElementById(`match-${id}-gender`)?.value||'M';
-    if(p1t1&&p2t1&&p1t2&&p2t2)matches.push({p1t1,p2t1,p1t2,p2t2,scoreT1:s1,scoreT2:s2,gender:g});
-  });
-  if(!matches.length){st.className='status-msg error';st.textContent='No valid matches. Fill all player names.';return}
-  if(!adminVenue){st.className='status-msg error';st.textContent='No venue assigned to this account';return}
-  
-  st.className='status-msg success';
-  st.textContent='Calculating ELO and Submitting (This may take a few seconds)...';
-
-  try {
-    // B. Ambil data ELO terbaru dari server MENGGUNAKAN TrekkrAPI
-    const eloData = await TrekkrAPI.getLatestElo();
-    const eloMap = eloData.players || {};
-
-    let playerRatings = {};
-    const elo_results = [];
-    const uniquePlayers = [...new Set(matches.flatMap(m => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]))];
-
-    // C. Set ELO awal
-    uniquePlayers.forEach(p => {
-        playerRatings[p] = eloMap[p] ? eloMap[p].elo : 1350;
-    });
-
-    // D. Kalkulasi ELO per game (Berurutan)
-    matches.forEach(m => {
+// D. Kalkulasi ELO per game (Berurutan)
+matches.forEach(m => {
         const avgEloT1 = (playerRatings[m.p1t1] + playerRatings[m.p2t1]) / 2;
         const avgEloT2 = (playerRatings[m.p1t2] + playerRatings[m.p2t2]) / 2;
         const isProv = (playerRatings[m.p1t1] === 1350 || playerRatings[m.p2t1] === 1350 || playerRatings[m.p1t2] === 1350 || playerRatings[m.p2t2] === 1350);
         
         const { change1, change2 } = calculateTrekkrELOChange(avgEloT1, avgEloT2, m.scoreT1, m.scoreT2, isProv);
         
-        // Update rating sementara agar game berikutnya menggunakan rating baru
         playerRatings[m.p1t1] += change1;
         playerRatings[m.p2t1] += change1;
         playerRatings[m.p1t2] += change2;
@@ -224,7 +194,14 @@ async function submitMatches(){
         );
     });
 
-    // E. Simpan ke tab Sessions & ELO Log MENGGUNAKAN TrekkrAPI
+    // --- UBAH URUTANNYA DI SINI ---
+    
+    // F. (PINDAHKAN KE ATAS) Simpan ke tab Venue DULU. 
+    // Ini akan mendeteksi pemain baru dan membuatkan profil INITIAL 1350 di database.
+    const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
+
+    // E. (PINDAHKAN KE BAWAH) Simpan ke tab Sessions & ELO Log.
+    // Ini akan menimpa angka 1350 tadi dengan ELO hasil pertandingan yang sesungguhnya.
     const sessionPayload = {
         sessionName: document.getElementById('parseUrl')?.value ? "Americano Import" : "Manual Match Entry",
         venue: adminVenue,
@@ -237,19 +214,11 @@ async function submitMatches(){
     };
     
     await TrekkrAPI.saveSession(sessionPayload);
+    // --------------------------------
 
-    // F. Simpan ke tab Venue_X (Untuk history per venue) MENGGUNAKAN TrekkrAPI
-    const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
-    
     st.className='status-msg success';
     st.textContent=`✓ ${r.added} matches & ELO successfully submitted!`;
     document.getElementById('matchEntries').innerHTML='';matchCount=0;addMatchEntry();
-    
-  } catch(e) {
-    st.className='status-msg error';
-    st.textContent=e.message||'Failed to submit';
-  }
-} // <- Penutup kurung fungsi submitMatches yang sebelumnya hilang ada di sini
 
 async function loadVenueInfo(){
   if(!adminVenue)return;
