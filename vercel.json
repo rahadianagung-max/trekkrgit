@@ -1,27 +1,39 @@
 {
   "rewrites": [
-    { 
-      "source": "/api/:match*", 
-      "destination": "/api/sheet" 
+    {
+      "source": "/api/:match*",
+      "destination": "/api/sheet"
     },
     {
-      "source": "/(.*)",
+      "source": "/:match*",
       "has": [{ "type": "host", "value": "venue.trekkr.online" }],
-      "destination": "/venue/index.html"
+      "destination": "/venue/:match*"
     },
     {
-      "source": "/(.*)",
+      "source": "/:match*",
       "has": [{ "type": "host", "value": "admin.trekkr.online" }],
-      "destination": "/admin/index.html"
+      "destination": "/admin/:match*"
     },
     {
-      "source": "/(.*)",
+      "source": "/:match*",
       "has": [{ "type": "host", "value": "superadmin.trekkr.online" }],
-      "destination": "/superadmin/index.html"
+      "destination": "/superadmin/:match*"
     },
-    { "source": "/player/(.*)", "destination": "/player/index.html" },
-    { "source": "/venue/(.*)", "destination": "/venue/index.html" },
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/superadmin/(.*)", "destination": "/superadmin/index.html" }
+    { 
+      "source": "/player/:match*", 
+      "destination": "/player/index.html" 
+    },
+    { 
+      "source": "/venue/:match*", 
+      "destination": "/venue/index.html" 
+    },
+    { 
+      "source": "/admin/:match*", 
+      "destination": "/admin/index.html" 
+    },
+    { 
+      "source": "/superadmin/:match*", 
+      "destination": "/superadmin/index.html" 
+    }
   ]
 }
