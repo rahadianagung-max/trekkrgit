@@ -18,10 +18,6 @@
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "superadmin.trekkr.online" }],
       "destination": "/superadmin/$1"
-    },
-    { "source": "/player/(.*)", "destination": "/player/index.html" },
-    { "source": "/venue/(.*)", "destination": "/venue/index.html" },
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/superadmin/(.*)", "destination": "/superadmin/index.html" }
+    }
   ]
 }
