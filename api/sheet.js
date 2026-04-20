@@ -2,8 +2,13 @@ const { google } = require("googleapis");
 
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  // Menangani format escape \n dari environment variables
-  const key = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+  let key = process.env.GOOGLE_PRIVATE_KEY || "";
+  
+  // Menghapus tanda kutip ganda di awal/akhir jika Vercel menambahkannya
+  key = key.replace(/^"|"$/g, '');
+  // Memaksa format baris baru (enter) menjadi benar
+  key = key.replace(/\\n/g, "\n");
+
   return new google.auth.JWT(email, null, key, [
     "https://www.googleapis.com/auth/spreadsheets",
   ]);
@@ -65,6 +70,7 @@ const netlifyHandler = async (event) => {
     const params = event.queryStringParameters || {};
 
     // --- ROUTES ---
+    if (path === "settings" && method === "GET") return await getSettings();
     if (path === "auth/login") return await login(body);
 
     if (path === "players" && method === "GET") return await getPlayers(params);
@@ -678,4 +684,20 @@ async function addAdmin(body) {
     requestBody: { values: [[username, password, role || "venue_admin", venue || "", now]] },
   });
   return respond(200, { success: true });
+}
+async function getSettings() {
+  const sheets = getSheets();
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "Settings!A2:B",
+    });
+    const rows = res.data.values || [];
+    const settings = {};
+    rows.forEach((r) => { if (r[0]) settings[r[0]] = r[1] || ""; });
+    return respond(200, { settings });
+  } catch (e) {
+    // Settings tab may not exist yet — return defaults
+    return respond(200, { settings: {} });
+  }
 }
