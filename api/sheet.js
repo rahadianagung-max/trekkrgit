@@ -71,6 +71,7 @@ const netlifyHandler = async (event) => {
 
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
+    if (path === "settings" && method === "PUT") return await updateSettings(body);
     if (path === "auth/login") return await login(body);
 
     if (path === "players" && method === "GET") return await getPlayers(params);
@@ -418,6 +419,8 @@ async function getVenueWeeklyRanking(venueName, params) {
   const week = params.week || `W${getWeekNumber(new Date())}`;
   const sheets = getSheets();
   const tab = venueTabName(venueName);
+  
+  // 1. Ambil Match Venue
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:I` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const weekMatches = rows.filter((r) => r[0] === week);
@@ -442,21 +445,36 @@ async function getVenueWeeklyRanking(venueName, params) {
     }
   });
 
+  // 2. Ambil ELO Terakhir (Mencegah nyangkut di 1350)
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
-  const eRows = eRes.data.values || [];
   const latestElo = {};
-  eRows.forEach((r) => { if (r[1]) latestElo[r[1].toLowerCase()] = parseInt(r[2]) || 1350; });
+  (eRes.data.values || []).forEach((r) => { 
+      if (r[1]) latestElo[r[1].toLowerCase().trim()] = parseInt(r[2]) || 1350; 
+  });
 
-  let ranking = Object.keys(stats).map((p) => ({
-    name: p, w: stats[p].w, l: stats[p].l, played: stats[p].played,
-    gender: stats[p].gender, elo: latestElo[p.toLowerCase()] || 1350,
-  }));
+  // 3. Ambil URL Foto Pemain
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const playersInfo = {};
+  (pRes.data.values || []).forEach(r => {
+      if (r[0]) playersInfo[r[0].toLowerCase().trim()] = { photoUrl: r[6] || "" };
+  });
+
+  // 4. Susun Ranking
+  let ranking = Object.keys(stats).map((p) => {
+    const pKey = p.toLowerCase().trim();
+    return {
+      name: p, w: stats[p].w, l: stats[p].l, played: stats[p].played,
+      gender: stats[p].gender, 
+      elo: latestElo[pKey] || 1350,
+      photoUrl: playersInfo[pKey]?.photoUrl || "" // Masukkan Foto ke hasil API
+    };
+  });
   
   ranking.sort((a, b) => b.w - a.w || b.elo - a.elo);
   if (params.gender) ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
+  
   return respond(200, { week, venue: venueName, ranking });
 }
-
 // ── SESSIONS ──
 async function saveSession(body) {
   const { sessionName, venue, sourceUrl, matchCount, playerCount, players, matches, elo_results } = body;
@@ -700,4 +718,26 @@ async function getSettings() {
     // Settings tab may not exist yet — return defaults
     return respond(200, { settings: {} });
   }
+}// ── SETTINGS (SUPERADMIN) ──
+async function getSettings() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `Settings!A1:B20` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const settings = {};
+  rows.forEach((r) => { if (r[0]) settings[r[0]] = r[1] || ""; });
+  return respond(200, { settings });
+}
+
+async function updateSettings(body) {
+  const { settings } = body;
+  if (!settings) return respond(400, { error: "Settings object required" });
+  const sheets = getSheets();
+  const rows = Object.keys(settings).map((k) => [k, settings[k]]);
+  
+  // Menimpa (Update) isi tab Settings
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `Settings!A1:B${rows.length}`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: rows },
+  });
+  return respond(200, { success: true });
 }
