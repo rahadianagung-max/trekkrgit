@@ -173,9 +173,26 @@ async function loadRanking(){
     const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
     if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
 
-  function getAva(p, c='003ec7', bg='e5eeff'){
-    return p.photoUrl ? p.photoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName||p.name)}&background=${bg}&color=${c}&bold=true`;
-  }
+    function getAva(p, c='003ec7', bg='e5eeff'){
+  // 1. Normalize nama (handle semua kemungkinan field dari API)
+  const name =
+    p.displayName ||
+    p.name ||
+    p.playerName ||
+    p.fullName ||
+    'Player';
+
+  // 2. Validasi photo URL (hindari null, undefined, string kosong, atau whitespace)
+  const validPhoto =
+    typeof p.photoUrl === 'string' &&
+    p.photoUrl.trim() !== '';
+
+  // 3. Return avatar
+  return validPhoto
+    ? p.photoUrl
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${c}&bold=true`;
+}
+    
     const top3=d.ranking.slice(0,3), rest=d.ranking.slice(3);
     let h='';
 
