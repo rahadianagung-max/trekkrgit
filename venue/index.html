@@ -58,6 +58,32 @@
 .v-rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--primary)}
 .v-rank--1{color:var(--secondary-container)}
 .v-elo{font-family:'Inter',sans-serif;font-weight:700;color:var(--primary)}
+/* Top 3 podium cards */
+.podium{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.podium-card{border-radius:var(--radius-xl);padding:24px 20px;text-align:center;cursor:pointer;transition:transform var(--motion-base),box-shadow var(--motion-base)}
+.podium-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-soft)}
+.podium-card--1{background:linear-gradient(135deg,#001c6f,#003ec7);color:#fff;grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px}
+.podium-card--2{background:var(--surface-container)}
+.podium-card--3{background:var(--surface-container)}
+.podium-rank{font-family:'Space Grotesk',sans-serif;font-weight:900;opacity:0.25;line-height:1}
+.podium-card--1 .podium-rank{font-size:72px}
+.podium-card--2 .podium-rank,.podium-card--3 .podium-rank{font-size:48px;color:var(--on-surface)}
+.podium-avatar{border-radius:50%;object-fit:cover;margin:16px auto 12px;display:block}
+.podium-card--1 .podium-avatar{width:120px;height:120px;border:4px solid rgba(255,255,255,0.25);box-shadow:0 12px 32px rgba(0,0,0,0.3)}
+.podium-card--2 .podium-avatar,.podium-card--3 .podium-avatar{width:80px;height:80px;border:3px solid var(--surface-highest);box-shadow:0 8px 20px rgba(11,28,48,0.08)}
+.podium-name{font-family:'Space Grotesk',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;margin-top:4px}
+.podium-card--1 .podium-name{font-size:24px}
+.podium-card--2 .podium-name,.podium-card--3 .podium-name{font-size:16px}
+.podium-tier{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px}
+.podium-card--1 .podium-tier{opacity:0.8}
+.podium-card--2 .podium-tier,.podium-card--3 .podium-tier{color:var(--on-surface-variant)}
+.podium-stats{margin-top:10px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em}
+.podium-card--1 .podium-stats{opacity:0.75}
+.podium-card--2 .podium-stats,.podium-card--3 .podium-stats{color:var(--on-surface-variant)}
+/* Table avatar */
+.tbl-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface-highest);flex-shrink:0}
+.tbl-player{display:flex;align-items:center;gap:10px}
+@media(max-width:767px){.podium{grid-template-columns:1fr}.podium-card--1{grid-row:auto;min-height:280px}}
 /* States */
 .state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
 .state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
@@ -141,28 +167,110 @@ async function loadRanking(){
   const c=document.getElementById('rankingContainer');if(!c)return;
   c.innerHTML='<div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading ranking...</p></div>';
   try{
+    // 1. Fetch venue weekly ranking (has: name, elo, w, l, played, gender)
     const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
-    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';return}
-    let h='<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Rank</th><th>Player</th><th>Tier / ELO</th><th>Played</th><th>W/L</th></tr></thead><tbody>';
-    d.ranking.forEach((p,i)=>{
-      const r=i+1;
-      
-      // Menerjemahkan angka ELO pemain (p.elo) menjadi nama tier
-      const tierName = getTierName(p.elo);
+    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
 
-      // PERBAIKAN: Menghitung total played berdasarkan Win + Loss agar selalu akurat 100%
-      const truePlayed = p.w + p.l;
+    // 2. Fetch player photos from national leaderboard (has: photoUrl, displayName)
+    let photoMap={};
+    try{
+      const lb=await TrekkrAPI.getNationalLeaderboard({limit:200});
+      if(lb.leaderboard){lb.leaderboard.forEach(p=>{photoMap[p.name.toLowerCase()]={photoUrl:p.photoUrl||'',displayName:p.displayName||p.name}})}
+    }catch(e){}
 
-      h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
-        <td><span class="v-rank${r<=3?' v-rank--1':''}">${String(r).padStart(2,'0')}</span></td>
-        <td><strong>${p.name}</strong></td>
-        
-        <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tierName}</span><br><span class="v-elo">${p.elo}</span></td>
-        
-        <td>${truePlayed}</td><td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
+    // 3. Helper: get avatar URL
+    function ava(p){
+      const info=photoMap[p.name.toLowerCase()];
+      if(info&&info.photoUrl)return info.photoUrl;
+      const dn=info?info.displayName:p.name;
+      return 'https://ui-avatars.com/api/?name='+encodeURIComponent(dn)+'&background=e5eeff&color=003ec7&bold=true&size=200';
+    }
+    function dn(p){const info=photoMap[p.name.toLowerCase()];return info?info.displayName:p.name}
+
+    const top3=d.ranking.slice(0,3),rest=d.ranking.slice(3);
+    let h='';
+
+    // ── TOP 3 PODIUM CARDS ──
+    if(top3.length>=1){
+      h+='<p class="section-title" style="margin-bottom:4px">Weekly Top Players</p>';
+      h+='<div class="podium">';
+
+      // Rank #1 — large center card
+      const p1=top3[0],t1=getTierName(p1.elo);
+      h+=`<div class="podium-card podium-card--1" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'">
+        <div class="podium-rank">01</div>
+        <img class="podium-avatar" src="${ava(p1)}" alt="${dn(p1)}">
+        <div class="podium-name">${dn(p1)}</div>
+        <div class="podium-tier">${t1} · ELO ${p1.elo}</div>
+        <div class="podium-stats">${p1.w}W / ${p1.l}L · ${p1.w+p1.l} matches</div>
+      </div>`;
+
+      // Rank #2
+      if(top3[1]){const p2=top3[1],t2=getTierName(p2.elo);
+      h+=`<div class="podium-card podium-card--2" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p2.name)}'">
+        <div class="podium-rank">02</div>
+        <img class="podium-avatar" src="${ava(p2)}" alt="${dn(p2)}">
+        <div class="podium-name">${dn(p2)}</div>
+        <div class="podium-tier">${t2} · ELO ${p2.elo}</div>
+        <div class="podium-stats">${p2.w}W / ${p2.l}L · ${p2.w+p2.l} matches</div>
+      </div>`}
+
+      // Rank #3
+      if(top3[2]){const p3=top3[2],t3=getTierName(p3.elo);
+      h+=`<div class="podium-card podium-card--3" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p3.name)}'">
+        <div class="podium-rank">03</div>
+        <img class="podium-avatar" src="${ava(p3)}" alt="${dn(p3)}">
+        <div class="podium-name">${dn(p3)}</div>
+        <div class="podium-tier">${t3} · ELO ${p3.elo}</div>
+        <div class="podium-stats">${p3.w}W / ${p3.l}L · ${p3.w+p3.l} matches</div>
+      </div>`}
+
+      h+='</div>';
+    }
+
+    // ── TABLE: Rank #4+ ──
+    if(rest.length){
+      h+='<div class="data-table-wrap" style="margin-top:20px"><table class="data-table"><thead><tr><th>Rank</th><th>Player</th><th>Tier / ELO</th><th>Played</th><th>W/L</th></tr></thead><tbody>';
+      rest.forEach((p,i)=>{
+        const r=i+4,tier=getTierName(p.elo),played=p.w+p.l;
+        h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
+          <td><span class="v-rank">${String(r).padStart(2,'0')}</span></td>
+          <td><div class="tbl-player"><img class="tbl-avatar" src="${ava(p)}" alt="${dn(p)}"><strong>${dn(p)}</strong></div></td>
+          <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tier}</span><br><span class="v-elo">${p.elo}</span></td>
+          <td>${played}</td>
+          <td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
+      });
+      h+='</tbody></table></div>';
+    }
+
+    c.innerHTML=h;
+    loadMatchHistory();
+  }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory()}
+}
+
+// ── MATCH HISTORY for current week ──
+async function loadMatchHistory(){
+  let hc=document.getElementById('historyContainer');
+  if(!hc){const rc=document.getElementById('rankingContainer');if(!rc)return;const div=document.createElement('div');div.id='historyContainer';div.style.marginTop='32px';rc.parentElement.appendChild(div);hc=div}
+  hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px">Loading matches...</div>';
+  try{
+    const d=await TrekkrAPI.getVenueMatches(vName,{week:`W${cW}`});
+    if(!d.matches||!d.matches.length){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">No matches recorded this week.</div>';return}
+    let mh='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p>';
+    mh+='<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Gender</th></tr></thead><tbody>';
+    d.matches.forEach(m=>{
+      const t1w=m.scoreT1>m.scoreT2,t2w=m.scoreT2>m.scoreT1;
+      mh+=`<tr style="cursor:default">
+        <td style="font-size:12px;color:var(--on-surface-variant)">${m.date||'—'}</td>
+        <td><span style="font-weight:${t1w?'800':'400'};${t1w?'color:var(--ok)':''}">${m.p1t1}${m.p2t1?' & '+m.p2t1:''}</span></td>
+        <td style="text-align:center"><span style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:18px;${t1w?'color:var(--ok)':''}">${m.scoreT1}</span><span style="color:var(--on-surface-variant);margin:0 4px">—</span><span style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:18px;${t2w?'color:var(--ok)':''}">${m.scoreT2}</span></td>
+        <td><span style="font-weight:${t2w?'800':'400'};${t2w?'color:var(--ok)':''}">${m.p1t2}${m.p2t2?' & '+m.p2t2:''}</span></td>
+        <td><span style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)">${m.gender}</span></td></tr>`;
     });
-    h+='</tbody></table></div>';c.innerHTML=h;
-  }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>'}
+    mh+='</tbody></table></div>';
+    mh+=`<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--on-surface-variant)">${d.matches.length} match${d.matches.length>1?'es':''} recorded</div>`;
+    hc.innerHTML=mh;
+  }catch(e){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">Could not load match history.</div>'}
 }
 
 window.addEventListener('load',init);
