@@ -174,9 +174,9 @@ async function loadRanking(){
     if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
 
     // Same avatar function as national ranking page
-    function getAva(p, clr='003ec7', bg='e5eeff'){
-      return p.photoUrl ? p.photoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName||p.name)}&background=${bg}&color=${clr}&bold=true`;
-    }
+    function getAva(p, c='003ec7', bg='e5eeff'){
+    return p.photoUrl ? p.photoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName||p.name)}&background=${bg}&color=${c}&bold=true`;
+  }
 
     const top3=d.ranking.slice(0,3), rest=d.ranking.slice(3);
     let h='';
