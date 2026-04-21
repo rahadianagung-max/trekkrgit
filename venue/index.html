@@ -168,43 +168,50 @@ async function loadRanking(){
   c.innerHTML='<div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading ranking...</p></div>';
   try{
     const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
-    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';return}
+    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
 
-    const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' rx='16' fill='%23e5eeff'/%3E%3Ccircle cx='60' cy='45' r='20' fill='%23d3e4fe'/%3E%3Cpath d='M25 110c0-19 16-35 35-35s35 16 35 35' fill='%23d3e4fe'/%3E%3C/svg%3E";
+    const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' rx='16' fill='%23dce9ff'/%3E%3Ccircle cx='60' cy='42' r='22' fill='%23b8ccf0'/%3E%3Cpath d='M22 112c0-21 17-38 38-38s38 17 38 38' fill='%23b8ccf0'/%3E%3C/svg%3E";
     const top3=d.ranking.slice(0,3), rest=d.ranking.slice(3);
     let h='';
 
-    // ── SPOTLIGHT: Rank #1 (large hero) + #2 & #3 (side cards) ──
+    // ── SPOTLIGHT: Rank #1 (large) + #2 & #3 (side cards) ──
     if(top3.length>=1){
-      const p1=top3[0];
-      const tier1=getTierName(p1.elo);
+      const p1=top3[0], tier1=getTierName(p1.elo), played1=p1.w+p1.l;
       h+=`<p class="section-title" style="margin-bottom:4px">Weekly Top Players</p>`;
       h+=`<div class="spotlight">`;
 
-      // #1 — Large feature card
+      // #1 — Large feature card: W/L at top-right, name, then ELO+tier below
       h+=`<article class="spotlight-feature" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'">
         <div class="spotlight-feature__rank">01</div>
-        <div class="spotlight-feature__points"><div class="points-label">ELO</div><div class="points-value">${p1.elo}</div></div>
+        <div class="spotlight-feature__points">
+          <div class="points-label">W / L</div>
+          <div class="points-value">${p1.w} / ${p1.l}</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:2px">${played1} matches</div>
+        </div>
+        <img class="spotlight-feature__photo" src="${p1.photoUrl||DA}" onerror="this.src='${DA}'">
         <h2 class="spotlight-feature__name">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
-        <p class="spotlight-feature__meta">${tier1} · ${p1.w}W/${p1.l}L · ${p1.w+p1.l} matches</p>
-        ${p1.photoUrl?`<img class="spotlight-feature__photo" src="${p1.photoUrl}" onerror="this.style.display='none'">`:''}
+        <p class="spotlight-feature__meta">${tier1} · ELO ${p1.elo}</p>
       </article>`;
 
       // #2 & #3 — Side column cards
       h+=`<div class="spotlight-col">`;
       [1,2].forEach(i=>{
         if(!top3[i])return;
-        const p=top3[i], rk=String(i+1).padStart(2,'0'), tier=getTierName(p.elo);
+        const p=top3[i], rk=String(i+1).padStart(2,'0'), tier=getTierName(p.elo), played=p.w+p.l;
         h+=`<article class="player-card" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
           <div class="player-card__top">
             <div class="player-card__rank">${rk}</div>
             <div class="player-card__info">
-              ${p.photoUrl?`<img class="player-card__photo" src="${p.photoUrl}" onerror="this.style.display='none'">`:''}
-              <div class="player-card__points"><div class="points-label">ELO</div><div class="points-value">${p.elo}</div></div>
+              <img class="player-card__photo" src="${p.photoUrl||DA}" onerror="this.src='${DA}'">
+              <div class="player-card__points">
+                <div class="points-label">W / L</div>
+                <div class="points-value">${p.w} / ${p.l}</div>
+                <div style="font-size:10px;color:var(--on-surface-variant)">${played} matches</div>
+              </div>
             </div>
           </div>
           <h3 class="player-card__name">${(p.displayName||p.name).replace(/ /,'<br/>')}</h3>
-          <p class="player-card__meta">${tier} · ${p.w}W/${p.l}L · ${p.w+p.l} matches</p>
+          <p class="player-card__meta">${tier} · ELO ${p.elo}</p>
         </article>`;
       });
       h+=`</div></div>`;
@@ -217,7 +224,7 @@ async function loadRanking(){
         const r=i+4, tier=getTierName(p.elo), played=p.w+p.l;
         h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
           <td><span class="v-rank">${String(r).padStart(2,'0')}</span></td>
-          <td><div class="rt-cell">${p.photoUrl?`<img class="rt-photo" src="${p.photoUrl}" onerror="this.style.display='none'">`:''}
+          <td><div class="rt-cell"><img class="rt-photo" src="${p.photoUrl||DA}" onerror="this.src='${DA}'">
             <strong>${p.displayName||p.name}</strong></div></td>
           <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tier}</span><br><span class="v-elo">${p.elo}</span></td>
           <td>${played}</td>
@@ -227,7 +234,46 @@ async function loadRanking(){
     }
 
     c.innerHTML=h;
-  }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>'}
+
+    // Load match history below ranking
+    loadMatchHistory();
+
+  }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory()}
+}
+
+// ── MATCH HISTORY for current week ──
+async function loadMatchHistory(){
+  let hc=document.getElementById('historyContainer');
+  if(!hc){
+    // Create the container after rankingContainer
+    const rc=document.getElementById('rankingContainer');
+    if(!rc)return;
+    const div=document.createElement('div');div.id='historyContainer';div.style.marginTop='32px';
+    rc.parentElement.appendChild(div);
+    hc=div;
+  }
+  hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px">Loading matches...</div>';
+  try{
+    const d=await TrekkrAPI.getVenueMatches(vName,{week:`W${cW}`});
+    if(!d.matches||!d.matches.length){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">No matches recorded this week.</div>';return}
+    let mh='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p>';
+    mh+=`<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Gender</th></tr></thead><tbody>`;
+    d.matches.forEach(m=>{
+      const t1won=m.scoreT1>m.scoreT2, t2won=m.scoreT2>m.scoreT1;
+      mh+=`<tr style="cursor:default">
+        <td style="font-size:12px;color:var(--on-surface-variant)">${m.date||'—'}</td>
+        <td><span style="font-weight:${t1won?'800':'400'};${t1won?'color:var(--ok)':''}">${m.p1t1}${m.p2t1?' & '+m.p2t1:''}</span></td>
+        <td style="text-align:center"><span style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:18px;${t1won?'color:var(--ok)':''}">${m.scoreT1}</span>
+          <span style="color:var(--on-surface-variant);margin:0 4px">—</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:18px;${t2won?'color:var(--ok)':''}">${m.scoreT2}</span></td>
+        <td><span style="font-weight:${t2won?'800':'400'};${t2won?'color:var(--ok)':''}">${m.p1t2}${m.p2t2?' & '+m.p2t2:''}</span></td>
+        <td><span style="font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)">${m.gender}</span></td>
+      </tr>`;
+    });
+    mh+=`</tbody></table></div>`;
+    mh+=`<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--on-surface-variant)">${d.matches.length} match${d.matches.length>1?'es':''} recorded</div>`;
+    hc.innerHTML=mh;
+  }catch(e){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">Could not load match history.</div>'}
 }
 
 window.addEventListener('load',init);
