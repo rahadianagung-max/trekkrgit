@@ -58,32 +58,35 @@
 .v-rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--primary)}
 .v-rank--1{color:var(--secondary-container)}
 .v-elo{font-family:'Inter',sans-serif;font-weight:700;color:var(--primary)}
+
+/* Avatar Styles — same as national ranking */
+.avatar-top1{width:100%;max-width:320px;aspect-ratio:1/1;border-radius:12px;object-fit:cover;border:4px solid rgba(255,255,255,0.2);margin-top:32px;background:rgba(255,255,255,0.1);box-shadow:0 16px 40px rgba(0,0,0,0.3)}
+.avatar-top23{width:100%;max-width:180px;aspect-ratio:1/1;border-radius:12px;object-fit:cover;background:var(--surface-high);border:2px solid rgba(115,118,136,0.1);box-shadow:0 8px 24px rgba(11,28,48,0.08)}
+.avatar-s{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--surface-high);flex-shrink:0}
+.avatar-xs{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface-highest);flex-shrink:0}
+.flex-player{display:flex;align-items:center;gap:12px}
+.flex-player-col{display:flex;flex-direction:column;justify-content:center}
+
 /* Spotlight cards for top 3 */
 .spotlight{margin-top:var(--space-4);display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
-.spotlight-feature{position:relative;border-radius:var(--radius-xl);overflow:hidden;min-height:320px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:28px;cursor:pointer;transition:box-shadow var(--motion-base)}
+.spotlight-feature{position:relative;border-radius:var(--radius-xl);overflow:hidden;min-height:420px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:28px;cursor:pointer;transition:box-shadow var(--motion-base)}
 .spotlight-feature:hover{box-shadow:0 24px 48px rgba(0,42,155,0.22)}
-.spotlight-feature__rank{font-family:'Space Grotesk',sans-serif;font-size:80px;font-weight:900;line-height:0.8;opacity:0.24}
+.spotlight-feature__rank{font-family:'Space Grotesk',sans-serif;font-size:92px;font-weight:900;line-height:0.8;opacity:0.24}
 .spotlight-feature__points{position:absolute;top:24px;right:24px;text-align:right}
 .points-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.82}
-.points-value{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:800}
-.spotlight-feature__name{margin-top:60px;font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,46px);line-height:0.92;letter-spacing:-0.03em;text-transform:uppercase;font-weight:900}
+.points-value{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:800}
+.spotlight-feature__name{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,4vw,56px);line-height:0.92;letter-spacing:-0.03em;text-transform:uppercase;font-weight:900}
 .spotlight-feature__meta{margin-top:8px;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.85}
-.spotlight-feature__photo{position:absolute;bottom:24px;right:24px;width:90px;height:90px;border-radius:var(--radius-lg);object-fit:cover;border:3px solid rgba(255,255,255,0.2)}
 .spotlight-col{display:grid;gap:12px}
-.player-card{border-radius:var(--radius-lg);background:var(--surface-container);padding:18px;cursor:pointer;transition:background var(--motion-base)}
+.player-card{border-radius:var(--radius-lg);background:var(--surface-container);padding:16px;cursor:pointer;transition:background var(--motion-base)}
 .player-card:hover{background:var(--surface-highest)}
 .player-card__top{display:flex;justify-content:space-between;align-items:center}
-.player-card__rank{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:900;color:rgba(11,28,48,0.18);line-height:0.9}
-.player-card__info{display:flex;align-items:center;gap:10px}
-.player-card__photo{width:48px;height:48px;border-radius:var(--radius-md);object-fit:cover}
+.player-card__rank{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:900;color:rgba(11,28,48,0.18);line-height:0.9}
 .player-card__points{text-align:right}
-.player-card__name{margin-top:12px;font-family:'Space Grotesk',sans-serif;font-size:22px;line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
+.player-card__name{font-family:'Space Grotesk',sans-serif;font-size:22px;line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
 .player-card__meta{margin-top:4px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
-/* Table photo */
-.rt-cell{display:flex;gap:10px;align-items:center}
-.rt-photo{width:36px;height:36px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0}
 @media(max-width:1199px){.spotlight{grid-template-columns:1fr}}
-@media(max-width:767px){.spotlight-feature{min-height:240px}.spotlight-feature__name{margin-top:40px}}
+@media(max-width:767px){.spotlight-feature{min-height:320px}}
 /* States */
 .state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
 .state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
@@ -170,62 +173,71 @@ async function loadRanking(){
     const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
     if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
 
-    const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' rx='16' fill='%23dce9ff'/%3E%3Ccircle cx='60' cy='42' r='22' fill='%23b8ccf0'/%3E%3Cpath d='M22 112c0-21 17-38 38-38s38 17 38 38' fill='%23b8ccf0'/%3E%3C/svg%3E";
+    // Same avatar function as national ranking page
+    function getAva(p, clr='003ec7', bg='e5eeff'){
+      return p.photoUrl ? p.photoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName||p.name)}&background=${bg}&color=${clr}&bold=true`;
+    }
+
     const top3=d.ranking.slice(0,3), rest=d.ranking.slice(3);
     let h='';
 
-    // ── SPOTLIGHT: Rank #1 (large) + #2 & #3 (side cards) ──
+    // ── SPOTLIGHT: Rank #1 (large) + #2 & #3 (side cards) — same layout as national ──
     if(top3.length>=1){
       const p1=top3[0], tier1=getTierName(p1.elo), played1=p1.w+p1.l;
+      const ava1=getAva(p1,'fff','003ec7');
       h+=`<p class="section-title" style="margin-bottom:4px">Weekly Top Players</p>`;
       h+=`<div class="spotlight">`;
 
-      // #1 — Large feature card: W/L at top-right, name, then ELO+tier below
-      h+=`<article class="spotlight-feature" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'">
+      // #1 — Large feature card with big square photo
+      h+=`<article class="spotlight-feature" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'" style="animation:fadeUp .5s ease both">
         <div class="spotlight-feature__rank">01</div>
         <div class="spotlight-feature__points">
           <div class="points-label">W / L</div>
           <div class="points-value">${p1.w} / ${p1.l}</div>
           <div style="font-size:11px;opacity:0.6;margin-top:2px">${played1} matches</div>
         </div>
-        <img class="spotlight-feature__photo" src="${p1.photoUrl||DA}" onerror="this.src='${DA}'">
-        <h2 class="spotlight-feature__name">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
+        <img src="${ava1}" class="avatar-top1" alt="${p1.displayName||p1.name}">
+        <h2 class="spotlight-feature__name" style="margin-top:24px">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
         <p class="spotlight-feature__meta">${tier1} · ELO ${p1.elo}</p>
       </article>`;
 
-      // #2 & #3 — Side column cards
+      // #2 & #3 — Side column cards with centered square photo
       h+=`<div class="spotlight-col">`;
       [1,2].forEach(i=>{
         if(!top3[i])return;
         const p=top3[i], rk=String(i+1).padStart(2,'0'), tier=getTierName(p.elo), played=p.w+p.l;
-        h+=`<article class="player-card" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
+        const ava=getAva(p);
+        h+=`<article class="player-card" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .5s ease ${i*.1}s both">
           <div class="player-card__top">
             <div class="player-card__rank">${rk}</div>
-            <div class="player-card__info">
-              <img class="player-card__photo" src="${p.photoUrl||DA}" onerror="this.src='${DA}'">
-              <div class="player-card__points">
-                <div class="points-label">W / L</div>
-                <div class="points-value">${p.w} / ${p.l}</div>
-                <div style="font-size:10px;color:var(--on-surface-variant)">${played} matches</div>
-              </div>
+            <div class="player-card__points">
+              <div class="points-label">W / L</div>
+              <div class="points-value">${p.w} / ${p.l}</div>
+              <div style="font-size:10px;color:var(--on-surface-variant)">${played} matches</div>
             </div>
           </div>
-          <h3 class="player-card__name">${(p.displayName||p.name).replace(/ /,'<br/>')}</h3>
-          <p class="player-card__meta">${tier} · ELO ${p.elo}</p>
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;margin-top:16px">
+            <img src="${ava}" class="avatar-top23" alt="${p.displayName||p.name}">
+            <div class="flex-player-col">
+              <h3 class="player-card__name" style="margin-top:0">${p.displayName||p.name}</h3>
+              <p class="player-card__meta" style="margin-top:0">${tier} · ELO ${p.elo}</p>
+            </div>
+          </div>
         </article>`;
       });
       h+=`</div></div>`;
     }
 
-    // ── TABLE: Rank #4+ ──
+    // ── TABLE: Rank #4+ with round avatar ──
     if(rest.length){
       h+=`<div class="data-table-wrap" style="margin-top:20px"><table class="data-table"><thead><tr><th>Rank</th><th>Player</th><th>Tier / ELO</th><th>Played</th><th>W/L</th></tr></thead><tbody>`;
       rest.forEach((p,i)=>{
         const r=i+4, tier=getTierName(p.elo), played=p.w+p.l;
+        const ava=getAva(p);
         h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
           <td><span class="v-rank">${String(r).padStart(2,'0')}</span></td>
-          <td><div class="rt-cell"><img class="rt-photo" src="${p.photoUrl||DA}" onerror="this.src='${DA}'">
-            <strong>${p.displayName||p.name}</strong></div></td>
+          <td><div class="flex-player"><img src="${ava}" class="avatar-xs" alt="${p.displayName||p.name}">
+            <div class="flex-player-col"><strong>${p.displayName||p.name}</strong></div></div></td>
           <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tier}</span><br><span class="v-elo">${p.elo}</span></td>
           <td>${played}</td>
           <td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
@@ -234,8 +246,6 @@ async function loadRanking(){
     }
 
     c.innerHTML=h;
-
-    // Load match history below ranking
     loadMatchHistory();
 
   }catch(e){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory()}
