@@ -693,10 +693,12 @@ async function loadPlayers() {
       apiRequest("players"),
       apiRequest("elo/latest"),
     ]);
-    const eloMap = {};
-    (eRes.players || []).forEach(p => { eloMap[p.name] = p.elo || 1350; });
+    // elo/latest returns { players: { "Name": { elo, delta, w, l, ... } } } — an object, not array
+    const eloMap = eRes.players || {};
     state.trekkrPlayers = (pRes.players || []).map(p => ({
-      ...p, elo: eloMap[p.name] || 1350, matchCount: 0,
+      ...p,
+      elo: (eloMap[p.name]?.elo) || 1350,
+      matchCount: ((eloMap[p.name]?.w || 0) + (eloMap[p.name]?.l || 0)),
     }));
     renderPlayerList();
   } catch(e) {
