@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1A6FE8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Trekkr Mexicano</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --blue: #1A6FE8;
+      --blue-dark: #0D52B8;
+      --blue-light: #EBF2FF;
+      --blue-mid: #C5D9FA;
+      --white: #FFFFFF;
+      --bg: #F0F5FF;
+      --card: #FFFFFF;
+      --text: #0F172A;
+      --text2: #475569;
+      --text3: #94A3B8;
+      --border: #E2E8F0;
+      --green: #16A34A;
+      --green-light: #DCFCE7;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
+      --gold: #F59E0B;
+      --gold-light: #FEF3C7;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 2px 12px rgba(26,111,232,0.08);
+      --shadow-md: 0 4px 24px rgba(26,111,232,0.12);
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+
+    .hidden { display: none !important; }
+
+    /* HEADER */
+    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header-logo { display: flex; align-items: center; gap: 8px; }
+    .header-logo-mark { width: 32px; height: 32px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .header-title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 11px; color: var(--text3); font-weight: 500; margin-top: 1px; }
+    .header-badge { background: var(--blue-light); color: var(--blue); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    /* SCREEN */
+    .screen { padding: 20px; }
+    .screen-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; }
+    .screen-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+    /* CARD */
+    .card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 12px; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+    /* INPUTS */
+    .input-group { margin-bottom: 14px; }
+    .input-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+    .input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .input:focus { border-color: var(--blue); background: white; }
+    .input::placeholder { color: var(--text3); }
+    select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+    /* BUTTONS */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; width: 100%; min-height: 48px; }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-secondary { background: var(--blue-light); color: var(--blue); }
+    .btn-secondary:hover { background: var(--blue-mid); }
+    .btn-danger { background: var(--red-light); color: var(--red); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
+    .btn-sm { padding: 8px 14px; font-size: 13px; min-height: 36px; border-radius: 8px; width: auto; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* SEGMENT */
+    .segment { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 4px; gap: 4px; margin-bottom: 14px; }
+    .seg-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; border-radius: 7px; cursor: pointer; transition: all 0.15s; color: var(--text2); background: transparent; }
+    .seg-btn.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+    /* COUNTER */
+    .counter { display: flex; align-items: center; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid var(--border); overflow: hidden; }
+    .counter-btn { width: 44px; height: 44px; border: none; background: transparent; font-size: 20px; color: var(--blue); cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 600; transition: background 0.1s; }
+    .counter-btn:hover { background: var(--blue-light); }
+    .counter-val { flex: 1; text-align: center; font-size: 18px; font-weight: 700; color: var(--text); }
+
+    /* PLAYER CHIP */
+    .player-chip { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .player-chip.selected { background: var(--blue-light); border-color: var(--blue); }
+    .player-chip.selected .chip-name { color: var(--blue); }
+    .chip-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+    .chip-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .chip-check { width: 20px; height: 20px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .chip-gender { font-size: 11px; color: var(--text3); background: var(--border); padding: 1px 6px; border-radius: 20px; }
+
+    /* SEARCH */
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
+    .search-input { padding-left: 38px !important; }
+
+    /* SCORE */
+    .score-row { display: flex; align-items: center; gap: 8px; }
+    .score-team { flex: 1; }
+    .score-team-name { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-align: center; line-height: 1.4; min-height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .score-vs { font-size: 18px; font-weight: 800; color: var(--text3); padding: 0 4px; margin-top: 22px; }
+    .score-input { width: 100%; text-align: center; font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; transition: all 0.15s; }
+    .score-input:focus { border-color: var(--blue); background: white; }
+    .score-input.winner { border-color: var(--green); background: var(--green-light); color: var(--green); }
+    .score-input.loser { border-color: var(--red-light); background: var(--red-light); color: var(--red); }
+
+    /* COURT CARD */
+    .court-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); border: 1.5px solid var(--border); margin-bottom: 14px; }
+    .court-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .court-badge { background: var(--blue); color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+    .court-status { font-size: 12px; font-weight: 600; }
+    .court-status.done { color: var(--green); }
+    .court-status.pending { color: var(--text3); }
+
+    /* LEADERBOARD */
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1.5px solid var(--border); }
+    .lb-row.rank1 { border-color: #FFD700; background: #FFFBEB; }
+    .lb-row.rank2 { border-color: #C0C0C0; background: #F8FAFC; }
+    .lb-row.rank3 { border-color: #CD7F32; background: #FFF8F5; }
+    .lb-rank { font-size: 16px; font-weight: 800; width: 28px; text-align: center; color: var(--text3); }
+    .lb-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+    .lb-info { flex: 1; }
+    .lb-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .lb-elo { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+    .lb-stats { text-align: right; }
+    .lb-wl { font-size: 14px; font-weight: 700; color: var(--text); }
+    .lb-diff { font-size: 12px; font-weight: 600; }
+    .lb-diff.pos { color: var(--green); }
+    .lb-diff.neg { color: var(--red); }
+    .lb-diff.zero { color: var(--text3); }
+
+    /* ROUND BADGE */
+    .round-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--blue); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+
+    /* PODIUM */
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 24px 0; }
+    .podium-slot { display: flex; flex-direction: column; align-items: center; }
+    .podium-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; margin-bottom: 8px; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .podium-name { font-size: 12px; font-weight: 700; text-align: center; max-width: 80px; line-height: 1.3; }
+    .podium-base { border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: white; width: 80px; margin-top: 8px; }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 61px; z-index: 99; }
+    .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; background: transparent; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ALERT */
+    .alert { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+    .alert-red { background: var(--red-light); color: var(--red); }
+    .alert-blue { background: var(--blue-light); color: var(--blue); }
+    .alert-green { background: var(--green-light); color: var(--green); }
+
+    /* SPINNER */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    .spinner-blue { border-color: rgba(26,111,232,0.2); border-top-color: var(--blue); }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.25s ease; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+    .modal { background: var(--white); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 430px; max-height: 90vh; overflow-y: auto; }
+    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+
+    /* MISC */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-12 { margin-bottom: 12px; }
+    .text-center { text-align: center; }
+    .pb-safe { padding-bottom: 40px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .empty { text-align: center; padding: 32px 0; color: var(--text3); font-size: 14px; }
+    .partner-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--blue-light); border-radius: 8px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--blue); }
+
+    /* FIXED BOTTOM BAR */
+    .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: white; border-top: 1px solid var(--border); padding: 12px 20px; z-index: 50; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+    /* SELECTED TAGS */
+    .selected-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-light); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--blue); margin: 0 4px 4px 0; }
+    .selected-tag button { background: none; border: none; cursor: pointer; color: var(--blue); padding: 0; line-height: 1; font-size: 14px; }
+
+    /* PLAYER MINI */
+    .player-mini { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .mini-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">
+      <div class="header-logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <ellipse cx="10" cy="10" rx="7" ry="7" stroke="white" stroke-width="2"/>
+          <line x1="10" y1="3" x2="10" y2="17" stroke="white" stroke-width="1.5"/>
+          <line x1="3" y1="10" x2="17" y2="10" stroke="white" stroke-width="1.5"/>
+          <line x1="15" y1="15" x2="22" y2="22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="header-title">Trekkr Mexicano</div>
+        <div class="header-subtitle" id="header-venue">Daily Match System</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-badge hidden" id="header-round-badge">Ronde 1</div>
+      <button class="btn btn-ghost btn-sm hidden" id="btn-logout" style="width:auto;gap:6px" onclick="handleLogout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: LOGIN                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-login" class="screen fade-up">
+    <div style="text-align:center;padding:32px 0 28px">
+      <div style="width:72px;height:72px;background:var(--blue);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+          <ellipse cx="10" cy="10" rx="7" ry="7" stroke="white" stroke-width="2"/>
+          <line x1="10" y1="3" x2="10" y2="17" stroke="white" stroke-width="1.5"/>
+          <line x1="3" y1="10" x2="17" y2="10" stroke="white" stroke-width="1.5"/>
+          <line x1="15" y1="15" x2="22" y2="22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="screen-title">Selamat Datang</div>
+      <div class="screen-sub">Login dengan akun venue admin Trekkr</div>
+    </div>
+    <div class="card">
+      <div class="alert alert-red hidden" id="login-error"></div>
+      <div class="input-group">
+        <label class="input-label">Username</label>
+        <input class="input" type="text" id="login-username" placeholder="Username venue admin" autocomplete="username" />
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label class="input-label">Password</label>
+        <input class="input" type="password" id="login-password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') handleLogin()" />
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-login" onclick="handleLogin()">Masuk</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: SETUP                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-setup" class="screen fade-up hidden pb-safe">
+    <div class="screen-title">Setup Match</div>
+    <div class="screen-sub">Konfigurasi daily mexicano match</div>
+    <div class="alert alert-red hidden" id="setup-error"></div>
+
+    <!-- Courts -->
+    <div class="card">
+      <div class="card-title">Jumlah Court</div>
+      <div class="counter">
+        <button class="counter-btn" onclick="changeCourts(-1)">−</button>
+        <div class="counter-val" id="courts-val">2</div>
+        <button class="counter-btn" onclick="changeCourts(1)">+</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="courts-hint">Minimal 8 pemain diperlukan</div>
+    </div>
+
+    <!-- Format -->
+    <div class="card">
+      <div class="card-title">Format Match</div>
+      <div class="segment">
+        <button class="seg-btn active" id="fmt-individual" onclick="setFormat('individual')">🔀 Individual</button>
+        <button class="seg-btn" id="fmt-fixed" onclick="setFormat('fixed')">👥 Fixed Partner</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2)" id="format-hint">Partner berubah setiap ronde berdasarkan ranking</div>
+    </div>
+
+    <!-- Score Format -->
+    <div class="card">
+      <div class="card-title">Format Skor</div>
+      <div class="segment">
+        <button class="seg-btn active" id="sfmt-race" onclick="setScoreFormat('race')">Race To</button>
+        <button class="seg-btn" id="sfmt-bestof" onclick="setScoreFormat('bestof')">Best Of</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:13px;color:var(--text2);font-weight:600" id="score-label">Race to</div>
+        <div class="counter" style="flex:1">
+          <button class="counter-btn" onclick="changeScoreTarget(-1)">−</button>
+          <div class="counter-val" id="score-target-val">4</div>
+          <button class="counter-btn" onclick="changeScoreTarget(1)">+</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="score-hint">Race to 4 games</div>
+    </div>
+
+    <button class="btn btn-primary mt-8" onclick="goToPlayers()">Pilih Pemain →</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PLAYERS                                     -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-players" class="fade-up hidden">
+    <div style="padding:16px 20px 0;background:var(--bg)">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <div class="screen-title" style="margin-bottom:2px">Pilih Pemain</div>
+          <div style="font-size:13px;color:var(--text2)">
+            <span id="player-count-label" style="font-weight:700;color:var(--blue)">0</span>
+            <span id="player-min-label"> / min 8 dipilih</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showAddPlayerModal()">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          Pemain Baru
+        </button>
+      </div>
+      <div class="alert alert-red hidden" id="players-error"></div>
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        </span>
+        <input class="input search-input" id="player-search" placeholder="Cari nama pemain..." oninput="renderPlayerList()" />
+      </div>
+    </div>
+
+    <!-- Selected chips -->
+    <div id="selected-chips-wrap" style="padding:0 20px 8px;display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Dipilih (<span id="selected-count">0</span>)</div>
+      <div id="selected-chips"></div>
+    </div>
+
+    <!-- Fixed partner section -->
+    <div id="partner-section" style="padding:0 20px 8px;display:none">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Pilih Partner (Fixed)</div>
+        <div id="partner-list"></div>
+      </div>
+    </div>
+
+    <!-- Player list -->
+    <div id="player-list" style="padding:0 20px;padding-bottom:100px"></div>
+
+    <!-- Bottom CTA -->
+    <div class="bottom-bar">
+      <button class="btn btn-primary" id="btn-start-match" onclick="startMatch()">Pilih pemain dahulu</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: MATCH                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-match" class="hidden">
+    <div class="tabs">
+      <button class="tab active" id="tab-courts" onclick="switchTab('courts')">🎾 Courts</button>
+      <button class="tab" id="tab-leaderboard" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
+      <button class="tab" id="tab-history" onclick="switchTab('history')">📋 Riwayat</button>
+    </div>
+
+    <!-- Courts Tab -->
+    <div id="tab-content-courts" class="screen pb-safe fade-up">
+      <div class="flex items-center justify-between mb-12">
+        <div>
+          <div class="round-pill" id="round-pill">Ronde 1</div>
+          <div style="font-size:13px;color:var(--text2)" id="score-format-label">Race to 4</div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)" id="courts-progress">0/0 selesai</div>
+      </div>
+      <div class="alert alert-red hidden" id="match-error"></div>
+      <div id="court-cards"></div>
+      <div id="bye-section" style="display:none">
+        <div class="card" style="background:var(--gold-light);border-color:var(--gold)">
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Istirahat Ronde Ini</div>
+          <div id="bye-players"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" id="btn-submit-round" onclick="submitRound()">Submit Skor & Lanjut Ronde →</button>
+        <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Tab -->
+    <div id="tab-content-leaderboard" class="screen pb-safe hidden fade-up">
+      <div class="flex items-center justify-between mb-12">
+        <div class="screen-title" style="margin-bottom:0">Live Leaderboard</div>
+        <div style="background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px" id="lb-round-badge">Ronde 1</div>
+      </div>
+      <div id="leaderboard-list"></div>
+      <div style="margin-top:20px">
+        <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="tab-content-history" class="screen pb-safe hidden fade-up">
+      <div class="screen-title mb-12">Riwayat Ronde</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: DONE                                        -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-done" class="screen fade-up hidden pb-safe">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:40px;margin-bottom:8px">🎉</div>
+      <div class="screen-title">Match Selesai!</div>
+      <div class="screen-sub" id="done-sub">0 ronde · 0 pemain</div>
+    </div>
+
+    <!-- Podium -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="text-align:center">🏆 Podium Pemenang</div>
+      <div class="podium" id="podium"></div>
+    </div>
+
+    <!-- Final standings -->
+    <div class="card">
+      <div class="card-title">Final Standings</div>
+      <div id="final-standings"></div>
+    </div>
+
+    <button class="btn btn-primary mt-16" onclick="newMatch()">+ Match Baru</button>
+  </div>
+
+</div><!-- end #app -->
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MODAL: ADD PLAYER                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-add-player" onclick="closeAddPlayerModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Tambah Pemain Baru</div>
+    <div class="alert alert-red hidden" id="add-player-error"></div>
+    <div class="input-group">
+      <label class="input-label">First Name *</label>
+      <input class="input" id="new-first-name" placeholder="Contoh: Budi" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Last Name *</label>
+      <input class="input" id="new-last-name" placeholder="Contoh: Santoso" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Gender</label>
+      <div class="segment">
+        <button class="seg-btn active" id="g-male" onclick="setNewGender('M')">♂ Male</button>
+        <button class="seg-btn" id="g-female" onclick="setNewGender('F')">♀ Female</button>
+      </div>
+    </div>
+    <div class="alert alert-blue hidden" id="add-player-preview"></div>
+    <div class="grid-2">
+      <button class="btn btn-ghost" onclick="closeAddPlayerModal()">Batal</button>
+      <button class="btn btn-primary" id="btn-add-player" onclick="handleAddPlayer()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MODAL: END CONFIRM                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-end-confirm" onclick="closeEndConfirm()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏁 Akhiri Match?</div>
+    <div style="font-size:14px;color:var(--text2);margin-bottom:20px">
+      Match akan diakhiri dan hasil disimpan ke Trekkr. Pemenang ditentukan berdasarkan W/L saat ini.
+    </div>
+    <div class="card" style="background:var(--blue-light);border-color:var(--blue-mid);margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">Top 3 Saat Ini</div>
+      <div id="end-top3"></div>
+    </div>
+    <div class="grid-2">
+      <button class="btn btn-ghost" onclick="closeEndConfirm()">Kembali</button>
+      <button class="btn btn-danger" id="btn-end-match" onclick="endMatch()">Ya, Akhiri</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════════════════════
+const API_BASE = "https://trekkr.online/api";
+
+const state = {
+  token: localStorage.getItem("mx_token") || "",
+  venue: localStorage.getItem("mx_venue") || "",
+  username: localStorage.getItem("mx_user") || "",
+  courts: 2,
+  format: "individual",
+  scoreFormat: "race",
+  scoreTarget: 4,
+  trekkrPlayers: [],
+  selectedPlayers: [],
+  partners: {},
+  playerStats: {},
+  rounds: [],
+  currentRound: 0,
+  newGender: "M",
+  activeTab: "courts",
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════════════
+async function apiRequest(path, options = {}) {
+  const url = `${API_BASE}/${path}`;
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+    },
+    ...options,
+  };
+  const res = await fetch(url, config);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ELO ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+function getKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function calcExpected(a, b) { return 1 / (1 + Math.pow(10, (b - a) / 400)); }
+
+function calcMatchElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
+  const t1Avg = (p1t1.elo + p2t1.elo) / 2;
+  const t2Avg = (p1t2.elo + p2t2.elo) / 2;
+  const t1R = s1 > s2 ? 1 : s1 < s2 ? 0 : 0.5;
+  const t2R = 1 - t1R;
+  const margin = 1 + Math.min(Math.abs(s1 - s2) * 0.04, 0.3);
+  const exp1 = calcExpected(t1Avg, t2Avg);
+  const exp2 = 1 - exp1;
+  const upd = (p, result, exp) => {
+    const k = getKFactor(p.matchCount || 0) * margin;
+    const delta = Math.round(k * (result - exp));
+    return { name: p.name, newElo: p.elo + delta, delta, w: result === 1 ? 1 : 0, l: result === 0 ? 1 : 0 };
+  };
+  return [upd(p1t1,t1R,exp1), upd(p2t1,t1R,exp1), upd(p1t2,t2R,exp2), upd(p2t2,t2R,exp2)];
+}
+
+function getTierName(elo) {
+  if (elo >= 3000) return "Platinum";
+  if (elo >= 2500) return "Gold";
+  if (elo >= 2100) return "Silver";
+  if (elo >= 1800) return "Upper Bronze";
+  if (elo >= 1500) return "Bronze";
+  if (elo >= 1200) return "Lower Bronze";
+  if (elo >= 900) return "Upper Beginner";
+  return "Beginner";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AVATAR HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const COLORS = ["#1A6FE8","#0D52B8","#7C3AED","#DB2777","#059669","#D97706","#DC2626","#0891B2"];
+function avatarColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % COLORS.length;
+  return COLORS[h];
+}
+function initials(name) {
+  const p = name.trim().split(" ");
+  return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+function avatarHTML(name, size=36, fontSize=13) {
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${avatarColor(name)};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;font-weight:700;color:white;flex-shrink:0">${initials(name)}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  ["login","setup","players","match","done"].forEach(s => {
+    document.getElementById(`screen-${s}`).classList.add("hidden");
+  });
+  document.getElementById(`screen-${id}`).classList.remove("hidden");
+  document.getElementById(`screen-${id}`).classList.add("fade-up");
+  // Header badge
+  document.getElementById("header-round-badge").classList.toggle("hidden", id !== "match");
+  document.getElementById("btn-logout").classList.toggle("hidden", id === "login");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════
+async function handleLogin() {
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errEl = document.getElementById("login-error");
+  const btn = document.getElementById("btn-login");
+  if (!username || !password) { showError(errEl, "Username dan password wajib diisi"); return; }
+  errEl.classList.add("hidden");
+  btn.innerHTML = '<span class="spinner"></span> Masuk...';
+  btn.disabled = true;
+  try {
+    const data = await apiRequest("auth/login", { method:"POST", body: JSON.stringify({username, password}) });
+    state.token = data.token; state.venue = data.venue; state.username = data.username;
+    localStorage.setItem("mx_token", data.token);
+    localStorage.setItem("mx_venue", data.venue);
+    localStorage.setItem("mx_user", data.username);
+    document.getElementById("header-venue").textContent = data.venue ? `📍 ${data.venue}` : "Daily Match System";
+    showScreen("setup");
+  } catch(e) {
+    showError(errEl, e.message || "Login gagal. Periksa username dan password.");
+  } finally {
+    btn.innerHTML = "Masuk"; btn.disabled = false;
+  }
+}
+
+function handleLogout() {
+  state.token = ""; state.venue = ""; state.username = "";
+  localStorage.removeItem("mx_token"); localStorage.removeItem("mx_venue"); localStorage.removeItem("mx_user");
+  sessionStorage.clear();
+  resetMatchState();
+  document.getElementById("header-venue").textContent = "Daily Match System";
+  showScreen("login");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════════════════════════════════
+function changeCourts(d) {
+  state.courts = Math.max(1, Math.min(8, state.courts + d));
+  document.getElementById("courts-val").textContent = state.courts;
+  document.getElementById("courts-hint").textContent = `Minimal ${state.courts * 4} pemain diperlukan`;
+  updatePlayerMinLabel();
+}
+
+function setFormat(f) {
+  state.format = f;
+  document.getElementById("fmt-individual").classList.toggle("active", f === "individual");
+  document.getElementById("fmt-fixed").classList.toggle("active", f === "fixed");
+  document.getElementById("format-hint").textContent = f === "individual"
+    ? "Partner berubah setiap ronde berdasarkan ranking"
+    : "Partner dipilih manual dan tetap sepanjang turnamen";
+}
+
+function setScoreFormat(sf) {
+  state.scoreFormat = sf;
+  document.getElementById("sfmt-race").classList.toggle("active", sf === "race");
+  document.getElementById("sfmt-bestof").classList.toggle("active", sf === "bestof");
+  document.getElementById("score-label").textContent = sf === "race" ? "Race to" : "Best of";
+  updateScoreHint();
+}
+
+function changeScoreTarget(d) {
+  state.scoreTarget = Math.max(1, Math.min(10, state.scoreTarget + d));
+  document.getElementById("score-target-val").textContent = state.scoreTarget;
+  updateScoreHint();
+}
+
+function updateScoreHint() {
+  const t = state.scoreTarget, sf = state.scoreFormat;
+  document.getElementById("score-hint").textContent = sf === "race"
+    ? `Race to ${t} — maks skor: ${t-1} vs ${t}`
+    : `Best of ${t} — butuh ${Math.ceil(t/2)} game untuk menang`;
+}
+
+function goToPlayers() {
+  showScreen("players");
+  updatePlayerMinLabel();
+  loadPlayers();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLAYERS
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadPlayers() {
+  const listEl = document.getElementById("player-list");
+  listEl.innerHTML = `<div class="empty"><div class="spinner spinner-blue" style="margin:0 auto 12px"></div>Memuat database pemain...</div>`;
+  try {
+    const [pRes, eRes] = await Promise.all([
+      apiRequest("players"),
+      apiRequest("elo/latest"),
+    ]);
+    const eloMap = {};
+    (eRes.players || []).forEach(p => { eloMap[p.name] = p.elo || 1350; });
+    state.trekkrPlayers = (pRes.players || []).map(p => ({
+      ...p, elo: eloMap[p.name] || 1350, matchCount: 0,
+    }));
+    renderPlayerList();
+  } catch(e) {
+    listEl.innerHTML = `<div class="alert alert-red">Gagal load pemain: ${e.message}</div>`;
+  }
+}
+
+function renderPlayerList() {
+  const q = document.getElementById("player-search").value.toLowerCase();
+  const filtered = state.trekkrPlayers.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || (p.displayName||"").toLowerCase().includes(q)
+  );
+  const listEl = document.getElementById("player-list");
+  if (!filtered.length) { listEl.innerHTML = `<div class="empty">Tidak ada pemain ditemukan</div>`; return; }
+
+  listEl.innerHTML = filtered.map(p => {
+    const sel = state.selectedPlayers.some(s => s.name === p.name);
+    return `
+      <div class="player-chip ${sel ? "selected" : ""}" onclick="togglePlayer('${p.name.replace(/'/g,"\\'")}')">
+        ${avatarHTML(p.name)}
+        <div style="flex:1;min-width:0">
+          <div class="chip-name">${p.displayName || p.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            <span class="chip-gender">${p.gender === "F" ? "♀ F" : "♂ M"}</span>
+            <span style="font-size:11px;color:var(--text3)">${getTierName(p.elo)}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${p.elo}</div>
+        </div>
+        ${sel ? `<div class="chip-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>` : ""}
+      </div>`;
+  }).join("");
+}
+
+function togglePlayer(name) {
+  const p = state.trekkrPlayers.find(x => x.name === name);
+  if (!p) return;
+  const idx = state.selectedPlayers.findIndex(x => x.name === name);
+  if (idx >= 0) {
+    state.selectedPlayers.splice(idx, 1);
+    // Remove partners
+    const partnerName = state.partners[name];
+    if (partnerName) { delete state.partners[partnerName]; }
+    delete state.partners[name];
+  } else {
+    state.selectedPlayers.push({ ...p });
+  }
+  renderSelectedChips();
+  renderPlayerList();
+  renderPartnerSection();
+  updateStartBtn();
+}
+
+function renderSelectedChips() {
+  const wrap = document.getElementById("selected-chips-wrap");
+  const chips = document.getElementById("selected-chips");
+  const count = document.getElementById("selected-count");
+  const countLabel = document.getElementById("player-count-label");
+  countLabel.textContent = state.selectedPlayers.length;
+  countLabel.style.color = state.selectedPlayers.length >= state.courts * 4 ? "var(--green)" : "var(--blue)";
+  count.textContent = state.selectedPlayers.length;
+  if (!state.selectedPlayers.length) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  chips.innerHTML = state.selectedPlayers.map(p =>
+    `<span class="selected-tag">${p.name.split(" ")[0]}<button onclick="togglePlayer('${p.name.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join("");
+}
+
+function renderPartnerSection() {
+  const sec = document.getElementById("partner-section");
+  const list = document.getElementById("partner-list");
+  if (state.format !== "fixed" || state.selectedPlayers.length < 2) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+
+  // Show each player who doesn't have a partner yet as row
+  const rows = state.selectedPlayers.map(p => {
+    const myPartner = state.partners[p.name];
+    const available = state.selectedPlayers.filter(s =>
+      s.name !== p.name && (!state.partners[s.name] || state.partners[s.name] === p.name)
+    );
+    // Don't show row if already shown as partner
+    return `
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">${p.name}</div>
+        <select class="input" style="font-size:13px;padding:8px 12px" onchange="setPartner('${p.name.replace(/'/g,"\\'")}', this.value)">
+          <option value="">-- Pilih partner --</option>
+          ${available.map(a => `<option value="${a.name}" ${myPartner === a.name ? "selected" : ""}>${a.name}</option>`).join("")}
+        </select>
+        ${myPartner ? `<div class="partner-row">🤝 ${p.name.split(" ")[0]} + ${myPartner.split(" ")[0]}</div>` : ""}
+      </div>`;
+  }).join("");
+  list.innerHTML = rows;
+}
+
+function setPartner(playerName, partnerName) {
+  // Clear old links
+  Object.keys(state.partners).forEach(k => { if (state.partners[k] === playerName) delete state.partners[k]; });
+  if (state.partners[playerName]) { delete state.partners[state.partners[playerName]]; }
+  delete state.partners[playerName];
+  if (partnerName) { state.partners[playerName] = partnerName; state.partners[partnerName] = playerName; }
+  renderPartnerSection();
+  updateStartBtn();
+}
+
+function updatePlayerMinLabel() {
+  document.getElementById("player-min-label").textContent = ` / min ${state.courts * 4} dipilih`;
+}
+
+function updateStartBtn() {
+  const btn = document.getElementById("btn-start-match");
+  const min = state.courts * 4;
+  const n = state.selectedPlayers.length;
+  if (n < min) {
+    btn.textContent = `Kurang ${min - n} pemain lagi`;
+    btn.disabled = true;
+  } else {
+    btn.textContent = `Mulai Match (${n} pemain) →`;
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADD PLAYER MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function showAddPlayerModal() {
+  document.getElementById("new-first-name").value = "";
+  document.getElementById("new-last-name").value = "";
+  document.getElementById("add-player-error").classList.add("hidden");
+  document.getElementById("add-player-preview").classList.add("hidden");
+  setNewGender("M");
+  document.getElementById("modal-add-player").classList.remove("hidden");
+}
+function closeAddPlayerModal() { document.getElementById("modal-add-player").classList.add("hidden"); }
+
+function setNewGender(g) {
+  state.newGender = g;
+  document.getElementById("g-male").classList.toggle("active", g === "M");
+  document.getElementById("g-female").classList.toggle("active", g === "F");
+}
+
+// Preview name as user types
+document.addEventListener("DOMContentLoaded", () => {
+  ["new-first-name","new-last-name"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateAddPlayerPreview);
+  });
+});
+
+function updateAddPlayerPreview() {
+  const fn = document.getElementById("new-first-name").value.trim();
+  const ln = document.getElementById("new-last-name").value.trim();
+  const prev = document.getElementById("add-player-preview");
+  if (fn && ln) {
+    prev.innerHTML = `Nama: <strong>${fn} ${ln}</strong> · ELO awal: 1350`;
+    prev.classList.remove("hidden");
+  } else {
+    prev.classList.add("hidden");
+  }
+}
+
+async function handleAddPlayer() {
+  const fn = document.getElementById("new-first-name").value.trim();
+  const ln = document.getElementById("new-last-name").value.trim();
+  const errEl = document.getElementById("add-player-error");
+  const btn = document.getElementById("btn-add-player");
+  if (!fn || !ln) { showError(errEl, "First name dan last name wajib diisi"); return; }
+  const fullName = `${fn} ${ln}`;
+  if (state.trekkrPlayers.find(p => p.name.toLowerCase() === fullName.toLowerCase())) {
+    showError(errEl, "Pemain sudah ada di database"); return;
+  }
+  errEl.classList.add("hidden");
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+  try {
+    await apiRequest("players", { method:"POST", body: JSON.stringify({ name: fullName, gender: state.newGender }) });
+    await loadPlayers();
+    closeAddPlayerModal();
+  } catch(e) {
+    showError(errEl, "Gagal tambah: " + e.message);
+  } finally {
+    btn.innerHTML = "Tambah"; btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MEXICANO ALGORITHM
+// ═══════════════════════════════════════════════════════════════════════════
+function generateRound(round1 = false) {
+  const players = Object.values(state.playerStats);
+  const sorted = [...players].sort((a, b) =>
+    round1
+      ? b.elo - a.elo
+      : b.wins - a.wins || b.pointDiff - a.pointDiff || b.elo - a.elo
+  );
+
+  if (state.format === "fixed") return generateFixedRound(sorted);
+  return generateIndividualRound(sorted);
+}
+
+function generateIndividualRound(sorted) {
+  const matches = [];
+  const used = new Set();
+  const pairs = [];
+
+  for (let i = 0; i + 1 < sorted.length; i += 2) {
+    pairs.push([sorted[i], sorted[i+1]]);
+    used.add(sorted[i].name); used.add(sorted[i+1].name);
+  }
+
+  for (let c = 0; c < state.courts && c * 2 + 1 < pairs.length; c++) {
+    matches.push({
+      court: c + 1,
+      team1: [pairs[c*2][0], pairs[c*2][1]],
+      team2: [pairs[c*2+1][0], pairs[c*2+1][1]],
+      score1: null, score2: null,
+    });
+  }
+
+  const playing = new Set(matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name)));
+  const byePlayers = sorted.filter(p => !playing.has(p.name));
+  return { matches, byePlayers };
+}
+
+function generateFixedRound(sorted) {
+  // Group by pairs; treat each pair as a unit ranked by their combined score
+  const pairMap = {};
+  sorted.forEach(p => {
+    if (state.partners[p.name] && !pairMap[state.partners[p.name]]) {
+      pairMap[p.name] = p;
+    }
+  });
+
+  // Build pair list in ranking order
+  const pairs = [];
+  const seen = new Set();
+  sorted.forEach(p => {
+    if (seen.has(p.name)) return;
+    const partnerName = state.partners[p.name];
+    const partner = sorted.find(s => s.name === partnerName);
+    if (partner && !seen.has(partnerName)) {
+      pairs.push([p, partner]);
+      seen.add(p.name); seen.add(partnerName);
+    }
+  });
+
+  const matches = [];
+  for (let c = 0; c < state.courts && c * 2 + 1 < pairs.length; c++) {
+    matches.push({
+      court: c + 1,
+      team1: pairs[c*2],
+      team2: pairs[c*2+1],
+      score1: null, score2: null,
+    });
+  }
+
+  const playing = new Set(matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name)));
+  const byePlayers = sorted.filter(p => !playing.has(p.name));
+  return { matches, byePlayers };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// START MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function startMatch() {
+  const errEl = document.getElementById("players-error");
+  const min = state.courts * 4;
+  if (state.selectedPlayers.length < min) { showError(errEl, `Minimal ${min} pemain untuk ${state.courts} court`); return; }
+  if (state.format === "fixed") {
+    const unpartnered = state.selectedPlayers.filter(p => !state.partners[p.name]);
+    if (unpartnered.length > 0) { showError(errEl, `Belum ada partner: ${unpartnered.map(p=>p.name.split(" ")[0]).join(", ")}`); return; }
+  }
+  errEl.classList.add("hidden");
+
+  // Init stats
+  state.playerStats = {};
+  state.selectedPlayers.forEach(p => {
+    state.playerStats[p.name] = { ...p, wins:0, losses:0, pointsFor:0, pointsAgainst:0, pointDiff:0 };
+  });
+
+  // Generate round 1
+  const { matches, byePlayers } = generateRound(true);
+  state.rounds = [{ roundNum:1, matches, byePlayers, submitted:false }];
+  state.currentRound = 0;
+
+  showScreen("match");
+  switchTab("courts");
+  renderMatchScreen();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATCH SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  state.activeTab = tab;
+  ["courts","leaderboard","history"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
+    document.getElementById(`tab-content-${t}`).classList.toggle("hidden", t !== tab);
+  });
+  if (tab === "leaderboard") renderLeaderboard();
+  if (tab === "history") renderHistory();
+}
+
+function renderMatchScreen() {
+  const round = state.rounds[state.currentRound];
+  if (!round) return;
+
+  // Header badge
+  document.getElementById("header-round-badge").textContent = `Ronde ${round.roundNum}`;
+  document.getElementById("round-pill").textContent = `Ronde ${round.roundNum}`;
+  document.getElementById("lb-round-badge").textContent = `Ronde ${round.roundNum}`;
+  document.getElementById("score-format-label").textContent =
+    state.scoreFormat === "race" ? `Race to ${state.scoreTarget}` : `Best of ${state.scoreTarget}`;
+
+  renderCourtCards();
+}
+
+function renderCourtCards() {
+  const round = state.rounds[state.currentRound];
+  const doneCount = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
+  document.getElementById("courts-progress").textContent = `${doneCount}/${round.matches.length} selesai`;
+
+  const el = document.getElementById("court-cards");
+  el.innerHTML = round.matches.map((m, mi) => {
+    const s1 = m.score1, s2 = m.score2;
+    const hasScore = s1 !== null && s2 !== null;
+    const t1Win = hasScore && s1 > s2, t2Win = hasScore && s2 > s1;
+
+    return `
+      <div class="court-card">
+        <div class="court-header">
+          <div class="court-badge">Court ${m.court}</div>
+          <div class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
+        </div>
+        <div class="score-row">
+          <div class="score-team">
+            <div class="score-team-name">${m.team1.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
+            <input type="number" inputmode="numeric" class="score-input ${t1Win?"winner":t2Win?"loser":""}"
+              value="${s1 !== null ? s1 : ""}" placeholder="0" min="0"
+              oninput="updateScore(${mi}, 1, this.value)" />
+          </div>
+          <div class="score-vs">:</div>
+          <div class="score-team">
+            <div class="score-team-name">${m.team2.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
+            <input type="number" inputmode="numeric" class="score-input ${t2Win?"winner":t1Win?"loser":""}"
+              value="${s2 !== null ? s2 : ""}" placeholder="0" min="0"
+              oninput="updateScore(${mi}, 2, this.value)" />
+          </div>
+        </div>
+        <!-- Player mini stats -->
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          ${[m.team1, m.team2].map(team => `
+            <div style="background:var(--bg);border-radius:8px;padding:6px 8px">
+              ${team.map(p => {
+                const st = state.playerStats[p.name] || {};
+                return `<div class="player-mini">
+                  ${avatarHTML(p.name, 22, 9)}
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name.split(" ")[0]}</div>
+                    <div style="font-size:10px;color:var(--text3)">${st.wins||0}W ${st.losses||0}L · ${st.elo||p.elo}</div>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }).join("");
+
+  // Bye
+  const byeSec = document.getElementById("bye-section");
+  if (round.byePlayers?.length) {
+    byeSec.style.display = "block";
+    document.getElementById("bye-players").innerHTML = round.byePlayers.map(p =>
+      `<div style="font-size:13px;padding:4px 0">${p.name}</div>`).join("");
+  } else {
+    byeSec.style.display = "none";
+  }
+}
+
+function updateScore(matchIdx, team, val) {
+  const round = state.rounds[state.currentRound];
+  const score = val === "" ? null : Math.max(0, parseInt(val) || 0);
+  if (team === 1) round.matches[matchIdx].score1 = score;
+  else round.matches[matchIdx].score2 = score;
+  renderCourtCards();
+}
+
+async function submitRound() {
+  const round = state.rounds[state.currentRound];
+  const allScored = round.matches.every(m => m.score1 !== null && m.score2 !== null);
+  const errEl = document.getElementById("match-error");
+  if (!allScored) { showError(errEl, "Isi semua skor terlebih dahulu"); return; }
+  errEl.classList.add("hidden");
+
+  const btn = document.getElementById("btn-submit-round");
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+
+  try {
+    // Update stats & ELO
+    round.matches.forEach(m => {
+      const p1t1 = state.playerStats[m.team1[0].name];
+      const p2t1 = state.playerStats[m.team1[1].name];
+      const p1t2 = state.playerStats[m.team2[0].name];
+      const p2t2 = state.playerStats[m.team2[1].name];
+
+      const results = calcMatchElo(p1t1, p2t1, p1t2, p2t2, m.score1, m.score2);
+      results.forEach(r => {
+        if (state.playerStats[r.name]) {
+          state.playerStats[r.name].elo = r.newElo;
+          state.playerStats[r.name].matchCount = (state.playerStats[r.name].matchCount || 0) + 1;
+        }
+      });
+
+      const t1Win = m.score1 > m.score2;
+      [...m.team1].forEach(p => {
+        const st = state.playerStats[p.name];
+        if (!st) return;
+        if (t1Win) st.wins++; else st.losses++;
+        st.pointsFor = (st.pointsFor || 0) + m.score1;
+        st.pointsAgainst = (st.pointsAgainst || 0) + m.score2;
+        st.pointDiff = st.pointsFor - st.pointsAgainst;
+      });
+      [...m.team2].forEach(p => {
+        const st = state.playerStats[p.name];
+        if (!st) return;
+        if (!t1Win) st.wins++; else st.losses++;
+        st.pointsFor = (st.pointsFor || 0) + m.score2;
+        st.pointsAgainst = (st.pointsAgainst || 0) + m.score1;
+        st.pointDiff = st.pointsFor - st.pointsAgainst;
+      });
+    });
+
+    // Mark submitted
+    state.rounds[state.currentRound].submitted = true;
+
+    // Submit to Trekkr API
+    if (state.venue) {
+      const apiMatches = round.matches.map(m => ({
+        p1t1: m.team1[0].name, p2t1: m.team1[1].name,
+        p1t2: m.team2[0].name, p2t2: m.team2[1].name,
+        scoreT1: m.score1, scoreT2: m.score2,
+        gender: "M", sourceUrl: "Trekkr Mexicano Daily Match",
+      }));
+      apiRequest(`venues/${encodeURIComponent(state.venue)}/matches`, {
+        method:"POST", body: JSON.stringify({ matches: apiMatches })
+      }).catch(e => console.warn("API warn:", e.message));
+    }
+
+    // Generate next round
+    const { matches, byePlayers } = generateRound(false);
+    state.rounds.push({ roundNum: state.rounds.length + 1, matches, byePlayers, submitted: false });
+    state.currentRound++;
+
+    renderMatchScreen();
+    switchTab("courts");
+    window.scrollTo(0, 0);
+  } catch(e) {
+    showError(errEl, "Error: " + e.message);
+  } finally {
+    btn.innerHTML = "Submit Skor & Lanjut Ronde →"; btn.disabled = false;
+  }
+}
+
+function renderLeaderboard() {
+  const sorted = getLeaderboard();
+  const el = document.getElementById("leaderboard-list");
+  if (!sorted.length) { el.innerHTML = `<div class="empty">Belum ada data</div>`; return; }
+  el.innerHTML = sorted.map((p, i) => {
+    const diff = p.pointDiff || 0;
+    const rankClass = i===0?"rank1":i===1?"rank2":i===2?"rank3":"";
+    const rankLabel = i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`;
+    return `
+      <div class="lb-row ${rankClass}">
+        <div class="lb-rank">${rankLabel}</div>
+        ${avatarHTML(p.name, 38, 13)}
+        <div class="lb-info">
+          <div class="lb-name">${p.name}</div>
+          <div class="lb-elo">${p.elo} ELO · ${getTierName(p.elo)}</div>
+        </div>
+        <div class="lb-stats">
+          <div class="lb-wl">${p.wins}W – ${p.losses}L</div>
+          <div class="lb-diff ${diff>0?"pos":diff<0?"neg":"zero"}">${diff>0?"+":""}${diff} pts</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function renderHistory() {
+  const el = document.getElementById("history-list");
+  const done = state.rounds.filter(r => r.submitted).reverse();
+  if (!done.length) { el.innerHTML = `<div class="empty">Belum ada ronde yang selesai</div>`; return; }
+  el.innerHTML = done.map(r => `
+    <div class="card">
+      <div class="card-title">Ronde ${r.roundNum}</div>
+      ${r.matches.map(m => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1;font-size:12px;font-weight:600">${m.team1.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?"var(--green)":m.score1<m.score2?"var(--red)":"var(--text)"}">${m.score1} – ${m.score2}</div>
+          <div style="flex:1;font-size:12px;font-weight:600;text-align:right">${m.team2.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// END MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function getLeaderboard() {
+  return Object.values(state.playerStats).sort((a, b) =>
+    b.wins - a.wins || b.pointDiff - a.pointDiff || b.pointsFor - a.pointsFor
+  );
+}
+
+function showEndConfirm() {
+  const top3 = getLeaderboard().slice(0, 3);
+  document.getElementById("end-top3").innerHTML = top3.map((p, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span>${["🥇","🥈","🥉"][i]}</span>
+      <span style="font-size:13px;font-weight:700;flex:1">${p.name}</span>
+      <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
+    </div>`).join("");
+  document.getElementById("modal-end-confirm").classList.remove("hidden");
+}
+function closeEndConfirm() { document.getElementById("modal-end-confirm").classList.add("hidden"); }
+
+async function endMatch() {
+  const btn = document.getElementById("btn-end-match");
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+
+  try {
+    const standings = getLeaderboard();
+
+    // Save session to Trekkr
+    if (state.venue) {
+      const now = new Date().toLocaleDateString("id-ID");
+      await apiRequest("sessions", {
+        method:"POST",
+        body: JSON.stringify({
+          session_name: `Mexicano Daily – ${state.venue} – ${now}`,
+          format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
+          courts: state.courts,
+          venue: state.venue,
+          players: state.selectedPlayers.map(p => p.name),
+          rounds: state.rounds.filter(r => r.submitted),
+          elo_results: standings.map(p => ({
+            name: p.name, elo: p.elo,
+            delta: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
+            w: p.wins, l: p.losses,
+          })),
+        })
+      }).catch(e => console.warn("Session warn:", e.message));
+    }
+
+    closeEndConfirm();
+    renderDoneScreen(standings);
+    showScreen("done");
+  } catch(e) {
+    console.error(e);
+    closeEndConfirm();
+    renderDoneScreen(getLeaderboard());
+    showScreen("done");
+  } finally {
+    btn.innerHTML = "Ya, Akhiri"; btn.disabled = false;
+  }
+}
+
+function renderDoneScreen(standings) {
+  const doneRounds = state.rounds.filter(r => r.submitted).length;
+  document.getElementById("done-sub").textContent = `${doneRounds} ronde dimainkan · ${state.selectedPlayers.length} pemain`;
+
+  // Podium
+  const podiumEl = document.getElementById("podium");
+  const p1 = standings[0], p2 = standings[1], p3 = standings[2];
+  podiumEl.innerHTML = `
+    ${p2 ? `<div class="podium-slot">
+      ${avatarHTML(p2.name, 56, 18)}
+      <div class="podium-name">${p2.name.split(" ")[0]}</div>
+      <div class="podium-base" style="height:60px;background:#94A3B8">🥈</div>
+    </div>` : ""}
+    ${p1 ? `<div class="podium-slot">
+      <div style="font-size:28px;text-align:center;margin-bottom:4px">👑</div>
+      <div style="width:68px;height:68px;border-radius:50%;background:${avatarColor(p1.name)};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;margin-bottom:8px;border:3px solid #FFD700;box-shadow:0 4px 12px rgba(0,0,0,0.15)">${initials(p1.name)}</div>
+      <div class="podium-name" style="font-weight:800">${p1.name.split(" ")[0]}</div>
+      <div class="podium-base" style="height:80px;background:#F59E0B">🥇</div>
+    </div>` : ""}
+    ${p3 ? `<div class="podium-slot">
+      ${avatarHTML(p3.name, 56, 18)}
+      <div class="podium-name">${p3.name.split(" ")[0]}</div>
+      <div class="podium-base" style="height:44px;background:#CD7F32">🥉</div>
+    </div>` : ""}`;
+
+  // Final standings
+  document.getElementById("final-standings").innerHTML = standings.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:28px;text-align:center;font-size:14px;font-weight:800;color:${i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--text3)"}">${i+1}</div>
+      ${avatarHTML(p.name, 32, 11)}
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${p.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${getTierName(p.elo)} · ${p.elo} ELO</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:700">${p.wins}W ${p.losses}L</div>
+        <div style="font-size:11px;font-weight:600;color:${p.pointDiff>=0?"var(--green)":"var(--red)"}">${p.pointDiff>=0?"+":""}${p.pointDiff}</div>
+      </div>
+    </div>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function resetMatchState() {
+  state.selectedPlayers = [];
+  state.partners = {};
+  state.playerStats = {};
+  state.rounds = [];
+  state.currentRound = 0;
+}
+
+function newMatch() {
+  resetMatchState();
+  sessionStorage.clear();
+  showScreen("setup");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+(function init() {
+  if (state.token) {
+    document.getElementById("btn-logout").classList.remove("hidden");
+    document.getElementById("header-venue").textContent = state.venue ? `📍 ${state.venue}` : "Daily Match System";
+    showScreen("setup");
+  } else {
+    showScreen("login");
+  }
+})();
+</script>
+</body>
+</html>
