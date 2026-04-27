@@ -203,6 +203,15 @@
     /* PLAYER MINI */
     .player-mini { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
     .mini-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; }
+
+    /* ROUND RECOMMENDATION */
+    .rec-banner { display:flex; align-items:flex-start; gap:10px; background:linear-gradient(135deg,#EBF2FF,#E0EAFF); border:1.5px solid var(--blue-mid); border-radius:var(--radius-sm); padding:12px 14px; margin-top:12px; }
+    .rec-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+    .rec-body { flex:1; }
+    .rec-title { font-size:12px; font-weight:700; color:var(--blue); margin-bottom:3px; text-transform:uppercase; letter-spacing:0.4px; }
+    .rec-text { font-size:13px; color:var(--text); line-height:1.5; }
+    .rec-text strong { color:var(--blue); }
+    .rec-detail { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
   </style>
 </head>
 <body>
@@ -346,6 +355,18 @@
       <div id="selected-chips"></div>
     </div>
 
+
+    <!-- Round recommendation -->
+    <div id="round-rec-wrap" style="padding:0 20px 8px;display:none">
+      <div class="rec-banner">
+        <div class="rec-icon">💡</div>
+        <div class="rec-body">
+          <div class="rec-title">Rekomendasi Ronde</div>
+          <div class="rec-text" id="rec-main-text">–</div>
+          <div class="rec-detail" id="rec-detail-text"></div>
+        </div>
+      </div>
+    </div>
     <!-- Fixed partner section -->
     <div id="partner-section" style="padding:0 20px 8px;display:none">
       <div class="card" style="margin-bottom:0">
@@ -516,6 +537,7 @@ const state = {
   currentRound: 0,
   newGender: "M",
   activeTab: "courts",
+  matchId: "",
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -630,7 +652,7 @@ async function handleLogin() {
 function handleLogout() {
   state.token = ""; state.venue = ""; state.username = "";
   localStorage.removeItem("mx_token"); localStorage.removeItem("mx_venue"); localStorage.removeItem("mx_user");
-  sessionStorage.clear();
+  clearMatchStorage();
   resetMatchState();
   document.getElementById("header-venue").textContent = "Daily Match System";
   showScreen("login");
@@ -644,6 +666,7 @@ function changeCourts(d) {
   document.getElementById("courts-val").textContent = state.courts;
   document.getElementById("courts-hint").textContent = `Minimal ${state.courts * 4} pemain diperlukan`;
   updatePlayerMinLabel();
+  updateRoundRecommendation();
 }
 
 function setFormat(f) {
@@ -751,6 +774,7 @@ function togglePlayer(name) {
   renderPlayerList();
   renderPartnerSection();
   updateStartBtn();
+  updateRoundRecommendation();
 }
 
 function renderSelectedChips() {
@@ -977,11 +1001,15 @@ function startMatch() {
     state.playerStats[p.name] = { ...p, wins:0, losses:0, pointsFor:0, pointsAgainst:0, pointDiff:0 };
   });
 
+  // Generate match ID (unique per venue per match)
+  state.matchId = genMatchId();
+
   // Generate round 1
   const { matches, byePlayers } = generateRound(true);
   state.rounds = [{ roundNum:1, matches, byePlayers, submitted:false }];
   state.currentRound = 0;
 
+  saveMatchState("match");
   showScreen("match");
   switchTab("courts");
   renderMatchScreen();
@@ -1150,6 +1178,7 @@ async function submitRound() {
     state.rounds.push({ roundNum: state.rounds.length + 1, matches, byePlayers, submitted: false });
     state.currentRound++;
 
+    saveMatchState("match");
     renderMatchScreen();
     switchTab("courts");
     window.scrollTo(0, 0);
@@ -1249,11 +1278,13 @@ async function endMatch() {
       }).catch(e => console.warn("Session warn:", e.message));
     }
 
+    clearMatchStorage();
     closeEndConfirm();
     renderDoneScreen(standings);
     showScreen("done");
   } catch(e) {
     console.error(e);
+    clearMatchStorage();
     closeEndConfirm();
     renderDoneScreen(getLeaderboard());
     showScreen("done");
@@ -1315,8 +1346,8 @@ function resetMatchState() {
 }
 
 function newMatch() {
+  clearMatchStorage();
   resetMatchState();
-  sessionStorage.clear();
   showScreen("setup");
 }
 
@@ -1329,6 +1360,135 @@ function showError(el, msg) {
   el.scrollIntoView({ behavior:"smooth", block:"nearest" });
 }
 
+function genMatchId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function matchStorageKey() {
+  // Unique per venue + matchId — safe even if two venues open same browser
+  return `mx_match_${state.venue || "novenvenue"}_${state.matchId}`;
+}
+
+function saveMatchState(screen) {
+  if (!state.matchId) return;
+  const key = matchStorageKey();
+  const data = {
+    screen,
+    rounds: state.rounds,
+    currentRound: state.currentRound,
+    playerStats: state.playerStats,
+    selectedPlayers: state.selectedPlayers,
+    courts: state.courts,
+    format: state.format,
+    scoreFormat: state.scoreFormat,
+    scoreTarget: state.scoreTarget,
+    partners: state.partners,
+    matchId: state.matchId,
+  };
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn("Save state warn:", e); }
+}
+
+function clearMatchStorage() {
+  if (state.matchId) {
+    localStorage.removeItem(matchStorageKey());
+  }
+  // Also clean up old sessions for this venue older than 24h
+  const prefix = `mx_match_${state.venue || "novenvenue"}_`;
+  Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => {
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      // Remove if matchId different from current (cleanup old)
+      if (d && d.matchId !== state.matchId) localStorage.removeItem(k);
+    } catch(e) {}
+  });
+}
+
+function restoreLatestMatch() {
+  // Find the latest saved match for this venue
+  const prefix = `mx_match_${state.venue || "novenvenue"}_`;
+  let latest = null;
+  Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => {
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (d && d.rounds && d.rounds.length > 0) latest = d;
+    } catch(e) {}
+  });
+  return latest;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROUND RECOMMENDATION
+// ═══════════════════════════════════════════════════════════════════════════
+function calcRecommendedRounds(players, courts) {
+  const n = players;
+  const c = courts;
+  const playersPerRound = c * 4;
+
+  if (n < 4) return null;
+
+  if (n % 4 === 0 && n === playersPerRound) {
+    // All players always play — no bye
+    // Each player plays every round. Recommend enough rounds so
+    // everyone faces different opponents: typically n-1 rounds covers all combos
+    // but for mexicano, 6–10 rounds is sweet spot
+    const rec = Math.max(6, n - 1);
+    return {
+      rec,
+      min: 4,
+      reason: `${n} pemain, ${c} court — semua pemain main tiap ronde.`,
+      detail: `Rekomendasi <strong>${rec} ronde</strong> agar kombinasi lawan cukup bervariasi.`
+    };
+  }
+
+  if (n % playersPerRound === 0) {
+    // Multiple of courts*4, clean rotation
+    const rec = Math.max(6, n - 1);
+    return {
+      rec,
+      reason: `${n} pemain, ${c} court — semua main tiap ronde tanpa bye.`,
+      detail: `Rekomendasi <strong>${rec} ronde</strong> untuk variasi lawan yang optimal.`
+    };
+  }
+
+  // Has bye players
+  const byePerRound = n - playersPerRound;
+  const byeRoundsPerPlayer = byePerRound > 0
+    ? Math.ceil(n / playersPerRound) // how many rounds before a player gets bye again
+    : 0;
+
+  // Rounds needed so each player gets same number of matches:
+  // LCM approach: each player should play same total matches
+  // With bye: in every set of ceil(n/4) rounds, each player rests once
+  // So recommend multiples of ceil(n/4) rounds
+  const cycleLen = Math.ceil(n / (playersPerRound)); // rounds per full cycle
+  const recCycles = Math.max(2, Math.ceil(6 / cycleLen));
+  const rec = recCycles * cycleLen;
+
+  const matchesPerPlayer = Math.floor(rec * (playersPerRound / n));
+
+  return {
+    rec,
+    min: cycleLen,
+    reason: `${n} pemain, ${c} court — ${byePerRound} pemain istirahat per ronde.`,
+    detail: `Rekomendasi <strong>${rec} ronde</strong> (kelipatan ${cycleLen}) agar setiap pemain main <strong>~${matchesPerPlayer}×</strong> dengan jumlah istirahat yang sama.`
+  };
+}
+
+function updateRoundRecommendation() {
+  const wrap = document.getElementById("round-rec-wrap");
+  const mainEl = document.getElementById("rec-main-text");
+  const detailEl = document.getElementById("rec-detail-text");
+  const n = state.selectedPlayers.length;
+  if (n < 4) { wrap.style.display = "none"; return; }
+
+  const rec = calcRecommendedRounds(n, state.courts);
+  if (!rec) { wrap.style.display = "none"; return; }
+
+  wrap.style.display = "block";
+  mainEl.innerHTML = rec.reason;
+  detailEl.innerHTML = rec.detail;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1336,7 +1496,26 @@ function showError(el, msg) {
   if (state.token) {
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("header-venue").textContent = state.venue ? `📍 ${state.venue}` : "Daily Match System";
-    showScreen("setup");
+
+    // Try to restore active match
+    const saved = restoreLatestMatch();
+    if (saved && saved.screen === "match") {
+      state.matchId = saved.matchId;
+      state.rounds = saved.rounds;
+      state.currentRound = saved.currentRound;
+      state.playerStats = saved.playerStats;
+      state.selectedPlayers = saved.selectedPlayers;
+      state.courts = saved.courts;
+      state.format = saved.format;
+      state.scoreFormat = saved.scoreFormat;
+      state.scoreTarget = saved.scoreTarget;
+      state.partners = saved.partners || {};
+      showScreen("match");
+      renderMatchScreen();
+      switchTab("courts");
+    } else {
+      showScreen("setup");
+    }
   } else {
     showScreen("login");
   }
