@@ -1298,17 +1298,54 @@ async function submitRound() {
     // Mark submitted
     state.rounds[state.currentRound].submitted = true;
 
-    // Submit to Trekkr API
+    // Submit to Trekkr API — awaited with retry
     if (state.venue) {
       const apiMatches = round.matches.map(m => ({
-        p1t1: m.team1[0].name, p2t1: m.team1[1].name,
-        p1t2: m.team2[0].name, p2t2: m.team2[1].name,
-        scoreT1: m.score1, scoreT2: m.score2,
-        gender: "M", sourceUrl: "Trekkr Mexicano Daily Match",
+        p1t1: m.team1[0].name.trim(),
+        p2t1: m.team1[1].name.trim(),
+        p1t2: m.team2[0].name.trim(),
+        p2t2: m.team2[1].name.trim(),
+        scoreT1: parseInt(m.score1) || 0,
+        scoreT2: parseInt(m.score2) || 0,
+        gender: "M",
+        sourceUrl: "Trekkr Mexicano Daily Match",
       }));
-      apiRequest(`venues/${encodeURIComponent(state.venue)}/matches`, {
-        method:"POST", body: JSON.stringify({ matches: apiMatches })
-      }).catch(e => console.warn("API warn:", e.message));
+
+      // Validasi: semua nama harus terisi
+      const allNamesValid = apiMatches.every(m =>
+        m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2
+      );
+
+      if (allNamesValid) {
+        // Coba submit dengan 1 retry jika gagal
+        let apiSuccess = false;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const apiResult = await apiRequest(
+              `venues/${encodeURIComponent(state.venue)}/matches`,
+              { method:"POST", body: JSON.stringify({ matches: apiMatches }) }
+            );
+            // Update ELO lokal dari respons server (sumber kebenaran)
+            if (apiResult.eloUpdates && Array.isArray(apiResult.eloUpdates)) {
+              apiResult.eloUpdates.forEach(u => {
+                if (state.playerStats[u.name]) {
+                  state.playerStats[u.name].elo = u.elo;
+                }
+              });
+            }
+            apiSuccess = true;
+            break;
+          } catch (apiErr) {
+            console.warn(`API attempt ${attempt} failed:`, apiErr.message);
+            if (attempt === 2) {
+              // Setelah 2x gagal, tampilkan warning tapi tetap lanjut
+              showApiWarning(`Skor tersimpan lokal. ELO Trekkr belum terupdate (${apiErr.message}). Coba lagi atau hubungi admin.`);
+            }
+          }
+        }
+      } else {
+        console.warn("Nama pemain tidak valid, skip API submit");
+      }
     }
 
     // Generate next round
@@ -1498,6 +1535,30 @@ function showError(el, msg) {
   el.scrollIntoView({ behavior:"smooth", block:"nearest" });
 }
 
+function showApiWarning(msg) {
+  // Tampilkan toast warning non-blocking di atas layar
+  let toast = document.getElementById("api-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "api-toast";
+    toast.style.cssText = `
+      position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      max-width:390px;width:calc(100% - 40px);
+      background:#7C3AED;color:white;
+      padding:12px 16px;border-radius:12px;
+      font-size:13px;font-weight:500;line-height:1.4;
+      z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);
+      display:flex;align-items:flex-start;gap:10px;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span style="font-size:18px;flex-shrink:0">⚠️</span><div>${msg}</div>`;
+  toast.style.display = "flex";
+  // Auto hide after 8 seconds
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.display = "none"; }, 8000);
+}
+
 function genMatchId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -1522,6 +1583,10 @@ function saveMatchState(screen) {
     scoreTarget: state.scoreTarget,
     partners: state.partners,
     matchId: state.matchId,
+    // FIX: simpan token & venue agar tetap ada setelah refresh
+    token: state.token,
+    venue: state.venue,
+    username: state.username,
   };
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn("Save state warn:", e); }
 }
@@ -1648,6 +1713,19 @@ function updateRoundRecommendation() {
       state.scoreFormat = saved.scoreFormat;
       state.scoreTarget = saved.scoreTarget;
       state.partners = saved.partners || {};
+      // FIX: restore token & venue dari saved state jika hilang
+      if (!state.token && saved.token) {
+        state.token = saved.token;
+        localStorage.setItem("mx_token", saved.token);
+      }
+      if (!state.venue && saved.venue) {
+        state.venue = saved.venue;
+        localStorage.setItem("mx_venue", saved.venue);
+      }
+      if (!state.username && saved.username) {
+        state.username = saved.username;
+        localStorage.setItem("mx_user", saved.username);
+      }
       showScreen("match");
       renderMatchScreen();
       switchTab("courts");
