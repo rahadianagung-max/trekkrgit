@@ -1195,21 +1195,27 @@ function renderCourtCards() {
       <div class="court-card">
         <div class="court-header">
           <div class="court-badge">Court ${m.court}</div>
-          <div class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
+          <div id="court-status-${mi}" class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
         </div>
         <div class="score-row">
           <div class="score-team">
             <div class="score-team-name">${m.team1.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric" class="score-input ${t1Win?"winner":t2Win?"loser":""}"
+            <input type="number" inputmode="numeric"
+              id="score-input-${mi}-1"
+              class="score-input ${t1Win?"winner":t2Win?"loser":""}"
               value="${s1 !== null ? s1 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 1, this.value)" />
+              oninput="updateScore(${mi}, 1, this.value)"
+              onchange="updateScore(${mi}, 1, this.value)" />
           </div>
           <div class="score-vs">:</div>
           <div class="score-team">
             <div class="score-team-name">${m.team2.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric" class="score-input ${t2Win?"winner":t1Win?"loser":""}"
+            <input type="number" inputmode="numeric"
+              id="score-input-${mi}-2"
+              class="score-input ${t2Win?"winner":t1Win?"loser":""}"
               value="${s2 !== null ? s2 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 2, this.value)" />
+              oninput="updateScore(${mi}, 2, this.value)"
+              onchange="updateScore(${mi}, 2, this.value)" />
           </div>
         </div>
         <!-- Player mini stats -->
@@ -1243,18 +1249,65 @@ function renderCourtCards() {
 }
 
 function updateScore(matchIdx, team, val) {
+  // FIX: Simpan ke state tapi TIDAK re-render seluruh DOM
+  // Re-render penuh menyebabkan focus hilang di mobile → score kedua tidak ter-input
   const round = state.rounds[state.currentRound];
   const score = val === "" ? null : Math.max(0, parseInt(val) || 0);
   if (team === 1) round.matches[matchIdx].score1 = score;
   else round.matches[matchIdx].score2 = score;
-  renderCourtCards();
+
+  // Hanya update styling input (winner/loser) tanpa re-render DOM
+  const s1El = document.getElementById("score-input-" + matchIdx + "-1");
+  const s2El = document.getElementById("score-input-" + matchIdx + "-2");
+  if (s1El && s2El) {
+    const v1 = round.matches[matchIdx].score1;
+    const v2 = round.matches[matchIdx].score2;
+    const bothFilled = v1 !== null && v2 !== null;
+    s1El.className = "score-input" + (bothFilled ? (v1 > v2 ? " winner" : v1 < v2 ? " loser" : "") : "");
+    s2El.className = "score-input" + (bothFilled ? (v2 > v1 ? " winner" : v2 < v1 ? " loser" : "") : "");
+    // Update status header
+    const statusEl = document.getElementById("court-status-" + matchIdx);
+    const progressEl = document.getElementById("courts-progress");
+    if (statusEl) {
+      statusEl.textContent = bothFilled ? "✓ Skor Masuk" : "Menunggu Skor";
+      statusEl.className = "court-status " + (bothFilled ? "done" : "pending");
+    }
+    if (progressEl) {
+      const doneCount = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
+      progressEl.textContent = doneCount + "/" + round.matches.length + " selesai";
+    }
+  }
 }
 
 async function submitRound() {
   const round = state.rounds[state.currentRound];
+
+  // FIX: Baca score dari DOM terlebih dahulu (lebih reliable dari state di mobile)
+  // Ini mengatasi kasus di mana oninput tidak trigger dengan benar di mobile browser
+  round.matches.forEach((m, mi) => {
+    const el1 = document.getElementById("score-input-" + mi + "-1");
+    const el2 = document.getElementById("score-input-" + mi + "-2");
+    if (el1 && el1.value !== "") {
+      m.score1 = Math.max(0, parseInt(el1.value) || 0);
+    }
+    if (el2 && el2.value !== "") {
+      m.score2 = Math.max(0, parseInt(el2.value) || 0);
+    }
+  });
+
   const allScored = round.matches.every(m => m.score1 !== null && m.score2 !== null);
   const errEl = document.getElementById("match-error");
   if (!allScored) { showError(errEl, "Isi semua skor terlebih dahulu"); return; }
+
+  // Warn if any match has both scores = 0 (likely not filled)
+  const zeroMatches = round.matches.filter(m => m.score1 === 0 && m.score2 === 0);
+  if (zeroMatches.length > 0 && !window._confirmZero) {
+    window._confirmZero = true;
+    showError(errEl, `⚠️ ${zeroMatches.length} match punya skor 0-0. Tekan Submit lagi untuk konfirmasi.`);
+    setTimeout(() => { window._confirmZero = false; }, 5000);
+    return;
+  }
+  window._confirmZero = false;
   errEl.classList.add("hidden");
 
   const btn = document.getElementById("btn-submit-round");
@@ -1298,54 +1351,17 @@ async function submitRound() {
     // Mark submitted
     state.rounds[state.currentRound].submitted = true;
 
-    // Submit to Trekkr API — awaited with retry
+    // Submit to Trekkr API
     if (state.venue) {
       const apiMatches = round.matches.map(m => ({
-        p1t1: m.team1[0].name.trim(),
-        p2t1: m.team1[1].name.trim(),
-        p1t2: m.team2[0].name.trim(),
-        p2t2: m.team2[1].name.trim(),
-        scoreT1: parseInt(m.score1) || 0,
-        scoreT2: parseInt(m.score2) || 0,
-        gender: "M",
-        sourceUrl: "Trekkr Mexicano Daily Match",
+        p1t1: m.team1[0].name, p2t1: m.team1[1].name,
+        p1t2: m.team2[0].name, p2t2: m.team2[1].name,
+        scoreT1: m.score1, scoreT2: m.score2,
+        gender: "M", sourceUrl: "Trekkr Mexicano Daily Match",
       }));
-
-      // Validasi: semua nama harus terisi
-      const allNamesValid = apiMatches.every(m =>
-        m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2
-      );
-
-      if (allNamesValid) {
-        // Coba submit dengan 1 retry jika gagal
-        let apiSuccess = false;
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            const apiResult = await apiRequest(
-              `venues/${encodeURIComponent(state.venue)}/matches`,
-              { method:"POST", body: JSON.stringify({ matches: apiMatches }) }
-            );
-            // Update ELO lokal dari respons server (sumber kebenaran)
-            if (apiResult.eloUpdates && Array.isArray(apiResult.eloUpdates)) {
-              apiResult.eloUpdates.forEach(u => {
-                if (state.playerStats[u.name]) {
-                  state.playerStats[u.name].elo = u.elo;
-                }
-              });
-            }
-            apiSuccess = true;
-            break;
-          } catch (apiErr) {
-            console.warn(`API attempt ${attempt} failed:`, apiErr.message);
-            if (attempt === 2) {
-              // Setelah 2x gagal, tampilkan warning tapi tetap lanjut
-              showApiWarning(`Skor tersimpan lokal. ELO Trekkr belum terupdate (${apiErr.message}). Coba lagi atau hubungi admin.`);
-            }
-          }
-        }
-      } else {
-        console.warn("Nama pemain tidak valid, skip API submit");
-      }
+      apiRequest(`venues/${encodeURIComponent(state.venue)}/matches`, {
+        method:"POST", body: JSON.stringify({ matches: apiMatches })
+      }).catch(e => console.warn("API warn:", e.message));
     }
 
     // Generate next round
@@ -1535,30 +1551,6 @@ function showError(el, msg) {
   el.scrollIntoView({ behavior:"smooth", block:"nearest" });
 }
 
-function showApiWarning(msg) {
-  // Tampilkan toast warning non-blocking di atas layar
-  let toast = document.getElementById("api-toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "api-toast";
-    toast.style.cssText = `
-      position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-      max-width:390px;width:calc(100% - 40px);
-      background:#7C3AED;color:white;
-      padding:12px 16px;border-radius:12px;
-      font-size:13px;font-weight:500;line-height:1.4;
-      z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);
-      display:flex;align-items:flex-start;gap:10px;
-    `;
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML = `<span style="font-size:18px;flex-shrink:0">⚠️</span><div>${msg}</div>`;
-  toast.style.display = "flex";
-  // Auto hide after 8 seconds
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => { toast.style.display = "none"; }, 8000);
-}
-
 function genMatchId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -1583,10 +1575,6 @@ function saveMatchState(screen) {
     scoreTarget: state.scoreTarget,
     partners: state.partners,
     matchId: state.matchId,
-    // FIX: simpan token & venue agar tetap ada setelah refresh
-    token: state.token,
-    venue: state.venue,
-    username: state.username,
   };
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn("Save state warn:", e); }
 }
@@ -1713,19 +1701,6 @@ function updateRoundRecommendation() {
       state.scoreFormat = saved.scoreFormat;
       state.scoreTarget = saved.scoreTarget;
       state.partners = saved.partners || {};
-      // FIX: restore token & venue dari saved state jika hilang
-      if (!state.token && saved.token) {
-        state.token = saved.token;
-        localStorage.setItem("mx_token", saved.token);
-      }
-      if (!state.venue && saved.venue) {
-        state.venue = saved.venue;
-        localStorage.setItem("mx_venue", saved.venue);
-      }
-      if (!state.username && saved.username) {
-        state.username = saved.username;
-        localStorage.setItem("mx_user", saved.username);
-      }
       showScreen("match");
       renderMatchScreen();
       switchTab("courts");
