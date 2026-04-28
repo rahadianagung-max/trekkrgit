@@ -907,10 +907,50 @@ async function handleAddPlayer() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MEXICANO ALGORITHM
+// MEXICANO ALGORITHM — Anti-duplicate, fair bye rotation
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Build match history from submitted rounds
+function buildMatchHistory() {
+  const partnerCount = {};  // name → { partnerName: count }
+  const opponentCount = {}; // name → { opponentName: count }
+  const byeCount = {};      // name → number of byes
+
+  Object.keys(state.playerStats).forEach(n => {
+    partnerCount[n] = {};
+    opponentCount[n] = {};
+    byeCount[n] = 0;
+  });
+
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    (r.byePlayers || []).forEach(p => {
+      if (byeCount[p.name] !== undefined) byeCount[p.name]++;
+    });
+    r.matches.forEach(m => {
+      const t1 = m.team1.map(p => p.name);
+      const t2 = m.team2.map(p => p.name);
+      // Partner history
+      t1.forEach((a, i) => t1.forEach((b, j) => {
+        if (i !== j) partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+      }));
+      t2.forEach((a, i) => t2.forEach((b, j) => {
+        if (i !== j) partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+      }));
+      // Opponent history
+      t1.forEach(a => t2.forEach(b => {
+        opponentCount[a][b] = (opponentCount[a][b] || 0) + 1;
+        opponentCount[b][a] = (opponentCount[b][a] || 0) + 1;
+      }));
+    });
+  });
+
+  return { partnerCount, opponentCount, byeCount };
+}
+
 function generateRound(round1 = false) {
   const players = Object.values(state.playerStats);
+
+  // Sort by ranking
   const sorted = [...players].sort((a, b) =>
     round1
       ? b.elo - a.elo
@@ -918,43 +958,103 @@ function generateRound(round1 = false) {
   );
 
   if (state.format === "fixed") return generateFixedRound(sorted);
-  return generateIndividualRound(sorted);
+  return generateIndividualRound(sorted, round1);
 }
 
-function generateIndividualRound(sorted) {
-  const matches = [];
-  const used = new Set();
+function generateIndividualRound(sorted, round1 = false) {
+  const { partnerCount, opponentCount, byeCount } = buildMatchHistory();
+  const n = sorted.length;
+  const active = state.courts * 4;
+  const byeNeeded = n - active;
+
+  // ── STEP 1: Select bye players ──────────────────────────────────────────
+  // Fair rotation: players with fewest byes are prioritised for sitting out.
+  // Among ties, lowest-ranked players sit out.
+  let playingPlayers = sorted;
+  let byePlayers = [];
+
+  if (byeNeeded > 0) {
+    // Score each player for "bye priority" — higher score = should sit out
+    const byePriority = sorted.map((p, rank) => ({
+      p,
+      score: -(byeCount[p.name] || 0) * 1000 + rank
+      // Negative byeCount: fewer past byes → higher score → more likely to sit out now
+      // rank tie-break: lower rank (worse position) → higher score → more likely to sit out
+    }));
+    byePriority.sort((a, b) => b.score - a.score);
+    byePlayers = byePriority.slice(0, byeNeeded).map(x => x.p);
+    const byeNames = new Set(byePlayers.map(p => p.name));
+    playingPlayers = sorted.filter(p => !byeNames.has(p.name));
+  }
+
+  // ── STEP 2: Form pairs (avoid repeat partners) ─────────────────────────
   const pairs = [];
+  const usedInPairing = new Set();
 
-  for (let i = 0; i + 1 < sorted.length; i += 2) {
-    pairs.push([sorted[i], sorted[i+1]]);
-    used.add(sorted[i].name); used.add(sorted[i+1].name);
+  for (let i = 0; i < playingPlayers.length; i++) {
+    const p = playingPlayers[i];
+    if (usedInPairing.has(p.name)) continue;
+
+    let bestPartner = null;
+    let bestScore = Infinity;
+
+    for (let j = i + 1; j < playingPlayers.length; j++) {
+      const q = playingPlayers[j];
+      if (usedInPairing.has(q.name)) continue;
+      // Score: strongly penalise repeat partners, mildly penalise rank distance
+      const repeats = partnerCount[p.name]?.[q.name] || 0;
+      const dist = j - i;
+      const score = repeats * 1000 + dist;
+      if (score < bestScore) { bestScore = score; bestPartner = q; }
+      if (repeats === 0 && dist === 1) break; // ideal match — stop searching
+    }
+
+    if (bestPartner) {
+      pairs.push([p, bestPartner]);
+      usedInPairing.add(p.name);
+      usedInPairing.add(bestPartner.name);
+    }
   }
 
-  for (let c = 0; c < state.courts && c * 2 + 1 < pairs.length; c++) {
-    matches.push({
-      court: c + 1,
-      team1: [pairs[c*2][0], pairs[c*2][1]],
-      team2: [pairs[c*2+1][0], pairs[c*2+1][1]],
-      score1: null, score2: null,
-    });
+  // ── STEP 3: Match pairs against each other (avoid repeat opponents) ─────
+  const matches = [];
+  const remainingPairs = [...pairs];
+  const usedPairs = new Set();
+
+  for (let c = 0; c < state.courts && remainingPairs.length >= 2; c++) {
+    // Take first unused pair as team1
+    let t1Idx = remainingPairs.findIndex(([a]) => !usedPairs.has(a.name));
+    if (t1Idx === -1) break;
+    const team1 = remainingPairs.splice(t1Idx, 1)[0];
+    usedPairs.add(team1[0].name); usedPairs.add(team1[1].name);
+
+    // Find best opponent: minimise repeat opponents, then minimise rank gap
+    let bestOppIdx = 0;
+    let bestOppScore = Infinity;
+
+    for (let i = 0; i < remainingPairs.length; i++) {
+      const [op1, op2] = remainingPairs[i];
+      if (usedPairs.has(op1.name)) continue;
+      const t1Names = [team1[0].name, team1[1].name];
+      const repeatOpp = t1Names.reduce((sum, a) =>
+        sum + (opponentCount[a]?.[op1.name] || 0) + (opponentCount[a]?.[op2.name] || 0), 0
+      );
+      const score = repeatOpp * 1000 + i; // rank proximity as tie-breaker
+      if (score < bestOppScore) { bestOppScore = score; bestOppIdx = i; }
+    }
+
+    const team2 = remainingPairs.splice(bestOppIdx, 1)[0];
+    usedPairs.add(team2[0].name); usedPairs.add(team2[1].name);
+    matches.push({ court: c + 1, team1, team2, score1: null, score2: null });
   }
 
-  const playing = new Set(matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name)));
-  const byePlayers = sorted.filter(p => !playing.has(p.name));
   return { matches, byePlayers };
 }
 
 function generateFixedRound(sorted) {
-  // Group by pairs; treat each pair as a unit ranked by their combined score
-  const pairMap = {};
-  sorted.forEach(p => {
-    if (state.partners[p.name] && !pairMap[state.partners[p.name]]) {
-      pairMap[p.name] = p;
-    }
-  });
+  const { opponentCount, byeCount } = buildMatchHistory();
 
-  // Build pair list in ranking order
+  // Build ordered pair list based on ranking
   const pairs = [];
   const seen = new Set();
   sorted.forEach(p => {
@@ -967,19 +1067,57 @@ function generateFixedRound(sorted) {
     }
   });
 
-  const matches = [];
-  for (let c = 0; c < state.courts && c * 2 + 1 < pairs.length; c++) {
-    matches.push({
-      court: c + 1,
-      team1: pairs[c*2],
-      team2: pairs[c*2+1],
-      score1: null, score2: null,
-    });
+  // Bye selection: pairs with fewest total byes sit out first
+  const active = state.courts; // courts = number of pair matchups
+  const byePairs = [];
+  let activePairs = pairs;
+
+  if (pairs.length > state.courts * 2) {
+    const pairBye = pairs.map(pair => ({
+      pair,
+      byeScore: -(pair.reduce((s, p) => s + (byeCount[p.name] || 0), 0))
+    }));
+    pairBye.sort((a, b) => b.byeScore - a.byeScore);
+    const byePairCount = pairs.length - state.courts * 2;
+    byePairs.push(...pairBye.slice(0, byePairCount).map(x => x.pair));
+    const byeNames = new Set(byePairs.flatMap(pair => pair.map(p => p.name)));
+    activePairs = pairs.filter(([a]) => !byeNames.has(a.name));
   }
 
-  const playing = new Set(matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name)));
-  const byePlayers = sorted.filter(p => !playing.has(p.name));
-  return { matches, byePlayers };
+  // Match active pairs against each other (avoid repeat opponents)
+  const matches = [];
+  const remainingPairs = [...activePairs];
+  const usedPairs = new Set();
+
+  for (let c = 0; c < state.courts && remainingPairs.length >= 2; c++) {
+    const team1 = remainingPairs.shift();
+    if (!team1) break;
+    usedPairs.add(team1[0].name); usedPairs.add(team1[1].name);
+
+    let bestOppIdx = 0;
+    let bestOppScore = Infinity;
+    for (let i = 0; i < remainingPairs.length; i++) {
+      const [op1, op2] = remainingPairs[i];
+      if (usedPairs.has(op1.name)) continue;
+      const t1Names = [team1[0].name, team1[1].name];
+      const repeatOpp = t1Names.reduce((sum, a) =>
+        sum + (opponentCount[a]?.[op1.name] || 0) + (opponentCount[a]?.[op2.name] || 0), 0
+      );
+      const score = repeatOpp * 1000 + i;
+      if (score < bestOppScore) { bestOppScore = score; bestOppIdx = i; }
+    }
+
+    const team2 = remainingPairs.splice(bestOppIdx, 1)[0];
+    usedPairs.add(team2[0].name); usedPairs.add(team2[1].name);
+    matches.push({ court: c + 1, team1, team2, score1: null, score2: null });
+  }
+
+  const byePlayersFlat = [
+    ...byePairs.flatMap(pair => pair),
+    ...sorted.filter(p => !matches.flatMap(m => [...m.team1, ...m.team2]).some(x => x.name === p.name) && !byePairs.flatMap(x=>x).some(x=>x.name===p.name))
+  ];
+
+  return { matches, byePlayers: byePlayersFlat };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
