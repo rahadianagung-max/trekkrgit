@@ -191,15 +191,33 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 
 <div class="toast" id="toast"></div>
 
-<!-- LOGIN MODAL -->
-<div class="mb" id="m-login">
-  <div class="modal">
-    <div class="mt" style="color:var(--blue);">🔐 Admin Login</div>
-    <div class="ms">Masukkan PIN admin untuk mengakses panel manajemen turnamen.</div>
-    <div class="mf"><label>PIN Admin</label><input type="password" id="pin-in" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="merr" id="pin-err">PIN salah. Coba lagi.</div>
-    <div class="mbtns">
-      <button class="btn btn-primary" style="flex:1;padding:10px;" onclick="doLogin()">Masuk</button>
+<!-- Login modal moved to Trekkr credential login above -->
+
+
+<!-- PLAYER SEARCH MODAL -->
+<div class="mb" id="m-player-search">
+  <div class="modal" style="max-height:85vh;">
+    <div class="mt" style="color:var(--blue);">🔍 Cari Pemain Trekkr</div>
+    <div class="ms" id="player-search-hint">Cari dan pilih pemain dari database Trekkr.</div>
+    <div style="position:relative;margin-bottom:10px;">
+      <input type="text" id="player-search-q" class="mf" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px 9px 36px;color:var(--text);font-size:13px;outline:none;" placeholder="Cari nama..." oninput="renderPlayerSearch()" />
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);">🔍</span>
+    </div>
+    <div id="player-search-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Atau tambah pemain baru</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input type="text" id="new-p-first" class="mf" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;" placeholder="First Name" />
+        <input type="text" id="new-p-last" class="mf" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;" placeholder="Last Name" />
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="btn btn-ghost" id="g-m-btn" style="flex:1;" onclick="setNewPGender('M')">♂ Male</button>
+        <button class="btn btn-ghost" id="g-f-btn" style="flex:1;" onclick="setNewPGender('F')">♀ Female</button>
+      </div>
+      <button class="btn btn-success" style="width:100%;" id="btn-add-new-player" onclick="addNewPlayerFromModal()">+ Tambah ke Trekkr</button>
+    </div>
+    <div class="mbtns" style="margin-top:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="cm('m-player-search')">Batal</button>
     </div>
   </div>
 </div>
@@ -236,7 +254,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
       <div class="mbtns"><button class="btn btn-primary" style="flex:1;padding:10px;" onclick="wizGo(2)">Lanjut: Input Pemain →</button><button class="btn btn-ghost" style="padding:10px;" onclick="cm('m-new')">Batal</button></div>
     </div>
     <div id="wz2" style="display:none;">
-      <div class="ms" style="margin-bottom:12px;">Isi nama pasangan atau lewati — bisa diedit kapan saja.</div>
+      <div class="ms" style="margin-bottom:12px;">Masukkan nama pasangan. Klik nama untuk pilih dari database Trekkr.</div>
       <div class="player-grid" id="player-grid"></div>
       <div class="mbtns" style="margin-top:14px;"><button class="btn btn-success" style="flex:1;padding:10px;" onclick="wizGo(3)">Konfirmasi →</button><button class="btn btn-ghost" style="padding:10px;" onclick="wizGo(1)">← Kembali</button></div>
     </div>
@@ -353,44 +371,172 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 
 <script src="shared.js"></script>
 <script>
-const PIN='1234', SK='Trekkr_padel_v2';
+// ── AUTH STATE ──
+let authToken = localStorage.getItem('trekkr_tourney_token') || '';
+let authVenue = localStorage.getItem('trekkr_tourney_venue') || '';
+let authUser  = localStorage.getItem('trekkr_tourney_user')  || '';
+let trekkrPlayers = []; // loaded from API
+let playerSearchTarget = null; // { slot, callback }
+let newPGender = 'M';
+
+// ── TOURNAMENT STATE ──
 let T=null, groups={}, sched=[], scores={}, playoff=null;
 let isAdmin=false, filt='all';
 
 /* ── BOOT ── */
 function boot(){
-  document.getElementById('n-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('n-date').value = new Date().toISOString().split('T')[0];
   wizPrev();
-  // Admin always required — show login immediately
-  openLogin();
-}
-
-function openLogin(){
-  document.getElementById('m-login').classList.add('show');
-  document.getElementById('pin-in').value='';
-  document.getElementById('pin-err').style.display='none';
-  setTimeout(()=>document.getElementById('pin-in').focus(),200);
-}
-
-function doLogin(){
-  if(document.getElementById('pin-in').value===PIN){
-    isAdmin=true;
-    cm('m-login');
-    const raw=spLoad();
-    if(raw?.tournament&&raw?.groups) showWelcomeActive(raw);
-    else showWelcomeEmpty();
+  // Show login modal if not authenticated
+  if (!authToken) {
+    document.getElementById('m-login').classList.add('show');
+    setTimeout(() => document.getElementById('login-user').focus(), 200);
   } else {
-    document.getElementById('pin-err').style.display='block';
-    document.getElementById('pin-in').value='';
-    document.getElementById('pin-in').focus();
+    // Try restore existing tournament
+    document.getElementById('m-login').classList.remove('show');
+    isAdmin = true;
+    loadTrekkrPlayers();
+    const raw = spLoad(authVenue);
+    if (raw?.tournament && raw?.groups) showWelcomeActive(raw);
+    else showWelcomeEmpty();
   }
+}
+
+/* ── LOGIN ── */
+async function doLogin(){
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('pin-err');
+  const btn = document.getElementById('btn-login');
+  if (!user || !pass) { showLoginErr('Username dan password wajib diisi'); return; }
+  errEl.style.display = 'none';
+  btn.textContent = 'Masuk...'; btn.disabled = true;
+  try {
+    const data = await apiRequest('auth/login', { method:'POST', body: JSON.stringify({username:user, password:pass}) });
+    authToken = data.token; authVenue = data.venue; authUser = data.username;
+    localStorage.setItem('trekkr_tourney_token', authToken);
+    localStorage.setItem('trekkr_tourney_venue', authVenue);
+    localStorage.setItem('trekkr_tourney_user', authUser);
+    isAdmin = true;
+    cm('m-login');
+    await loadTrekkrPlayers();
+    const raw = spLoad(authVenue);
+    if (raw?.tournament && raw?.groups) showWelcomeActive(raw);
+    else showWelcomeEmpty();
+  } catch(e) {
+    showLoginErr(e.message || 'Login gagal. Cek username & password.');
+  } finally {
+    btn.textContent = 'Masuk ke Trekkr'; btn.disabled = false;
+  }
+}
+
+function showLoginErr(msg) {
+  const e = document.getElementById('pin-err');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+function doLogout() {
+  authToken = ''; authVenue = ''; authUser = '';
+  localStorage.removeItem('trekkr_tourney_token');
+  localStorage.removeItem('trekkr_tourney_venue');
+  localStorage.removeItem('trekkr_tourney_user');
+  T=null; groups={}; sched=[]; scores={}; playoff=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('m-login').classList.add('show');
+  setTimeout(() => document.getElementById('login-user').focus(), 200);
+}
+
+/* ── LOAD TREKKR PLAYERS ── */
+async function loadTrekkrPlayers() {
+  try { trekkrPlayers = await fetchTrekkrPlayers(authToken); }
+  catch(e) { console.warn('Could not load Trekkr players:', e.message); trekkrPlayers = []; }
+}
+
+/* ── PLAYER SEARCH MODAL ── */
+function openPlayerSearch(slot, callback) {
+  playerSearchTarget = { slot, callback };
+  document.getElementById('player-search-q').value = '';
+  document.getElementById('new-p-first').value = '';
+  document.getElementById('new-p-last').value = '';
+  setNewPGender('M');
+  renderPlayerSearch();
+  cm_open('m-player-search');
+}
+
+function renderPlayerSearch() {
+  const q = document.getElementById('player-search-q').value.toLowerCase();
+  const list = document.getElementById('player-search-list');
+  const filtered = trekkrPlayers.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || (p.displayName||'').toLowerCase().includes(q)
+  );
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px;">Tidak ada pemain ditemukan</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(p => `
+    <div onclick="selectPlayer('${p.name.replace(/'/g,"\'")}', '${(p.displayName||p.name).replace(/'/g,"\'")}', ${p.elo})"
+      style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all 0.15s;"
+      onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="width:32px;height:32px;border-radius:50%;background:${avatarColor(p.name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;">${initials(p.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${p.displayName||p.name}</div>
+        <div style="font-size:10px;color:var(--dim);">${p.gender==='F'?'♀ F':'♂ M'} · ${getTierName(p.elo)} · ${p.elo} ELO</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectPlayer(name, displayName, elo) {
+  if (playerSearchTarget?.callback) {
+    playerSearchTarget.callback(name, displayName, elo);
+  }
+  cm('m-player-search');
+  playerSearchTarget = null;
+}
+
+function setNewPGender(g) {
+  newPGender = g;
+  document.getElementById('g-m-btn').className = 'btn ' + (g==='M' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('g-f-btn').className = 'btn ' + (g==='F' ? 'btn-primary' : 'btn-ghost');
+}
+
+async function addNewPlayerFromModal() {
+  const fn = document.getElementById('new-p-first').value.trim();
+  const ln = document.getElementById('new-p-last').value.trim();
+  if (!fn || !ln) { toast('First name dan last name wajib diisi', 'err'); return; }
+  const fullName = `${fn} ${ln}`;
+  if (trekkrPlayers.find(p => p.name.toLowerCase() === fullName.toLowerCase())) {
+    toast('Pemain sudah ada di database Trekkr', 'err'); return;
+  }
+  const btn = document.getElementById('btn-add-new-player');
+  btn.textContent = 'Menyimpan...'; btn.disabled = true;
+  try {
+    await addNewPlayer(fullName, newPGender, authToken);
+    await loadTrekkrPlayers();
+    selectPlayer(fullName, fullName, 1350);
+    toast('✓ Pemain baru ditambahkan ke Trekkr');
+  } catch(e) {
+    toast('Gagal tambah pemain: ' + e.message, 'err');
+  } finally {
+    btn.textContent = '+ Tambah ke Trekkr'; btn.disabled = false;
+  }
+}
+
+/* ── AVATAR HELPERS ── */
+const ACOLORS = ['#1e9fff','#00c875','#ff9955','#cc55ff','#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
+function avatarColor(name) {
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))%ACOLORS.length;
+  return ACOLORS[h];
+}
+function initials(name) {
+  const p=name.trim().split(' ');
+  return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():name.slice(0,2).toUpperCase();
 }
 
 /* ── WELCOME ── */
 function goWelcome(){
   document.getElementById('main-app').style.display='none';
   document.getElementById('welcome').style.display='block';
-  const raw=spLoad();
+  const raw=spLoad(authVenue);
   if(raw?.tournament&&raw?.groups) showWelcomeActive(raw);
   else showWelcomeEmpty();
 }
@@ -407,6 +553,11 @@ function showWelcomeEmpty(){
       <div class="ac-icon">🎮</div>
       <div class="ac-body"><div class="ac-title" style="color:var(--purple);">Mode Demo</div><div class="ac-desc">Isi data contoh untuk test tampilan</div></div>
       <span class="ac-tag" style="background:#cc55ff22;border:1px solid #cc55ff44;color:var(--purple);">Admin</span>
+    </div>
+    <div class="ac" style="background:var(--card);border-color:#ff444422;" onclick="doLogout()">
+      <div class="ac-icon">🚪</div>
+      <div class="ac-body"><div class="ac-title" style="color:#ff8888;">Logout</div><div class="ac-desc">Keluar dari akun venue ${authVenue}</div></div>
+      <span class="ac-tag" style="background:#ff444411;border:1px solid #ff444433;color:#ff8888;">Venue</span>
     </div>`;
 }
 
@@ -414,7 +565,7 @@ function showWelcomeActive(d){
   const TT=d.tournament, done=d.schedule?.filter(m=>m.done).length||0, tot=d.schedule?.length||0;
   document.getElementById('atc-wrap').style.display='block';
   document.getElementById('atc-wrap').innerHTML=`<div class="atc">
-    <div class="atc-h"><div class="atc-dot"></div><div class="atc-t">Turnamen Aktif</div></div>
+    <div class="atc-h"><div class="atc-dot"></div><div class="atc-t">Turnamen Aktif · ${authVenue}</div></div>
     <div class="atc-name">${TT.name}</div>
     <div class="atc-stats">
       <div class="atc-stat">${TT.date}</div><div class="atc-stat">${TT.numTeams} pasangan</div>
@@ -437,6 +588,11 @@ function showWelcomeActive(d){
       <div class="ac-icon">🗑</div>
       <div class="ac-body"><div class="ac-title" style="color:#ff8888;">Hapus Data</div><div class="ac-desc">Reset dan hapus semua data turnamen</div></div>
       <span class="ac-tag" style="background:#ff444411;border:1px solid #ff444433;color:#ff8888;">Admin</span>
+    </div>
+    <div class="ac" style="background:var(--card);border-color:#ff444422;" onclick="doLogout()">
+      <div class="ac-icon">🚪</div>
+      <div class="ac-body"><div class="ac-title" style="color:#ff8888;">Logout</div><div class="ac-desc">Keluar dari akun venue ${authVenue}</div></div>
+      <span class="ac-tag" style="background:#ff444411;border:1px solid #ff444433;color:#ff8888;">Venue</span>
     </div>`;
 }
 
@@ -445,22 +601,33 @@ function openNewWizard(){
   document.getElementById('wz1').style.display='block';
   document.getElementById('wz2').style.display='none';
   document.getElementById('wz3').style.display='none';
-  setWDots(1);wizPrev();
+  setWDots(1); wizPrev();
   cm_open('m-new');
 }
 function wizPrev(){
   const nt=parseInt(document.getElementById('n-teams')?.value)||8;
   const ng=parseInt(document.getElementById('n-groups')?.value)||2;
-  const pg=Math.floor(nt/ng),mx=pg*(pg-1)/2;
+  const pg=Math.floor(nt/ng), mx=pg*(pg-1)/2;
   const el=document.getElementById('wz-prev');
-  if(el)el.textContent=`${pg} pasangan/grup · ${mx} match/grup · Total ${mx*ng} match group stage`;
+  if(el) el.textContent=`${pg} pasangan/grup · ${mx} match/grup · Total ${mx*ng} match group stage`;
 }
-function setWDots(s){for(let i=1;i<=3;i++){const el=document.getElementById('ws'+i);el.className='wiz-step'+(i===s?' active':i<s?' done':'');}}
+function setWDots(s){ for(let i=1;i<=3;i++){const el=document.getElementById('ws'+i);el.className='wiz-step'+(i===s?' active':i<s?' done':'');} }
+
+// Wizard team name slots with Trekkr player lookup
+const wizSlots = {}; // slot index → { name, elo }
+
 function wizGo(step){
   if(step===2){
     const nt=parseInt(document.getElementById('n-teams').value)||8;
     let h='';
-    for(let i=1;i<=nt;i++){const ex=document.getElementById('pi-'+i)?.value||'';h+=`<div class="pr"><span class="pn">${i}</span><input class="pi" id="pi-${i}" type="text" placeholder="Pasangan ${i}" value="${ex}"></div>`;}
+    for(let i=1;i<=nt;i++){
+      const saved = wizSlots[i];
+      h+=`<div class="pr" style="cursor:pointer;" onclick="openPlayerSearch(${i}, (n,d,e)=>setWizSlot(${i},n,d,e))">
+        <span class="pn">${i}</span>
+        <span class="pi" id="pi-label-${i}" style="font-size:12px;color:${saved?'var(--text)':'var(--dim)'};">${saved?saved.display:'Klik untuk pilih pemain...'}</span>
+        ${saved?`<span style="font-size:10px;color:var(--blue);font-weight:600;">${saved.elo} ELO</span>`:''}
+      </div>`;
+    }
     document.getElementById('player-grid').innerHTML=h;
   }
   if(step===3){
@@ -468,9 +635,9 @@ function wizGo(step){
     const ng=parseInt(document.getElementById('n-groups').value)||2;
     const nc=parseInt(document.getElementById('n-courts').value)||2;
     const sm={'best4':'Best of 4','best5':'Best of 5','best6':'Best of 6','race3':'Race to 3','race4':'Race to 4','race5':'Race to 5'};
-    const filled=Array.from({length:nt},(_,i)=>document.getElementById('pi-'+(i+1))?.value||'').filter(v=>v.trim()).length;
+    const filled=Object.keys(wizSlots).filter(i=>parseInt(i)<=nt&&wizSlots[i]).length;
     document.getElementById('wz-confirm').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      ${[['Turnamen',document.getElementById('n-name').value],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Nama Terisi',`${filled}/${nt}`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],['Lolos Playoff',`${document.getElementById('n-adv').value}/grup`]].map(([k,v])=>`<div style="padding:8px;background:#ffffff03;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#e0ecff;font-weight:500;">${v}</div></div>`).join('')}
+      ${[['Turnamen',document.getElementById('n-name').value],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Dari Trekkr DB',`${filled}/${nt} pasangan`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],['Venue',authVenue]].map(([k,v])=>`<div style="padding:8px;background:#ffffff03;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#e0ecff;font-weight:500;">${v}</div></div>`).join('')}
     </div>`;
   }
   document.getElementById('wz1').style.display=step===1?'block':'none';
@@ -478,23 +645,58 @@ function wizGo(step){
   document.getElementById('wz3').style.display=step===3?'block':'none';
   setWDots(step);
 }
+
+function setWizSlot(i, name, displayName, elo) {
+  wizSlots[i] = { name, display: displayName, elo };
+  // Re-render just this slot
+  const label = document.getElementById('pi-label-'+i);
+  if (label) {
+    label.textContent = displayName;
+    label.style.color = 'var(--text)';
+    // Rebuild slot
+    wizGo(2);
+  }
+}
+
 function createTournament(){
   const nt=parseInt(document.getElementById('n-teams').value)||8;
-  const teams=Array.from({length:nt},(_,i)=>document.getElementById('pi-'+(i+1))?.value.trim()||'Pasangan '+(i+1));
-  T={name:document.getElementById('n-name').value.trim()||'Trekkr Open',date:document.getElementById('n-date').value,startTime:document.getElementById('n-start').value||'08:00',numTeams:nt,numGroups:parseInt(document.getElementById('n-groups').value)||2,numCourts:parseInt(document.getElementById('n-courts').value)||2,matchDuration:parseInt(document.getElementById('n-dur').value)||45,breakDuration:5,stageBreak:15,playoffDuration:60,gsScoring:document.getElementById('n-gs').value,poScoring:document.getElementById('n-po').value,advanceCount:parseInt(document.getElementById('n-adv').value)||2,teams};
-  groups={};sched=[];scores={};playoff=null;
-  genGroups();genSchedule();cm('m-new');loadTournament();
-  toast(`✓ Turnamen "${T.name}" berhasil dibuat!`);
+  const teams = Array.from({length:nt}, (_,i) => {
+    const slot = wizSlots[i+1];
+    return slot ? slot.name : ('Pasangan '+(i+1));
+  });
+  T={
+    name: document.getElementById('n-name').value.trim()||'Trekkr Open',
+    date: document.getElementById('n-date').value,
+    startTime: document.getElementById('n-start').value||'08:00',
+    numTeams: nt,
+    numGroups: parseInt(document.getElementById('n-groups').value)||2,
+    numCourts: parseInt(document.getElementById('n-courts').value)||2,
+    matchDuration: parseInt(document.getElementById('n-dur').value)||45,
+    breakDuration: 5, stageBreak: 15, playoffDuration: 60,
+    gsScoring: document.getElementById('n-gs').value,
+    poScoring: document.getElementById('n-po').value,
+    advanceCount: parseInt(document.getElementById('n-adv').value)||2,
+    venue: authVenue, teams,
+  };
+  groups={}; sched=[]; scores={}; playoff=null;
+  // Clear wizard slots
+  Object.keys(wizSlots).forEach(k=>delete wizSlots[k]);
+  genGroups(); genSchedule(); cm('m-new'); loadTournament();
+  toast(`✓ Turnamen "${T.name}" dibuat untuk ${authVenue}!`);
 }
 
 /* ── EDIT NAMES ── */
-function cm_open(id){document.getElementById(id).classList.add('show');}
+function cm_open(id){ document.getElementById(id).classList.add('show'); }
 function openEditNames(){
   let h='';
   GL.slice(0,T.numGroups).forEach(g=>{
     const col=GC[g];
     h+=`<div class="eg-sec"><div class="eg-hdr" style="color:${col};">Grup ${g}</div>`;
-    (groups[g]||[]).forEach((team,i)=>h+=`<div class="ep-row"><span class="ep-num" style="color:${col};">${i+1}</span><input class="ep-inp" id="ep-${g}-${i}" type="text" value="${team.name}" placeholder="Pasangan ${i+1}"></div>`);
+    (groups[g]||[]).forEach((team,i)=>h+=`<div class="ep-row">
+      <span class="ep-num" style="color:${col};">${i+1}</span>
+      <input class="ep-inp" id="ep-${g}-${i}" type="text" value="${team.name}" placeholder="Pasangan ${i+1}">
+      <button class="btn btn-ghost" style="padding:3px 8px;font-size:10px;" onclick="openPlayerSearch(-1,(n,d,e)=>{document.getElementById('ep-${g}-${i}').value=n;})">🔍</button>
+    </div>`);
     h+=`</div>`;
   });
   document.getElementById('edit-body').innerHTML=h;
@@ -503,13 +705,13 @@ function openEditNames(){
 function saveEditNames(){
   GL.slice(0,T.numGroups).forEach(g=>{
     (groups[g]||[]).forEach((team,i)=>{
-      const inp=document.getElementById('ep-'+g+'-'+i);if(!inp)return;
+      const inp=document.getElementById('ep-'+g+'-'+i); if(!inp) return;
       const nn=inp.value.trim()||team.name;
-      if(nn!==team.name){sched.forEach(m=>{if(m.home===team.name)m.home=nn;if(m.away===team.name)m.away=nn;});team.name=nn;}
+      if(nn!==team.name){ sched.forEach(m=>{if(m.home===team.name)m.home=nn; if(m.away===team.name)m.away=nn;}); team.name=nn; }
     });
   });
   T.teams=GL.slice(0,T.numGroups).flatMap(g=>(groups[g]||[]).map(t=>t.name));
-  computeStandings(groups,sched,T.numGroups);save();renderAll();cm('m-edit');
+  computeStandings(groups,sched,T.numGroups); save(); renderAll(); cm('m-edit');
   toast('✓ Nama pemain diperbarui');
 }
 
@@ -517,41 +719,41 @@ function saveEditNames(){
 function showResetModal(){
   document.getElementById('reset-in').value='';
   document.getElementById('reset-in').placeholder=T?.name||'';
-  const b=document.getElementById('reset-btn');b.disabled=true;b.style.opacity='0.4';b.style.cursor='not-allowed';
+  const b=document.getElementById('reset-btn'); b.disabled=true; b.style.opacity='0.4'; b.style.cursor='not-allowed';
   cm_open('m-reset');
 }
 function chkReset(){
   const ok=document.getElementById('reset-in').value.trim()===T?.name?.trim();
-  const b=document.getElementById('reset-btn');b.disabled=!ok;b.style.opacity=ok?'1':'0.4';b.style.cursor=ok?'pointer':'not-allowed';
+  const b=document.getElementById('reset-btn'); b.disabled=!ok; b.style.opacity=ok?'1':'0.4'; b.style.cursor=ok?'pointer':'not-allowed';
 }
 function doReset(){
-  localStorage.removeItem(SK);T=null;groups={};sched=[];scores={};playoff=null;
-  cm('m-reset');document.getElementById('main-app').style.display='none';
-  toast('Data turnamen dihapus');setTimeout(()=>showWelcomeEmpty(),300);
+  spSave({}, authVenue); T=null; groups={}; sched=[]; scores={}; playoff=null;
+  cm('m-reset'); document.getElementById('main-app').style.display='none';
+  toast('Data turnamen dihapus'); setTimeout(()=>showWelcomeEmpty(), 300);
 }
 
 /* ── DEMO ── */
 function loadDemo(){
-  T={name:'Demo Tournament',date:new Date().toISOString().split('T')[0],startTime:'08:00',numTeams:8,numGroups:2,numCourts:2,matchDuration:45,breakDuration:5,stageBreak:15,playoffDuration:60,gsScoring:'best5',poScoring:'race4',advanceCount:2,
+  T={name:'Demo Tournament',date:new Date().toISOString().split('T')[0],startTime:'08:00',numTeams:8,numGroups:2,numCourts:2,matchDuration:45,breakDuration:5,stageBreak:15,playoffDuration:60,gsScoring:'best5',poScoring:'race4',advanceCount:2,venue:authVenue,
     teams:['Budi & Andi','Citra & Dina','Eko & Fajar','Gina & Hendra','Ivan & Joko','Kiki & Lena','Mira & Nanda','Oscar & Pia']};
-  groups={};sched=[];scores={};playoff=null;genGroups();genSchedule();loadTournament();
+  groups={}; sched=[]; scores={}; playoff=null; genGroups(); genSchedule(); loadTournament();
 }
 
 /* ── LOAD ── */
 function loadTournament(){
-  const raw=spLoad();
+  const raw=spLoad(authVenue);
   if(raw){
     T=raw.tournament;
-    if(raw.groups){groups=raw.groups;sched=raw.schedule||[];}
-    else{genGroups();genSchedule();}
+    if(raw.groups){ groups=raw.groups; sched=raw.schedule||[]; }
+    else { genGroups(); genSchedule(); }
     scores=raw.scores||{};
-    sched.forEach(m=>{if(scores[m.id]){m.scoreHome=scores[m.id].h;m.scoreAway=scores[m.id].a;m.done=true;}});
-    if(raw.playoff)playoff=raw.playoff;
+    sched.forEach(m=>{ if(scores[m.id]){ m.scoreHome=scores[m.id].h; m.scoreAway=scores[m.id].a; m.done=true; } });
+    if(raw.playoff) playoff=raw.playoff;
   }
   document.getElementById('welcome').style.display='none';
   document.getElementById('main-app').style.display='block';
-  document.getElementById('nav-name').textContent=T.name;
-  buildFilters();computeStandings(groups,sched,T.numGroups);renderAll();
+  document.getElementById('nav-name').textContent=`${T.name} · ${authVenue}`;
+  buildFilters(); computeStandings(groups,sched,T.numGroups); renderAll();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-groups').classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -561,90 +763,104 @@ function loadTournament(){
 /* ── GENERATE ── */
 function genGroups(){
   const teams=T.teams&&T.teams.length?[...T.teams]:Array.from({length:T.numTeams},(_,i)=>'Pasangan '+(i+1));
-  const ng=T.numGroups;groups={};GL.slice(0,ng).forEach(g=>groups[g]=[]);
-  for(let i=0;i<teams.length;i++){const r=Math.floor(i/ng),p=i%ng,idx=r%2===0?p:(ng-1-p);groups[GL[idx]].push({name:teams[i],W:0,L:0,GF:0,GA:0,pts:0});}
+  const ng=T.numGroups; groups={}; GL.slice(0,ng).forEach(g=>groups[g]=[]);
+  for(let i=0;i<teams.length;i++){ const r=Math.floor(i/ng),p=i%ng,idx=r%2===0?p:(ng-1-p); groups[GL[idx]].push({name:teams[i],W:0,L:0,GF:0,GA:0,pts:0}); }
 }
 function genSchedule(){
   sched=[];
-  const ng=T.numGroups,nc=T.numCourts,slot=T.matchDuration+T.breakDuration;
-  const [sh,sm]=T.startTime.split(':').map(Number);const s0=sh*60+sm;
-  const ca={};GL.slice(0,ng).forEach((g,i)=>{ca[g]=(i%nc)+1;});
+  const ng=T.numGroups, nc=T.numCourts, slot=T.matchDuration+T.breakDuration;
+  const [sh,sm]=T.startTime.split(':').map(Number); const s0=sh*60+sm;
+  const ca={}; GL.slice(0,ng).forEach((g,i)=>{ ca[g]=(i%nc)+1; });
   let mid=0;
   GL.slice(0,ng).forEach(g=>{
-    const teams=groups[g].map(t=>t.name),n=teams.length;
-    const list=[...teams];if(n%2!==0)list.push('BYE');
-    const tot=list.length,allM=[];
-    for(let r=0;r<tot-1;r++){for(let i=0;i<tot/2;i++){const h=list[i],a=list[tot-1-i];if(h!=='BYE'&&a!=='BYE')allM.push({home:h,away:a,round:r+1});}list.splice(1,0,list.pop());}
-    const court=ca[g];const ex=sched.filter(m=>m.court===court);
+    const teams=groups[g].map(t=>t.name), n=teams.length;
+    const list=[...teams]; if(n%2!==0) list.push('BYE');
+    const tot=list.length, allM=[];
+    for(let r=0;r<tot-1;r++){ for(let i=0;i<tot/2;i++){ const h=list[i],a=list[tot-1-i]; if(h!=='BYE'&&a!=='BYE') allM.push({home:h,away:a,round:r+1}); } list.splice(1,0,list.pop()); }
+    const court=ca[g]; const ex=sched.filter(m=>m.court===court);
     let si=ex.length>0?Math.ceil((Math.max(...ex.map(m=>m.startMins))-s0)/slot)+1:0;
-    const lp={};teams.forEach(t=>{lp[t]=-99;});
+    const lp={}; teams.forEach(t=>{ lp[t]=-99; });
     const pend=[...allM];
     while(pend.length>0){
-      let ch=0;for(let i=0;i<pend.length;i++){const m=pend[i];if((si-(lp[m.home]??-99))>=1&&(si-(lp[m.away]??-99))>=1){ch=i;break;}}
-      const m=pend.splice(ch,1)[0];const ms=s0+si*slot;
-      lp[m.home]=si;lp[m.away]=si;
+      let ch=0; for(let i=0;i<pend.length;i++){ const m=pend[i]; if((si-(lp[m.home]??-99))>=1&&(si-(lp[m.away]??-99))>=1){ ch=i; break; } }
+      const m=pend.splice(ch,1)[0]; const ms=s0+si*slot;
+      lp[m.home]=si; lp[m.away]=si;
       sched.push({id:++mid,group:g,court,round:m.round,home:m.home,away:m.away,startMins:ms,startTime:t2s(ms),scoreHome:null,scoreAway:null,done:false});
       si++;
     }
   });
-  sched.sort((a,b)=>a.startMins-b.startMins||a.court-b.court);save();
+  sched.sort((a,b)=>a.startMins-b.startMins||a.court-b.court); save();
 }
 
-/* ── SAVE/SCORE ── */
-function save(){const d=spLoad()||{};d.tournament=T;d.groups=groups;d.schedule=sched;d.scores=scores;d.playoff=playoff;spSave(d);}
-function saveScore(id){
-  const m=sched.find(x=>x.id===id);if(!m)return;
-  const sv=document.getElementById('sh-'+id)?.value||'',sa=document.getElementById('sa-'+id)?.value||'';
-  if(sv===''||sa==='')return;
-  m.scoreHome=sv;m.scoreAway=sa;m.done=true;scores[id]={h:sv,a:sa};
-  computeStandings(groups,sched,T.numGroups);save();renderAll();
+/* ── SAVE / SCORE ── */
+function save(){ const d=spLoad(authVenue)||{}; d.tournament=T; d.groups=groups; d.schedule=sched; d.scores=scores; d.playoff=playoff; spSave(d, authVenue); }
+
+async function saveScore(id){
+  const m=sched.find(x=>x.id===id); if(!m) return;
+  const sv=document.getElementById('sh-'+id)?.value||'', sa=document.getElementById('sa-'+id)?.value||'';
+  if(sv===''||sa==='') return;
+  m.scoreHome=sv; m.scoreAway=sa; m.done=true; scores[id]={h:sv,a:sa};
+  computeStandings(groups,sched,T.numGroups); save(); renderAll();
   toast('✓ Skor disimpan');
+
+  // Submit to Trekkr API — lookup player ELO from trekkrPlayers
+  const getP = name => trekkrPlayers.find(p=>p.name===name) || {name, elo:1350, matchCount:0};
+  const hp=getP(m.home), ap=getP(m.away);
+  // For pair tournaments: split name by ' & ' if applicable
+  const hNames=m.home.split(' & '), aNames=m.away.split(' & ');
+  const apiMatch = {
+    p1t1: hNames[0]||m.home, p2t1: hNames[1]||hNames[0]||m.home,
+    p1t2: aNames[0]||m.away, p2t2: aNames[1]||aNames[0]||m.away,
+    scoreT1: parseInt(sv), scoreT2: parseInt(sa),
+    gender: 'M', sourceUrl: `Trekkr Tourney — ${T.name}`,
+  };
+  await submitMatchesToTrekkr([apiMatch], authVenue, authToken);
 }
 
 /* ── RENDER ── */
-function renderAll(){rGroups();rSchedule();rCourts();rPlayoff();}
-function sv(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function renderAll(){ rGroups(); rSchedule(); rCourts(); rPlayoff(); }
+function sv(v,el){ document.querySelectorAll('.view').forEach(x=>x.classList.remove('active')); document.getElementById('view-'+v).classList.add('active'); document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
 
 function rGroups(){
-  if(!T)return;
-  const el=document.getElementById('groups-grid'),ng=T.numGroups,nc=T.numCourts,adv=T.advanceCount;let h='';
+  if(!T) return;
+  const el=document.getElementById('groups-grid'), ng=T.numGroups, nc=T.numCourts, adv=T.advanceCount; let h='';
   GL.slice(0,ng).forEach(g=>{
-    const ct=(GL.indexOf(g)%nc)+1,col=GC[g]||'#1e9fff',cc=CC[ct]||'#1e9fff';
+    const ct=(GL.indexOf(g)%nc)+1, col=GC[g]||'#1e9fff', cc=CC[ct]||'#1e9fff';
     h+=`<div class="gc"><div class="gh"><div class="gl" style="color:${col};">${g}</div><div class="gm">GRUP ${g} · ${(groups[g]||[]).length} PASANGAN</div><div class="gcrt" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${ct}</div></div><table class="st"><tr><th>#</th><th>Pasangan</th><th>M</th><th>W</th><th>L</th><th>GD</th><th>Pts</th></tr>`;
-    (groups[g]||[]).forEach((t,i)=>{const q=i<adv,gd=t.GF-t.GA,p=t.W+t.L;h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Barlow Condensed',sans-serif;">${i+1}</div></td><td style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${t.name}</td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#6a8aaa'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td></tr>`;});
+    (groups[g]||[]).forEach((t,i)=>{ const q=i<adv, gd=t.GF-t.GA, p=t.W+t.L; h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Barlow Condensed',sans-serif;">${i+1}</div></td><td style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${t.name}</td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#6a8aaa'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td></tr>`; });
     h+='</table></div>';
   });
   el.innerHTML=h;
 }
 
 function buildFilters(){
-  if(!T)return;let h=`<button class="fb active" onclick="doFilt('all',this)">Semua</button>`;
+  if(!T) return; let h=`<button class="fb active" onclick="doFilt('all',this)">Semua</button>`;
   GL.slice(0,T.numGroups).forEach(g=>h+=`<button class="fb" onclick="doFilt('${g}',this)">Grup ${g}</button>`);
-  for(let c=1;c<=T.numCourts;c++)h+=`<button class="fb" onclick="doFilt('court${c}',this)">Court ${c}</button>`;
+  for(let c=1;c<=T.numCourts;c++) h+=`<button class="fb" onclick="doFilt('court${c}',this)">Court ${c}</button>`;
   document.getElementById('sf-row').innerHTML=h;
 }
-function doFilt(f,el){filt=f;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));el.classList.add('active');rSchedule();}
+function doFilt(f,el){ filt=f; document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active')); el.classList.add('active'); rSchedule(); }
 function rSchedule(){
-  if(!T)return;let list=sched;
-  if(filt.startsWith('court'))list=sched.filter(m=>m.court===parseInt(filt.replace('court','')));
-  else if(filt!=='all')list=sched.filter(m=>m.group===filt);
+  if(!T) return; let list=sched;
+  if(filt.startsWith('court')) list=sched.filter(m=>m.court===parseInt(filt.replace('court','')));
+  else if(filt!=='all') list=sched.filter(m=>m.group===filt);
   let h='';
   list.forEach(m=>{
-    const gc=GC[m.group]||'#1e9fff',cc=CC[m.court]||'#1e9fff',sv=m.scoreHome??'',sa=m.scoreAway??'';
+    const gc=GC[m.group]||'#1e9fff', cc=CC[m.court]||'#1e9fff', sv=m.scoreHome??'', sa=m.scoreAway??'';
     h+=`<div class="mr${m.done?' md':''}"><div class="mt2">${m.startTime}</div><div class="cb" style="color:${cc};background:${cc}1a;border:1px solid ${cc}44;">Court ${m.court}</div><div class="cb" style="color:${gc};background:${gc}1a;border:1px solid ${gc}44;">Grp ${m.group}</div><div class="mts"><span>${m.home}</span><span class="mvs">vs</span><span>${m.away}</span></div><div class="sa"><div class="sia"><input class="sb2" id="sh-${m.id}" type="number" min="0" max="9" value="${sv}" placeholder="-"><span class="ss">:</span><input class="sb2" id="sa-${m.id}" type="number" min="0" max="9" value="${sa}" placeholder="-"><button class="btn btn-save" onclick="saveScore(${m.id})">✓</button></div></div></div>`;
   });
   document.getElementById('sl').innerHTML=h||'<p style="color:var(--dim);padding:20px;text-align:center;">Tidak ada match</p>';
 }
 
 function rCourts(){
-  if(!T)return;let h='';
+  if(!T) return; let h='';
   for(let c=1;c<=T.numCourts;c++){
-    const col=CC[c]||'#1e9fff',cms=sched.filter(m=>m.court===c);
+    const col=CC[c]||'#1e9fff', cms=sched.filter(m=>m.court===c);
     h+=`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;"><div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:${col};">Court ${c}</div><div style="font-size:10px;color:var(--dim);">${cms.length} match</div></div><div style="padding:8px;">`;
-    cms.forEach(m=>{const gc=GC[m.group]||'#1e9fff';h+=`<div style="padding:7px 9px;border-radius:6px;margin-bottom:4px;background:${m.done?'#00c87508':'#ffffff03'};border:1px solid ${m.done?'#00c87522':'var(--border)'};">
+    cms.forEach(m=>{ const gc=GC[m.group]||'#1e9fff'; h+=`<div style="padding:7px 9px;border-radius:6px;margin-bottom:4px;background:${m.done?'#00c87508':'#ffffff03'};border:1px solid ${m.done?'#00c87522':'var(--border)'};">
       <div style="display:flex;align-items:center;gap:6px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;">${m.startTime}</div><div style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;color:${gc};background:${gc}11;">Grp ${m.group}</div>${m.done?`<div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;">${m.scoreHome}:${m.scoreAway}</div>`:''}</div>
       <div style="color:var(--sub);font-size:11px;margin-top:2px;"><span style="color:#ddeeff;">${m.home}</span> <span style="color:var(--dim);">vs</span> <span style="color:#ddeeff;">${m.away}</span></div>
-    </div>`;});
+    </div>`; });
     h+='</div></div>';
   }
   document.getElementById('court-grid').innerHTML=h;
@@ -663,58 +879,68 @@ function genPO(){
   for(let r=1;r<rounds.length;r++){const prev=rounds[r-1];for(let i=0;i<rounds[r].size/2;i++){const mA=prev.matches[i*2],mB=prev.matches[i*2+1];rounds[r].matches.push({id:`r${r}m${i}`,round:r,pos:i,teamA:{team:'TBD',group:null,seed:0},teamB:{team:'TBD',group:null,seed:0},scoreA:null,scoreB:null,winner:null,done:false});}}
   prop(rounds);
   playoff={rounds,seeded,bracketSize:bSz,byes,thirdMatch:{id:'third',isThird:true,teamA:{team:'TBD SF Loser',seed:0},teamB:{team:'TBD SF Loser',seed:0},scoreA:null,scoreB:null,winner:null,done:false}};
-  save();rPlayoff();toast('✓ Playoff bracket dibuat');
+  save(); rPlayoff(); toast('✓ Playoff bracket dibuat');
 }
-function savePO(mid){
-  if(!playoff)return;
-  let match=null;playoff.rounds.forEach(r=>r.matches.forEach(m=>{if(m.id===mid)match=m;}));
-  if(!match&&playoff.thirdMatch?.id===mid)match=playoff.thirdMatch;
-  if(!match)return;
-  const sa=document.getElementById('psa-'+mid)?.value||'',sb=document.getElementById('psb-'+mid)?.value||'';
-  if(sa===''||sb==='')return;
-  match.scoreA=sa;match.scoreB=sb;const w=parseInt(sa)>parseInt(sb)?match.teamA:match.teamB;match.winner={...w};match.done=true;
+async function savePO(mid){
+  if(!playoff) return;
+  let match=null; playoff.rounds.forEach(r=>r.matches.forEach(m=>{if(m.id===mid)match=m;}));
+  if(!match&&playoff.thirdMatch?.id===mid) match=playoff.thirdMatch;
+  if(!match) return;
+  const sa=document.getElementById('psa-'+mid)?.value||'', sb=document.getElementById('psb-'+mid)?.value||'';
+  if(sa===''||sb==='') return;
+  match.scoreA=sa; match.scoreB=sb; const w=parseInt(sa)>parseInt(sb)?match.teamA:match.teamB; match.winner={...w}; match.done=true;
   prop(playoff.rounds);
   const sf=playoff.rounds[playoff.rounds.length-2];
   if(sf){const l=sf.matches.filter(m=>m.done).map(m=>m.teamA.team===m.winner.team?m.teamB:m.teamA);if(l[0])playoff.thirdMatch.teamA=l[0];if(l[1])playoff.thirdMatch.teamB=l[1];}
-  const d=spLoad()||{};if(!d.playoffScores)d.playoffScores={};d.playoffScores[mid]={a:sa,b:sb};d.playoff=playoff;spSave(d);
-  rPlayoff();toast('✓ Skor playoff disimpan');
+  const d=spLoad(authVenue)||{}; if(!d.playoffScores)d.playoffScores={}; d.playoffScores[mid]={a:sa,b:sb}; d.playoff=playoff; spSave(d, authVenue);
+  rPlayoff(); toast('✓ Skor playoff disimpan');
+
+  // Submit playoff match to Trekkr
+  const hNames=match.teamA.team.split(' & '), aNames=match.teamB.team.split(' & ');
+  const apiMatch = {
+    p1t1:hNames[0], p2t1:hNames[1]||hNames[0],
+    p1t2:aNames[0], p2t2:aNames[1]||aNames[0],
+    scoreT1:parseInt(sa), scoreT2:parseInt(sb),
+    gender:'M', sourceUrl:`Trekkr Tourney Playoff — ${T.name}`,
+  };
+  await submitMatchesToTrekkr([apiMatch], authVenue, authToken);
 }
 function rPlayoff(){
-  if(!T)return;
+  if(!T) return;
   if(!playoff){
     const done=sched.filter(m=>m.done).length;
     document.getElementById('po-st').textContent=`Group stage: ${done}/${sched.length} match selesai`;
     document.getElementById('po-act').innerHTML=`<button class="btn btn-success" onclick="genPO()">⚡ Generate Bracket</button>`;
     document.getElementById('seed-sec').innerHTML='';
-    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--dim);">Klik Generate Bracket setelah group stage selesai</div></div>`;
-    document.getElementById('pod-sec').innerHTML='';return;
+    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;">Klik Generate Bracket setelah group stage selesai</div></div>`;
+    document.getElementById('pod-sec').innerHTML=''; return;
   }
   document.getElementById('po-st').textContent=`${T.numGroups*T.advanceCount} tim · bracket ${playoff.bracketSize}${playoff.byes>0?' · '+playoff.byes+' BYE':''}`;
   document.getElementById('po-act').innerHTML=`<button class="btn btn-ghost" style="font-size:10px;" onclick="playoff=null;save();rPlayoff()">↺ Reset</button>`;
   let sh=`<div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;"><tr style="border-bottom:1px solid var(--border);">${['Seed','Pasangan','Grup','Peringkat'].map(h=>`<th style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);padding:7px 10px;text-align:left;font-weight:600;">${h}</th>`).join('')}</tr>`;
   playoff.seeded.forEach(s=>{const col=s.group?GC[s.group]:'#4a6a8a';sh+=`<tr style="border-top:1px solid var(--bg);"><td style="padding:7px 10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blue);">#${s.seed}</td><td style="padding:7px 10px;color:#e0ecff;font-weight:500;font-size:12px;">${s.team}</td><td style="padding:7px 10px;"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;color:${col};background:${col}11;border:1px solid ${col}33;">Grup ${s.group}</span></td><td style="padding:7px 10px;color:var(--dim);font-size:12px;">Peringkat ${s.rank}</td></tr>`;});
-  sh+='</table></div>';document.getElementById('seed-sec').innerHTML=sh;
-  const totalR=playoff.rounds.length;let bh='';
+  sh+='</table></div>'; document.getElementById('seed-sec').innerHTML=sh;
+  const totalR=playoff.rounds.length; let bh='';
   playoff.rounds.forEach((round,ri)=>{
     bh+=`<div class="brd"><div class="brt">${getRoundLabel(ri,totalR)}</div>`;
     round.matches.forEach(m=>{
-      const aW=m.done&&m.winner?.team===m.teamA.team,bW=m.done&&m.winner?.team===m.teamB.team;
-      const aC=m.teamA.group?GC[m.teamA.group]:'#4a6a8a',bC=m.teamB.group?GC[m.teamB.group]:'#4a6a8a';
+      const aW=m.done&&m.winner?.team===m.teamA.team, bW=m.done&&m.winner?.team===m.teamB.team;
+      const aC=m.teamA.group?GC[m.teamA.group]:'#4a6a8a', bC=m.teamB.group?GC[m.teamB.group]:'#4a6a8a';
       bh+=`<div class="bm${m.done?' wd':''}"><div class="bms">${m.teamA.seed?`<span class="bmseed" style="color:${aC};background:${aC}11;">#${m.teamA.seed}</span>`:''}<span class="bmt${aW?' w':m.teamA.team==='TBD'?' tbd':''}">${m.teamA.isBye?'BYE':m.teamA.team}</span><span class="bmsc${aW?' w':''}">${m.scoreA??''}</span></div><div class="bms">${m.teamB.seed?`<span class="bmseed" style="color:${bC};background:${bC}11;">#${m.teamB.seed}</span>`:''}<span class="bmt${bW?' w':m.teamB.team==='TBD'?' tbd':''}">${m.teamB.isBye?'BYE':m.teamB.team}</span><span class="bmsc${bW?' w':''}">${m.scoreB??''}</span></div>`;
-      if(!m.done&&!m.isByeMatch&&m.teamA.team!=='TBD'&&m.teamB.team!=='TBD')bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
+      if(!m.done&&!m.isByeMatch&&m.teamA.team!=='TBD'&&m.teamB.team!=='TBD') bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
       bh+=`</div>`;
     });
     bh+='</div>';
   });
   const tm=playoff.thirdMatch;
   if(tm){
-    const aW=tm.done&&tm.winner?.team===tm.teamA.team,bW=tm.done&&tm.winner?.team===tm.teamB.team;
+    const aW=tm.done&&tm.winner?.team===tm.teamA.team, bW=tm.done&&tm.winner?.team===tm.teamB.team;
     bh+=`<div class="brd" style="flex:0 0 auto;width:130px;"><div class="brt" style="color:#ff9955;">Juara 3</div><div class="bm${tm.done?' wd':''}"><div class="bms"><span class="bmt${aW?' w':''}">${tm.teamA.team}</span><span class="bmsc${aW?' w':''}">${tm.scoreA??''}</span></div><div class="bms"><span class="bmt${bW?' w':''}">${tm.teamB.team}</span><span class="bmsc${bW?' w':''}">${tm.scoreB??''}</span></div>`;
-    if(!tm.done&&!tm.teamA.team.includes('TBD'))bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-third" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-third" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('third')">✓</button></div>`;
+    if(!tm.done&&!tm.teamA.team.includes('TBD')) bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-third" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-third" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('third')">✓</button></div>`;
     bh+=`</div></div>`;
   }
   document.getElementById('bracket').innerHTML=bh;
-  const fr=playoff.rounds[playoff.rounds.length-1],fm=fr?.matches[0],champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
+  const fr=playoff.rounds[playoff.rounds.length-1], fm=fr?.matches[0], champ=fm?.winner, ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null, third=tm?.winner, fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
   if(champ){
     const pl=[{r:1,t:champ?.team,c:'#f5c842',l:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',l:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',l:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',l:'4th'}];
     document.getElementById('pod-sec').innerHTML=`<div style="margin-top:18px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;">🏆 Hasil Turnamen</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${pl.map(p=>`<div style="text-align:center;padding:12px 8px;border-radius:9px;background:${p.c}11;border:1.5px solid ${p.c}33;"><div style="font-size:20px;">${p.l}</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${p.c};">${p.r}</div><div style="font-size:11px;color:#e0ecff;margin-top:3px;">${p.t}</div></div>`).join('')}</div></div>`;
@@ -722,8 +948,15 @@ function rPlayoff(){
 }
 
 /* ── UTILS ── */
-function cm(id){document.getElementById(id).classList.remove('show');}
-function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type==='err'?' err':'');setTimeout(()=>t.classList.remove('show'),3000);}
+function cm(id){ document.getElementById(id).classList.remove('show'); }
+function toast(msg,type=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(type==='err'?' err':''); setTimeout(()=>t.classList.remove('show'),3000); }
+
+/* ── LINKS UPDATE ── */
+function updateLinks(){
+  const base = window.location.href.replace('admin.html','');
+  const li = document.querySelector('.link-url');
+  // Update link display to show correct URLs
+}
 
 boot();
 </script>
