@@ -212,18 +212,6 @@
     .rec-text { font-size:13px; color:var(--text); line-height:1.5; }
     .rec-text strong { color:var(--blue); }
     .rec-detail { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
-
-    /* DEBUG PANEL */
-    .debug-panel { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:#0f172a; border-top:2px solid #1A6FE8; z-index:9999; max-height:50vh; overflow-y:auto; font-family:'DM Mono',monospace; font-size:11px; }
-    .debug-header { background:#1A6FE8; color:white; padding:6px 12px; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:12px; cursor:pointer; position:sticky; top:0; }
-    .debug-body { padding:8px 12px; color:#94a3b8; }
-    .debug-log { margin-bottom:6px; border-left:2px solid #1e293b; padding-left:8px; }
-    .debug-log.ok { border-color:#16a34a; color:#86efac; }
-    .debug-log.err { border-color:#dc2626; color:#fca5a5; }
-    .debug-log.warn { border-color:#f59e0b; color:#fde68a; }
-    .debug-log.info { border-color:#1A6FE8; color:#93c5fd; }
-    .debug-key { color:#60a5fa; }
-    .debug-val { color:#f8fafc; }
   </style>
 </head>
 <body>
@@ -426,7 +414,6 @@
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-primary" id="btn-submit-round" onclick="submitRound()">Submit Skor & Lanjut Ronde →</button>
         <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
-        <button class="btn btn-ghost" style="font-size:12px;margin-top:-4px;" onclick="debugFetchEloLog()">🔍 Cek ELO_Log</button>
       </div>
     </div>
 
@@ -439,7 +426,6 @@
       <div id="leaderboard-list"></div>
       <div style="margin-top:20px">
         <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
-        <button class="btn btn-ghost" style="font-size:12px;margin-top:-4px;" onclick="debugFetchEloLog()">🔍 Cek ELO_Log</button>
       </div>
     </div>
 
@@ -475,17 +461,6 @@
     <button class="btn btn-primary mt-16" onclick="newMatch()">+ Match Baru</button>
   </div>
 
-
-<!-- DEBUG PANEL -->
-<div class="debug-panel" id="debug-panel">
-  <div class="debug-header" onclick="toggleDebug()">
-    🔍 Debug Console <span id="debug-count" style="background:#dc2626;border-radius:10px;padding:1px 6px;font-size:10px;">0</span>
-    <span id="debug-toggle">▼</span>
-  </div>
-  <div class="debug-body" id="debug-body">
-    <div style="color:#475569;font-size:10px;padding:4px 0;">Logs akan muncul di sini saat match disubmit...</div>
-  </div>
-</div>
 </div><!-- end #app -->
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -743,11 +718,22 @@ async function loadPlayers() {
     ]);
     // elo/latest returns { players: { "Name": { elo, delta, w, l, ... } } } — an object, not array
     const eloMap = eRes.players || {};
-    state.trekkrPlayers = (pRes.players || []).map(p => ({
+    const allPlayers = (pRes.players || []).map(p => ({
       ...p,
       elo: (eloMap[p.name]?.elo) || 1350,
       matchCount: ((eloMap[p.name]?.w || 0) + (eloMap[p.name]?.l || 0)),
     }));
+
+    // Filter: nama yang hanya angka/spasi adalah data corrupt (misal "13 13")
+    const corruptPlayers = allPlayers.filter(p => /^[\d\s]+$/.test(p.name.trim()));
+    state.trekkrPlayers = allPlayers.filter(p => !/^[\d\s]+$/.test(p.name.trim()));
+
+    if (corruptPlayers.length > 0) {
+      const errEl = document.getElementById("players-error");
+      errEl.textContent = `⚠️ ${corruptPlayers.length} data pemain rusak ditemukan di database (nama berupa angka) dan disembunyikan. Hubungi admin untuk perbaiki data di Google Sheet.`;
+      errEl.classList.remove("hidden");
+      console.warn("Corrupt players filtered:", corruptPlayers.map(p => p.name));
+    }
     renderPlayerList();
   } catch(e) {
     listEl.innerHTML = `<div class="alert alert-red">Gagal load pemain: ${e.message}</div>`;
@@ -1323,17 +1309,67 @@ async function submitRound() {
     // Mark submitted
     state.rounds[state.currentRound].submitted = true;
 
-    // Submit to Trekkr API
-    if (state.venue) {
+    // ── SUBMIT TO TREKKR ─────────────────────────────────────────────────────
+    // DIAGNOSIS: Backend deployed tidak menghitung ELO di addVenueMatch
+    // (response hanya return {success, added, newPlayers} tanpa eloUpdates)
+    // SOLUSI: Simpan match data ke venue tab, lalu kirim ELO update via /api/sessions
+    if (state.venue && state.token) {
       const apiMatches = round.matches.map(m => ({
-        p1t1: m.team1[0].name, p2t1: m.team1[1].name,
-        p1t2: m.team2[0].name, p2t2: m.team2[1].name,
-        scoreT1: m.score1, scoreT2: m.score2,
-        gender: "M", sourceUrl: "Trekkr Mexicano Daily Match",
+        p1t1: m.team1[0].name.trim(),
+        p2t1: m.team1[1].name.trim(),
+        p1t2: m.team2[0].name.trim(),
+        p2t2: m.team2[1].name.trim(),
+        scoreT1: Number(m.score1),
+        scoreT2: Number(m.score2),
+        gender: "M",
+        sourceUrl: "Trekkr Mexicano Daily Match",
       }));
-      apiRequest(`venues/${encodeURIComponent(state.venue)}/matches`, {
-        method:"POST", body: JSON.stringify({ matches: apiMatches })
-      }).catch(e => console.warn("API warn:", e.message));
+
+      const allNamesValid = apiMatches.every(m => m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2);
+      if (!allNamesValid) {
+        showApiWarning("Nama pemain tidak lengkap. Cek data pemain.");
+      } else {
+        try {
+          // Step 1: Simpan match data ke Venue tab di Google Sheet
+          await apiRequest(
+            `venues/${encodeURIComponent(state.venue)}/matches`,
+            { method:"POST", body: JSON.stringify({ matches: apiMatches }) }
+          );
+
+          // Step 2: Kirim ELO update via /api/sessions
+          // Backend saveSession() menulis langsung ke ELO_Log — ini yang bekerja
+          const roundPlayers = [...new Set(
+            round.matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name))
+          )];
+          const eloResults = roundPlayers.map(name => {
+            const st = state.playerStats[name] || {};
+            const initialElo = state.selectedPlayers.find(s => s.name === name)?.elo || 1350;
+            return {
+              name: name,
+              elo: st.elo || initialElo,
+              delta: (st.elo || initialElo) - initialElo,
+              w: st.wins || 0,
+              l: st.losses || 0,
+            };
+          });
+
+          await apiRequest("sessions", {
+            method: "POST",
+            body: JSON.stringify({
+              session_name: `Mexicano ${state.venue} – Ronde ${round.roundNum}`,
+              format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
+              courts: state.courts,
+              venue: state.venue,
+              players: roundPlayers,
+              rounds: [],
+              elo_results: eloResults,
+            })
+          });
+        } catch (apiErr) {
+          console.warn("API submit warn:", apiErr.message);
+          showApiWarning("Skor tersimpan lokal. ELO belum tersimpan ke Trekkr: " + apiErr.message);
+        }
+      }
     }
 
     // Generate next round
@@ -1420,9 +1456,12 @@ async function endMatch() {
   try {
     const standings = getLeaderboard();
 
-    // Save session to Trekkr
+    // ELO sudah dikirim per ronde via submitRound → /api/sessions
+    // endMatch hanya simpan summary final match
     if (state.venue) {
       const now = new Date().toLocaleDateString("id-ID");
+      const submittedRounds = state.rounds.filter(r => r.submitted).length;
+      // Kirim summary dengan ELO final (cumulative dari semua ronde)
       await apiRequest("sessions", {
         method:"POST",
         body: JSON.stringify({
@@ -1431,14 +1470,16 @@ async function endMatch() {
           courts: state.courts,
           venue: state.venue,
           players: state.selectedPlayers.map(p => p.name),
-          rounds: state.rounds.filter(r => r.submitted),
+          rounds: [],  // Sudah dikirim per ronde, tidak perlu ulang
           elo_results: standings.map(p => ({
-            name: p.name, elo: p.elo,
+            name: p.name,
+            elo: p.elo,
             delta: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
-            w: p.wins, l: p.losses,
+            w: p.wins,
+            l: p.losses,
           })),
         })
-      }).catch(e => console.warn("Session warn:", e.message));
+      }).catch(e => console.warn("Final session warn:", e.message));
     }
 
     clearMatchStorage();
@@ -1652,95 +1693,6 @@ function updateRoundRecommendation() {
   detailEl.innerHTML = rec.detail;
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DEBUG TOOLS
-// ═══════════════════════════════════════════════════════════════════════════
-let debugLogs = [];
-let debugOpen = false;
-
-function toggleDebug() {
-  debugOpen = !debugOpen;
-  document.getElementById('debug-body').style.display = debugOpen ? 'block' : 'none';
-  document.getElementById('debug-toggle').textContent = debugOpen ? '▲' : '▼';
-}
-
-function dbLog(type, label, data) {
-  debugLogs.push({ type, label, data, time: new Date().toISOString().substr(11,8) });
-  const el = document.getElementById('debug-body');
-  const count = document.getElementById('debug-count');
-  count.textContent = debugLogs.length;
-
-  let val = '';
-  if (typeof data === 'object') {
-    try { val = JSON.stringify(data, null, 2); } catch(e) { val = String(data); }
-  } else { val = String(data); }
-
-  el.innerHTML += `<div class="debug-log ${type}">
-    <span style="color:#475569">${debugLogs[debugLogs.length-1].time}</span>
-    <span class="debug-key"> [${label}]</span>
-    <pre class="debug-val" style="white-space:pre-wrap;word-break:break-all;margin:2px 0;">${val}</pre>
-  </div>`;
-  el.scrollTop = el.scrollHeight;
-
-  // Auto open on error
-  if (type === 'err') {
-    debugOpen = true;
-    document.getElementById('debug-body').style.display = 'block';
-    document.getElementById('debug-toggle').textContent = '▲';
-  }
-}
-
-async function debugFetchEloLog() {
-  dbLog('info', 'FETCH ELO_LOG', 'Mengambil 10 baris terakhir ELO_Log...');
-  try {
-    const data = await apiRequest('elo/latest');
-    const players = data.players || {};
-    const entries = Object.entries(players);
-    dbLog('ok', 'ELO_LOG LATEST', entries.slice(0, 10).map(([name, d]) => ({
-      name, elo: d.elo, delta: d.delta, w: d.w, l: d.l
-    })));
-  } catch(e) {
-    dbLog('err', 'ELO_LOG FETCH ERROR', e.message);
-  }
-}
-
-// Patch apiRequest to log all calls
-const _origApiRequest = apiRequest;
-window.apiRequest = async function(path, options = {}) {
-  const isMatch = path.includes('/matches');
-  const isSession = path.includes('sessions');
-  const isAuth = path.includes('auth');
-
-  if (isMatch || isSession) {
-    const body = options.body ? JSON.parse(options.body) : null;
-    dbLog('info', 'API REQUEST → ' + path, body);
-  }
-
-  try {
-    const result = await _origApiRequest(path, options);
-    if (isMatch || isSession) {
-      dbLog('ok', 'API RESPONSE ← ' + path, result);
-      // Check ELO updates
-      if (result.eloUpdates) {
-        dbLog(result.eloUpdates.length > 0 ? 'ok' : 'warn',
-          'ELO UPDATES',
-          result.eloUpdates.length > 0
-            ? result.eloUpdates
-            : '⚠️ KOSONG! Tidak ada ELO yang dihitung. Cek nama pemain & score.'
-        );
-      }
-    }
-    return result;
-  } catch(e) {
-    if (isMatch || isSession) {
-      dbLog('err', 'API ERROR ← ' + path, { message: e.message });
-    }
-    throw e;
-  }
-};
-
-// Override state reference for patched apiRequest
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
