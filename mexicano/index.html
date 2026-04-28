@@ -212,6 +212,18 @@
     .rec-text { font-size:13px; color:var(--text); line-height:1.5; }
     .rec-text strong { color:var(--blue); }
     .rec-detail { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
+
+    /* DEBUG PANEL */
+    .debug-panel { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:#0f172a; border-top:2px solid #1A6FE8; z-index:9999; max-height:50vh; overflow-y:auto; font-family:'DM Mono',monospace; font-size:11px; }
+    .debug-header { background:#1A6FE8; color:white; padding:6px 12px; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:12px; cursor:pointer; position:sticky; top:0; }
+    .debug-body { padding:8px 12px; color:#94a3b8; }
+    .debug-log { margin-bottom:6px; border-left:2px solid #1e293b; padding-left:8px; }
+    .debug-log.ok { border-color:#16a34a; color:#86efac; }
+    .debug-log.err { border-color:#dc2626; color:#fca5a5; }
+    .debug-log.warn { border-color:#f59e0b; color:#fde68a; }
+    .debug-log.info { border-color:#1A6FE8; color:#93c5fd; }
+    .debug-key { color:#60a5fa; }
+    .debug-val { color:#f8fafc; }
   </style>
 </head>
 <body>
@@ -414,6 +426,7 @@
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-primary" id="btn-submit-round" onclick="submitRound()">Submit Skor & Lanjut Ronde →</button>
         <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
+        <button class="btn btn-ghost" style="font-size:12px;margin-top:-4px;" onclick="debugFetchEloLog()">🔍 Cek ELO_Log</button>
       </div>
     </div>
 
@@ -426,6 +439,7 @@
       <div id="leaderboard-list"></div>
       <div style="margin-top:20px">
         <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Match Ended</button>
+        <button class="btn btn-ghost" style="font-size:12px;margin-top:-4px;" onclick="debugFetchEloLog()">🔍 Cek ELO_Log</button>
       </div>
     </div>
 
@@ -461,6 +475,17 @@
     <button class="btn btn-primary mt-16" onclick="newMatch()">+ Match Baru</button>
   </div>
 
+
+<!-- DEBUG PANEL -->
+<div class="debug-panel" id="debug-panel">
+  <div class="debug-header" onclick="toggleDebug()">
+    🔍 Debug Console <span id="debug-count" style="background:#dc2626;border-radius:10px;padding:1px 6px;font-size:10px;">0</span>
+    <span id="debug-toggle">▼</span>
+  </div>
+  <div class="debug-body" id="debug-body">
+    <div style="color:#475569;font-size:10px;padding:4px 0;">Logs akan muncul di sini saat match disubmit...</div>
+  </div>
+</div>
 </div><!-- end #app -->
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1195,27 +1220,21 @@ function renderCourtCards() {
       <div class="court-card">
         <div class="court-header">
           <div class="court-badge">Court ${m.court}</div>
-          <div id="court-status-${mi}" class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
+          <div class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
         </div>
         <div class="score-row">
           <div class="score-team">
             <div class="score-team-name">${m.team1.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric"
-              id="score-input-${mi}-1"
-              class="score-input ${t1Win?"winner":t2Win?"loser":""}"
+            <input type="number" inputmode="numeric" class="score-input ${t1Win?"winner":t2Win?"loser":""}"
               value="${s1 !== null ? s1 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 1, this.value)"
-              onchange="updateScore(${mi}, 1, this.value)" />
+              oninput="updateScore(${mi}, 1, this.value)" />
           </div>
           <div class="score-vs">:</div>
           <div class="score-team">
             <div class="score-team-name">${m.team2.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric"
-              id="score-input-${mi}-2"
-              class="score-input ${t2Win?"winner":t1Win?"loser":""}"
+            <input type="number" inputmode="numeric" class="score-input ${t2Win?"winner":t1Win?"loser":""}"
               value="${s2 !== null ? s2 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 2, this.value)"
-              onchange="updateScore(${mi}, 2, this.value)" />
+              oninput="updateScore(${mi}, 2, this.value)" />
           </div>
         </div>
         <!-- Player mini stats -->
@@ -1249,65 +1268,18 @@ function renderCourtCards() {
 }
 
 function updateScore(matchIdx, team, val) {
-  // FIX: Simpan ke state tapi TIDAK re-render seluruh DOM
-  // Re-render penuh menyebabkan focus hilang di mobile → score kedua tidak ter-input
   const round = state.rounds[state.currentRound];
   const score = val === "" ? null : Math.max(0, parseInt(val) || 0);
   if (team === 1) round.matches[matchIdx].score1 = score;
   else round.matches[matchIdx].score2 = score;
-
-  // Hanya update styling input (winner/loser) tanpa re-render DOM
-  const s1El = document.getElementById("score-input-" + matchIdx + "-1");
-  const s2El = document.getElementById("score-input-" + matchIdx + "-2");
-  if (s1El && s2El) {
-    const v1 = round.matches[matchIdx].score1;
-    const v2 = round.matches[matchIdx].score2;
-    const bothFilled = v1 !== null && v2 !== null;
-    s1El.className = "score-input" + (bothFilled ? (v1 > v2 ? " winner" : v1 < v2 ? " loser" : "") : "");
-    s2El.className = "score-input" + (bothFilled ? (v2 > v1 ? " winner" : v2 < v1 ? " loser" : "") : "");
-    // Update status header
-    const statusEl = document.getElementById("court-status-" + matchIdx);
-    const progressEl = document.getElementById("courts-progress");
-    if (statusEl) {
-      statusEl.textContent = bothFilled ? "✓ Skor Masuk" : "Menunggu Skor";
-      statusEl.className = "court-status " + (bothFilled ? "done" : "pending");
-    }
-    if (progressEl) {
-      const doneCount = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
-      progressEl.textContent = doneCount + "/" + round.matches.length + " selesai";
-    }
-  }
+  renderCourtCards();
 }
 
 async function submitRound() {
   const round = state.rounds[state.currentRound];
-
-  // FIX: Baca score dari DOM terlebih dahulu (lebih reliable dari state di mobile)
-  // Ini mengatasi kasus di mana oninput tidak trigger dengan benar di mobile browser
-  round.matches.forEach((m, mi) => {
-    const el1 = document.getElementById("score-input-" + mi + "-1");
-    const el2 = document.getElementById("score-input-" + mi + "-2");
-    if (el1 && el1.value !== "") {
-      m.score1 = Math.max(0, parseInt(el1.value) || 0);
-    }
-    if (el2 && el2.value !== "") {
-      m.score2 = Math.max(0, parseInt(el2.value) || 0);
-    }
-  });
-
   const allScored = round.matches.every(m => m.score1 !== null && m.score2 !== null);
   const errEl = document.getElementById("match-error");
   if (!allScored) { showError(errEl, "Isi semua skor terlebih dahulu"); return; }
-
-  // Warn if any match has both scores = 0 (likely not filled)
-  const zeroMatches = round.matches.filter(m => m.score1 === 0 && m.score2 === 0);
-  if (zeroMatches.length > 0 && !window._confirmZero) {
-    window._confirmZero = true;
-    showError(errEl, `⚠️ ${zeroMatches.length} match punya skor 0-0. Tekan Submit lagi untuk konfirmasi.`);
-    setTimeout(() => { window._confirmZero = false; }, 5000);
-    return;
-  }
-  window._confirmZero = false;
   errEl.classList.add("hidden");
 
   const btn = document.getElementById("btn-submit-round");
@@ -1680,6 +1652,95 @@ function updateRoundRecommendation() {
   detailEl.innerHTML = rec.detail;
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEBUG TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+let debugLogs = [];
+let debugOpen = false;
+
+function toggleDebug() {
+  debugOpen = !debugOpen;
+  document.getElementById('debug-body').style.display = debugOpen ? 'block' : 'none';
+  document.getElementById('debug-toggle').textContent = debugOpen ? '▲' : '▼';
+}
+
+function dbLog(type, label, data) {
+  debugLogs.push({ type, label, data, time: new Date().toISOString().substr(11,8) });
+  const el = document.getElementById('debug-body');
+  const count = document.getElementById('debug-count');
+  count.textContent = debugLogs.length;
+
+  let val = '';
+  if (typeof data === 'object') {
+    try { val = JSON.stringify(data, null, 2); } catch(e) { val = String(data); }
+  } else { val = String(data); }
+
+  el.innerHTML += `<div class="debug-log ${type}">
+    <span style="color:#475569">${debugLogs[debugLogs.length-1].time}</span>
+    <span class="debug-key"> [${label}]</span>
+    <pre class="debug-val" style="white-space:pre-wrap;word-break:break-all;margin:2px 0;">${val}</pre>
+  </div>`;
+  el.scrollTop = el.scrollHeight;
+
+  // Auto open on error
+  if (type === 'err') {
+    debugOpen = true;
+    document.getElementById('debug-body').style.display = 'block';
+    document.getElementById('debug-toggle').textContent = '▲';
+  }
+}
+
+async function debugFetchEloLog() {
+  dbLog('info', 'FETCH ELO_LOG', 'Mengambil 10 baris terakhir ELO_Log...');
+  try {
+    const data = await apiRequest('elo/latest');
+    const players = data.players || {};
+    const entries = Object.entries(players);
+    dbLog('ok', 'ELO_LOG LATEST', entries.slice(0, 10).map(([name, d]) => ({
+      name, elo: d.elo, delta: d.delta, w: d.w, l: d.l
+    })));
+  } catch(e) {
+    dbLog('err', 'ELO_LOG FETCH ERROR', e.message);
+  }
+}
+
+// Patch apiRequest to log all calls
+const _origApiRequest = apiRequest;
+window.apiRequest = async function(path, options = {}) {
+  const isMatch = path.includes('/matches');
+  const isSession = path.includes('sessions');
+  const isAuth = path.includes('auth');
+
+  if (isMatch || isSession) {
+    const body = options.body ? JSON.parse(options.body) : null;
+    dbLog('info', 'API REQUEST → ' + path, body);
+  }
+
+  try {
+    const result = await _origApiRequest(path, options);
+    if (isMatch || isSession) {
+      dbLog('ok', 'API RESPONSE ← ' + path, result);
+      // Check ELO updates
+      if (result.eloUpdates) {
+        dbLog(result.eloUpdates.length > 0 ? 'ok' : 'warn',
+          'ELO UPDATES',
+          result.eloUpdates.length > 0
+            ? result.eloUpdates
+            : '⚠️ KOSONG! Tidak ada ELO yang dihitung. Cek nama pemain & score.'
+        );
+      }
+    }
+    return result;
+  } catch(e) {
+    if (isMatch || isSession) {
+      dbLog('err', 'API ERROR ← ' + path, { message: e.message });
+    }
+    throw e;
+  }
+};
+
+// Override state reference for patched apiRequest
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
