@@ -1206,21 +1206,27 @@ function renderCourtCards() {
       <div class="court-card">
         <div class="court-header">
           <div class="court-badge">Court ${m.court}</div>
-          <div class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
+          <div id="court-${mi}-status" class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
         </div>
         <div class="score-row">
           <div class="score-team">
             <div class="score-team-name">${m.team1.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric" class="score-input ${t1Win?"winner":t2Win?"loser":""}"
+            <input type="number" inputmode="numeric"
+              id="court-${mi}-s1"
+              class="score-input ${t1Win?"winner":t2Win?"loser":""}"
               value="${s1 !== null ? s1 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 1, this.value)" />
+              oninput="updateScore(${mi}, 1, this.value)"
+              onchange="updateScore(${mi}, 1, this.value)" />
           </div>
           <div class="score-vs">:</div>
           <div class="score-team">
             <div class="score-team-name">${m.team2.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
-            <input type="number" inputmode="numeric" class="score-input ${t2Win?"winner":t1Win?"loser":""}"
+            <input type="number" inputmode="numeric"
+              id="court-${mi}-s2"
+              class="score-input ${t2Win?"winner":t1Win?"loser":""}"
               value="${s2 !== null ? s2 : ""}" placeholder="0" min="0"
-              oninput="updateScore(${mi}, 2, this.value)" />
+              oninput="updateScore(${mi}, 2, this.value)"
+              onchange="updateScore(${mi}, 2, this.value)" />
           </div>
         </div>
         <!-- Player mini stats -->
@@ -1254,25 +1260,73 @@ function renderCourtCards() {
 }
 
 function updateScore(matchIdx, team, val) {
+  // FIX: Jangan re-render seluruh DOM — menyebabkan focus hilang di mobile
+  // Hanya update state + styling input secara targeted
   const round = state.rounds[state.currentRound];
   const score = val === "" ? null : Math.max(0, parseInt(val) || 0);
   if (team === 1) round.matches[matchIdx].score1 = score;
   else round.matches[matchIdx].score2 = score;
-  renderCourtCards();
+
+  // Update hanya styling input (winner/loser) tanpa destroy DOM
+  const e1 = document.querySelector(`#court-${matchIdx}-s1`);
+  const e2 = document.querySelector(`#court-${matchIdx}-s2`);
+  const stEl = document.querySelector(`#court-${matchIdx}-status`);
+  const progEl = document.getElementById("courts-progress");
+  if (e1 && e2) {
+    const v1 = round.matches[matchIdx].score1;
+    const v2 = round.matches[matchIdx].score2;
+    const both = v1 !== null && v2 !== null;
+    e1.className = "score-input" + (both ? (v1 > v2 ? " winner" : v1 < v2 ? " loser" : "") : "");
+    e2.className = "score-input" + (both ? (v2 > v1 ? " winner" : v2 < v1 ? " loser" : "") : "");
+    if (stEl) {
+      stEl.textContent = both ? "✓ Skor Masuk" : "Menunggu Skor";
+      stEl.className = "court-status " + (both ? "done" : "pending");
+    }
+    if (progEl) {
+      const dc = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
+      progEl.textContent = `${dc}/${round.matches.length} selesai`;
+    }
+  }
 }
 
 async function submitRound() {
   const round = state.rounds[state.currentRound];
+
+  // FIX: Baca score dari DOM terlebih dahulu (lebih reliable di mobile)
+  // Ini memastikan nilai yang terlihat di layar = nilai yang dikirim ke server
+  round.matches.forEach((m, mi) => {
+    const e1 = document.getElementById(`court-${mi}-s1`);
+    const e2 = document.getElementById(`court-${mi}-s2`);
+    if (e1 && e1.value !== "") m.score1 = Math.max(0, parseInt(e1.value) || 0);
+    if (e2 && e2.value !== "") m.score2 = Math.max(0, parseInt(e2.value) || 0);
+  });
+
   const allScored = round.matches.every(m => m.score1 !== null && m.score2 !== null);
   const errEl = document.getElementById("match-error");
   if (!allScored) { showError(errEl, "Isi semua skor terlebih dahulu"); return; }
+
+  // Konfirmasi jika ada skor 0-0
+  const zeros = round.matches.filter(m => m.score1 === 0 && m.score2 === 0);
+  if (zeros.length && !window._confirmZero) {
+    window._confirmZero = true;
+    showError(errEl, `⚠️ ${zeros.length} match punya skor 0-0. Tekan Submit lagi untuk konfirmasi.`);
+    setTimeout(() => { window._confirmZero = false; }, 5000);
+    return;
+  }
+  window._confirmZero = false;
   errEl.classList.add("hidden");
 
   const btn = document.getElementById("btn-submit-round");
   btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
 
   try {
-    // Update stats & ELO
+    // Simpan ELO sebelum ronde ini untuk hitung delta per-ronde
+    const eloBeforeRound = {};
+    round.matches.flatMap(m => [...m.team1, ...m.team2]).forEach(p => {
+      eloBeforeRound[p.name] = state.playerStats[p.name]?.elo || p.elo || 1350;
+    });
+
+    // Update stats & ELO lokal
     round.matches.forEach(m => {
       const p1t1 = state.playerStats[m.team1[0].name];
       const p2t1 = state.playerStats[m.team1[1].name];
@@ -1289,16 +1343,14 @@ async function submitRound() {
 
       const t1Win = m.score1 > m.score2;
       [...m.team1].forEach(p => {
-        const st = state.playerStats[p.name];
-        if (!st) return;
+        const st = state.playerStats[p.name]; if (!st) return;
         if (t1Win) st.wins++; else st.losses++;
         st.pointsFor = (st.pointsFor || 0) + m.score1;
         st.pointsAgainst = (st.pointsAgainst || 0) + m.score2;
         st.pointDiff = st.pointsFor - st.pointsAgainst;
       });
       [...m.team2].forEach(p => {
-        const st = state.playerStats[p.name];
-        if (!st) return;
+        const st = state.playerStats[p.name]; if (!st) return;
         if (!t1Win) st.wins++; else st.losses++;
         st.pointsFor = (st.pointsFor || 0) + m.score2;
         st.pointsAgainst = (st.pointsAgainst || 0) + m.score1;
@@ -1306,13 +1358,9 @@ async function submitRound() {
       });
     });
 
-    // Mark submitted
     state.rounds[state.currentRound].submitted = true;
 
-    // ── SUBMIT TO TREKKR ─────────────────────────────────────────────────────
-    // DIAGNOSIS: Backend deployed tidak menghitung ELO di addVenueMatch
-    // (response hanya return {success, added, newPlayers} tanpa eloUpdates)
-    // SOLUSI: Simpan match data ke venue tab, lalu kirim ELO update via /api/sessions
+    // ── SUBMIT KE TREKKR ───────────────────────────────────────────────────
     if (state.venue && state.token) {
       const apiMatches = round.matches.map(m => ({
         p1t1: m.team1[0].name.trim(),
@@ -1330,26 +1378,48 @@ async function submitRound() {
         showApiWarning("Nama pemain tidak lengkap. Cek data pemain.");
       } else {
         try {
-          // Step 1: Simpan match data ke Venue tab di Google Sheet
+          // Step 1: Simpan ke Venue tab
           await apiRequest(
             `venues/${encodeURIComponent(state.venue)}/matches`,
             { method:"POST", body: JSON.stringify({ matches: apiMatches }) }
           );
 
-          // Step 2: Kirim ELO update via /api/sessions
-          // Backend saveSession() menulis langsung ke ELO_Log — ini yang bekerja
+          // Tunggu 1 detik agar tidak race condition dengan append berikutnya
+          await new Promise(r => setTimeout(r, 1000));
+
+          // Step 2: Kirim ELO update ke ELO_Log via sessions
+          // FIX: kirim delta PER RONDE (bukan kumulatif) dan w/l PER RONDE
           const roundPlayers = [...new Set(
             round.matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name))
           )];
+
+          // Hitung w/l per ronde (bukan total kumulatif)
+          const wlThisRound = {};
+          round.matches.forEach(m => {
+            const t1Win = m.score1 > m.score2;
+            [...m.team1].forEach(p => {
+              if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
+              if (t1Win) wlThisRound[p.name].w++;
+              else wlThisRound[p.name].l++;
+            });
+            [...m.team2].forEach(p => {
+              if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
+              if (!t1Win) wlThisRound[p.name].w++;
+              else wlThisRound[p.name].l++;
+            });
+          });
+
           const eloResults = roundPlayers.map(name => {
             const st = state.playerStats[name] || {};
-            const initialElo = state.selectedPlayers.find(s => s.name === name)?.elo || 1350;
+            const eloBefore = eloBeforeRound[name] || 1350;
+            const eloAfter = st.elo || eloBefore;
+            const wl = wlThisRound[name] || { w: 0, l: 0 };
             return {
-              name: name,
-              elo: st.elo || initialElo,
-              delta: (st.elo || initialElo) - initialElo,
-              w: st.wins || 0,
-              l: st.losses || 0,
+              name: name.trim(),          // FIX: trim nama
+              elo: eloAfter,             // ELO terkini
+              delta: eloAfter - eloBefore, // FIX: delta RONDE INI saja
+              w: wl.w,                   // FIX: win ronde ini saja
+              l: wl.l,                   // FIX: loss ronde ini saja
             };
           });
 
@@ -1365,9 +1435,11 @@ async function submitRound() {
               elo_results: eloResults,
             })
           });
+
+          showApiWarning(`✓ Ronde ${round.roundNum} tersimpan ke Trekkr`);
         } catch (apiErr) {
-          console.warn("API submit warn:", apiErr.message);
-          showApiWarning("Skor tersimpan lokal. ELO belum tersimpan ke Trekkr: " + apiErr.message);
+          console.error("API submit error:", apiErr);
+          showApiWarning("Skor lokal tersimpan. Gagal kirim ke Trekkr: " + apiErr.message);
         }
       }
     }
