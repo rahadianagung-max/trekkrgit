@@ -152,6 +152,74 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
 .mobile-nav__link--highlight{color:var(--primary);border-color:rgba(0,62,199,0.25);background:var(--surface-low)}
 .mobile-nav__link--highlight:hover{background:var(--surface-container);border-color:var(--primary)}
 @media(max-width:1023px){.mobile-nav{display:block}}
+
+/* ── CALIBRATION STATUS PILLS ─────────────────────────────────── */
+.pill-calibrating {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(205,72,0,0.1); border: 1px solid rgba(205,72,0,0.25);
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #cd4800;
+  white-space: nowrap;
+}
+.pill-calibrating .cdot {
+  width: 5px; height: 5px; border-radius: 50%; background: #cd4800;
+  animation: cal-pulse 1.4s ease-out infinite; flex-shrink: 0;
+}
+@keyframes cal-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(205,72,0,0.5); }
+  70%  { box-shadow: 0 0 0 5px rgba(205,72,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(205,72,0,0); }
+}
+.pill-rated {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(0,62,199,0.08); border: 1px solid rgba(0,62,199,0.18);
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary);
+  white-space: nowrap;
+}
+
+/* ── TIER BADGE (colored dot + name for 4-10) ─────────────────── */
+.tier-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+.tier-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* ── ACHIEVEMENT BADGE STRIP (top 3) ─────────────────────────── */
+.badge-strip {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 10px;
+}
+.badge-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  white-space: nowrap; cursor: default;
+  transition: transform 0.15s;
+}
+.badge-chip:hover { transform: scale(1.05); }
+.badge-chip.common    { background: rgba(100,116,139,0.12); color: #475569; border: 1px solid rgba(100,116,139,0.2); }
+.badge-chip.uncommon  { background: rgba(0,62,199,0.1);     color: var(--primary); border: 1px solid rgba(0,62,199,0.2); }
+.badge-chip.rare      { background: rgba(124,58,237,0.1);   color: #7C3AED; border: 1px solid rgba(124,58,237,0.2); }
+.badge-chip.epic      { background: rgba(245,158,11,0.1);   color: #D97706; border: 1px solid rgba(245,158,11,0.2); }
+.badge-chip.legendary { background: rgba(220,38,38,0.1);    color: #DC2626; border: 1px solid rgba(220,38,38,0.2); }
+/* On dark spotlight card (rank 1) badges need light variant */
+.badge-chip--light { background: rgba(255,255,255,0.15) !important; color: rgba(234,241,255,0.9) !important; border-color: rgba(255,255,255,0.25) !important; }
+.badge-chip--light:hover { background: rgba(255,255,255,0.22) !important; }
+
+/* tooltip on badge chip */
+.badge-chip[title] { position: relative; }
+
+/* ── TOPTEN additions ─────────────────────────────────────────── */
+.topten-item__info { display: flex; flex-direction: column; gap: 2px; }
+.topten-item__right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 </style>
 </head>
 <body>
@@ -240,6 +308,74 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
 
 <script src="/trekkr-api.js"></script>
 <script>
+
+// ── CALIBRATION & TIER HELPERS ────────────────────────────────────────────
+const CALIB_THRESHOLD = 15;
+
+function isCalibrating(totalMatches) {
+  return (totalMatches || 0) < CALIB_THRESHOLD;
+}
+
+function statusPill(totalMatches, light = false) {
+  if (isCalibrating(totalMatches)) {
+    return `<span class="pill-calibrating"><span class="cdot"></span>Calibrating</span>`;
+  }
+  return `<span class="pill-rated">✓ Rated</span>`;
+}
+
+const TIER_COLORS = {
+  'Platinum':     '#6B7280',
+  'Gold':         '#D97706',
+  'Silver':       '#64748B',
+  'Upper Bronze': '#92400E',
+  'Bronze':       '#B45309',
+  'Lower Bronze': '#78350F',
+  'Upper Beginner':'#3B82F6',
+  'Beginner':     '#94A3B8',
+};
+
+function tierDot(tierName) {
+  const col = TIER_COLORS[tierName] || '#94A3B8';
+  return `<span class="tier-badge"><span class="tier-dot" style="background:${col}"></span>${tierName}</span>`;
+}
+
+// ── BADGE DEFINITIONS (compact — same set as player page) ─────────────────
+// Each badge: { id, emoji, name, rarity, compute(playerSnapshot) }
+// playerSnapshot from leaderboard: { elo, totalMatches, totalW, totalL, winRate, level }
+// We can only compute what's available in leaderboard data (no match history)
+const LB_BADGES = [
+  { id:'veteran',    emoji:'🎖️', name:'Veteran',     rarity:'uncommon', compute: p => (p.totalMatches||0) >= 100 },
+  { id:'legend',     emoji:'🏛️', name:'Legend',      rarity:'epic',     compute: p => (p.totalMatches||0) >= 500 },
+  { id:'summit',     emoji:'🏔️', name:'Summit',      rarity:'common',   compute: p => (p.elo||0) >= 2000 },
+  { id:'unstoppable',emoji:'🔥', name:'On Fire',     rarity:'rare',     compute: p => (p.streak||'').startsWith('5') || parseInt(p.streak||'0') >= 5 },
+  { id:'gold_tier',  emoji:'🥇', name:'Gold Tier',   rarity:'epic',     compute: p => (p.elo||0) >= 2500 },
+  { id:'silver_tier',emoji:'🥈', name:'Silver',      rarity:'rare',     compute: p => (p.elo||0) >= 2100 },
+  { id:'bronze',     emoji:'🥉', name:'Bronze',      rarity:'uncommon', compute: p => (p.elo||0) >= 1500 },
+  { id:'centurion',  emoji:'💯', name:'100 Matches', rarity:'uncommon', compute: p => (p.totalMatches||0) >= 100 },
+  { id:'dominator',  emoji:'💥', name:'Dominator',   rarity:'rare',     compute: p => (p.winRate||0) >= 70 && (p.totalMatches||0) >= 20 },
+  { id:'ironman',    emoji:'💪', name:'Ironman',     rarity:'rare',     compute: p => (p.totalMatches||0) >= 200 },
+];
+
+function getEarnedBadges(player) {
+  return LB_BADGES.filter(b => {
+    try { return b.compute(player); } catch(e) { return false; }
+  });
+}
+
+function renderBadgeStrip(player, light = false) {
+  const earned = getEarnedBadges(player);
+  if (!earned.length) return '';
+  // Show max 5 badges to keep it clean
+  const show = earned.slice(0, 5);
+  const chips = show.map(b =>
+    `<span class="badge-chip ${b.rarity}${light ? ' badge-chip--light' : ''}" title="${b.name}">${b.emoji} ${b.name}</span>`
+  ).join('');
+  const more = earned.length > 5
+    ? `<span class="badge-chip common${light ? ' badge-chip--light' : ''}" title="${earned.length - 5} more badges">+${earned.length - 5}</span>`
+    : '';
+  return `<div class="badge-strip">${chips}${more}</div>`;
+}
+
 let cG='M',cP=1,sT=null;
 
 function switchGender(g){
@@ -301,6 +437,8 @@ function renderRanking(pl){
       
       <h2 class="spotlight-feature__name" style="margin-top:24px">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
       <p class="spotlight-feature__meta">${p1.level||TrekkrAPI.getTierName(p1.elo)} • ${p1.region||'Indonesia'}</p>
+      ${statusPill(p1.totalMatches, true)}
+      ${renderBadgeStrip(p1, true)}
     </article>`;
     
     h+=`<div class="spotlight-col">`;
@@ -316,6 +454,8 @@ function renderRanking(pl){
           <div class="flex-player-col">
             <h3 class="player-card__name" style="font-size:22px;margin-top:0">${p.displayName||p.name}</h3>
             <p class="player-card__meta" style="margin-top:0">${p.level||TrekkrAPI.getTierName(p.elo)} • ${p.region||'Indonesia'}</p>
+            ${statusPill(p.totalMatches)}
+            ${renderBadgeStrip(p)}
           </div>
         </div>
       </article>`;
@@ -329,13 +469,22 @@ function renderRanking(pl){
     for(let i=3;i<top.length;i++){
       const p=top[i],rk=String(i+1).padStart(2,'0');
       const ava = getAva(p);
+      const tn410 = p.level || TrekkrAPI.getTierName(p.elo);
       h+=`<article class="topten-item" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .4s ease ${(i-3)*.06}s both">
         <div class="topten-item__left">
           <div class="topten-item__rank">${rk}</div>
           <img src="${ava}" class="avatar-s" alt="${p.name}">
-          <div><div class="topten-item__name">${p.displayName||p.name}</div><div class="topten-item__meta">${p.region||'Indonesia'}</div></div>
+          <div class="topten-item__info">
+            <div class="topten-item__name">${p.displayName||p.name}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
+              ${tierDot(tn410)}
+              ${statusPill(p.totalMatches)}
+            </div>
+          </div>
         </div>
-        <div class="topten-item__points">${p.elo}</div>
+        <div class="topten-item__right">
+          <div class="topten-item__points">${p.elo}</div>
+        </div>
       </article>`;
     }
     h+=`</div>`;
@@ -357,7 +506,10 @@ function renderRanking(pl){
             <img src="${ava}" class="avatar-xs" alt="${p.name}">
             <div class="flex-player-col">
               <div class="rank-player">${p.displayName||p.name}</div>
-              <div class="rank-tier" style="margin-top:0">${tn}</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
+                <div class="rank-tier" style="margin-top:0">${tn}</div>
+                ${statusPill(p.totalMatches)}
+              </div>
             </div>
           </div>
         </td>
@@ -394,7 +546,7 @@ async function popVenues(){
 function demo(){
   const m=["Freddy Liam","Reza Rangkuti","Tom Doe","Azrin R D","Sundeep Khan","Richard Bern","Tommy Frans","Toto Sumarno","Doni Guam","Wahyu Sihombing","Rocky Matulessy","Dino Baldwin","Rahadian Agung","Feri Gunawan","Indra Herduno"];
   const f=["Zahrina Partono","Donna Azali","Ayu Teana","Kiki Rosita","Marcella Handoko","Zara Versya","Nuri Handayani","Lulu Hembing","Putri KR","Diona Marsya","Matulada","Friska Wijaya","Ratu Syah","Fransisca HS","Renata Jaya"];
-  return(cG==='M'?m:f).map((n,i)=>({name:n,displayName:n,elo:1389-i*3,level:"Lower Bronze",gender:cG,region:["Jakarta","Tangerang","Bekasi","Bintaro"][i%4],photoUrl:"",clubs:""}));
+  return(cG==='M'?m:f).map((n,i)=>({name:n,displayName:n,elo:1389-i*3,level:"Lower Bronze",gender:cG,region:["Jakarta","Tangerang","Bekasi","Bintaro"][i%4],photoUrl:"",clubs:"",totalMatches:i<5?8+i*2:25+i*3,totalW:Math.floor((25+i*3)*0.6),totalL:Math.floor((25+i*3)*0.4),winRate:60,streak:i===0?'5W':'2W'}));
 }
 
 window.addEventListener('load',async()=>{
