@@ -203,8 +203,7 @@ let T=null, groups={}, sched=[], playoff=null;
 let countdownVal=120, progInt=null, activeView='groups';
 
 function load(){
-  const venue = localStorage.getItem('trekkr_tourney_pub_venue') || '';
-  const raw = spLoad(venue);
+  const raw = spLoad();
   if(!raw||!raw.tournament){
     showEmpty(); return;
   }

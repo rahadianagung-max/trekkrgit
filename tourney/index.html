@@ -135,32 +135,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 let T=null, groups={}, sched=[], playoff=null;
 let countdownVal=120, progInt=null, refreshInt=null;
 
-let currentVenue = localStorage.getItem('trekkr_tourney_pub_venue') || '';
-
-function init(){
-  if (!currentVenue) {
-    document.getElementById('venue-selector').style.display = 'block';
-    showNoData();
-  } else {
-    document.getElementById('venue-selector').style.display = 'none';
-    load();
-  }
-}
-
-function setVenue(){
-  const v = document.getElementById('venue-input').value.trim();
-  if (!v) return;
-  currentVenue = v;
-  localStorage.setItem('trekkr_tourney_pub_venue', v);
-  document.getElementById('venue-selector').style.display = 'none';
-  load();
-}
-
 function load(){
-  if (!currentVenue) { showNoData(); return; }
-  const raw = spLoad(currentVenue);
+  const raw = spLoad();
   if(!raw||!raw.tournament){
-    showNoData(); return;
+    showNoData();return;
   }
   T = raw.tournament;
   groups = raw.groups||{};
@@ -170,7 +148,7 @@ function load(){
   sched.forEach(m=>{if(scores[m.id]){m.scoreHome=scores[m.id].h;m.scoreAway=scores[m.id].a;m.done=true;}});
   computeStandings(groups, sched, T.numGroups);
   document.getElementById('hdr-name').textContent = T.name;
-  document.getElementById('hdr-date').textContent = `${T.date} · ${currentVenue}`;
+  document.getElementById('hdr-date').textContent = T.date;
   renderAll();
 }
 
@@ -345,7 +323,7 @@ function forceRefresh(){
   startCountdown();
 }
 
-init();
+load();
 startCountdown();
 </script>
 </body>
