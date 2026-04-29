@@ -96,6 +96,87 @@
 .footer-copy{font-size:12px;color:var(--on-surface-variant)}
 @media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.v-grid{grid-template-columns:repeat(2,1fr)}.vd-hero>.container{grid-template-columns:1fr}}
 @media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.v-grid{grid-template-columns:1fr}.vd-hero>.container{grid-template-columns:1fr}}
+
+/* ── CALIBRATION STATUS PILLS ─────────────────────────────────── */
+.pill-cal {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 999px;
+  background: rgba(205,72,0,0.1); border: 1px solid rgba(205,72,0,0.25);
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #cd4800;
+  white-space: nowrap; vertical-align: middle;
+}
+.pill-cal .cdot {
+  width: 5px; height: 5px; border-radius: 50%; background: #cd4800; flex-shrink: 0;
+  animation: cpulse 1.4s ease-out infinite;
+}
+@keyframes cpulse {
+  0%  { box-shadow: 0 0 0 0 rgba(205,72,0,0.5); }
+  70% { box-shadow: 0 0 0 5px rgba(205,72,0,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(205,72,0,0); }
+}
+.pill-rated {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 999px;
+  background: rgba(0,62,199,0.08); border: 1px solid rgba(0,62,199,0.2);
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary);
+  white-space: nowrap; vertical-align: middle;
+}
+/* Light versions for dark podium card #1 */
+.pill-cal--light {
+  background: rgba(255,255,255,0.15); border-color: rgba(255,140,0,0.5); color: #ffb366;
+}
+.pill-rated--light {
+  background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); color: rgba(234,241,255,0.85);
+}
+
+/* ── BADGE CHIPS ───────────────────────────────────────────────── */
+.badge-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; justify-content: center; }
+.badge-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  white-space: nowrap; transition: transform 0.15s; cursor: default;
+}
+.badge-chip:hover { transform: scale(1.06); }
+.badge-chip.common   { background: rgba(100,116,139,0.12); color:#475569; border:1px solid rgba(100,116,139,0.2); }
+.badge-chip.uncommon { background: rgba(0,62,199,0.1);     color:var(--primary); border:1px solid rgba(0,62,199,0.2); }
+.badge-chip.rare     { background: rgba(124,58,237,0.1);   color:#7C3AED; border:1px solid rgba(124,58,237,0.2); }
+.badge-chip.epic     { background: rgba(245,158,11,0.1);   color:#D97706; border:1px solid rgba(245,158,11,0.2); }
+.badge-chip.legendary{ background: rgba(220,38,38,0.1);    color:#DC2626; border:1px solid rgba(220,38,38,0.2); }
+/* Light versions for dark card */
+.badge-chip--light   { background: rgba(255,255,255,0.13) !important; color:rgba(234,241,255,0.9) !important; border-color:rgba(255,255,255,0.22) !important; }
+
+/* ── WEEKLY TOP PLAYERS — bigger title ─────────────────────────── */
+.weekly-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.03em; line-height: 0.95;
+  margin-bottom: 16px;
+}
+.weekly-title span { color: var(--secondary-container); }
+
+/* ── PODIUM ENHANCEMENTS ────────────────────────────────────────── */
+/* Tier dot */
+.tier-dot-wrap {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+}
+.tier-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* Table tier dot */
+.tbl-tier { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.tbl-tier-name {
+  font-size: 10px; color: var(--on-surface-variant);
+  text-transform: uppercase; font-weight: 700; letter-spacing: 0.09em;
+}
+.tbl-player-col { display: flex; flex-direction: column; }
+.tbl-pills { display: flex; align-items: center; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+
 </style>
 </head>
 <body>
@@ -104,6 +185,62 @@
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
 <script src="https://trekkr.online/trekkr-api.js"></script>
 <script>
+
+// ── CALIBRATION & BADGE HELPERS ──────────────────────────────────────────
+const CALIB_MIN = 15;
+const TIER_COLORS = {
+  'Platinum':'#6B7280','Gold':'#D97706','Silver':'#64748B',
+  'Upper Bronze':'#92400E','Bronze':'#B45309','Lower Bronze':'#78350F',
+  'Upper Beginner':'#3B82F6','Beginner':'#94A3B8',
+};
+
+function statusPill(totalMatches, light=false) {
+  const cal = (totalMatches||0) < CALIB_MIN;
+  if (cal) {
+    return `<span class="pill-cal${light?' pill-cal--light':''}"><span class="cdot"></span>Calibrating</span>`;
+  }
+  return `<span class="pill-rated${light?' pill-rated--light':''}">✓ Rated</span>`;
+}
+
+function tierDotHTML(tierName, light=false) {
+  const col = TIER_COLORS[tierName] || '#94A3B8';
+  const textCol = light ? 'rgba(234,241,255,0.8)' : 'var(--on-surface-variant)';
+  return `<span class="tier-dot-wrap" style="color:${textCol}"><span class="tier-dot" style="background:${col}"></span>${tierName}</span>`;
+}
+
+// Badge definitions — computed from leaderboard data fields
+const VENUE_BADGES = [
+  { id:'centurion', emoji:'🎖️', name:'Veteran',     rarity:'uncommon', fn: p => (p.totalMatches||p.w+p.l||0) >= 100 },
+  { id:'legend',    emoji:'🏛️', name:'Legend',      rarity:'epic',     fn: p => (p.totalMatches||p.w+p.l||0) >= 500 },
+  { id:'dominator', emoji:'💥', name:'Dominator',   rarity:'rare',     fn: p => (p.w+p.l)>=10 && p.w/(p.w+p.l)>=0.7 },
+  { id:'flawless',  emoji:'🎯', name:'Clutch',      rarity:'uncommon', fn: p => p.w >= 5 && p.l === 0 },
+  { id:'onfire',    emoji:'🔥', name:'On Fire',     rarity:'rare',     fn: p => /^([5-9]|\d{2,})W/.test(p.streak||'') },
+  { id:'gold',      emoji:'🥇', name:'Gold Tier',   rarity:'epic',     fn: p => (p.elo||0) >= 2500 },
+  { id:'silver',    emoji:'🥈', name:'Silver',      rarity:'rare',     fn: p => (p.elo||0) >= 2100 },
+  { id:'bronze',    emoji:'🥉', name:'Bronze',      rarity:'uncommon', fn: p => (p.elo||0) >= 1500 },
+  { id:'consistent',emoji:'📈', name:'Consistent',  rarity:'uncommon', fn: p => (p.winRate||0) >= 60 && (p.w+p.l) >= 10 },
+  { id:'ironman',   emoji:'💪', name:'Ironman',     rarity:'rare',     fn: p => (p.w+p.l) >= 30 },
+];
+
+function earnedBadges(player) {
+  // Enrich totalMatches if not present
+  if (!player.totalMatches) player.totalMatches = (player.w||0) + (player.l||0);
+  return VENUE_BADGES.filter(b => { try{ return b.fn(player); } catch(e){ return false; } });
+}
+
+function badgeStrip(player, light=false, max=5) {
+  const earned = earnedBadges(player);
+  if (!earned.length) return '';
+  const show = earned.slice(0, max);
+  const chips = show.map(b =>
+    `<span class="badge-chip ${b.rarity}${light?' badge-chip--light':''}" title="${b.name}">${b.emoji} ${b.name}</span>`
+  ).join('');
+  const more = earned.length > max
+    ? `<span class="badge-chip common${light?' badge-chip--light':''}" title="${earned.length - max} more">+${earned.length - max}</span>`
+    : '';
+  return `<div class="badge-strip">${chips}${more}</div>`;
+}
+
 let cG='M',cW=getCW(),vName='',vData=null;
 
 function getCW(){const d=new Date(),s=new Date(d.getFullYear(),0,1),df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;return Math.ceil((df/86400000+s.getDay()+1)/7)}
@@ -175,7 +312,20 @@ async function loadRanking(){
     let photoMap={};
     try{
       const lb=await TrekkrAPI.getNationalLeaderboard({limit:200});
-      if(lb.leaderboard){lb.leaderboard.forEach(p=>{photoMap[p.name.toLowerCase()]={photoUrl:p.photoUrl||'',displayName:p.displayName||p.name}})}
+      if(lb.leaderboard){
+        lb.leaderboard.forEach(p=>{
+          photoMap[p.name.toLowerCase()]={
+            photoUrl:     p.photoUrl||'',
+            displayName:  p.displayName||p.name,
+            // Extra stats from updated backend (sheet.js patch)
+            totalMatches: p.totalMatches||0,
+            totalW:       p.totalW||0,
+            totalL:       p.totalL||0,
+            winRate:      p.winRate||0,
+            streak:       p.streak||'',
+          };
+        });
+      }
     }catch(e){}
 
     // 3. Helper: get avatar URL
@@ -192,37 +342,68 @@ async function loadRanking(){
 
     // ── TOP 3 PODIUM CARDS ──
     if(top3.length>=1){
-      h+='<p class="section-title" style="margin-bottom:4px">Weekly Top Players</p>';
+      h+=`<div class="weekly-title">Weekly<br/><span>Top Players</span></div>`;
       h+='<div class="podium">';
 
       // Rank #1 — large center card
       const p1=top3[0],t1=getTierName(p1.elo);
+      // Merge extra stats from national LB if available
+      const extra1 = photoMap[p1.name.toLowerCase()] || {};
+      const merged1 = { ...p1, ...extra1, elo: p1.elo };
       h+=`<div class="podium-card podium-card--1" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'">
         <div class="podium-rank">01</div>
         <img class="podium-avatar" src="${ava(p1)}" alt="${dn(p1)}">
         <div class="podium-name">${dn(p1)}</div>
-        <div class="podium-tier">${t1} · ELO ${p1.elo}</div>
-        <div class="podium-stats">${p1.w}W / ${p1.l}L · ${p1.w+p1.l} matches</div>
+        <div class="podium-tier" style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${tierDotHTML(t1, true)}
+          <span style="opacity:0.6">·</span>
+          <span>ELO ${p1.elo}</span>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
+          ${statusPill(merged1.totalMatches, true)}
+        </div>
+        <div class="podium-stats" style="margin-top:4px">${p1.w}W / ${p1.l}L · ${p1.w+p1.l} this week</div>
+        ${badgeStrip(merged1, true, 4)}
       </div>`;
 
       // Rank #2
       if(top3[1]){const p2=top3[1],t2=getTierName(p2.elo);
+      const extra2 = photoMap[p2.name.toLowerCase()] || {};
+      const merged2 = { ...p2, ...extra2, elo: p2.elo };
       h+=`<div class="podium-card podium-card--2" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p2.name)}'">
         <div class="podium-rank">02</div>
         <img class="podium-avatar" src="${ava(p2)}" alt="${dn(p2)}">
         <div class="podium-name">${dn(p2)}</div>
-        <div class="podium-tier">${t2} · ELO ${p2.elo}</div>
-        <div class="podium-stats">${p2.w}W / ${p2.l}L · ${p2.w+p2.l} matches</div>
+        <div class="podium-tier" style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${tierDotHTML(t2)}
+          <span style="opacity:0.4">·</span>
+          <span>ELO ${p2.elo}</span>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+          ${statusPill(merged2.totalMatches)}
+        </div>
+        <div class="podium-stats">${p2.w}W / ${p2.l}L · ${p2.w+p2.l} this week</div>
+        ${badgeStrip(merged2, false, 3)}
       </div>`}
 
       // Rank #3
       if(top3[2]){const p3=top3[2],t3=getTierName(p3.elo);
+      const extra3 = photoMap[p3.name.toLowerCase()] || {};
+      const merged3 = { ...p3, ...extra3, elo: p3.elo };
       h+=`<div class="podium-card podium-card--3" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p3.name)}'">
         <div class="podium-rank">03</div>
         <img class="podium-avatar" src="${ava(p3)}" alt="${dn(p3)}">
         <div class="podium-name">${dn(p3)}</div>
-        <div class="podium-tier">${t3} · ELO ${p3.elo}</div>
-        <div class="podium-stats">${p3.w}W / ${p3.l}L · ${p3.w+p3.l} matches</div>
+        <div class="podium-tier" style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${tierDotHTML(t3)}
+          <span style="opacity:0.4">·</span>
+          <span>ELO ${p3.elo}</span>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+          ${statusPill(merged3.totalMatches)}
+        </div>
+        <div class="podium-stats">${p3.w}W / ${p3.l}L · ${p3.w+p3.l} this week</div>
+        ${badgeStrip(merged3, false, 3)}
       </div>`}
 
       h+='</div>';
@@ -232,11 +413,29 @@ async function loadRanking(){
     if(rest.length){
       h+='<div class="data-table-wrap" style="margin-top:20px"><table class="data-table"><thead><tr><th>Rank</th><th>Player</th><th>Tier / ELO</th><th>Played</th><th>W/L</th></tr></thead><tbody>';
       rest.forEach((p,i)=>{
-        const r=i+4,tier=getTierName(p.elo),played=p.w+p.l;
+        const r=i+4, tier=getTierName(p.elo), played=p.w+p.l;
+        const extraT = photoMap[p.name.toLowerCase()] || {};
+        const mergedT = { ...p, ...extraT, elo: p.elo };
+        const bs = badgeStrip(mergedT, false, 3);
         h+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'">
           <td><span class="v-rank">${String(r).padStart(2,'0')}</span></td>
-          <td><div class="tbl-player"><img class="tbl-avatar" src="${ava(p)}" alt="${dn(p)}"><strong>${dn(p)}</strong></div></td>
-          <td><span style="font-size:11px;color:var(--on-surface-variant);text-transform:uppercase;font-weight:700">${tier}</span><br><span class="v-elo">${p.elo}</span></td>
+          <td>
+            <div class="tbl-player">
+              <img class="tbl-avatar" src="${ava(p)}" alt="${dn(p)}">
+              <div class="tbl-player-col">
+                <strong>${dn(p)}</strong>
+                <div class="tbl-pills">
+                  <div class="tbl-tier">
+                    <span class="tier-dot" style="background:${TIER_COLORS[tier]||'#94A3B8'}"></span>
+                    <span class="tbl-tier-name">${tier}</span>
+                  </div>
+                  ${statusPill(mergedT.totalMatches)}
+                </div>
+                ${bs ? `<div style="margin-top:5px">${bs}</div>` : ''}
+              </div>
+            </div>
+          </td>
+          <td><span class="v-elo">${p.elo}</span></td>
           <td>${played}</td>
           <td><span style="color:var(--ok);font-weight:700">${p.w}W</span> / <span style="color:var(--danger)">${p.l}L</span></td></tr>`;
       });
