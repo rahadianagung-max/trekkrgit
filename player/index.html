@@ -72,6 +72,178 @@
 /* Toast */
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--surface-inverse);color:var(--on-inverse);padding:12px 24px;border-radius:var(--radius-pill);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;z-index:100;opacity:0;transition:opacity 0.3s;pointer-events:none}
 .toast.show{opacity:1}
+
+/* ── CALIBRATION SYSTEM ─────────────────────────────────────────────── */
+
+/* Calibrating badge (on ELO / Level area) */
+.badge-calibrating {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, rgba(205,72,0,0.12), rgba(255,140,0,0.12));
+  border: 1px solid rgba(205,72,0,0.3);
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #cd4800;
+  margin-top: 6px; cursor: default;
+}
+.badge-calibrating .pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: #cd4800;
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(205,72,0,0.5); opacity: 1; }
+  70% { box-shadow: 0 0 0 7px rgba(205,72,0,0); opacity: 0.7; }
+  100% { box-shadow: 0 0 0 0 rgba(205,72,0,0); opacity: 1; }
+}
+
+/* Rated badge */
+.badge-rated {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, rgba(0,62,199,0.1), rgba(31,157,99,0.1));
+  border: 1px solid rgba(0,62,199,0.25);
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary);
+  margin-top: 6px;
+}
+.badge-rated svg { flex-shrink: 0; }
+
+/* Calibration info banner */
+.calib-banner {
+  margin-top: 20px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(205,72,0,0.06), rgba(255,140,0,0.04));
+  border: 1.5px solid rgba(205,72,0,0.2);
+  padding: 16px 18px;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.calib-banner-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(205,72,0,0.15), rgba(255,140,0,0.1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.calib-banner-body { flex: 1; }
+.calib-banner-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: -0.01em; color: #cd4800;
+}
+.calib-banner-text {
+  font-size: 13px; color: var(--on-surface-variant); margin-top: 3px; line-height: 1.5;
+}
+.calib-progress-wrap { margin-top: 10px; }
+.calib-progress-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #cd4800;
+  margin-bottom: 5px;
+}
+.calib-progress-bg {
+  height: 6px; border-radius: 3px;
+  background: rgba(205,72,0,0.15);
+  overflow: hidden;
+}
+.calib-progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #cd4800, #ff8c00);
+  transition: width 1s var(--ease-out);
+}
+.calib-more-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 8px; font-size: 12px; font-weight: 700;
+  color: #cd4800; cursor: pointer; border: none; background: none;
+  padding: 0; font-family: 'Inter', sans-serif; letter-spacing: 0.04em;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.calib-more-link:hover { color: #a03600; }
+
+/* Calibration Modal */
+.calib-modal-overlay {
+  position: fixed; inset: 0; background: rgba(11,28,48,0.55);
+  backdrop-filter: blur(6px); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.calib-modal-overlay.open { opacity: 1; pointer-events: all; }
+.calib-modal {
+  background: var(--surface); border-radius: var(--radius-xl);
+  max-width: 520px; width: 100%;
+  padding: 32px; box-shadow: 0 32px 64px rgba(11,28,48,0.18);
+  transform: translateY(16px); transition: transform 0.3s var(--ease-out);
+  max-height: 90vh; overflow-y: auto;
+}
+.calib-modal-overlay.open .calib-modal { transform: translateY(0); }
+.calib-modal-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  margin-bottom: 20px;
+}
+.calib-modal-icon {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(205,72,0,0.15), rgba(255,140,0,0.1));
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.calib-modal-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: -0.02em; color: var(--on-surface);
+  line-height: 1.1;
+}
+.calib-modal-subtitle { font-size: 13px; color: var(--on-surface-variant); margin-top: 4px; }
+.calib-modal-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface-container);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 16px; color: var(--on-surface-variant); transition: background 0.15s;
+}
+.calib-modal-close:hover { background: var(--surface-high); }
+
+/* Steps inside modal */
+.calib-steps { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+.calib-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--radius-md);
+  background: var(--surface-low);
+}
+.calib-step-num {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800;
+}
+.calib-step-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: -0.01em;
+}
+.calib-step-text { font-size: 13px; color: var(--on-surface-variant); margin-top: 3px; line-height: 1.5; }
+
+/* What changes after rated */
+.calib-rated-preview {
+  margin-top: 16px; padding: 16px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(0,62,199,0.07), rgba(31,157,99,0.07));
+  border: 1.5px solid rgba(0,62,199,0.15);
+}
+.calib-rated-preview-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary);
+  margin-bottom: 10px;
+}
+.calib-rated-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.calib-rated-item {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--on-surface);
+}
+.calib-rated-item-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0;
+}
+
+/* Tier dots on calib banner */
+.calib-tier-dot {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
 canvas#shareCanvas{display:none}
 /* Footer */
 .site-footer{margin-top:72px;border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
@@ -96,6 +268,68 @@ canvas#shareCanvas{display:none}
 <canvas id="shareCanvas" width="1080" height="1920"></canvas>
 <div class="toast" id="toast"></div>
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a><a href="https://venue.trekkr.online">Venues</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
+
+
+<!-- CALIBRATION INFO MODAL -->
+<div class="calib-modal-overlay" id="calibModal" onclick="closeCalibModal(event)">
+  <div class="calib-modal">
+    <div class="calib-modal-header">
+      <div>
+        <div class="calib-modal-icon">🎯</div>
+      </div>
+      <div style="flex:1;padding-left:14px">
+        <div class="calib-modal-title">Calibration Phase</div>
+        <div class="calib-modal-subtitle">How Trekkr finds your real level</div>
+      </div>
+      <button class="calib-modal-close" onclick="document.getElementById('calibModal').classList.remove('open')">✕</button>
+    </div>
+
+    <div class="calib-steps">
+      <div class="calib-step">
+        <div class="calib-step-num">1</div>
+        <div>
+          <div class="calib-step-title">Everyone starts at 1350</div>
+          <div class="calib-step-text">All new players begin at ELO 1350 — the entry point of <strong>Lower Bronze</strong>. This ensures every first match is fair, regardless of your actual skill level.</div>
+        </div>
+      </div>
+      <div class="calib-step">
+        <div class="calib-step-num">2</div>
+        <div>
+          <div class="calib-step-title">The engine watches your results</div>
+          <div class="calib-step-text">During calibration, your ELO moves faster (higher K-factor). Win consistently and you rise quickly. Lose often and you settle lower. The algorithm is actively finding your true level.</div>
+        </div>
+      </div>
+      <div class="calib-step">
+        <div class="calib-step-num">3</div>
+        <div>
+          <div class="calib-step-title">Minimum 15 matches to calibrate</div>
+          <div class="calib-step-text">15 recorded matches gives the engine enough data to place you accurately. This typically takes 2–3 Mexicano sessions. Until then, your rating is an estimate — not a verdict.</div>
+        </div>
+      </div>
+      <div class="calib-step">
+        <div class="calib-step-num">4</div>
+        <div>
+          <div class="calib-step-title">Then you become Rated</div>
+          <div class="calib-step-text">After 15 matches, your Calibrating badge becomes <strong>Rated</strong>. Your ELO is now a trusted reflection of your skill. The tier you land in — Bronze, Silver, Gold — is earned, not assigned.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calib-rated-preview">
+      <div class="calib-rated-preview-title">After calibration is complete</div>
+      <div class="calib-rated-list">
+        <div class="calib-rated-item"><div class="calib-rated-item-dot"></div>Your ELO rating is considered accurate and trustworthy</div>
+        <div class="calib-rated-item"><div class="calib-rated-item-dot"></div>Your tier badge changes from <strong>Calibrating</strong> to <strong>Rated</strong></div>
+        <div class="calib-rated-item"><div class="calib-rated-item-dot"></div>ELO movements become more stable — rewarding consistency</div>
+        <div class="calib-rated-item"><div class="calib-rated-item-dot"></div>You appear in national and venue rankings with full credibility</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(115,118,136,0.12);text-align:center">
+      <button class="btn btn--primary" onclick="document.getElementById('calibModal').classList.remove('open')" style="padding:10px 32px">Got it</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://trekkr.online/trekkr-api.js"></script>
 
@@ -221,7 +455,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable}){
   <div><h2 class="pp-name">${(p.displayName||p.name).toUpperCase()}</h2>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
-    <div><p class="pp-meta-label">Level</p><p class="pp-meta-value">${ti.current}</p></div>
+    <div><p class="pp-meta-label">Level</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
     <div><p class="pp-meta-label">Gender</p><p class="pp-meta-value">${p.gender==='F'?'Women':'Men'}</p></div>
     ${p.ig?`<div><p class="pp-meta-label">Instagram</p><p class="pp-meta-value">${p.ig}</p></div>`:`<div><p class="pp-meta-label">Region</p><p class="pp-meta-value">${p.region||'—'}</p></div>`}
   </div></div></article>`;
@@ -233,6 +467,11 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable}){
     <div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">${s.streak||'—'}</p></div>
     <div class="pp-stat"><p class="pp-stat-label">ELO</p><p class="pp-stat-val">${s.currentElo}</p></div>
   </div>`;
+
+  // Inject calibration banner if still calibrating
+  if (isCalibrating(s.totalMatches)) {
+    h += buildCalibBanner(s.totalMatches);
+  }
 
   h+=`<div class="pp-dual"><div class="pp-card"><p class="pp-card-title">Level Progress</p><p class="pp-tier-name">${ti.current}</p>
     ${ti.next?`<p class="pp-tier-next">Next: ${ti.next.name} · ${ti.ptsAway} pts away</p>`:'<p class="pp-tier-next">Maximum tier reached!</p>'}
@@ -327,6 +566,77 @@ function renderDemo(name){
     ]
   };
   renderPlayer(playerData);
+}
+
+
+// ── CALIBRATION HELPERS ──────────────────────────────────────────────────
+const CALIB_THRESHOLD = 15;
+
+function isCalibrating(totalMatches) {
+  return totalMatches < CALIB_THRESHOLD;
+}
+
+function calibProgress(totalMatches) {
+  return Math.min(totalMatches / CALIB_THRESHOLD * 100, 100);
+}
+
+function openCalibModal() {
+  document.getElementById('calibModal').classList.add('open');
+}
+
+function closeCalibModal(e) {
+  // Close only if clicking overlay, not modal itself
+  if (e.target.id === 'calibModal') {
+    document.getElementById('calibModal').classList.remove('open');
+  }
+}
+
+// Close on ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('calibModal')?.classList.remove('open');
+});
+
+function buildCalibBanner(totalMatches) {
+  const remaining = CALIB_THRESHOLD - totalMatches;
+  const pct = calibProgress(totalMatches);
+  return `
+    <div class="calib-banner">
+      <div class="calib-banner-icon">🎯</div>
+      <div class="calib-banner-body">
+        <div class="calib-banner-title">In Calibration</div>
+        <div class="calib-banner-text">
+          Your ELO is being calibrated. Play <strong>${remaining} more match${remaining!==1?'es':''}</strong> to unlock your verified Rated status.
+        </div>
+        <div class="calib-progress-wrap">
+          <div class="calib-progress-label">
+            <span>Calibration Progress</span>
+            <span>${totalMatches} / ${CALIB_THRESHOLD} matches</span>
+          </div>
+          <div class="calib-progress-bg">
+            <div class="calib-progress-fill" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <button class="calib-more-link" onclick="openCalibModal()">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+          More info about calibration
+        </button>
+      </div>
+    </div>`;
+}
+
+function buildCalibBadge(totalMatches) {
+  const calib = isCalibrating(totalMatches);
+  if (calib) {
+    return `<span class="badge-calibrating" onclick="openCalibModal()" title="Click for more info" style="cursor:pointer">
+      <span class="pulse"></span>
+      Calibrating · ${totalMatches}/${CALIB_THRESHOLD} matches
+    </span>`;
+  } else {
+    return `<span class="badge-rated" title="ELO rating verified after ${CALIB_THRESHOLD}+ matches">
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="#1f9d63"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+      Rated
+    </span>`;
+  }
 }
 
 window.addEventListener('load',loadPlayer);
