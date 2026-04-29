@@ -1414,19 +1414,22 @@ async function submitRound() {
             const eloBefore = eloBeforeRound[name] || 1350;
             const eloAfter = st.elo || eloBefore;
             const wl = wlThisRound[name] || { w: 0, l: 0 };
+            // CRITICAL: field names must match what deployed backend reads
+            // Backend live reads: p.player, p.new_elo, p.elo_change, p.w, p.l
+            // (same as working admin manual entry - NOT p.name / p.elo / p.delta)
             return {
-              name: name.trim(),          // FIX: trim nama
-              elo: eloAfter,             // ELO terkini
-              delta: eloAfter - eloBefore, // FIX: delta RONDE INI saja
-              w: wl.w,                   // FIX: win ronde ini saja
-              l: wl.l,                   // FIX: loss ronde ini saja
+              player:     name.trim(),
+              new_elo:    eloAfter,
+              elo_change: eloAfter - eloBefore,
+              w:          wl.w,
+              l:          wl.l,
             };
           });
 
           await apiRequest("sessions", {
             method: "POST",
             body: JSON.stringify({
-              session_name: `Mexicano ${state.venue} – Ronde ${round.roundNum}`,
+              sessionName: `Mexicano ${state.venue} – Ronde ${round.roundNum}`,
               format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
               courts: state.courts,
               venue: state.venue,
@@ -1537,16 +1540,16 @@ async function endMatch() {
       await apiRequest("sessions", {
         method:"POST",
         body: JSON.stringify({
-          session_name: `Mexicano Daily – ${state.venue} – ${now}`,
+          sessionName: `Mexicano Daily – ${state.venue} – ${now}`,
           format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
           courts: state.courts,
           venue: state.venue,
           players: state.selectedPlayers.map(p => p.name),
           rounds: [],  // Sudah dikirim per ronde, tidak perlu ulang
           elo_results: standings.map(p => ({
-            name: p.name,
-            elo: p.elo,
-            delta: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
+            player:     p.name,
+            new_elo:    p.elo,
+            elo_change: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
             w: p.wins,
             l: p.losses,
           })),
