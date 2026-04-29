@@ -915,7 +915,7 @@ const BADGE_DEFS = [
   {
     id:'giant_slayer', cat:'Combat', emoji:'⚔️', name:'Giant Slayer', rarity:'uncommon',
     desc:'You took down a team that was significantly stronger on paper. Not all upsets are luck — sometimes skill just speaks for itself.',
-    criteria:'Beat a team whose average ELO is 200+ points higher than your team's average.',
+    criteria:"Beat a team whose average ELO is 200+ points higher than your team's average.",
     compute(d){ return d.matchesRaw.some(m => {
       if(!m._myWin) return false;
       const avgOpp = (m._oppElo1 + m._oppElo2) / 2;
@@ -926,7 +926,7 @@ const BADGE_DEFS = [
   {
     id:'dragon_slayer', cat:'Combat', emoji:'🐉', name:'Dragon Slayer', rarity:'rare',
     desc:'An extraordinary upset. You faced a team nearly half a tier above you and came out on top. This is the stuff of legend.',
-    criteria:'Beat a team whose average ELO is 400+ points higher than your team's average.',
+    criteria:"Beat a team whose average ELO is 400+ points higher than your team's average.",
     compute(d){ return d.matchesRaw.some(m => {
       if(!m._myWin) return false;
       const avgOpp = (m._oppElo1 + m._oppElo2) / 2;
@@ -936,26 +936,26 @@ const BADGE_DEFS = [
   },
   {
     id:'flawless', cat:'Combat', emoji:'🎯', name:'Flawless', rarity:'uncommon',
-    desc:'A shutout. Your opponents couldn't get a single game off you. Clinical, dominant, and impossible to ignore.',
+    desc:"A shutout. Your opponents couldn't get a single game off you. Clinical, dominant, and impossible to ignore.",
     criteria:'Win a match with a maximum score (opponent scores 0).',
     compute(d){ return d.matchesRaw.some(m => m._myWin && m._oppScore === 0); }
   },
   {
     id:'unstoppable', cat:'Combat', emoji:'🔥', name:'Unstoppable', rarity:'rare',
-    desc:'Five in a row without dropping once. You didn't just win — you made it look routine.',
+    desc:"Five in a row without dropping once. You didn't just win — you made it look routine.",
     criteria:'Achieve a win streak of 5 or more consecutive matches.',
     progress(d){ return { val: d.bestStreak, max: 5 }; },
     compute(d){ return d.bestStreak >= 5; }
   },
   {
     id:'iron_wall', cat:'Combat', emoji:'🛡️', name:'Iron Wall', rarity:'uncommon',
-    desc:'Your opponents barely touched you. You held them to 2 or fewer games across an entire match.',
+    desc:"Your opponents barely touched you. You held them to 2 or fewer games across an entire match.",
     criteria:'Win a match holding opponents to a score of 2 or less.',
     compute(d){ return d.matchesRaw.some(m => m._myWin && m._oppScore <= 2); }
   },
   {
     id:'comeback_kid', cat:'Combat', emoji:'🪃', name:'Comeback Kid', rarity:'uncommon',
-    desc:'Down three, back up three. The scoreboard said no, but you said otherwise.',
+    desc:"Down three, back up three. The scoreboard said no, but you said otherwise.",
     criteria:'Lose 3 consecutive matches then win the next 3 in the same session.',
     compute(d){
       const r = d.matchesRaw.map(m => m._myWin ? 'W' : 'L').join('');
@@ -966,7 +966,7 @@ const BADGE_DEFS = [
   // ── JOURNEY ───────────────────────────────────────────────────────────────
   {
     id:'rocket', cat:'Journey', emoji:'🚀', name:'Rocket', rarity:'rare',
-    desc:'You climbed 200 ELO points in a single day. Some people have good days — you had a great one.',
+    desc:"You climbed 200 ELO points in a single day. Some people have good days — you had a great one.",
     criteria:'Gain 200+ ELO points within a single calendar day of play.',
     compute(d){
       if(d.history.length < 2) return false;
@@ -983,13 +983,13 @@ const BADGE_DEFS = [
   },
   {
     id:'summit', cat:'Journey', emoji:'🏔️', name:'Summit', rarity:'common',
-    desc:'You've reached your personal best ELO. Whatever got you here — keep doing it.',
+    desc:"You've reached your personal best ELO. Whatever got you here — keep doing it.",
     criteria:'Reach a new personal best ELO rating.',
     compute(d){ return d.stats.currentElo === Math.max(...d.history.map(h=>h.elo||0), d.stats.currentElo); }
   },
   {
     id:'on_the_rise', cat:'Journey', emoji:'📈', name:'On The Rise', rarity:'uncommon',
-    desc:'Consistent upward movement over a month. This is what improvement looks like.',
+    desc:"Consistent upward movement over a month. This is what improvement looks like.",
     criteria:'Gain 150+ ELO over the last 30 days.',
     progress(d){
       const gain = d.eloGain30d;
@@ -999,7 +999,7 @@ const BADGE_DEFS = [
   },
   {
     id:'fast_track', cat:'Journey', emoji:'⚡', name:'Fast Track', rarity:'rare',
-    desc:'You hit the ground running. Calibrated fast, climbed fast — you knew your level before the engine did.',
+    desc:"You hit the ground running. Calibrated fast, climbed fast — you knew your level before the engine did.",
     criteria:'Gain 200+ ELO within your first 20 matches after calibration.',
     compute(d){
       if(d.stats.totalMatches < 20) return false;
@@ -1010,7 +1010,7 @@ const BADGE_DEFS = [
   },
   {
     id:'late_bloomer', cat:'Journey', emoji:'🌅', name:'Late Bloomer', rarity:'uncommon',
-    desc:'You took your time to find your stride — and when you did, you really found it.',
+    desc:"You took your time to find your stride — and when you did, you really found it.",
     criteria:'Gain a tier after 50+ total matches.',
     compute(d){
       if(d.stats.totalMatches < 50) return false;
@@ -1022,21 +1022,21 @@ const BADGE_DEFS = [
   // ── CONSISTENCY ───────────────────────────────────────────────────────────
   {
     id:'veteran', cat:'Consistency', emoji:'🎖️', name:'Veteran', rarity:'uncommon',
-    desc:'One hundred matches. You've seen it all — the lucky wins, the painful losses, the miraculous comebacks.',
+    desc:"One hundred matches. You've seen it all — the lucky wins, the painful losses, the miraculous comebacks.",
     criteria:'Complete 100 recorded matches on Trekkr.',
     progress(d){ return { val: d.stats.totalMatches, max: 100 }; },
     compute(d){ return d.stats.totalMatches >= 100; }
   },
   {
     id:'legend', cat:'Consistency', emoji:'🏛️', name:'Legend', rarity:'epic',
-    desc:'500 matches. An institution. The game knows your name.',
+    desc:"500 matches. An institution. The game knows your name.",
     criteria:'Complete 500 recorded matches on Trekkr.',
     progress(d){ return { val: d.stats.totalMatches, max: 500 }; },
     compute(d){ return d.stats.totalMatches >= 500; }
   },
   {
     id:'iron_resolve', cat:'Consistency', emoji:'💎', name:'Iron Resolve', rarity:'rare',
-    desc:'The scoreboard hit you hard, but you didn't fold. You took the losses and came back stronger.',
+    desc:"The scoreboard hit you hard, but you didn't fold. You took the losses and came back stronger.",
     criteria:'Lose 5 consecutive matches then achieve a positive win rate overall.',
     compute(d){
       const r = d.matchesRaw.map(m => m._myWin ? 'W' : 'L').join('');
@@ -1046,21 +1046,21 @@ const BADGE_DEFS = [
   },
   {
     id:'nomad', cat:'Consistency', emoji:'🌍', name:'Nomad', rarity:'uncommon',
-    desc:'You don't belong to one court — you belong to the game. The padel community knows you everywhere.',
+    desc:"You don't belong to one court — you belong to the game. The padel community knows you everywhere.",
     criteria:'Play at 3 or more different venues.',
     progress(d){ return { val: d.venueCount, max: 3 }; },
     compute(d){ return d.venueCount >= 3; }
   },
   {
     id:'all_rounder', cat:'Consistency', emoji:'🎭', name:'All-Rounder', rarity:'uncommon',
-    desc:'You've played with everyone and made it work. Adaptability is a skill too.',
+    desc:"You've played with everyone and made it work. Adaptability is a skill too.",
     criteria:'Play with 10 or more different partners.',
     progress(d){ return { val: Object.keys(d.partnerStats).length, max: 10 }; },
     compute(d){ return Object.keys(d.partnerStats).length >= 10; }
   },
   {
     id:'founding_player', cat:'Consistency', emoji:'📍', name:'Founding Player', rarity:'legendary',
-    desc:'You were here before everyone else. The Trekkr system was built on matches like yours.',
+    desc:"You were here before everyone else. The Trekkr system was built on matches like yours.",
     criteria:'One of the first 50 players to register on Trekkr.',
     compute(d){ return d.playerRank !== null && d.playerRank <= 50; }
   },
@@ -1068,7 +1068,7 @@ const BADGE_DEFS = [
   // ── PARTNERSHIP ───────────────────────────────────────────────────────────
   {
     id:'dynamic_duo', cat:'Partnership', emoji:'🤜', name:'Dynamic Duo', rarity:'uncommon',
-    desc:'You and your partner just click. The numbers prove it — this team works.',
+    desc:"You and your partner just click. The numbers prove it — this team works.",
     criteria:'80%+ win rate with one partner across a minimum of 10 matches together.',
     compute(d){
       return Object.values(d.partnerStats).some(p => p.total >= 10 && (p.w / p.total) >= 0.8);
@@ -1076,7 +1076,7 @@ const BADGE_DEFS = [
   },
   {
     id:'unbreakable', cat:'Partnership', emoji:'💑', name:'Unbreakable', rarity:'rare',
-    desc:'Fifteen wins with the same partner without a single loss together. A bond forged on court.',
+    desc:"Fifteen wins with the same partner without a single loss together. A bond forged on court.",
     criteria:'15 consecutive wins with the same partner (no losses in between together).',
     compute(d){
       // Check if any partner has 15+ wins with no consecutive loss streak
@@ -1085,8 +1085,8 @@ const BADGE_DEFS = [
   },
   {
     id:'team_player', cat:'Partnership', emoji:'🧩', name:'Team Player', rarity:'rare',
-    desc:'You make everyone better. Every partner you've played with has succeeded with you.',
-    criteria:'Maintain 60%+ win rate with at least 5 different partners (min. 5 matches each).',
+    desc:"You make everyone better. Every partner you've played with has succeeded with you.",
+    criteria:"Maintain 60%+ win rate with at least 5 different partners (min. 5 matches each).",
     compute(d){
       const eligible = Object.values(d.partnerStats).filter(p => p.total >= 5 && (p.w / p.total) >= 0.6);
       return eligible.length >= 5;
@@ -1094,8 +1094,8 @@ const BADGE_DEFS = [
   },
   {
     id:'versatile', cat:'Partnership', emoji:'🎪', name:'Versatile', rarity:'uncommon',
-    desc:'You thrive no matter who stands next to you. A true partner in every sense.',
-    criteria:'Win at least one match with 5 different partners.',
+    desc:"You thrive no matter who stands next to you. A true partner in every sense.",
+    criteria:"Win at least one match with 5 different partners.",
     progress(d){
       const withWins = Object.values(d.partnerStats).filter(p => p.w >= 1).length;
       return { val: withWins, max: 5 };
@@ -1108,26 +1108,26 @@ const BADGE_DEFS = [
   // ── SPECIAL ───────────────────────────────────────────────────────────────
   {
     id:'underdog', cat:'Special', emoji:'🎰', name:'Underdog', rarity:'uncommon',
-    desc:'You were the lowest-ranked team in the session — and you still won a match. Nobody expected it. Except you.',
+    desc:"You were the lowest-ranked team in the session — and you still won a match. Nobody expected it. Except you.",
     criteria:'Win a match as the team with the lowest combined ELO in the session.',
     compute(d){ return d.matchesRaw.some(m => m._myWin && m._lowestEloInSession); }
   },
   {
     id:'dark_horse', cat:'Special', emoji:'🥷', name:'Dark Horse', rarity:'rare',
-    desc:'You started below rank 5 in a session and finished on top. Nobody saw you coming.',
-    criteria:'Finish 1st in a session after starting ranked 5th or lower.',
+    desc:"You started below rank 5 in a session and finished on top. Nobody saw you coming.",
+    criteria:"Finish 1st in a session after starting ranked 5th or lower.",
     compute(d){ return d.hadDarkHorseSession; }
   },
   {
     id:'giant_killer_duo', cat:'Special', emoji:'👑', name:'King Killer', rarity:'epic',
-    desc:'You beat the top-ranked player at their venue. The throne changed hands — even if just for a day.',
+    desc:"You beat the top-ranked player at their venue. The throne changed hands — even if just for a day.",
     criteria:'Defeat the #1 ELO-ranked player at any venue in a recorded match.',
     compute(d){ return d.beatTopRanked; }
   },
   {
     id:'tide_turner', cat:'Special', emoji:'🌊', name:'Tide Turner', rarity:'rare',
-    desc:'You turned your season around completely. From struggling to thriving — that's a player who grew.',
-    criteria:'Win rate improves from below 40% to above 60% over 30-day periods.',
+    desc:"You turned your season around completely. From struggling to thriving — that's a player who grew.",
+    criteria:"Win rate improves from below 40% to above 60% over 30-day periods.",
     compute(d){ return d.isTideTurner; }
   },
 ];
