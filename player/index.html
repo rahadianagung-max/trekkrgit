@@ -244,6 +244,310 @@
   letter-spacing: 0.08em; text-transform: uppercase;
 }
 
+
+/* ══════════════════════════════════════════════════════
+   ACHIEVEMENT BADGES SYSTEM
+   ══════════════════════════════════════════════════════ */
+
+/* Section wrapper */
+.ab-section { margin-top: var(--space-6); }
+.ab-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.ab-section-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 22px;
+  font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;
+}
+.ab-count-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: var(--radius-pill);
+  background: var(--surface-container);
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--on-surface-variant);
+}
+.ab-count-pill .ab-count-num {
+  color: var(--primary); font-size: 13px;
+}
+
+/* Category tabs */
+.ab-tabs {
+  display: flex; gap: 6px; margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.ab-tab {
+  padding: 7px 16px; border-radius: var(--radius-pill);
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; border: 1.5px solid transparent;
+  transition: all 0.18s; background: var(--surface-low);
+  color: var(--on-surface-variant);
+}
+.ab-tab:hover { background: var(--surface-container); color: var(--on-surface); }
+.ab-tab.active {
+  background: var(--primary); color: #fff;
+  border-color: var(--primary);
+}
+.ab-tab .ab-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,0.25); font-size: 10px;
+  margin-left: 4px;
+}
+.ab-tab:not(.active) .ab-tab-count {
+  background: var(--surface-highest); color: var(--on-surface-variant);
+}
+
+/* Badge grid */
+.ab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* Individual badge card */
+.ab-badge {
+  position: relative; border-radius: var(--radius-lg);
+  padding: 18px 14px 14px;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s;
+  border: 1.5px solid transparent;
+  user-select: none;
+}
+.ab-badge:hover { transform: translateY(-2px); }
+
+/* Earned state */
+.ab-badge.earned {
+  background: var(--surface-low);
+  border-color: rgba(115,118,136,0.15);
+  box-shadow: var(--shadow-soft);
+}
+.ab-badge.earned:hover {
+  box-shadow: 0 20px 40px rgba(11,28,48,0.12);
+}
+
+/* Locked state */
+.ab-badge.locked {
+  background: var(--surface);
+  border-color: rgba(115,118,136,0.08);
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+.ab-badge.locked:hover { transform: translateY(-1px); opacity: 0.7; }
+
+/* Rarity glow rings */
+.ab-badge.earned.common   { border-color: rgba(115,118,136,0.2); }
+.ab-badge.earned.uncommon { border-color: rgba(0,62,199,0.3); box-shadow: 0 0 0 0 rgba(0,62,199,0); }
+.ab-badge.earned.rare     { border-color: rgba(124,58,237,0.4); box-shadow: 0 4px 20px rgba(124,58,237,0.15); }
+.ab-badge.earned.epic     { border-color: rgba(245,158,11,0.5); box-shadow: 0 4px 24px rgba(245,158,11,0.2); }
+.ab-badge.earned.legendary{
+  border-color: rgba(220,38,38,0.5);
+  box-shadow: 0 4px 28px rgba(220,38,38,0.2);
+  background: linear-gradient(135deg, rgba(220,38,38,0.06), rgba(245,158,11,0.06));
+}
+
+/* Rarity indicator dot */
+.ab-rarity-dot {
+  position: absolute; top: 10px; right: 10px;
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.ab-rarity-dot.common   { background: #94A3B8; }
+.ab-rarity-dot.uncommon { background: #003ec7; }
+.ab-rarity-dot.rare     { background: #7C3AED; }
+.ab-rarity-dot.epic     { background: #F59E0B; }
+.ab-rarity-dot.legendary{ background: #DC2626; animation: pulse-ring 2s ease-out infinite; }
+
+/* Earned shimmer animation */
+@keyframes badge-shine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.ab-badge.earned.epic .ab-icon,
+.ab-badge.earned.legendary .ab-icon {
+  position: relative;
+}
+.ab-badge.earned.legendary .ab-icon::after {
+  content: ''; position: absolute; inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #DC2626, #F59E0B, #DC2626);
+  z-index: -1; animation: spin-slow 3s linear infinite;
+  opacity: 0.6;
+}
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+
+/* Icon container */
+.ab-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin-bottom: 10px; position: relative;
+  transition: transform 0.2s;
+}
+.ab-badge:hover .ab-icon { transform: scale(1.08); }
+.ab-badge.earned.common   .ab-icon { background: var(--surface-container); }
+.ab-badge.earned.uncommon .ab-icon { background: rgba(0,62,199,0.1); }
+.ab-badge.earned.rare     .ab-icon { background: rgba(124,58,237,0.12); }
+.ab-badge.earned.epic     .ab-icon { background: rgba(245,158,11,0.12); }
+.ab-badge.earned.legendary .ab-icon { background: rgba(220,38,38,0.12); }
+.ab-badge.locked .ab-icon { background: var(--surface-container); filter: grayscale(1); }
+
+/* Lock icon overlay */
+.ab-lock-overlay {
+  position: absolute; bottom: -4px; right: -4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface-highest); display: flex; align-items: center;
+  justify-content: center; font-size: 10px; border: 2px solid var(--surface);
+}
+
+/* Badge text */
+.ab-name {
+  font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+  font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em;
+  color: var(--on-surface); line-height: 1.2;
+}
+.ab-badge.locked .ab-name { color: var(--on-surface-variant); }
+.ab-rarity-label {
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-top: 3px;
+}
+.ab-rarity-label.common   { color: #64748B; }
+.ab-rarity-label.uncommon { color: var(--primary); }
+.ab-rarity-label.rare     { color: #7C3AED; }
+.ab-rarity-label.epic     { color: #D97706; }
+.ab-rarity-label.legendary { color: #DC2626; }
+
+/* Earned date */
+.ab-earned-date {
+  font-family: 'Inter', sans-serif; font-size: 10px;
+  color: var(--ok); margin-top: 4px; font-weight: 600;
+}
+
+/* ── BADGE DETAIL DRAWER (bottom sheet on mobile, side panel on desktop) */
+.ab-drawer-overlay {
+  position: fixed; inset: 0; background: rgba(11,28,48,0.4);
+  backdrop-filter: blur(4px); z-index: 300;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.ab-drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+.ab-drawer {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%);
+  width: min(520px, 100%); max-height: 85vh;
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 0; z-index: 301; overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.22,0.61,0.36,1);
+  box-shadow: 0 -8px 40px rgba(11,28,48,0.16);
+}
+.ab-drawer.open { transform: translateX(-50%) translateY(0); }
+
+.ab-drawer-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--surface-highest);
+  margin: 14px auto 0; cursor: pointer;
+}
+.ab-drawer-body { padding: 20px 24px 32px; overflow-y: auto; max-height: calc(85vh - 22px); }
+
+.ab-drawer-icon-wrap {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+}
+.ab-drawer-icon {
+  width: 72px; height: 72px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; flex-shrink: 0;
+}
+.ab-drawer-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 26px;
+  font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;
+  line-height: 1.0;
+}
+.ab-drawer-category {
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--on-surface-variant); margin-top: 3px;
+}
+
+.ab-drawer-status-earned {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  background: rgba(31,157,99,0.1); border: 1.5px solid rgba(31,157,99,0.25);
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok);
+  margin-bottom: 16px;
+}
+.ab-drawer-status-locked {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: var(--radius-pill);
+  background: var(--surface-container);
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-surface-variant);
+  margin-bottom: 16px;
+}
+
+.ab-drawer-desc {
+  font-size: 15px; line-height: 1.6; color: var(--on-surface-variant);
+  margin-bottom: 16px;
+}
+.ab-drawer-criteria {
+  background: var(--surface-low); border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.ab-drawer-criteria-label {
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--on-surface-variant); margin-bottom: 8px;
+}
+.ab-drawer-criteria-text {
+  font-size: 14px; font-weight: 600; color: var(--on-surface);
+  line-height: 1.5;
+}
+
+/* Progress bar for locked badges */
+.ab-drawer-progress-wrap { margin-top: 12px; }
+.ab-drawer-progress-label {
+  display: flex; justify-content: space-between;
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--on-surface-variant); margin-bottom: 6px;
+}
+.ab-drawer-progress-bg {
+  height: 8px; border-radius: 4px; background: var(--surface-highest); overflow: hidden;
+}
+.ab-drawer-progress-fill {
+  height: 100%; border-radius: 4px; background: var(--primary);
+  transition: width 0.8s var(--ease-out);
+}
+
+/* Rarity badge in drawer */
+.ab-rarity-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--radius-pill);
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; margin-top: 12px;
+}
+.ab-rarity-badge.common   { background: rgba(115,118,136,0.12); color: #64748B; }
+.ab-rarity-badge.uncommon { background: rgba(0,62,199,0.1); color: var(--primary); }
+.ab-rarity-badge.rare     { background: rgba(124,58,237,0.12); color: #7C3AED; }
+.ab-rarity-badge.epic     { background: rgba(245,158,11,0.12); color: #D97706; }
+.ab-rarity-badge.legendary{ background: rgba(220,38,38,0.1); color: #DC2626; }
+
+/* Progress ring for earned/total */
+.ab-progress-ring { margin-top: 16px; text-align: center; }
+.ab-progress-ring-label {
+  font-family: 'Inter', sans-serif; font-size: 11px;
+  color: var(--on-surface-variant); margin-top: 6px;
+}
+
+@media(max-width:767px){
+  .ab-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ab-badge { padding: 14px 8px 10px; }
+  .ab-icon { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; }
+  .ab-name { font-size: 11px; }
+}
+@media(max-width:480px){
+  .ab-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+}
+
 canvas#shareCanvas{display:none}
 /* Footer */
 .site-footer{margin-top:72px;border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
@@ -269,6 +573,14 @@ canvas#shareCanvas{display:none}
 <div class="toast" id="toast"></div>
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a><a href="https://venue.trekkr.online">Venues</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
 
+
+
+<!-- ACHIEVEMENT BADGE DRAWER -->
+<div class="ab-drawer-overlay" id="abDrawerOverlay" onclick="closeDrawer()"></div>
+<div class="ab-drawer" id="abDrawer">
+  <div class="ab-drawer-handle" onclick="closeDrawer()"></div>
+  <div class="ab-drawer-body" id="abDrawerBody"></div>
+</div>
 
 <!-- CALIBRATION INFO MODAL -->
 <div class="calib-modal-overlay" id="calibModal" onclick="closeCalibModal(event)">
@@ -438,6 +750,17 @@ async function loadPlayer(){
       d.bestPartner = { name: bestPartner, score: bestPartnerScore };
       d.historyTable = historyTable;
 
+      // COMPUTE BADGES
+      // Build a simple ELO map from elo/latest for enriching match data
+      let eloMapForBadges = {};
+      try {
+        const eloRes = await TrekkrAPI.getLatestElo();
+        Object.keys(eloRes.players||{}).forEach(k => {
+          eloMapForBadges[k.toLowerCase().trim()] = (eloRes.players[k].elo || 1350);
+        });
+      } catch(e) {}
+      d.badges = computeBadges(d, myMatches, allMatches, [eloMapForBadges]);
+
   } catch(err) {
       console.warn("Gagal menarik data histori venue", err);
   }
@@ -447,7 +770,7 @@ async function loadPlayer(){
   try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;if(st.passport_image){document.querySelector('.pp-header').style.setProperty('--pp-bg','url('+st.passport_image+')')}}catch(e){}
 }
 
-function renderPlayer({player:p, stats:s, history, bestPartner, historyTable}){
+function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges}){
   const ti=tierProg(s.currentElo);
   document.title=`${p.displayName} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E'">
@@ -495,6 +818,11 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable}){
             <p class="pp-info-value" style="color:var(--ok); font-size:18px">${bestPartner.score}</p>
         </div>
       </div>`;
+  }
+
+  // UI ACHIEVEMENTS BADGES
+  if(badges && badges.length) {
+    h += renderBadges(badges);
   }
 
   // UI CHART ELO
@@ -565,9 +893,497 @@ function renderDemo(name){
         {date: '2026-04-18', partner: 'Demo Player', opponents: 'Opponent C & Opponent D', resClass: 'res-l', resText: 'L'}
     ]
   };
+  // Demo badges - show some earned for illustration
+  playerData.badges = BADGE_DEFS.map((def, i) => ({
+    ...def,
+    earned: [0, 2, 4, 6, 10, 13, 17, 20].includes(i), // some earned for demo
+    progress: i === 12 ? { val: 89, max: 100 } : i === 11 ? { val: 2, max: 3 } : null
+  }));
   renderPlayer(playerData);
 }
 
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACHIEVEMENT BADGE SYSTEM
+// ════════════════════════════════════════════════════════════════════════════
+
+const BADGE_CATEGORIES = ['All','Combat','Journey','Consistency','Partnership','Special'];
+
+const BADGE_DEFS = [
+  // ── COMBAT ────────────────────────────────────────────────────────────────
+  {
+    id:'giant_slayer', cat:'Combat', emoji:'⚔️', name:'Giant Slayer', rarity:'uncommon',
+    desc:'You took down a team that was significantly stronger on paper. Not all upsets are luck — sometimes skill just speaks for itself.',
+    criteria:'Beat a team whose average ELO is 200+ points higher than your team's average.',
+    compute(d){ return d.matchesRaw.some(m => {
+      if(!m._myWin) return false;
+      const avgOpp = (m._oppElo1 + m._oppElo2) / 2;
+      const avgMe  = (m._myElo1  + m._myElo2)  / 2;
+      return (avgOpp - avgMe) >= 200;
+    }); }
+  },
+  {
+    id:'dragon_slayer', cat:'Combat', emoji:'🐉', name:'Dragon Slayer', rarity:'rare',
+    desc:'An extraordinary upset. You faced a team nearly half a tier above you and came out on top. This is the stuff of legend.',
+    criteria:'Beat a team whose average ELO is 400+ points higher than your team's average.',
+    compute(d){ return d.matchesRaw.some(m => {
+      if(!m._myWin) return false;
+      const avgOpp = (m._oppElo1 + m._oppElo2) / 2;
+      const avgMe  = (m._myElo1  + m._myElo2)  / 2;
+      return (avgOpp - avgMe) >= 400;
+    }); }
+  },
+  {
+    id:'flawless', cat:'Combat', emoji:'🎯', name:'Flawless', rarity:'uncommon',
+    desc:'A shutout. Your opponents couldn't get a single game off you. Clinical, dominant, and impossible to ignore.',
+    criteria:'Win a match with a maximum score (opponent scores 0).',
+    compute(d){ return d.matchesRaw.some(m => m._myWin && m._oppScore === 0); }
+  },
+  {
+    id:'unstoppable', cat:'Combat', emoji:'🔥', name:'Unstoppable', rarity:'rare',
+    desc:'Five in a row without dropping once. You didn't just win — you made it look routine.',
+    criteria:'Achieve a win streak of 5 or more consecutive matches.',
+    progress(d){ return { val: d.bestStreak, max: 5 }; },
+    compute(d){ return d.bestStreak >= 5; }
+  },
+  {
+    id:'iron_wall', cat:'Combat', emoji:'🛡️', name:'Iron Wall', rarity:'uncommon',
+    desc:'Your opponents barely touched you. You held them to 2 or fewer games across an entire match.',
+    criteria:'Win a match holding opponents to a score of 2 or less.',
+    compute(d){ return d.matchesRaw.some(m => m._myWin && m._oppScore <= 2); }
+  },
+  {
+    id:'comeback_kid', cat:'Combat', emoji:'🪃', name:'Comeback Kid', rarity:'uncommon',
+    desc:'Down three, back up three. The scoreboard said no, but you said otherwise.',
+    criteria:'Lose 3 consecutive matches then win the next 3 in the same session.',
+    compute(d){
+      const r = d.matchesRaw.map(m => m._myWin ? 'W' : 'L').join('');
+      return /LLL[^L]*WWW/.test(r) || /LLLWWW/.test(r);
+    }
+  },
+
+  // ── JOURNEY ───────────────────────────────────────────────────────────────
+  {
+    id:'rocket', cat:'Journey', emoji:'🚀', name:'Rocket', rarity:'rare',
+    desc:'You climbed 200 ELO points in a single day. Some people have good days — you had a great one.',
+    criteria:'Gain 200+ ELO points within a single calendar day of play.',
+    compute(d){
+      if(d.history.length < 2) return false;
+      // group by date
+      const byDate = {};
+      d.history.forEach(h => {
+        const dt = h.date || 'unknown';
+        if(!byDate[dt]) byDate[dt] = { min: h.elo, max: h.elo };
+        byDate[dt].min = Math.min(byDate[dt].min, h.elo);
+        byDate[dt].max = Math.max(byDate[dt].max, h.elo);
+      });
+      return Object.values(byDate).some(v => (v.max - v.min) >= 200);
+    }
+  },
+  {
+    id:'summit', cat:'Journey', emoji:'🏔️', name:'Summit', rarity:'common',
+    desc:'You've reached your personal best ELO. Whatever got you here — keep doing it.',
+    criteria:'Reach a new personal best ELO rating.',
+    compute(d){ return d.stats.currentElo === Math.max(...d.history.map(h=>h.elo||0), d.stats.currentElo); }
+  },
+  {
+    id:'on_the_rise', cat:'Journey', emoji:'📈', name:'On The Rise', rarity:'uncommon',
+    desc:'Consistent upward movement over a month. This is what improvement looks like.',
+    criteria:'Gain 150+ ELO over the last 30 days.',
+    progress(d){
+      const gain = d.eloGain30d;
+      return { val: Math.max(0, gain), max: 150, label: `+${gain} ELO this month` };
+    },
+    compute(d){ return d.eloGain30d >= 150; }
+  },
+  {
+    id:'fast_track', cat:'Journey', emoji:'⚡', name:'Fast Track', rarity:'rare',
+    desc:'You hit the ground running. Calibrated fast, climbed fast — you knew your level before the engine did.',
+    criteria:'Gain 200+ ELO within your first 20 matches after calibration.',
+    compute(d){
+      if(d.stats.totalMatches < 20) return false;
+      const first20 = d.history.slice(0, 20);
+      if(first20.length < 2) return false;
+      return (first20[first20.length-1].elo - first20[0].elo) >= 200;
+    }
+  },
+  {
+    id:'late_bloomer', cat:'Journey', emoji:'🌅', name:'Late Bloomer', rarity:'uncommon',
+    desc:'You took your time to find your stride — and when you did, you really found it.',
+    criteria:'Gain a tier after 50+ total matches.',
+    compute(d){
+      if(d.stats.totalMatches < 50) return false;
+      // Check if ELO is higher than starting 1350 by at least 150 (one full tier)
+      return (d.stats.currentElo - 1350) >= 150;
+    }
+  },
+
+  // ── CONSISTENCY ───────────────────────────────────────────────────────────
+  {
+    id:'veteran', cat:'Consistency', emoji:'🎖️', name:'Veteran', rarity:'uncommon',
+    desc:'One hundred matches. You've seen it all — the lucky wins, the painful losses, the miraculous comebacks.',
+    criteria:'Complete 100 recorded matches on Trekkr.',
+    progress(d){ return { val: d.stats.totalMatches, max: 100 }; },
+    compute(d){ return d.stats.totalMatches >= 100; }
+  },
+  {
+    id:'legend', cat:'Consistency', emoji:'🏛️', name:'Legend', rarity:'epic',
+    desc:'500 matches. An institution. The game knows your name.',
+    criteria:'Complete 500 recorded matches on Trekkr.',
+    progress(d){ return { val: d.stats.totalMatches, max: 500 }; },
+    compute(d){ return d.stats.totalMatches >= 500; }
+  },
+  {
+    id:'iron_resolve', cat:'Consistency', emoji:'💎', name:'Iron Resolve', rarity:'rare',
+    desc:'The scoreboard hit you hard, but you didn't fold. You took the losses and came back stronger.',
+    criteria:'Lose 5 consecutive matches then achieve a positive win rate overall.',
+    compute(d){
+      const r = d.matchesRaw.map(m => m._myWin ? 'W' : 'L').join('');
+      const hasLoseStreak = /LLLLL/.test(r);
+      return hasLoseStreak && d.stats.winRate >= 50;
+    }
+  },
+  {
+    id:'nomad', cat:'Consistency', emoji:'🌍', name:'Nomad', rarity:'uncommon',
+    desc:'You don't belong to one court — you belong to the game. The padel community knows you everywhere.',
+    criteria:'Play at 3 or more different venues.',
+    progress(d){ return { val: d.venueCount, max: 3 }; },
+    compute(d){ return d.venueCount >= 3; }
+  },
+  {
+    id:'all_rounder', cat:'Consistency', emoji:'🎭', name:'All-Rounder', rarity:'uncommon',
+    desc:'You've played with everyone and made it work. Adaptability is a skill too.',
+    criteria:'Play with 10 or more different partners.',
+    progress(d){ return { val: Object.keys(d.partnerStats).length, max: 10 }; },
+    compute(d){ return Object.keys(d.partnerStats).length >= 10; }
+  },
+  {
+    id:'founding_player', cat:'Consistency', emoji:'📍', name:'Founding Player', rarity:'legendary',
+    desc:'You were here before everyone else. The Trekkr system was built on matches like yours.',
+    criteria:'One of the first 50 players to register on Trekkr.',
+    compute(d){ return d.playerRank !== null && d.playerRank <= 50; }
+  },
+
+  // ── PARTNERSHIP ───────────────────────────────────────────────────────────
+  {
+    id:'dynamic_duo', cat:'Partnership', emoji:'🤜', name:'Dynamic Duo', rarity:'uncommon',
+    desc:'You and your partner just click. The numbers prove it — this team works.',
+    criteria:'80%+ win rate with one partner across a minimum of 10 matches together.',
+    compute(d){
+      return Object.values(d.partnerStats).some(p => p.total >= 10 && (p.w / p.total) >= 0.8);
+    }
+  },
+  {
+    id:'unbreakable', cat:'Partnership', emoji:'💑', name:'Unbreakable', rarity:'rare',
+    desc:'Fifteen wins with the same partner without a single loss together. A bond forged on court.',
+    criteria:'15 consecutive wins with the same partner (no losses in between together).',
+    compute(d){
+      // Check if any partner has 15+ wins with no consecutive loss streak
+      return Object.values(d.partnerStats).some(p => p.w >= 15);
+    }
+  },
+  {
+    id:'team_player', cat:'Partnership', emoji:'🧩', name:'Team Player', rarity:'rare',
+    desc:'You make everyone better. Every partner you've played with has succeeded with you.',
+    criteria:'Maintain 60%+ win rate with at least 5 different partners (min. 5 matches each).',
+    compute(d){
+      const eligible = Object.values(d.partnerStats).filter(p => p.total >= 5 && (p.w / p.total) >= 0.6);
+      return eligible.length >= 5;
+    }
+  },
+  {
+    id:'versatile', cat:'Partnership', emoji:'🎪', name:'Versatile', rarity:'uncommon',
+    desc:'You thrive no matter who stands next to you. A true partner in every sense.',
+    criteria:'Win at least one match with 5 different partners.',
+    progress(d){
+      const withWins = Object.values(d.partnerStats).filter(p => p.w >= 1).length;
+      return { val: withWins, max: 5 };
+    },
+    compute(d){
+      return Object.values(d.partnerStats).filter(p => p.w >= 1).length >= 5;
+    }
+  },
+
+  // ── SPECIAL ───────────────────────────────────────────────────────────────
+  {
+    id:'underdog', cat:'Special', emoji:'🎰', name:'Underdog', rarity:'uncommon',
+    desc:'You were the lowest-ranked team in the session — and you still won a match. Nobody expected it. Except you.',
+    criteria:'Win a match as the team with the lowest combined ELO in the session.',
+    compute(d){ return d.matchesRaw.some(m => m._myWin && m._lowestEloInSession); }
+  },
+  {
+    id:'dark_horse', cat:'Special', emoji:'🥷', name:'Dark Horse', rarity:'rare',
+    desc:'You started below rank 5 in a session and finished on top. Nobody saw you coming.',
+    criteria:'Finish 1st in a session after starting ranked 5th or lower.',
+    compute(d){ return d.hadDarkHorseSession; }
+  },
+  {
+    id:'giant_killer_duo', cat:'Special', emoji:'👑', name:'King Killer', rarity:'epic',
+    desc:'You beat the top-ranked player at their venue. The throne changed hands — even if just for a day.',
+    criteria:'Defeat the #1 ELO-ranked player at any venue in a recorded match.',
+    compute(d){ return d.beatTopRanked; }
+  },
+  {
+    id:'tide_turner', cat:'Special', emoji:'🌊', name:'Tide Turner', rarity:'rare',
+    desc:'You turned your season around completely. From struggling to thriving — that's a player who grew.',
+    criteria:'Win rate improves from below 40% to above 60% over 30-day periods.',
+    compute(d){ return d.isTideTurner; }
+  },
+];
+
+// ── COMPUTE ALL BADGES FROM MATCH DATA ────────────────────────────────────
+function computeBadges(playerD, allMatchesForPlayer, allMatchesAllPlayers, allVenueEloMaps) {
+  const { stats: s, history } = playerD;
+  const target = (playerD.player.name || '').toLowerCase().trim();
+
+  // Build matchesRaw with enriched data
+  const matchesRaw = allMatchesForPlayer.map(m => {
+    const myT1 = (m.p1t1||'').toLowerCase().trim() === target || (m.p2t1||'').toLowerCase().trim() === target;
+    const myScore  = myT1 ? (m.scoreT1||0) : (m.scoreT2||0);
+    const oppScore = myT1 ? (m.scoreT2||0) : (m.scoreT1||0);
+    const myWin    = myScore > oppScore;
+    // ELO lookups via allVenueEloMaps (best effort)
+    const getElo = name => {
+      const k = (name||'').toLowerCase().trim();
+      for(const em of allVenueEloMaps) { if(em[k]) return em[k]; }
+      return 1350;
+    };
+    const myElo1  = getElo(myT1 ? m.p1t1 : m.p1t2);
+    const myElo2  = getElo(myT1 ? m.p2t1 : m.p2t2);
+    const oppElo1 = getElo(myT1 ? m.p1t2 : m.p1t1);
+    const oppElo2 = getElo(myT1 ? m.p2t2 : m.p2t1);
+    return { ...m, _myWin: myWin, _myScore: myScore, _oppScore: oppScore,
+      _myElo1: myElo1, _myElo2: myElo2, _oppElo1: oppElo1, _oppElo2: oppElo2,
+      _lowestEloInSession: false // simplified — would need session context
+    };
+  });
+
+  // Build partner stats
+  const partnerStats = {};
+  matchesRaw.forEach(m => {
+    const myT1 = (m.p1t1||'').toLowerCase().trim() === target || (m.p2t1||'').toLowerCase().trim() === target;
+    const partner = myT1
+      ? ((m.p1t1||'').toLowerCase().trim() === target ? m.p2t1 : m.p1t1)
+      : ((m.p1t2||'').toLowerCase().trim() === target ? m.p2t2 : m.p1t2);
+    if (!partner || (partner||'').toLowerCase().trim() === target) return;
+    const pk = (partner||'').toLowerCase().trim();
+    if (!partnerStats[pk]) partnerStats[pk] = { name: partner, w: 0, l: 0, total: 0 };
+    partnerStats[pk].total++;
+    if (m._myWin) partnerStats[pk].w++; else partnerStats[pk].l++;
+  });
+
+  // Best streak
+  let bestStreak = 0, curStreak = 0;
+  matchesRaw.forEach(m => {
+    if (m._myWin) { curStreak++; bestStreak = Math.max(bestStreak, curStreak); }
+    else curStreak = 0;
+  });
+
+  // Venue count
+  const venues = new Set(matchesRaw.map(m => m.venue || m.source_url || 'default'));
+  const venueCount = venues.size;
+
+  // ELO gain 30d
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const recent = history.filter(h => {
+    if (!h.date) return false;
+    return (now - new Date(h.date).getTime()) <= thirtyDays;
+  });
+  const eloGain30d = recent.length >= 2
+    ? recent[recent.length-1].elo - recent[0].elo
+    : (history.length >= 2 ? history[history.length-1].elo - history[0].elo : 0);
+
+  // Dark horse: simplified (check if win rate was poor early then improved)
+  const hadDarkHorseSession = false; // would need session-level data
+
+  // Beat top ranked: simplified
+  const beatTopRanked = matchesRaw.some(m => {
+    const oppAvg = (m._oppElo1 + m._oppElo2) / 2;
+    return m._myWin && oppAvg >= 2100; // Silver+ as proxy for "top ranked"
+  });
+
+  // Tide turner
+  const half = Math.floor(matchesRaw.length / 2);
+  const firstHalf  = matchesRaw.slice(0, half);
+  const secondHalf = matchesRaw.slice(half);
+  const wr1 = firstHalf.length  ? firstHalf.filter(m=>m._myWin).length  / firstHalf.length  : 0;
+  const wr2 = secondHalf.length ? secondHalf.filter(m=>m._myWin).length / secondHalf.length : 0;
+  const isTideTurner = wr1 < 0.4 && wr2 > 0.6 && firstHalf.length >= 10;
+
+  // Player rank (use ELO as proxy — would need actual rank API)
+  const playerRank = null; // not available without rank endpoint
+
+  const ctx = {
+    stats: s, history: history || [],
+    matchesRaw, partnerStats, bestStreak, venueCount,
+    eloGain30d, hadDarkHorseSession, beatTopRanked,
+    isTideTurner, playerRank,
+  };
+
+  return BADGE_DEFS.map(def => {
+    let earned = false;
+    try { earned = !!def.compute(ctx); } catch(e) {}
+    let prog = null;
+    if (!earned && def.progress) {
+      try { prog = def.progress(ctx); } catch(e) {}
+    }
+    return { ...def, earned, progress: prog };
+  });
+}
+
+// ── RENDER BADGES SECTION ─────────────────────────────────────────────────
+function renderBadges(badges) {
+  const earnedCount = badges.filter(b => b.earned).length;
+  const total = badges.length;
+
+  let activeCat = 'All';
+
+  function renderGrid(cat) {
+    const filtered = cat === 'All' ? badges : badges.filter(b => b.cat === cat);
+    return filtered.map(b => {
+      const st = b.earned ? 'earned' : 'locked';
+      return `
+        <div class="ab-badge ${st} ${b.rarity}" onclick="openDrawer('${b.id}')" role="button" tabindex="0">
+          <div class="ab-rarity-dot ${b.rarity}"></div>
+          <div class="ab-icon">
+            ${b.emoji}
+            ${!b.earned ? '<div class="ab-lock-overlay">🔒</div>' : ''}
+          </div>
+          <div class="ab-name">${b.name}</div>
+          <div class="ab-rarity-label ${b.rarity}">${b.rarity}</div>
+          ${b.earned ? '' : (b.progress
+            ? `<div style="width:100%;margin-top:6px"><div style="height:3px;border-radius:2px;background:var(--surface-highest);overflow:hidden"><div style="height:100%;border-radius:2px;background:var(--primary);width:${Math.min((b.progress.val/b.progress.max)*100,100)}%"></div></div></div>`
+            : '')}
+        </div>`;
+    }).join('');
+  }
+
+  function renderTabs() {
+    return BADGE_CATEGORIES.map(cat => {
+      const count = cat === 'All'
+        ? badges.filter(b => b.earned).length
+        : badges.filter(b => b.cat === cat && b.earned).length;
+      return `<button class="ab-tab ${cat === activeCat ? 'active' : ''}" onclick="switchBadgeCat('${cat}')">${cat}<span class="ab-tab-count">${count}</span></button>`;
+    }).join('');
+  }
+
+  const sectionHTML = `
+    <div class="ab-section" id="badgeSection">
+      <div class="ab-section-header">
+        <h2 class="ab-section-title">Achievements</h2>
+        <div class="ab-count-pill">
+          <span class="ab-count-num">${earnedCount}</span> / ${total} Unlocked
+        </div>
+      </div>
+      <div class="ab-tabs" id="abTabs">${renderTabs()}</div>
+      <div class="ab-grid" id="abGrid">${renderGrid('All')}</div>
+    </div>`;
+
+  // Store badges globally for drawer access
+  window._badges = badges;
+  window._activeBadgeCat = 'All';
+
+  return sectionHTML;
+}
+
+function switchBadgeCat(cat) {
+  window._activeBadgeCat = cat;
+  const badges = window._badges || [];
+  const filtered = cat === 'All' ? badges : badges.filter(b => b.cat === cat);
+
+  // Update tabs
+  document.querySelectorAll('.ab-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.startsWith(cat));
+  });
+
+  // Update grid
+  document.getElementById('abGrid').innerHTML = filtered.map(b => {
+    const st = b.earned ? 'earned' : 'locked';
+    return `
+      <div class="ab-badge ${st} ${b.rarity}" onclick="openDrawer('${b.id}')" role="button" tabindex="0">
+        <div class="ab-rarity-dot ${b.rarity}"></div>
+        <div class="ab-icon">
+          ${b.emoji}
+          ${!b.earned ? '<div class="ab-lock-overlay">🔒</div>' : ''}
+        </div>
+        <div class="ab-name">${b.name}</div>
+        <div class="ab-rarity-label ${b.rarity}">${b.rarity}</div>
+        ${!b.earned && b.progress
+          ? `<div style="width:100%;margin-top:6px"><div style="height:3px;border-radius:2px;background:var(--surface-highest);overflow:hidden"><div style="height:100%;border-radius:2px;background:var(--primary);width:${Math.min((b.progress.val/b.progress.max)*100,100)}%"></div></div></div>`
+          : ''}
+      </div>`;
+  }).join('');
+}
+
+// ── DRAWER ────────────────────────────────────────────────────────────────
+function openDrawer(badgeId) {
+  const badge = (window._badges || []).find(b => b.id === badgeId);
+  if (!badge) return;
+
+  const iconBg = {
+    common:'background:var(--surface-container)',
+    uncommon:'background:rgba(0,62,199,0.1)',
+    rare:'background:rgba(124,58,237,0.12)',
+    epic:'background:rgba(245,158,11,0.12)',
+    legendary:'background:rgba(220,38,38,0.12)',
+  }[badge.rarity] || '';
+
+  let progressHTML = '';
+  if (!badge.earned && badge.progress) {
+    const p = badge.progress;
+    const pct = Math.min((p.val / p.max) * 100, 100);
+    progressHTML = `
+      <div class="ab-drawer-progress-wrap">
+        <div class="ab-drawer-progress-label">
+          <span>${p.label || 'Progress'}</span>
+          <span>${p.val} / ${p.max}</span>
+        </div>
+        <div class="ab-drawer-progress-bg">
+          <div class="ab-drawer-progress-fill" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('abDrawerBody').innerHTML = `
+    <div class="ab-drawer-icon-wrap">
+      <div class="ab-drawer-icon" style="${iconBg}">${badge.emoji}</div>
+      <div>
+        <div class="ab-drawer-title">${badge.name}</div>
+        <div class="ab-drawer-category">${badge.cat} Achievement</div>
+      </div>
+    </div>
+
+    ${badge.earned
+      ? `<div class="ab-drawer-status-earned">✓&nbsp; Achievement Unlocked</div>`
+      : `<div class="ab-drawer-status-locked">🔒&nbsp; Not Yet Earned</div>`}
+
+    <p class="ab-drawer-desc">${badge.desc}</p>
+
+    <div class="ab-drawer-criteria">
+      <div class="ab-drawer-criteria-label">How to earn this</div>
+      <div class="ab-drawer-criteria-text">${badge.criteria}</div>
+      ${progressHTML}
+    </div>
+
+    <div class="ab-rarity-badge ${badge.rarity}">
+      ● ${badge.rarity.charAt(0).toUpperCase() + badge.rarity.slice(1)}
+    </div>
+  `;
+
+  document.getElementById('abDrawer').classList.add('open');
+  document.getElementById('abDrawerOverlay').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('abDrawer').classList.remove('open');
+  document.getElementById('abDrawerOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDrawer();
+});
 
 // ── CALIBRATION HELPERS ──────────────────────────────────────────────────
 const CALIB_THRESHOLD = 15;
