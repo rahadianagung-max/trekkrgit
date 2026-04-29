@@ -547,13 +547,76 @@ async function getNationalLeaderboard(params) {
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const eRows = eRes.data.values || [];
-  const latestElo = {};
-  eRows.forEach((r) => { if (r[1]) latestElo[r[1].toLowerCase()] = parseInt(r[2]) || 1350; });
 
-  let leaderboard = Object.keys(latestElo).map((k) => {
-    const elo = latestElo[k];
+  // Build full stats per player from ELO_Log
+  // Each row: [sessionId, name, elo, delta, w, l, timestamp]
+  const playerStats = {};
+  eRows.forEach((r) => {
+    if (!r[1]) return;
+    const k = r[1].toLowerCase();
+    if (!playerStats[k]) {
+      playerStats[k] = {
+        elo: 1350,
+        totalW: 0,
+        totalL: 0,
+        history: [],   // [{delta, timestamp}] for streak calculation
+      };
+    }
+    const elo    = parseInt(r[2]) || 1350;
+    const delta  = parseInt(r[3]) || 0;
+    const w      = parseInt(r[4]) || 0;
+    const l      = parseInt(r[5]) || 0;
+    const ts     = r[6] || "";
+
+    // Always update to latest ELO (rows are in append order, last = current)
+    if (r[0] !== "INITIAL") {
+      playerStats[k].elo     = elo;
+      playerStats[k].totalW += w;
+      playerStats[k].totalL += l;
+      playerStats[k].history.push({ delta, timestamp: ts });
+    } else {
+      // INITIAL row: only set ELO if no other row yet
+      if (playerStats[k].history.length === 0) {
+        playerStats[k].elo = elo;
+      }
+    }
+  });
+
+  // Compute winRate + streak per player
+  Object.keys(playerStats).forEach((k) => {
+    const ps = playerStats[k];
+    const totalMatches = ps.totalW + ps.totalL;
+    ps.totalMatches = totalMatches;
+    ps.winRate = totalMatches > 0 ? Math.round((ps.totalW / totalMatches) * 100) : 0;
+
+    // Streak: walk history backwards
+    let streak = 0, streakType = "";
+    for (let i = ps.history.length - 1; i >= 0; i--) {
+      const d = ps.history[i].delta;
+      if (d > 0) {
+        if (streakType === "" || streakType === "W") { streak++; streakType = "W"; } else break;
+      } else if (d < 0) {
+        if (streakType === "" || streakType === "L") { streak++; streakType = "L"; } else break;
+      } else break; // delta 0 = draw / calibration row, stop streak
+    }
+    ps.streak = streak > 0 ? `${streak}${streakType}` : "—";
+    delete ps.history; // don't send raw history in leaderboard response
+  });
+
+  let leaderboard = Object.keys(playerStats).map((k) => {
+    const ps  = playerStats[k];
+    const elo = ps.elo;
     const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "" };
-    return { ...info, elo, level: getTierName(elo) };
+    return {
+      ...info,
+      elo,
+      level:        getTierName(elo),
+      totalMatches: ps.totalMatches,
+      totalW:       ps.totalW,
+      totalL:       ps.totalL,
+      winRate:      ps.winRate,
+      streak:       ps.streak,
+    };
   });
 
   leaderboard.sort((a, b) => b.elo - a.elo);
