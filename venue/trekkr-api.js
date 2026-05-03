@@ -106,9 +106,23 @@ const TrekkrAPI = (() => {
     },
     async getVenueWeeklyRanking(venue, params = {}) {
       const qs = new URLSearchParams(params).toString();
-      return request(
+      const response = await request(
         `venues/${encodeURIComponent(venue)}/ranking${qs ? `?${qs}` : ""}`
       );
+      
+      // Tambahkan logika sorting kustom di sini
+      if (response && response.ranking) {
+        response.ranking.sort((a, b) => {
+          // 1. Urutkan berdasarkan Win (w) terbesar ke terkecil
+          if (b.w !== a.w) {
+            return b.w - a.w; 
+          }
+          // 2. Jika Win sama, urutkan berdasarkan ELO terbesar ke terkecil
+          return (b.elo || 0) - (a.elo || 0);
+        });
+      }
+      
+      return response;
     },
 
     async saveSession(data) {
