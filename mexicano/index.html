@@ -319,6 +319,17 @@
       <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="score-hint">Race to 4 games</div>
     </div>
 
+        <div class="card">
+      <div class="card-title">Kategori Pemain</div>
+      <div class="segment">
+        <button class="seg-btn active" id="sg-auto" onclick="setSessionGender('auto')">🔀 Auto</button>
+        <button class="seg-btn" id="sg-M" onclick="setSessionGender('M')">♂ Men</button>
+        <button class="seg-btn" id="sg-F" onclick="setSessionGender('F')">♀ Women</button>
+        <button class="seg-btn" id="sg-X" onclick="setSessionGender('X')">⚥ Mixed</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3)" id="sg-hint">Auto: ditentukan dari gender pemain yang dipilih</div>
+    </div>
+
     <button class="btn btn-primary mt-8" onclick="goToPlayers()">Pilih Pemain →</button>
   </div>
 
@@ -327,25 +338,30 @@
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-players" class="fade-up hidden">
     <div style="padding:16px 20px 0;background:var(--bg)">
-      <div class="flex items-center justify-between mb-8">
-        <div>
-          <div class="screen-title" style="margin-bottom:2px">Pilih Pemain</div>
-          <div style="font-size:13px;color:var(--text2)">
-            <span id="player-count-label" style="font-weight:700;color:var(--blue)">0</span>
-            <span id="player-min-label"> / min 8 dipilih</span>
-          </div>
+      <div style="margin-bottom:10px">
+        <div class="screen-title" style="margin-bottom:2px">Pilih Pemain</div>
+        <div style="font-size:13px;color:var(--text2)">
+          <span id="player-count-label" style="font-weight:700;color:var(--blue)">0</span>
+          <span id="player-min-label"> / min 8 dipilih</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="showAddPlayerModal()">
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-          Pemain Baru
-        </button>
       </div>
       <div class="alert alert-red hidden" id="players-error"></div>
-      <div class="search-wrap">
+      <!-- Single search input — jadi satu-satunya entry point -->
+      <div class="search-wrap" style="position:relative">
         <span class="search-icon">
           <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
         </span>
-        <input class="input search-input" id="player-search" placeholder="Cari nama pemain..." oninput="renderPlayerList()" />
+        <input class="input search-input" id="player-search"
+          placeholder="Ketik nama pemain..."
+          oninput="renderPlayerList()"
+          autocomplete="off" autocorrect="off" spellcheck="false" />
+        <!-- Clear button -->
+        <button id="search-clear-btn" onclick="clearSearch()"
+          style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                 background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;
+                 line-height:1;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+          ×
+        </button>
       </div>
     </div>
 
@@ -404,6 +420,9 @@
         <div style="font-size:12px;color:var(--text3)" id="courts-progress">0/0 selesai</div>
       </div>
       <div class="alert alert-red hidden" id="match-error"></div>
+      <div class="submit-status" id="submit-status"></div>
+      <!-- Equal-match status bar — updates after every round -->
+      <div id="eq-status-bar" style="display:none"></div>
       <div id="court-cards"></div>
       <div id="bye-section" style="display:none">
         <div class="card" style="background:var(--gold-light);border-color:var(--gold)">
@@ -487,9 +506,49 @@
       </div>
     </div>
     <div class="alert alert-blue hidden" id="add-player-preview"></div>
+    <!-- Similar players warning — shown live as user types -->
+    <div class="similar-players-wrap" id="similar-players-wrap">
+      <div class="similar-players-title">⚠️ Nama serupa sudah ada di database</div>
+      <div id="similar-players-list"></div>
+      <div style="font-size:11px;color:var(--gold);margin-top:8px">
+        Klik nama di atas untuk memilih pemain yang ada, atau lanjutkan untuk daftarkan yang baru.
+      </div>
+    </div>
     <div class="grid-2">
       <button class="btn btn-ghost" onclick="closeAddPlayerModal()">Batal</button>
       <button class="btn btn-primary" id="btn-add-player" onclick="handleAddPlayer()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- FULL CYCLE WARNING MODAL -->
+<div class="modal-overlay hidden" id="modal-fullcycle" onclick="closeCycleModal()">
+  <div class="modal fullcycle-modal" onclick="event.stopPropagation()" style="padding:0;overflow:hidden">
+    <div class="fullcycle-header">
+      <div class="fullcycle-icon">🔄</div>
+      <div class="fullcycle-title">Full Cycle Tercapai!</div>
+      <div class="fullcycle-subtitle">Seluruh pemain sudah bermain bersama satu sama lain</div>
+    </div>
+    <div class="fullcycle-body">
+      <!-- Stats row -->
+      <div class="fullcycle-stat-grid" id="fc-stats"></div>
+      <!-- Time estimate box -->
+      <div class="fullcycle-time-box" id="fc-time-box" style="display:none">
+        <div class="fullcycle-time-val" id="fc-time-val">—</div>
+        <div class="fullcycle-time-lbl" id="fc-time-lbl">untuk mencapai equal match berikutnya</div>
+      </div>
+      <!-- Match count per player -->
+      <div class="fullcycle-match-table" id="fc-match-table"></div>
+      <!-- Actions -->
+      <div class="grid-2">
+        <button class="btn btn-danger" onclick="closeCycleModal(); showEndConfirm()">
+          🏁 Akhiri Match
+        </button>
+        <button class="btn btn-primary" onclick="closeCycleModal()">
+          ▶ Lanjutkan
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -521,10 +580,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const API_BASE = "https://trekkr.online/api";
 
+// Auth: sessionStorage = per-tab (safe for multi-venue on same browser)
+//       localStorage = fallback for single-tab users who reload the page
+const _tabToken = sessionStorage.getItem("mx_tab_token") || localStorage.getItem("mx_token") || "";
+const _tabVenue = sessionStorage.getItem("mx_tab_venue") || localStorage.getItem("mx_venue") || "";
+const _tabUser  = sessionStorage.getItem("mx_tab_user")  || localStorage.getItem("mx_user")  || "";
+
 const state = {
-  token: localStorage.getItem("mx_token") || "",
-  venue: localStorage.getItem("mx_venue") || "",
-  username: localStorage.getItem("mx_user") || "",
+  token: _tabToken,
+  venue: _tabVenue,
+  username: _tabUser,
   courts: 2,
   format: "individual",
   scoreFormat: "race",
@@ -536,6 +601,7 @@ const state = {
   rounds: [],
   currentRound: 0,
   newGender: "M",
+  sessionGender: "auto", // auto | M | F | X
   activeTab: "courts",
   matchId: "",
 };
@@ -637,11 +703,26 @@ async function handleLogin() {
   try {
     const data = await apiRequest("auth/login", { method:"POST", body: JSON.stringify({username, password}) });
     state.token = data.token; state.venue = data.venue; state.username = data.username;
+    // sessionStorage: isolates this tab from other tabs (multi-venue safe)
+    sessionStorage.setItem("mx_tab_token", data.token);
+    sessionStorage.setItem("mx_tab_venue", data.venue);
+    sessionStorage.setItem("mx_tab_user",  data.username);
+    // localStorage: persists across page reloads within this tab
     localStorage.setItem("mx_token", data.token);
     localStorage.setItem("mx_venue", data.venue);
-    localStorage.setItem("mx_user", data.username);
+    localStorage.setItem("mx_user",  data.username);
     document.getElementById("header-venue").textContent = data.venue ? `📍 ${data.venue}` : "Daily Match System";
-    showScreen("setup");
+
+    // Check if there's an active match to restore BEFORE going to setup
+    const savedAfterLogin = restoreLatestMatch();
+    if (savedAfterLogin && savedAfterLogin.screen === "match") {
+      // Show restore prompt — don't auto-restore without asking
+      showRestorePrompt(savedAfterLogin);
+    } else {
+      showScreen("setup");
+    }
+    // Retry any pending submissions from previous session
+    setTimeout(retryAllPending, 2000);
   } catch(e) {
     showError(errEl, e.message || "Login gagal. Periksa username dan password.");
   } finally {
@@ -651,6 +732,9 @@ async function handleLogin() {
 
 function handleLogout() {
   state.token = ""; state.venue = ""; state.username = "";
+  sessionStorage.removeItem("mx_tab_token");
+  sessionStorage.removeItem("mx_tab_venue");
+  sessionStorage.removeItem("mx_tab_user");
   localStorage.removeItem("mx_token"); localStorage.removeItem("mx_venue"); localStorage.removeItem("mx_user");
   clearMatchStorage();
   resetMatchState();
@@ -667,6 +751,42 @@ function changeCourts(d) {
   document.getElementById("courts-hint").textContent = `Minimal ${state.courts * 4} pemain diperlukan`;
   updatePlayerMinLabel();
   updateRoundRecommendation();
+}
+
+function setSessionGender(g) {
+  state.sessionGender = g;
+  ["auto","M","F","X"].forEach(x => {
+    const el = document.getElementById("sg-" + x);
+    if (el) el.classList.toggle("active", x === g);
+  });
+  const hints = {
+    auto: "Auto: ditentukan otomatis dari gender pemain yang dipilih",
+    M:    "Semua match dicatat sebagai kategori Men",
+    F:    "Semua match dicatat sebagai kategori Women",
+    X:    "Semua match dicatat sebagai Mixed (ganda campuran)",
+  };
+  const hintEl = document.getElementById("sg-hint");
+  if (hintEl) hintEl.textContent = hints[g] || "";
+}
+
+// Detect gender from actual players in a match
+// Returns "M", "F", or "X" (mixed)
+function detectMatchGender(team1, team2) {
+  // If sessionGender is manually set, use that
+  if (state.sessionGender !== "auto") return state.sessionGender;
+
+  // Auto-detect from player genders
+  const allPlayers = [...team1, ...team2];
+  const genders = allPlayers.map(p => {
+    const st = state.playerStats[p.name] || {};
+    const sel = state.selectedPlayers.find(s => s.name === p.name);
+    return st.gender || sel?.gender || "M";
+  });
+  const hasM = genders.some(g => g === "M");
+  const hasF = genders.some(g => g === "F");
+  if (hasM && hasF) return "X";
+  if (hasF && !hasM) return "F";
+  return "M";
 }
 
 function setFormat(f) {
@@ -741,13 +861,76 @@ async function loadPlayers() {
 }
 
 function renderPlayerList() {
-  const q = document.getElementById("player-search").value.toLowerCase();
+  const raw = document.getElementById("player-search").value;
+  const q = raw.toLowerCase().trim();
+
+  // Show/hide clear button
+  const clearBtn = document.getElementById("search-clear-btn");
+  if (clearBtn) clearBtn.style.display = q ? "flex" : "none";
+
   const filtered = state.trekkrPlayers.filter(p =>
     !q || p.name.toLowerCase().includes(q) || (p.displayName||"").toLowerCase().includes(q)
   );
   const listEl = document.getElementById("player-list");
-  if (!filtered.length) { listEl.innerHTML = `<div class="empty">Tidak ada pemain ditemukan</div>`; return; }
 
+  // ── EMPTY STATE ─────────────────────────────────────────────────────────
+  if (!filtered.length) {
+    if (!q) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:32px 0">
+          <div style="font-size:40px;margin-bottom:8px">👥</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text)">Belum ada pemain</div>
+          <div style="font-size:13px;color:var(--text3)">Ketik nama untuk mencari atau tambah pemain baru</div>
+        </div>`;
+      return;
+    }
+
+    // Query ada tapi tidak ketemu → tampilkan tombol tambah inline
+    const nameSuggestion = raw.trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    const words = raw.trim().split(/\s+/);
+    const hasLastName = words.length >= 2;
+    const escapedRaw = raw.trim().replace(/'/g, "\\'");
+
+    listEl.innerHTML = `
+      <div style="padding:8px 0 16px">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+             background:var(--bg);border-radius:10px;border:1.5px dashed var(--border);margin-bottom:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--border);
+               display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">?</div>
+          <div style="font-size:13px;color:var(--text3)">
+            Tidak ada pemain bernama <strong style="color:var(--text)">"${raw.trim()}"</strong>
+          </div>
+        </div>
+        <button onclick="openAddFromSearch('${escapedRaw}')"
+          style="width:100%;display:flex;align-items:center;gap:12px;
+                 padding:14px 16px;border-radius:12px;cursor:pointer;
+                 background:var(--blue-light);border:1.5px solid var(--blue);
+                 font-family:inherit;transition:all 0.15s;text-align:left">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--blue);
+               display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="white">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${nameSuggestion}"</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">
+              ${hasLastName ? `Daftar sebagai pemain baru · ELO awal 1350` : `Ketik nama lengkap (depan + belakang) untuk mendaftar`}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        ${!hasLastName ? `<div style="margin-top:8px;padding:10px 12px;background:var(--gold-light);
+             border:1px solid var(--gold);border-radius:8px;font-size:12px;color:var(--gold);font-weight:600">
+          💡 Tip: Ketik nama depan dan belakang. Contoh: "Budi Santoso"
+        </div>` : ""}
+      </div>`;
+    return;
+  }
+
+  // ── NORMAL LIST ─────────────────────────────────────────────────────────
   listEl.innerHTML = filtered.map(p => {
     const sel = state.selectedPlayers.some(s => s.name === p.name);
     return `
@@ -766,6 +949,20 @@ function renderPlayerList() {
         ${sel ? `<div class="chip-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>` : ""}
       </div>`;
   }).join("");
+}
+
+function clearSearch() {
+  const inp = document.getElementById("player-search");
+  inp.value = ""; inp.focus();
+  renderPlayerList();
+}
+
+function openAddFromSearch(rawName) {
+  const words = rawName.trim().replace(/\s+/g," ").split(" ");
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+  const firstName = cap(words[0] || "");
+  const lastName  = words.slice(1).map(cap).join(" ");
+  showAddPlayerModal(firstName, lastName);
 }
 
 function togglePlayer(name) {
@@ -859,13 +1056,17 @@ function updateStartBtn() {
 // ═══════════════════════════════════════════════════════════════════════════
 // ADD PLAYER MODAL
 // ═══════════════════════════════════════════════════════════════════════════
-function showAddPlayerModal() {
-  document.getElementById("new-first-name").value = "";
-  document.getElementById("new-last-name").value = "";
+function showAddPlayerModal(prefillFirst, prefillLast) {
+  const firstEl = document.getElementById("new-first-name");
+  const lastEl  = document.getElementById("new-last-name");
+  firstEl.value = prefillFirst || "";
+  lastEl.value  = prefillLast  || "";
   document.getElementById("add-player-error").classList.add("hidden");
   document.getElementById("add-player-preview").classList.add("hidden");
   setNewGender("M");
   document.getElementById("modal-add-player").classList.remove("hidden");
+  // Focus the appropriate field
+  setTimeout(() => { (prefillFirst ? lastEl : firstEl).focus(); }, 100);
 }
 function closeAddPlayerModal() { document.getElementById("modal-add-player").classList.add("hidden"); }
 
@@ -882,38 +1083,178 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ── LEVENSHTEIN SIMILARITY ───────────────────────────────────────────────
+function strSimilarity(a, b) {
+  a = a.toLowerCase().trim(); b = b.toLowerCase().trim();
+  if (a === b) return 1;
+  const m = a.length, n = b.length;
+  if (!m || !n) return 0;
+  const dp = Array.from({length:m+1}, (_,i) =>
+    Array.from({length:n+1}, (_,j) => i || j)
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return 1 - dp[m][n] / Math.max(m, n);
+}
+
+// Normalize: trim, collapse spaces, title-case
+function normalizeName(raw) {
+  return raw.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Find similar existing players (score > 0.7), sorted desc
+function findSimilarPlayers(fullName) {
+  if (!fullName || fullName.length < 3) return [];
+  return state.trekkrPlayers
+    .map(p => ({ p, score: strSimilarity(fullName, p.name) }))
+    .filter(x => x.score >= 0.7 && x.p.name.toLowerCase() !== fullName.toLowerCase())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
 function updateAddPlayerPreview() {
-  const fn = document.getElementById("new-first-name").value.trim();
-  const ln = document.getElementById("new-last-name").value.trim();
+  const fn  = document.getElementById("new-first-name").value.trim();
+  const ln  = document.getElementById("new-last-name").value.trim();
   const prev = document.getElementById("add-player-preview");
+  const simWrap = document.getElementById("similar-players-wrap");
+  const simList = document.getElementById("similar-players-list");
+
   if (fn && ln) {
-    prev.innerHTML = `Nama: <strong>${fn} ${ln}</strong> · ELO awal: 1350`;
+    const fullName = normalizeName(`${fn} ${ln}`);
+    prev.innerHTML = `Nama: <strong>${fullName}</strong> · ELO awal: 1350`;
     prev.classList.remove("hidden");
+
+    // Live similarity check
+    const similar = findSimilarPlayers(fullName);
+    if (similar.length) {
+      simList.innerHTML = similar.map(({p, score}) => `
+        <div class="similar-chip" onclick="pickExistingPlayer('${p.name.replace(/'/g,"\'")}')">
+          <div>
+            <div class="similar-chip-name">${p.name}</div>
+            <div class="similar-chip-meta">${getTierName(p.elo)} · ${p.elo} ELO</div>
+          </div>
+          <span class="similar-chip-score">${Math.round(score*100)}% mirip</span>
+          <span class="similar-chip-action">Pilih →</span>
+        </div>`).join("");
+      simWrap.style.display = "block";
+    } else {
+      simWrap.style.display = "none";
+    }
   } else {
     prev.classList.add("hidden");
+    simWrap.style.display = "none";
+  }
+}
+
+// User chose an existing player instead of creating new
+function pickExistingPlayer(name) {
+  // Close modal, select the player in the list, clear search
+  closeAddPlayerModal();
+  const searchEl = document.getElementById("player-search");
+  if (searchEl) { searchEl.value = ""; }
+  // Select them
+  const p = state.trekkrPlayers.find(x => x.name === name);
+  if (p && !state.selectedPlayers.find(s => s.name === name)) {
+    state.selectedPlayers.push({...p});
+    renderSelectedChips();
+    renderPlayerList();
+    renderPartnerSection();
+    updateStartBtn();
+    updateRoundRecommendation();
   }
 }
 
 async function handleAddPlayer() {
-  const fn = document.getElementById("new-first-name").value.trim();
-  const ln = document.getElementById("new-last-name").value.trim();
+  const fn    = document.getElementById("new-first-name").value.trim();
+  const ln    = document.getElementById("new-last-name").value.trim();
   const errEl = document.getElementById("add-player-error");
-  const btn = document.getElementById("btn-add-player");
+  const btn   = document.getElementById("btn-add-player");
+
   if (!fn || !ln) { showError(errEl, "First name dan last name wajib diisi"); return; }
-  const fullName = `${fn} ${ln}`;
-  if (state.trekkrPlayers.find(p => p.name.toLowerCase() === fullName.toLowerCase())) {
-    showError(errEl, "Pemain sudah ada di database"); return;
+
+  // Layer 3: Normalize — collapse whitespace + title-case
+  const fullName = normalizeName(`${fn} ${ln}`);
+
+  // Layer 1: Exact duplicate (case + whitespace insensitive)
+  const exactMatch = state.trekkrPlayers.find(
+    p => p.name.toLowerCase().replace(/\s+/g, " ") === fullName.toLowerCase()
+  );
+  if (exactMatch) {
+    showError(errEl, `"${exactMatch.name}" sudah ada di database. Pilih dari daftar.`);
+    return;
   }
+
+  // Layer 2: High-similarity warning (≥85%) — require second click to confirm
+  const similar = findSimilarPlayers(fullName);
+  const tooClose = similar.find(x => x.score >= 0.85);
+  if (tooClose && !btn._confirming) {
+    btn._confirming = true;
+    btn.innerHTML = "⚠️ Tetap Tambah?";
+    btn.style.background = "var(--gold)";
+    btn.style.color = "white";
+    showError(errEl,
+      `Nama ini sangat mirip dengan "${tooClose.p.name}" yang sudah ada ` +
+      `(${Math.round(tooClose.score * 100)}% mirip). ` +
+      `Klik "Tetap Tambah?" untuk lanjutkan, atau pilih yang sudah ada di atas.`
+    );
+    // Auto-reset confirm state after 5 seconds
+    setTimeout(() => {
+      if (btn._confirming) {
+        btn._confirming = false;
+        btn.innerHTML = "Tambah";
+        btn.style.background = "";
+        btn.style.color = "";
+      }
+    }, 5000);
+    return;
+  }
+
+  // Reset confirm state
+  btn._confirming = false;
+  btn.innerHTML = "Tambah";
+  btn.style.background = "";
+  btn.style.color = "";
   errEl.classList.add("hidden");
-  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  btn.disabled = true;
+
   try {
-    await apiRequest("players", { method:"POST", body: JSON.stringify({ name: fullName, gender: state.newGender }) });
+    await apiRequest("players", {
+      method: "POST",
+      body: JSON.stringify({ name: fullName, gender: state.newGender })
+    });
     await loadPlayers();
+
+    // Auto-select the newly added player immediately
+    const newP = state.trekkrPlayers.find(p => p.name === fullName);
+    if (newP && !state.selectedPlayers.find(s => s.name === fullName)) {
+      state.selectedPlayers.push({ ...newP });
+    }
+
+    const searchEl = document.getElementById("player-search");
+    if (searchEl) searchEl.value = "";
     closeAddPlayerModal();
+    renderSelectedChips();
+    renderPlayerList();
+    renderPartnerSection();
+    updateStartBtn();
+    updateRoundRecommendation();
   } catch(e) {
     showError(errEl, "Gagal tambah: " + e.message);
   } finally {
-    btn.innerHTML = "Tambah"; btn.disabled = false;
+    btn.innerHTML = "Tambah";
+    btn.disabled = false;
+    btn.style.background = "";
+    btn.style.color = "";
+    btn._confirming = false;
   }
 }
 
@@ -1155,8 +1496,9 @@ function startMatch() {
 
   // Generate round 1
   const { matches, byePlayers } = generateRound(true);
-  state.rounds = [{ roundNum:1, matches, byePlayers, submitted:false }];
+  state.rounds = [{ roundNum:1, matches, byePlayers, submitted:false, startedAt: Date.now() }];
   state.currentRound = 0;
+  state._fullCycleNotified = false; // reset for new match
 
   saveMatchState("match");
   showScreen("match");
@@ -1180,10 +1522,21 @@ function switchTab(tab) {
 function renderMatchScreen() {
   const round = state.rounds[state.currentRound];
   if (!round) return;
+  // Refresh eq status bar whenever match screen re-renders
+  setTimeout(renderEqStatusBar, 0);
 
   // Header badge
   document.getElementById("header-round-badge").textContent = `Ronde ${round.roundNum}`;
   document.getElementById("round-pill").textContent = `Ronde ${round.roundNum}`;
+  // Update gender label
+  const _gLabel = document.getElementById("gender-label");
+  if (_gLabel) {
+    const _gMap = { M:"♂ Men", F:"♀ Women", X:"⚥ Mixed" };
+    const _gText = state.sessionGender === "auto" ? "🔀 Auto" : (_gMap[state.sessionGender] || state.sessionGender);
+    const _gCol = state.sessionGender === "F" ? "background:#FDF2F8;color:#9D174D" : state.sessionGender === "X" ? "background:#F0FDF4;color:var(--green)" : "background:var(--blue-light);color:var(--blue)";
+    _gLabel.style.cssText = _gCol + ";font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px";
+    _gLabel.textContent = _gText;
+  }
   document.getElementById("lb-round-badge").textContent = `Ronde ${round.roundNum}`;
   document.getElementById("score-format-label").textContent =
     state.scoreFormat === "race" ? `Race to ${state.scoreTarget}` : `Best of ${state.scoreTarget}`;
@@ -1267,6 +1620,11 @@ function updateScore(matchIdx, team, val) {
   if (team === 1) round.matches[matchIdx].score1 = score;
   else round.matches[matchIdx].score2 = score;
 
+  // Auto-save state saat skor diinput (debounced 800ms)
+  // Ini memastikan skor yang sedang diinput tersimpan walau tab tertutup tiba-tiba
+  clearTimeout(window._autoSaveTimer);
+  window._autoSaveTimer = setTimeout(() => saveMatchState("match"), 800);
+
   // Update hanya styling input (winner/loser) tanpa destroy DOM
   const e1 = document.querySelector(`#court-${matchIdx}-s1`);
   const e2 = document.querySelector(`#court-${matchIdx}-s2`);
@@ -1320,6 +1678,9 @@ async function submitRound() {
   btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
 
   try {
+    // Track round end time for avg duration calculation
+    state.rounds[state.currentRound].submittedAt = Date.now();
+
     // Simpan ELO sebelum ronde ini untuk hitung delta per-ronde
     const eloBeforeRound = {};
     round.matches.flatMap(m => [...m.team1, ...m.team2]).forEach(p => {
@@ -1360,102 +1721,78 @@ async function submitRound() {
 
     state.rounds[state.currentRound].submitted = true;
 
-    // ── SUBMIT KE TREKKR ───────────────────────────────────────────────────
+    // ── SUBMIT KE TREKKR ─────────────────────────────────────────────────────
     if (state.venue && state.token) {
       const apiMatches = round.matches.map(m => ({
-        p1t1: m.team1[0].name.trim(),
-        p2t1: m.team1[1].name.trim(),
-        p1t2: m.team2[0].name.trim(),
-        p2t2: m.team2[1].name.trim(),
-        scoreT1: Number(m.score1),
-        scoreT2: Number(m.score2),
-        gender: "M",
+        p1t1: m.team1[0].name.trim(), p2t1: m.team1[1].name.trim(),
+        p1t2: m.team2[0].name.trim(), p2t2: m.team2[1].name.trim(),
+        scoreT1: Number(m.score1),    scoreT2: Number(m.score2),
+        // Auto-detect gender from player composition (M / F / X for mixed)
+        gender: detectMatchGender(m.team1, m.team2),
         sourceUrl: "Trekkr Mexicano Daily Match",
       }));
 
+      // Hitung w/l per ronde (bukan total kumulatif)
+      const wlThisRound = {};
+      round.matches.forEach(m => {
+        const t1Win = m.score1 > m.score2;
+        [...m.team1, ...m.team2].forEach((p, i) => {
+          if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
+          const win = i < 2 ? t1Win : !t1Win;
+          if (win) wlThisRound[p.name].w++; else wlThisRound[p.name].l++;
+        });
+      });
+
+      const roundPlayers = [...new Set(
+        round.matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name))
+      )];
+
+      const eloResults = roundPlayers.map(name => {
+        const st      = state.playerStats[name] || {};
+        const eloBefore = eloBeforeRound[name] || 1350;
+        const eloAfter  = st.elo || eloBefore;
+        const wl        = wlThisRound[name] || { w: 0, l: 0 };
+        return { player: name.trim(), new_elo: eloAfter,
+                 elo_change: eloAfter - eloBefore, w: wl.w, l: wl.l };
+      });
+
+      const sessionPayload = {
+        sessionName: `Mexicano ${state.venue} – Ronde ${round.roundNum}`,
+        format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
+        courts: state.courts, venue: state.venue,
+        players: roundPlayers, rounds: [],
+        elo_results: eloResults,
+      };
+
       const allNamesValid = apiMatches.every(m => m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2);
       if (!allNamesValid) {
-        showApiWarning("Nama pemain tidak lengkap. Cek data pemain.");
+        setSubmitStatus("failed", "⚠️ Nama pemain tidak lengkap");
       } else {
-        try {
-          // Step 1: Simpan ke Venue tab
-          await apiRequest(
-            `venues/${encodeURIComponent(state.venue)}/matches`,
-            { method:"POST", body: JSON.stringify({ matches: apiMatches }) }
-          );
+        // Simpan ke pending queue dulu — jaminan tidak hilang walau network mati
+        // pendingKey includes venue + roundNum + timestamp — unique per tab/venue/round
+        const pendingKey = `mx_pending_${state.venue.replace(/\s+/g,'_')}_r${round.roundNum}_${Date.now()}`;
+        localStorage.setItem(pendingKey, JSON.stringify({ apiMatches, sessionPayload, roundNum: round.roundNum }));
 
-          // Tunggu 1 detik agar tidak race condition dengan append berikutnya
-          await new Promise(r => setTimeout(r, 1000));
-
-          // Step 2: Kirim ELO update ke ELO_Log via sessions
-          // FIX: kirim delta PER RONDE (bukan kumulatif) dan w/l PER RONDE
-          const roundPlayers = [...new Set(
-            round.matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name))
-          )];
-
-          // Hitung w/l per ronde (bukan total kumulatif)
-          const wlThisRound = {};
-          round.matches.forEach(m => {
-            const t1Win = m.score1 > m.score2;
-            [...m.team1].forEach(p => {
-              if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
-              if (t1Win) wlThisRound[p.name].w++;
-              else wlThisRound[p.name].l++;
-            });
-            [...m.team2].forEach(p => {
-              if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
-              if (!t1Win) wlThisRound[p.name].w++;
-              else wlThisRound[p.name].l++;
-            });
-          });
-
-          const eloResults = roundPlayers.map(name => {
-            const st = state.playerStats[name] || {};
-            const eloBefore = eloBeforeRound[name] || 1350;
-            const eloAfter = st.elo || eloBefore;
-            const wl = wlThisRound[name] || { w: 0, l: 0 };
-            // CRITICAL: field names must match what deployed backend reads
-            // Backend live reads: p.player, p.new_elo, p.elo_change, p.w, p.l
-            // (same as working admin manual entry - NOT p.name / p.elo / p.delta)
-            return {
-              player:     name.trim(),
-              new_elo:    eloAfter,
-              elo_change: eloAfter - eloBefore,
-              w:          wl.w,
-              l:          wl.l,
-            };
-          });
-
-          await apiRequest("sessions", {
-            method: "POST",
-            body: JSON.stringify({
-              sessionName: `Mexicano ${state.venue} – Ronde ${round.roundNum}`,
-              format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
-              courts: state.courts,
-              venue: state.venue,
-              players: roundPlayers,
-              rounds: [],
-              elo_results: eloResults,
-            })
-          });
-
-          showApiWarning(`✓ Ronde ${round.roundNum} tersimpan ke Trekkr`);
-        } catch (apiErr) {
-          console.error("API submit error:", apiErr);
-          showApiWarning("Skor lokal tersimpan. Gagal kirim ke Trekkr: " + apiErr.message);
-        }
+        setSubmitStatus("sending", `Step 1/2: Menyimpan match data... (Ronde ${round.roundNum})`);
+        await submitWithRetry(pendingKey, apiMatches, sessionPayload, round.roundNum);
       }
     }
 
     // Generate next round
     const { matches, byePlayers } = generateRound(false);
-    state.rounds.push({ roundNum: state.rounds.length + 1, matches, byePlayers, submitted: false });
+    state.rounds.push({
+      roundNum: state.rounds.length + 1,
+      matches, byePlayers, submitted: false,
+      startedAt: Date.now(),  // track start time for avg duration
+    });
     state.currentRound++;
 
     saveMatchState("match");
     renderMatchScreen();
     switchTab("courts");
     window.scrollTo(0, 0);
+    // Check if full cycle reached and update status bar
+    checkAndNotifyEqualMatch();
   } catch(e) {
     showError(errEl, "Error: " + e.message);
   } finally {
@@ -1663,7 +2000,17 @@ function saveMatchState(screen) {
     scoreTarget: state.scoreTarget,
     partners: state.partners,
     matchId: state.matchId,
+    sessionGender: state.sessionGender,
+    token: state.token,
+    venue: state.venue,
+    username: state.username,
   };
+  // Keep auth in sessionStorage so this tab survives reload without affecting other tabs
+  if (state.token) {
+    sessionStorage.setItem("mx_tab_token", state.token);
+    sessionStorage.setItem("mx_tab_venue", state.venue);
+    sessionStorage.setItem("mx_tab_user",  state.username);
+  }
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn("Save state warn:", e); }
 }
 
@@ -1768,6 +2115,153 @@ function updateRoundRecommendation() {
   detailEl.innerHTML = rec.detail;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROBUST SUBMISSION SYSTEM
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── STATUS UI ────────────────────────────────────────────────────────────
+function setSubmitStatus(type, msg) {
+  const el = document.getElementById("submit-status");
+  if (!el) return;
+  el.className = "submit-status " + type;
+  el.innerHTML = msg;
+}
+
+// ── RETRY WITH EXPONENTIAL BACKOFF ───────────────────────────────────────
+async function apiWithRetry(fn, label, maxAttempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await fn();
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const isRateLimit = err.message?.includes("429") || err.message?.includes("quota");
+      const isTimeout   = err.message?.includes("504") || err.message?.includes("timeout");
+      const isNetwork   = err.message?.includes("fetch") || err.message?.includes("network");
+      const shouldRetry = isRateLimit || isTimeout || isNetwork;
+
+      console.warn(`[${label}] Attempt ${attempt}/${maxAttempts} failed:`, err.message);
+      if (!shouldRetry || attempt === maxAttempts) break;
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      setSubmitStatus("sending",
+        `${label}: Percobaan ${attempt + 1}/${maxAttempts} dalam ${delay/1000} detik...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
+// ── MAIN SUBMIT FUNCTION WITH SEPARATE ERROR HANDLING ────────────────────
+async function submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum) {
+  let venueOk = false, sessionOk = false;
+
+  // STEP 1: Venue match (independent try — failure doesn't block ELO update)
+  try {
+    setSubmitStatus("sending", `Step 1/2: Menyimpan ke venue sheet...`);
+    await apiWithRetry(
+      () => apiRequest(
+        `venues/${encodeURIComponent(state.venue)}/matches`,
+        { method: "POST", body: JSON.stringify({ matches: apiMatches }) }
+      ),
+      "Venue Match", 3
+    );
+    venueOk = true;
+    setSubmitStatus("sending", "Step 1/2: ✓ Venue sheet tersimpan");
+  } catch (venueErr) {
+    console.error("[Venue Match] Final failure:", venueErr.message);
+    // Do NOT return — still attempt session (ELO update is more critical)
+  }
+
+  // Short pause between the two Sheets API calls
+  await new Promise(r => setTimeout(r, 600));
+
+  // STEP 2: Session / ELO_Log (independent try)
+  try {
+    setSubmitStatus("sending", "Step 2/2: Menyimpan ELO...");
+    await apiWithRetry(
+      () => apiRequest("sessions", {
+        method: "POST",
+        body: JSON.stringify(sessionPayload),
+      }),
+      "ELO Session", 3
+    );
+    sessionOk = true;
+  } catch (sessionErr) {
+    console.error("[ELO Session] Final failure:", sessionErr.message);
+  }
+
+  // ── RESULT FEEDBACK ──────────────────────────────────────────────────
+  if (venueOk && sessionOk) {
+    // Both succeeded — remove from pending queue
+    localStorage.removeItem(pendingKey);
+    setSubmitStatus("ok", `✓ Ronde ${roundNum} tersimpan ke Trekkr`);
+    setTimeout(() => setSubmitStatus("", ""), 4000);
+
+  } else if (!venueOk && !sessionOk) {
+    // Both failed — keep in queue, show retry button
+    setSubmitStatus("queued",
+      `⚠️ Ronde ${roundNum} gagal terkirim (network/timeout). Data tersimpan lokal.
+       <br><button class="retry-badge" onclick="retryPending('${pendingKey}')">
+         🔄 Coba Kirim Ulang
+       </button>`
+    );
+
+  } else {
+    // Partial success
+    const parts = [venueOk ? "✓ Venue" : "✗ Venue", sessionOk ? "✓ ELO" : "✗ ELO"];
+    if (!venueOk || !sessionOk) {
+      setSubmitStatus("queued",
+        `⚠️ Sebagian tersimpan: ${parts.join(", ")}
+         <br><button class="retry-badge" onclick="retryPending('${pendingKey}')">
+           🔄 Coba Kirim Ulang
+         </button>`
+      );
+    }
+    // Even partial — if ELO ok, remove from queue
+    if (sessionOk) localStorage.removeItem(pendingKey);
+  }
+}
+
+// ── RETRY PENDING SUBMISSION ─────────────────────────────────────────────
+async function retryPending(pendingKey) {
+  const raw = localStorage.getItem(pendingKey);
+  if (!raw) { setSubmitStatus("ok", "✓ Sudah tersimpan"); return; }
+  try {
+    const { apiMatches, sessionPayload, roundNum } = JSON.parse(raw);
+    setSubmitStatus("sending", `🔄 Mencoba ulang Ronde ${roundNum}...`);
+    await submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum);
+  } catch(e) {
+    setSubmitStatus("failed", "Gagal retry: " + e.message);
+  }
+}
+
+// ── AUTO-RETRY PENDING ON APP LOAD ──────────────────────────────────────
+function retryAllPending() {
+  if (!state.venue) return; // Don't retry if not logged in
+  const venueSlug = state.venue.replace(/\s+/g, '_');
+  const pendingKeys = Object.keys(localStorage)
+    .filter(k => k.startsWith(`mx_pending_${venueSlug}_`));
+  if (!pendingKeys.length) return;
+  const count = pendingKeys.length;
+  console.log(`[Queue] Found ${count} pending submission(s) — retrying...`);
+  showApiWarning(`⚠️ ${count} ronde belum tersimpan. Mengirim ulang...`);
+  // Stagger retries to avoid hitting rate limit
+  pendingKeys.forEach((key, i) => {
+    setTimeout(async () => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      try {
+        const { apiMatches, sessionPayload, roundNum } = JSON.parse(raw);
+        await submitWithRetry(key, apiMatches, sessionPayload, roundNum);
+      } catch(e) { console.warn("Auto-retry failed:", e.message); }
+    }, i * 3000); // 3 second gap between each retry
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // TOAST / API WARNING
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1797,7 +2291,301 @@ function showApiWarning(msg) {
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATCH RESTORE PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
+let _savedToRestore = null;
+
+function showRestorePrompt(saved) {
+  _savedToRestore = saved;
+  const doneRounds  = (saved.rounds||[]).filter(r=>r.submitted).length;
+  const players     = saved.selectedPlayers?.length || 0;
+  const courts      = saved.courts || 1;
+  const fmt         = saved.format === "fixed" ? "Fixed Partner" : "Individual";
+  const rn          = (saved.currentRound || 0) + 1;
+  document.getElementById("restore-info").innerHTML =
+    "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>PEMAIN</div><div style='font-size:18px;font-weight:800'>" + players + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>COURT</div><div style='font-size:18px;font-weight:800'>" + courts + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>FORMAT</div><div style='font-size:13px;font-weight:700'>" + fmt + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>POSISI</div><div style='font-size:13px;font-weight:700'>Ronde " + rn + " (" + doneRounds + " selesai)</div></div>" +
+    "</div>";
+  document.getElementById("modal-restore").classList.remove("hidden");
+}
+
+function doRestore() {
+  const saved = _savedToRestore; if (!saved) return;
+  document.getElementById("modal-restore").classList.add("hidden");
+  state.matchId        = saved.matchId;
+  state.rounds         = saved.rounds;
+  state.currentRound   = saved.currentRound;
+  state.playerStats    = saved.playerStats;
+  state.selectedPlayers= saved.selectedPlayers;
+  state.courts         = saved.courts;
+  state.format         = saved.format;
+  state.scoreFormat    = saved.scoreFormat;
+  state.scoreTarget    = saved.scoreTarget;
+  state.partners       = saved.partners || {};
+  state.sessionGender  = saved.sessionGender || "auto";
+  if (!state.token && saved.token) {
+    state.token = saved.token; state.venue = saved.venue; state.username = saved.username;
+    localStorage.setItem("mx_token", saved.token);
+    localStorage.setItem("mx_venue", saved.venue);
+    localStorage.setItem("mx_user",  saved.username);
+  }
+  showScreen("match"); renderMatchScreen(); switchTab("courts");
+  _savedToRestore = null;
+}
+
+function dismissRestore() {
+  document.getElementById("modal-restore").classList.add("hidden");
+  if (_savedToRestore) {
+    localStorage.removeItem("mx_match_" + (_savedToRestore.venue||"novenvenue") + "_" + _savedToRestore.matchId);
+  }
+  _savedToRestore = null;
+  showScreen("setup");
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EQUAL MATCH TRACKING
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Track round start time — called when round is generated
+function markRoundStart() {
+  const round = state.rounds[state.currentRound];
+  if (round && !round.startedAt) round.startedAt = Date.now();
+}
+
+// Track round end time — called just before submitRound processes
+function markRoundEnd() {
+  const round = state.rounds[state.currentRound];
+  if (round) round.submittedAt = Date.now();
+}
+
+// Average round duration in minutes from completed rounds
+function getAvgRoundMinutes() {
+  const durations = state.rounds
+    .filter(r => r.submitted && r.startedAt && r.submittedAt)
+    .map(r => (r.submittedAt - r.startedAt) / 60000);
+  if (!durations.length) return null;
+  return durations.reduce((s, v) => s + v, 0) / durations.length;
+}
+
+// Count how many times each pair of players has shared a court
+function getMeetMatrix() {
+  const players = Object.keys(state.playerStats);
+  const meet = {};
+  players.forEach(a => players.forEach(b => {
+    if (a < b) meet[`${a}|${b}`] = 0;
+  }));
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    r.matches.forEach(m => {
+      const four = [...m.team1, ...m.team2].map(p => p.name);
+      for (let i = 0; i < four.length; i++) {
+        for (let j = i + 1; j < four.length; j++) {
+          const k = four[i] < four[j] ? `${four[i]}|${four[j]}` : `${four[j]}|${four[i]}`;
+          if (k in meet) meet[k]++;
+        }
+      }
+    });
+  });
+  return meet;
+}
+
+// Match count per player (only counting played matches, not byes)
+function getMatchCounts() {
+  const counts = {};
+  Object.keys(state.playerStats).forEach(p => { counts[p] = 0; });
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    r.matches.forEach(m => {
+      [...m.team1, ...m.team2].forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+    });
+  });
+  return counts;
+}
+
+// Full status object
+function getEqualMatchStatus() {
+  const n = state.selectedPlayers.length;
+  if (n < 4 || state.rounds.filter(r => r.submitted).length === 0) return null;
+
+  const meet   = getMeetMatrix();
+  const counts = getMatchCounts();
+  const totalPairs = Object.keys(meet).length;
+  const metPairs   = Object.values(meet).filter(v => v > 0).length;
+  const notMet     = Object.entries(meet).filter(([_, v]) => v === 0);
+
+  const matchArr   = Object.values(counts);
+  const minMatches = Math.min(...matchArr);
+  const maxMatches = Math.max(...matchArr);
+  const avgMatches = matchArr.reduce((s, v) => s + v, 0) / matchArr.length;
+
+  // "Equal" = all players have played the same number ±1 (bye tolerance)
+  const isEqual   = (maxMatches - minMatches) <= 1;
+  // "Full cycle" = every pair has shared a court at least once
+  const isFullCycle = notMet.length === 0;
+
+  // Rounds until next equal point
+  const active = state.courts * 4;
+  const byePerRound = n - active;
+  let rondesUntilEqual = 0;
+  if (!isEqual && byePerRound > 0) {
+    const cycleLen = Math.ceil(n / active);
+    rondesUntilEqual = (maxMatches - minMatches) * cycleLen;
+  }
+
+  const avgDur = getAvgRoundMinutes();
+  const minsUntilEqual = (avgDur && rondesUntilEqual > 0)
+    ? Math.round(avgDur * rondesUntilEqual)
+    : null;
+
+  return {
+    n, totalPairs, metPairs, notMet,
+    minMatches, maxMatches, avgMatches,
+    isEqual, isFullCycle,
+    rondesUntilEqual, minsUntilEqual,
+    avgDur, counts,
+    pct: Math.round(metPairs / totalPairs * 100),
+  };
+}
+
+// ── RENDER STATUS BAR (shown on courts tab after every round) ─────────────
+function renderEqStatusBar() {
+  const bar = document.getElementById("eq-status-bar");
+  if (!bar) return;
+  const st = getEqualMatchStatus();
+  if (!st) { bar.style.display = "none"; return; }
+
+  bar.style.display = "block";
+
+  if (st.isFullCycle && st.isEqual) {
+    bar.innerHTML = `<div class="eq-bar ok">
+      <span class="eq-bar-icon">✅</span>
+      <div class="eq-bar-text">
+        <div>Full cycle tercapai — semua pemain sudah bertemu!</div>
+        <div class="eq-bar-detail">${st.avgMatches.toFixed(1)} match/pemain rata-rata · ${st.metPairs}/${st.totalPairs} pasang bertemu</div>
+      </div>
+    </div>`;
+  } else if (st.isFullCycle && !st.isEqual) {
+    bar.innerHTML = `<div class="eq-bar warn">
+      <span class="eq-bar-icon">⚠️</span>
+      <div class="eq-bar-text">
+        <div>Semua sudah bertemu, tapi belum merata</div>
+        <div class="eq-bar-detail">Min ${st.minMatches} – Max ${st.maxMatches} match · ${st.rondesUntilEqual} ronde lagi untuk equal${st.minsUntilEqual ? ` (~${st.minsUntilEqual} menit)` : ""}</div>
+      </div>
+    </div>`;
+  } else {
+    const pct = st.pct;
+    const fillColor = pct >= 75 ? "var(--green)" : pct >= 40 ? "var(--blue)" : "var(--gold)";
+    bar.innerHTML = `<div class="eq-bar info">
+      <span class="eq-bar-icon">🎾</span>
+      <div class="eq-bar-text" style="width:100%">
+        <div>${st.metPairs} dari ${st.totalPairs} pasang sudah bertemu (${pct}%)</div>
+        <div class="eq-progress-wrap">
+          <div class="eq-progress-label">
+            <span>Progress</span><span>${st.metPairs}/${st.totalPairs}</span>
+          </div>
+          <div class="eq-progress-bg">
+            <div class="eq-progress-fill" style="width:${pct}%;background:${fillColor}"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+// ── FULL CYCLE MODAL ──────────────────────────────────────────────────────
+function showCycleModal(st) {
+  const submittedRounds = state.rounds.filter(r => r.submitted).length;
+  const avgDurStr = st.avgDur ? `${st.avgDur.toFixed(1)} mnt/ronde` : "—";
+
+  // Stats row
+  document.getElementById("fc-stats").innerHTML = `
+    <div class="fullcycle-stat">
+      <div class="fullcycle-stat-val">${submittedRounds}</div>
+      <div class="fullcycle-stat-lbl">Ronde</div>
+    </div>
+    <div class="fullcycle-stat">
+      <div class="fullcycle-stat-val">${st.avgMatches.toFixed(1)}</div>
+      <div class="fullcycle-stat-lbl">Match/Pemain</div>
+    </div>
+    <div class="fullcycle-stat">
+      <div class="fullcycle-stat-val">${avgDurStr}</div>
+      <div class="fullcycle-stat-lbl">Rata-rata</div>
+    </div>`;
+
+  // Time estimate for next equal point
+  const timeBox = document.getElementById("fc-time-box");
+  if (!st.isEqual && st.rondesUntilEqual > 0) {
+    timeBox.style.display = "block";
+    document.getElementById("fc-time-val").textContent =
+      st.minsUntilEqual ? `~${st.minsUntilEqual} menit` : `${st.rondesUntilEqual} ronde`;
+    document.getElementById("fc-time-lbl").textContent =
+      `${st.rondesUntilEqual} ronde lagi untuk equal match (semua pemain main sama banyak)` +
+      (st.minsUntilEqual ? ` · estimasi ${st.minsUntilEqual} menit` : "");
+  } else if (st.isEqual) {
+    timeBox.style.display = "block";
+    document.getElementById("fc-time-val").textContent = "✅ Sudah Equal";
+    document.getElementById("fc-time-lbl").textContent =
+      `Semua pemain sudah main ${st.minMatches}–${st.maxMatches} match. Ini waktu yang tepat untuk mengakhiri!`;
+    document.querySelector("#fc-time-box").style.background =
+      "linear-gradient(135deg, rgba(22,163,74,0.1), rgba(22,163,74,0.05))";
+    document.querySelector("#fc-time-box").style.borderColor = "rgba(22,163,74,0.3)";
+    document.getElementById("fc-time-val").style.color = "var(--green)";
+  } else {
+    timeBox.style.display = "none";
+  }
+
+  // Match count per player table
+  const countsSorted = Object.entries(st.counts).sort((a,b) => b[1]-a[1]);
+  const min = st.minMatches;
+  document.getElementById("fc-match-table").innerHTML =
+    `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Match per Pemain</div>` +
+    countsSorted.map(([name, c]) => `
+      <div class="fullcycle-match-row">
+        <div style="font-size:12px;font-weight:600;flex:1">${name.split(" ")[0]}</div>
+        <div style="display:flex;gap:2px">
+          ${Array.from({length:c}).map((_,i) =>
+            `<div style="width:10px;height:10px;border-radius:2px;background:${i<min?"var(--green)":"var(--blue)"}"></div>`
+          ).join("")}
+          ${c < st.maxMatches ? Array.from({length:st.maxMatches-c}).map(() =>
+            `<div style="width:10px;height:10px;border-radius:2px;background:var(--border)"></div>`
+          ).join("") : ""}
+        </div>
+        <div style="font-size:12px;font-weight:700;color:${c===st.minMatches?"var(--red)":c===st.maxMatches?"var(--green)":"var(--text)"};min-width:20px;text-align:right">${c}</div>
+      </div>`).join("");
+
+  document.getElementById("modal-fullcycle").classList.remove("hidden");
+}
+
+function closeCycleModal() {
+  document.getElementById("modal-fullcycle").classList.add("hidden");
+}
+
+// ── CHECK AND SHOW (called after each round is generated) ─────────────────
+function checkAndNotifyEqualMatch() {
+  renderEqStatusBar();
+  const st = getEqualMatchStatus();
+  if (!st) return;
+
+  // Show modal when full cycle is FIRST reached
+  // Use flag on state to avoid showing repeatedly
+  if (st.isFullCycle && !state._fullCycleNotified) {
+    state._fullCycleNotified = true;
+    // Small delay so the UI settles first
+    setTimeout(() => showCycleModal(st), 600);
+  }
+}
+
 (function init() {
+  // Re-read from sessionStorage in case another tab overwrote localStorage
+  const tabToken = sessionStorage.getItem("mx_tab_token");
+  const tabVenue = sessionStorage.getItem("mx_tab_venue");
+  if (tabToken) { state.token = tabToken; }
+  if (tabVenue) { state.venue = tabVenue; state.username = sessionStorage.getItem("mx_tab_user") || ""; }
+
   if (state.token) {
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("header-venue").textContent = state.venue ? `📍 ${state.venue}` : "Daily Match System";
@@ -1818,6 +2606,8 @@ function showApiWarning(msg) {
       showScreen("match");
       renderMatchScreen();
       switchTab("courts");
+      // Retry any pending from before reload
+      setTimeout(retryAllPending, 3000);
     } else {
       showScreen("setup");
     }
@@ -1826,5 +2616,27 @@ function showApiWarning(msg) {
   }
 })();
 </script>
+
+<!-- RESTORE MATCH MODAL -->
+<div id="modal-restore" class="hidden">
+  <div class="modal-overlay" onclick="dismissRestore()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-title" style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">&#x1F504;</span>&nbsp;Lanjutkan Match?
+      </div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        Ditemukan sesi match yang belum selesai dari sebelumnya.
+      </div>
+      <div class="card" style="background:var(--blue-light);border-color:var(--blue-mid);margin-bottom:16px">
+        <div id="restore-info" style="font-size:13px;color:var(--blue)"></div>
+      </div>
+      <div class="grid-2">
+        <button class="btn btn-ghost" onclick="dismissRestore()">Mulai Baru</button>
+        <button class="btn btn-primary" onclick="doRestore()">&#9654; Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
