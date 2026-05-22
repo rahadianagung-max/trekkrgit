@@ -459,25 +459,70 @@
   <!-- SCREEN: DONE                                        -->
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-done" class="screen fade-up hidden pb-safe">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="font-size:40px;margin-bottom:8px">🎉</div>
-      <div class="screen-title">Match Selesai!</div>
-      <div class="screen-sub" id="done-sub">0 ronde · 0 pemain</div>
+    <!-- SHAREABLE CARD — this element gets captured as JPG -->
+    <div id="share-card" style="
+      background: linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%);
+      border-radius: 20px; overflow: hidden; margin-bottom: 16px;
+      font-family: 'Space Grotesk','DM Sans',sans-serif; position:relative;
+    ">
+      <!-- Background decoration -->
+      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+        <div style="position:absolute;top:-60px;right:-60px;width:220px;height:220px;
+          border-radius:50%;background:rgba(26,111,232,0.15);"></div>
+        <div style="position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;
+          border-radius:50%;background:rgba(124,58,237,0.12);"></div>
+      </div>
+
+      <!-- Card header -->
+      <div style="padding:20px 20px 0;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;
+            letter-spacing:0.15em;color:rgba(148,163,184,0.8)">Trekkr Mexicano</div>
+          <div style="font-size:10px;color:rgba(148,163,184,0.6)" id="done-date"></div>
+        </div>
+        <div style="font-size:22px;font-weight:900;color:white;letter-spacing:-0.03em;
+          line-height:1">Final Standing</div>
+        <div style="font-size:12px;color:rgba(148,163,184,0.7);margin-top:3px" id="done-sub"></div>
+      </div>
+
+      <!-- Podium top 3 -->
+      <div style="padding:16px 20px 12px;position:relative">
+        <div id="podium" style="display:flex;align-items:flex-end;justify-content:center;gap:8px"></div>
+      </div>
+
+      <!-- Full standings list -->
+      <div style="padding:0 12px 16px;position:relative">
+        <div id="final-standings"></div>
+      </div>
+
+      <!-- Venue footer -->
+      <div style="background:rgba(255,255,255,0.04);border-top:1px solid rgba(255,255,255,0.07);
+        padding:10px 20px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:11px;color:rgba(148,163,184,0.6)">
+          📍 <span id="done-venue"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:18px;height:18px;border-radius:5px;background:var(--blue);
+            display:flex;align-items:center;justify-content:center">
+            <svg width="10" height="10" viewBox="0 0 20 20" fill="white"><circle cx="10" cy="10" r="8"/></svg>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:rgba(148,163,184,0.7)">trekkr.online</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Podium -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="text-align:center">🏆 Podium Pemenang</div>
-      <div class="podium" id="podium"></div>
+    <!-- Action buttons -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button id="btn-share" class="btn btn-primary" onclick="shareResult()"
+        style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;padding:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Share Hasil
+      </button>
+      <button class="btn btn-ghost" onclick="newMatch()">+ Match Baru</button>
     </div>
-
-    <!-- Final standings -->
-    <div class="card">
-      <div class="card-title">Final Standings</div>
-      <div id="final-standings"></div>
-    </div>
-
-    <button class="btn btn-primary mt-16" onclick="newMatch()">+ Match Baru</button>
   </div>
 
 </div><!-- end #app -->
@@ -522,32 +567,37 @@
 </div>
 
 
-<!-- FULL CYCLE WARNING MODAL -->
+<!-- FULL CYCLE WARNING MODAL — mobile bottom sheet -->
 <div class="modal-overlay hidden" id="modal-fullcycle" onclick="closeCycleModal()">
-  <div class="modal fullcycle-modal" onclick="event.stopPropagation()" style="padding:0;overflow:hidden">
-    <div class="fullcycle-header">
-      <div class="fullcycle-icon">🔄</div>
-      <div class="fullcycle-title">Full Cycle Tercapai!</div>
-      <div class="fullcycle-subtitle">Seluruh pemain sudah bermain bersama satu sama lain</div>
-    </div>
-    <div class="fullcycle-body">
-      <!-- Stats row -->
-      <div class="fullcycle-stat-grid" id="fc-stats"></div>
-      <!-- Time estimate box -->
-      <div class="fullcycle-time-box" id="fc-time-box" style="display:none">
-        <div class="fullcycle-time-val" id="fc-time-val">—</div>
-        <div class="fullcycle-time-lbl" id="fc-time-lbl">untuk mencapai equal match berikutnya</div>
+  <div class="fullcycle-sheet" onclick="event.stopPropagation()">
+    <div class="fullcycle-drag"></div>
+    <!-- gradient header -->
+    <div class="fc-header">
+      <div class="fc-header-top">
+        <div class="fc-badge">🔄</div>
+        <div class="fc-header-txt">
+          <div class="fc-title">Full Cycle Tercapai!</div>
+          <div class="fc-sub">Semua pemain sudah pernah bermain bersama</div>
+        </div>
       </div>
-      <!-- Match count per player -->
-      <div class="fullcycle-match-table" id="fc-match-table"></div>
-      <!-- Actions -->
-      <div class="grid-2">
-        <button class="btn btn-danger" onclick="closeCycleModal(); showEndConfirm()">
-          🏁 Akhiri Match
-        </button>
-        <button class="btn btn-primary" onclick="closeCycleModal()">
-          ▶ Lanjutkan
-        </button>
+      <div class="fc-pills" id="fc-pills">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <!-- body -->
+    <div class="fc-body">
+      <!-- time estimate -->
+      <div class="fc-time-card" id="fc-time-card" style="display:none">
+        <div class="fc-time-big" id="fc-time-val">—</div>
+        <div class="fc-time-desc" id="fc-time-desc"></div>
+      </div>
+      <!-- match count per player -->
+      <div class="fc-players-label">Match dimainkan tiap pemain</div>
+      <div id="fc-player-rows"></div>
+      <!-- actions -->
+      <div class="fc-actions">
+        <button class="fc-btn fc-btn-end" onclick="closeCycleModal(); showEndConfirm()">🏁 Akhiri</button>
+        <button class="fc-btn fc-btn-cont" onclick="closeCycleModal()">▶ Lanjutkan</button>
       </div>
     </div>
   </div>
@@ -573,6 +623,8 @@
     </div>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1911,43 +1963,111 @@ async function endMatch() {
 
 function renderDoneScreen(standings) {
   const doneRounds = state.rounds.filter(r => r.submitted).length;
-  document.getElementById("done-sub").textContent = `${doneRounds} ronde dimainkan · ${state.selectedPlayers.length} pemain`;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
 
-  // Podium
-  const podiumEl = document.getElementById("podium");
+  document.getElementById("done-sub").textContent =
+    `${doneRounds} ronde · ${state.selectedPlayers.length} pemain`;
+  document.getElementById("done-date").textContent = dateStr;
+  document.getElementById("done-venue").textContent = state.venue || "Trekkr";
+
+  // ── PODIUM (dark style) ────────────────────────────────────────────────
   const p1 = standings[0], p2 = standings[1], p3 = standings[2];
-  podiumEl.innerHTML = `
-    ${p2 ? `<div class="podium-slot">
-      ${avatarHTML(p2.name, 56, 18)}
-      <div class="podium-name">${p2.name.split(" ")[0]}</div>
-      <div class="podium-base" style="height:60px;background:#94A3B8">🥈</div>
+
+  function darkAvatar(name, size, fontSize, border) {
+    return `<div class="podium-dark-avatar" style="width:${size}px;height:${size}px;font-size:${fontSize}px;background:${avatarColor(name)};${border||""}">
+      ${initials(name)}</div>`;
+  }
+
+  document.getElementById("podium").innerHTML = `
+    ${p2 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">🥈</div>
+      ${darkAvatar(p2.name, 52, 17)}
+      <div class="podium-dark-name">${p2.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:52px;background:rgba(148,163,184,0.25);width:100%;padding:6px 0"></div>
     </div>` : ""}
-    ${p1 ? `<div class="podium-slot">
-      <div style="font-size:28px;text-align:center;margin-bottom:4px">👑</div>
-      <div style="width:68px;height:68px;border-radius:50%;background:${avatarColor(p1.name)};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;margin-bottom:8px;border:3px solid #FFD700;box-shadow:0 4px 12px rgba(0,0,0,0.15)">${initials(p1.name)}</div>
-      <div class="podium-name" style="font-weight:800">${p1.name.split(" ")[0]}</div>
-      <div class="podium-base" style="height:80px;background:#F59E0B">🥇</div>
+    ${p1 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">👑</div>
+      ${darkAvatar(p1.name, 64, 22, "border:3px solid #F59E0B;box-shadow:0 0 20px rgba(245,158,11,0.4);")}
+      <div class="podium-dark-name" style="font-weight:800">${p1.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:68px;background:rgba(245,158,11,0.25);width:100%;padding:8px 0">🥇</div>
     </div>` : ""}
-    ${p3 ? `<div class="podium-slot">
-      ${avatarHTML(p3.name, 56, 18)}
-      <div class="podium-name">${p3.name.split(" ")[0]}</div>
-      <div class="podium-base" style="height:44px;background:#CD7F32">🥉</div>
+    ${p3 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">🥉</div>
+      ${darkAvatar(p3.name, 52, 17)}
+      <div class="podium-dark-name">${p3.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:40px;background:rgba(180,131,80,0.25);width:100%;padding:5px 0"></div>
     </div>` : ""}`;
 
-  // Final standings
-  document.getElementById("final-standings").innerHTML = standings.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="width:28px;text-align:center;font-size:14px;font-weight:800;color:${i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--text3)"}">${i+1}</div>
-      ${avatarHTML(p.name, 32, 11)}
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">${p.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${getTierName(p.elo)} · ${p.elo} ELO</div>
+  // ── STANDINGS LIST (dark rows) ─────────────────────────────────────────
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("final-standings").innerHTML = standings.map((p, i) => {
+    const rankColor = i===0?"#F59E0B" : i===1?"#94A3B8" : i===2?"#CD7F32" : "rgba(148,163,184,0.5)";
+    return `<div class="rank-row-dark">
+      <div class="rank-num-dark" style="color:${rankColor}">${medals[i] || i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="rank-name-dark">${p.name}</div>
+        <div class="rank-meta-dark">${getTierName(p.elo)} · ${p.elo} ELO</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:13px;font-weight:700">${p.wins}W ${p.losses}L</div>
-        <div style="font-size:11px;font-weight:600;color:${p.pointDiff>=0?"var(--green)":"var(--red)"}">${p.pointDiff>=0?"+":""}${p.pointDiff}</div>
+        <div class="rank-wl-dark">${p.wins}W ${p.losses}L</div>
+        <div style="font-size:11px;font-weight:600;color:${p.pointDiff>=0?"#4ADE80":"#F87171"}">${p.pointDiff>=0?"+":""}${p.pointDiff}</div>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
+}
+
+// ── SHARE FUNCTION ─────────────────────────────────────────────────────────
+async function shareResult() {
+  const btn = document.getElementById("btn-share");
+  const card = document.getElementById("share-card");
+  if (!card) return;
+
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Membuat gambar...';
+  btn.disabled = true;
+
+  try {
+    // Render share-card to canvas using html2canvas
+    const canvas = await html2canvas(card, {
+      scale: 2,                        // 2x for retina quality
+      useCORS: true,
+      backgroundColor: null,           // transparent bg (card has its own)
+      logging: false,
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+    });
+
+    // Convert to blob
+    const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.92));
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0,10);
+    const filename = `trekkr-mexicano-${state.venue || "match"}-${dateStr}.jpg`.replace(/\s+/g,"-").toLowerCase();
+
+    // Try Web Share API first (native share sheet on mobile)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type:"image/jpeg" })] })) {
+      await navigator.share({
+        files: [new File([blob], filename, { type:"image/jpeg" })],
+        title: "Trekkr Mexicano Result",
+        text: `Final Standing ${state.venue || "Match"} – ${dateStr}`,
+      });
+    } else {
+      // Fallback: download the image
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+    }
+
+    URL.revokeObjectURL(url);
+  } catch(err) {
+    // If html2canvas fails (e.g., CORS on avatar images), fallback to screenshot hint
+    console.warn("Share error:", err);
+    showApiWarning("Gagal render gambar. Coba screenshot manual atau screenshot layar ini.");
+  } finally {
+    btn.innerHTML = origText;
+    btn.disabled = false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2498,64 +2618,52 @@ function renderEqStatusBar() {
 
 // ── FULL CYCLE MODAL ──────────────────────────────────────────────────────
 function showCycleModal(st) {
-  const submittedRounds = state.rounds.filter(r => r.submitted).length;
-  const avgDurStr = st.avgDur ? `${st.avgDur.toFixed(1)} mnt/ronde` : "—";
+  const submitted = state.rounds.filter(r => r.submitted).length;
+  const avgStr = st.avgDur ? `${Math.round(st.avgDur)}m/ronde` : "—";
 
-  // Stats row
-  document.getElementById("fc-stats").innerHTML = `
-    <div class="fullcycle-stat">
-      <div class="fullcycle-stat-val">${submittedRounds}</div>
-      <div class="fullcycle-stat-lbl">Ronde</div>
-    </div>
-    <div class="fullcycle-stat">
-      <div class="fullcycle-stat-val">${st.avgMatches.toFixed(1)}</div>
-      <div class="fullcycle-stat-lbl">Match/Pemain</div>
-    </div>
-    <div class="fullcycle-stat">
-      <div class="fullcycle-stat-val">${avgDurStr}</div>
-      <div class="fullcycle-stat-lbl">Rata-rata</div>
-    </div>`;
+  // Pills in header
+  document.getElementById("fc-pills").innerHTML = `
+    <div class="fc-pill"><div class="fc-pill-val">${submitted}</div><div class="fc-pill-lbl">Ronde</div></div>
+    <div class="fc-pill"><div class="fc-pill-val">${st.avgMatches.toFixed(1)}</div><div class="fc-pill-lbl">Avg Match</div></div>
+    <div class="fc-pill"><div class="fc-pill-val">${avgStr}</div><div class="fc-pill-lbl">Durasi</div></div>`;
 
-  // Time estimate for next equal point
-  const timeBox = document.getElementById("fc-time-box");
-  if (!st.isEqual && st.rondesUntilEqual > 0) {
-    timeBox.style.display = "block";
-    document.getElementById("fc-time-val").textContent =
-      st.minsUntilEqual ? `~${st.minsUntilEqual} menit` : `${st.rondesUntilEqual} ronde`;
-    document.getElementById("fc-time-lbl").textContent =
-      `${st.rondesUntilEqual} ronde lagi untuk equal match (semua pemain main sama banyak)` +
-      (st.minsUntilEqual ? ` · estimasi ${st.minsUntilEqual} menit` : "");
-  } else if (st.isEqual) {
-    timeBox.style.display = "block";
-    document.getElementById("fc-time-val").textContent = "✅ Sudah Equal";
-    document.getElementById("fc-time-lbl").textContent =
-      `Semua pemain sudah main ${st.minMatches}–${st.maxMatches} match. Ini waktu yang tepat untuk mengakhiri!`;
-    document.querySelector("#fc-time-box").style.background =
-      "linear-gradient(135deg, rgba(22,163,74,0.1), rgba(22,163,74,0.05))";
-    document.querySelector("#fc-time-box").style.borderColor = "rgba(22,163,74,0.3)";
-    document.getElementById("fc-time-val").style.color = "var(--green)";
+  // Time estimate card
+  const card = document.getElementById("fc-time-card");
+  const timeVal = document.getElementById("fc-time-val");
+  const timeDesc = document.getElementById("fc-time-desc");
+
+  if (st.isEqual) {
+    card.className = "fc-time-card already-equal";
+    card.style.display = "block";
+    timeVal.style.color = "var(--green)";
+    timeVal.textContent = "✅ Sudah Equal";
+    timeDesc.textContent = `Semua pemain main ${st.minMatches}–${st.maxMatches} match. Waktu yang tepat untuk mengakhiri!`;
+  } else if (st.rondesUntilEqual > 0) {
+    card.className = "fc-time-card needs-more";
+    card.style.display = "block";
+    timeVal.style.color = "var(--blue)";
+    timeVal.textContent = st.minsUntilEqual ? `~${st.minsUntilEqual} menit` : `${st.rondesUntilEqual} ronde`;
+    timeDesc.textContent = `${st.rondesUntilEqual} ronde lagi agar semua main sama banyak` +
+      (st.minsUntilEqual ? ` (estimasi ${st.minsUntilEqual} menit)` : "");
   } else {
-    timeBox.style.display = "none";
+    card.style.display = "none";
   }
 
-  // Match count per player table
-  const countsSorted = Object.entries(st.counts).sort((a,b) => b[1]-a[1]);
-  const min = st.minMatches;
-  document.getElementById("fc-match-table").innerHTML =
-    `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Match per Pemain</div>` +
-    countsSorted.map(([name, c]) => `
-      <div class="fullcycle-match-row">
-        <div style="font-size:12px;font-weight:600;flex:1">${name.split(" ")[0]}</div>
-        <div style="display:flex;gap:2px">
-          ${Array.from({length:c}).map((_,i) =>
-            `<div style="width:10px;height:10px;border-radius:2px;background:${i<min?"var(--green)":"var(--blue)"}"></div>`
-          ).join("")}
-          ${c < st.maxMatches ? Array.from({length:st.maxMatches-c}).map(() =>
-            `<div style="width:10px;height:10px;border-radius:2px;background:var(--border)"></div>`
-          ).join("") : ""}
-        </div>
-        <div style="font-size:12px;font-weight:700;color:${c===st.minMatches?"var(--red)":c===st.maxMatches?"var(--green)":"var(--text)"};min-width:20px;text-align:right">${c}</div>
-      </div>`).join("");
+  // Player rows with dot visualization
+  const sorted = Object.entries(st.counts).sort((a,b) => b[1]-a[1]);
+  document.getElementById("fc-player-rows").innerHTML = sorted.map(([name, c]) => `
+    <div class="fc-player-row">
+      <div class="fc-player-name">${name.split(" ")[0]}</div>
+      <div class="fc-player-dots">
+        ${Array.from({length:st.maxMatches}).map((_,i) => {
+          const bg = i < st.minMatches ? "#16A34A"
+                   : i < c             ? "#1A6FE8"
+                   :                     "rgba(0,0,0,0.08)";
+          return `<div class="fc-dot" style="background:${bg}"></div>`;
+        }).join("")}
+      </div>
+      <div class="fc-player-count" style="color:${c===st.minMatches?"#DC2626":c===st.maxMatches?"#16A34A":"var(--text)"}">${c}</div>
+    </div>`).join("");
 
   document.getElementById("modal-fullcycle").classList.remove("hidden");
 }
