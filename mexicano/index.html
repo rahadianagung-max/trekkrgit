@@ -325,9 +325,13 @@
         <button class="seg-btn active" id="sg-auto" onclick="setSessionGender('auto')">🔀 Auto</button>
         <button class="seg-btn" id="sg-M" onclick="setSessionGender('M')">♂ Men</button>
         <button class="seg-btn" id="sg-F" onclick="setSessionGender('F')">♀ Women</button>
-        <button class="seg-btn" id="sg-X" onclick="setSessionGender('X')">⚥ Mixed</button>
       </div>
       <div style="font-size:12px;color:var(--text3)" id="sg-hint">Auto: ditentukan dari gender pemain yang dipilih</div>
+      <div style="margin-top:8px;padding:8px 10px;background:rgba(245,158,11,0.08);
+        border:1px solid rgba(245,158,11,0.25);border-radius:8px;
+        font-size:11px;color:var(--gold);line-height:1.5">
+        ⚠️ Untuk menjaga fairness dalam Trekkr ranked match, pertandingan ganda campuran (fixed mixed) belum diperbolehkan.
+      </div>
     </div>
 
     <button class="btn btn-primary mt-8" onclick="goToPlayers()">Pilih Pemain →</button>
@@ -459,67 +463,38 @@
   <!-- SCREEN: DONE                                        -->
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-done" class="screen fade-up hidden pb-safe">
-    <!-- SHAREABLE CARD — this element gets captured as JPG -->
-    <div id="share-card" style="
-      background: linear-gradient(145deg,#0F172A 0%,#1E293B 50%,#0F172A 100%);
-      border-radius: 20px; overflow: hidden; margin-bottom: 16px;
-      font-family: 'Space Grotesk','DM Sans',sans-serif; position:relative;
-    ">
-      <!-- Background decoration -->
-      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
-        <div style="position:absolute;top:-60px;right:-60px;width:220px;height:220px;
-          border-radius:50%;background:rgba(26,111,232,0.15);"></div>
-        <div style="position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;
-          border-radius:50%;background:rgba(124,58,237,0.12);"></div>
-      </div>
-
-      <!-- Card header -->
-      <div style="padding:20px 20px 0;position:relative">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="font-size:10px;font-weight:800;text-transform:uppercase;
-            letter-spacing:0.15em;color:rgba(148,163,184,0.8)">Trekkr Mexicano</div>
-          <div style="font-size:10px;color:rgba(148,163,184,0.6)" id="done-date"></div>
-        </div>
-        <div style="font-size:22px;font-weight:900;color:white;letter-spacing:-0.03em;
-          line-height:1">Final Standing</div>
-        <div style="font-size:12px;color:rgba(148,163,184,0.7);margin-top:3px" id="done-sub"></div>
+    <!-- Final result card — clean white -->
+    <div id="share-card">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:36px;margin-bottom:6px">🎉</div>
+        <div class="screen-title">Match Selesai!</div>
+        <div class="screen-sub" id="done-sub"></div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px" id="done-venue"></div>
       </div>
 
       <!-- Podium top 3 -->
-      <div style="padding:16px 20px 12px;position:relative">
-        <div id="podium" style="display:flex;align-items:flex-end;justify-content:center;gap:8px"></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="text-align:center">🏆 Podium</div>
+        <div id="podium" class="podium"></div>
       </div>
 
       <!-- Full standings list -->
-      <div style="padding:0 12px 16px;position:relative">
+      <div class="card">
+        <div class="card-title">Final Standings</div>
         <div id="final-standings"></div>
-      </div>
-
-      <!-- Venue footer -->
-      <div style="background:rgba(255,255,255,0.04);border-top:1px solid rgba(255,255,255,0.07);
-        padding:10px 20px;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:11px;color:rgba(148,163,184,0.6)">
-          📍 <span id="done-venue"></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:18px;height:18px;border-radius:5px;background:var(--blue);
-            display:flex;align-items:center;justify-content:center">
-            <svg width="10" height="10" viewBox="0 0 20 20" fill="white"><circle cx="10" cy="10" r="8"/></svg>
-          </div>
-          <div style="font-size:11px;font-weight:700;color:rgba(148,163,184,0.7)">trekkr.online</div>
-        </div>
       </div>
     </div>
 
     <!-- Action buttons -->
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button id="btn-share" class="btn btn-primary" onclick="shareResult()"
+      <button id="btn-share" class="btn btn-primary" onclick="shareVenueUrl()"
         style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;padding:14px">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
-        Share Hasil
+        Lihat Leaderboard Venue
       </button>
       <button class="btn btn-ghost" onclick="newMatch()">+ Match Baru</button>
     </div>
@@ -551,13 +526,9 @@
       </div>
     </div>
     <div class="alert alert-blue hidden" id="add-player-preview"></div>
-    <!-- Similar players warning — shown live as user types -->
-    <div class="similar-players-wrap" id="similar-players-wrap">
-      <div class="similar-players-title">⚠️ Nama serupa sudah ada di database</div>
+    <!-- similar-players-wrap retained for JS compatibility but hidden -->
+    <div class="similar-players-wrap" id="similar-players-wrap" style="display:none!important">
       <div id="similar-players-list"></div>
-      <div style="font-size:11px;color:var(--gold);margin-top:8px">
-        Klik nama di atas untuk memilih pemain yang ada, atau lanjutkan untuk daftarkan yang baru.
-      </div>
     </div>
     <div class="grid-2">
       <button class="btn btn-ghost" onclick="closeAddPlayerModal()">Batal</button>
@@ -2017,56 +1988,27 @@ function renderDoneScreen(standings) {
   }).join("");
 }
 
-// ── SHARE FUNCTION ─────────────────────────────────────────────────────────
-async function shareResult() {
-  const btn = document.getElementById("btn-share");
-  const card = document.getElementById("share-card");
-  if (!card) return;
+// ── SHARE VENUE URL ──────────────────────────────────────────────────────
+async function shareVenueUrl() {
+  const venue = state.venue || "";
+  const slug = venue.trim().replace(/\s+/g, "");
+  const url = `https://venue.trekkr.online/${encodeURIComponent(slug)}`;
+  const doneRounds = state.rounds.filter(r => r.submitted).length;
+  const text = `Cek leaderboard ${venue} di Trekkr!\n${url}`;
 
-  const origText = btn.innerHTML;
-  btn.innerHTML = '<span class="spinner"></span> Membuat gambar...';
-  btn.disabled = true;
-
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `Trekkr – ${venue}`, text, url });
+      return;
+    } catch(e) { /* user cancelled or share failed, fallback below */ }
+  }
+  // Fallback: copy to clipboard
   try {
-    // Render share-card to canvas using html2canvas
-    const canvas = await html2canvas(card, {
-      scale: 2,                        // 2x for retina quality
-      useCORS: true,
-      backgroundColor: null,           // transparent bg (card has its own)
-      logging: false,
-      width: card.offsetWidth,
-      height: card.offsetHeight,
-    });
-
-    // Convert to blob
-    const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.92));
-    const url = URL.createObjectURL(blob);
-    const dateStr = new Date().toISOString().slice(0,10);
-    const filename = `trekkr-mexicano-${state.venue || "match"}-${dateStr}.jpg`.replace(/\s+/g,"-").toLowerCase();
-
-    // Try Web Share API first (native share sheet on mobile)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type:"image/jpeg" })] })) {
-      await navigator.share({
-        files: [new File([blob], filename, { type:"image/jpeg" })],
-        title: "Trekkr Mexicano Result",
-        text: `Final Standing ${state.venue || "Match"} – ${dateStr}`,
-      });
-    } else {
-      // Fallback: download the image
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-    }
-
-    URL.revokeObjectURL(url);
-  } catch(err) {
-    // If html2canvas fails (e.g., CORS on avatar images), fallback to screenshot hint
-    console.warn("Share error:", err);
-    showApiWarning("Gagal render gambar. Coba screenshot manual atau screenshot layar ini.");
-  } finally {
-    btn.innerHTML = origText;
-    btn.disabled = false;
+    await navigator.clipboard.writeText(url);
+    showApiWarning("✓ Link disalin: " + url);
+  } catch(e) {
+    // Last resort: show the URL
+    showApiWarning("Link venue: " + url);
   }
 }
 
@@ -2678,13 +2620,8 @@ function checkAndNotifyEqualMatch() {
   const st = getEqualMatchStatus();
   if (!st) return;
 
-  // Show modal when full cycle is FIRST reached
-  // Use flag on state to avoid showing repeatedly
-  if (st.isFullCycle && !state._fullCycleNotified) {
-    state._fullCycleNotified = true;
-    // Small delay so the UI settles first
-    setTimeout(() => showCycleModal(st), 600);
-  }
+  // Full cycle modal auto-popup disabled — status bar only
+  // Modal still accessible via end-confirm if needed
 }
 
 (function init() {
