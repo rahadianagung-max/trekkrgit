@@ -177,12 +177,84 @@
 .tbl-player-col { display: flex; flex-direction: column; }
 .tbl-pills { display: flex; align-items: center; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
 
+
+/* ── VENUE VALUE PROP SECTION ──────────────────────────────────── */
+.venue-value{padding:64px 0;background:var(--surface-lowest);border-bottom:1px solid rgba(115,118,136,0.1)}
+.venue-value__header{text-align:center;margin-bottom:48px}
+.venue-value__eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
+.venue-value__title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-0.03em;text-transform:uppercase;line-height:1}
+.venue-value__sub{margin-top:10px;font-size:16px;color:var(--on-surface-variant);max-width:520px;margin-left:auto;margin-right:auto}
+.venue-value__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.venue-value-card{background:var(--surface-low);border-radius:var(--radius-xl);padding:24px 20px;transition:transform 220ms,box-shadow 220ms}
+.venue-value-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,28,48,0.08)}
+.venue-value-card__icon{width:44px;height:44px;border-radius:var(--radius-lg);background:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:20px}
+.venue-value-card__title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:-0.01em;margin-bottom:8px}
+.venue-value-card__desc{font-size:13px;color:var(--on-surface-variant);line-height:1.6}
+.venue-value-cta{margin-top:40px;text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+@media(max-width:1023px){.venue-value__grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:767px){.venue-value__grid{grid-template-columns:1fr}.venue-value{padding:40px 0}}
+
+/* ── MOBILE NAV (venue page) ─────────────────────────────────── */
+.mobile-nav{display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:rgba(248,249,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(115,118,136,0.12);position:sticky;top:80px;z-index:49;padding:0 16px}
+.mobile-nav::-webkit-scrollbar{display:none}
+.mobile-nav__inner{display:flex;gap:4px;padding:8px 0;width:max-content;min-width:100%}
+.mobile-nav__link{display:inline-flex;align-items:center;white-space:nowrap;padding:8px 16px;border-radius:var(--radius-pill);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--on-surface-variant);text-decoration:none;transition:all 180ms ease}
+.mobile-nav__link:hover{background:var(--surface-container)}
+.mobile-nav__link.is-active{color:var(--primary);background:var(--surface-container)}
+.mobile-nav__link--cta{color:var(--primary);border:1.5px solid rgba(0,62,199,0.25);background:var(--surface-low)}
+.mobile-nav__link--cta:hover{background:var(--surface-container)}
+@media(max-width:1023px){.mobile-nav{display:block}}
 </style>
 </head>
 <body>
-<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online" class="brand">Trekkr</a><nav class="nav-links"><a class="nav-link" href="https://trekkr.online">National Ranking</a><a class="nav-link is-active" href="https://venue.trekkr.online">Venue</a><a class="nav-link" href="https://sportsactvd.com/trekkr" target="_blank">About</a></nav><div class="header-actions"><button class="btn btn--text" onclick="location.href='https://admin.trekkr.online'">Sign In</button></div></div></header>
-<main><div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
-<footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
+<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online" class="brand">Trekkr</a><nav class="nav-links"><a class="nav-link" href="https://trekkr.online">National Ranking</a><a class="nav-link is-active" href="https://venue.trekkr.online">Venues</a><a class="nav-link" href="https://trekkr.online#how-it-works">How It Works</a></nav><div class="header-actions"><button class="btn btn--ghost" type="button" onclick="location.href='https://trekkr.online#how-it-works'">I'm a Player</button><button class="btn btn--primary" type="button" onclick="location.href='https://admin.trekkr.online'">Venue Login</button></div></div></header>
+<main><div class="mobile-nav" role="navigation" aria-label="Mobile navigation">
+  <div class="mobile-nav__inner">
+    <a class="mobile-nav__link" href="https://trekkr.online">National Ranking</a>
+    <a class="mobile-nav__link is-active" href="https://venue.trekkr.online">Venues</a>
+    <a class="mobile-nav__link" href="https://trekkr.online#how-it-works">How It Works</a>
+    <a class="mobile-nav__link mobile-nav__link--cta" href="https://admin.trekkr.online">Venue Login</a>
+  </div>
+</div>
+
+<section class="venue-value" id="why-trekkr" aria-labelledby="vv-title">
+  <div class="container">
+    <div class="venue-value__header">
+      <p class="venue-value__eyebrow">For court owners</p>
+      <h2 class="venue-value__title" id="vv-title">Turn your court<br/>into a community.</h2>
+      <p class="venue-value__sub">Trekkr gives your players a live weekly leaderboard, ELO rankings, and match history — keeping them engaged and coming back.</p>
+    </div>
+    <div class="venue-value__grid">
+      <div class="venue-value-card">
+        <div class="venue-value-card__icon">&#x1F501;</div>
+        <h3 class="venue-value-card__title">More return visits</h3>
+        <p class="venue-value-card__desc">Players with an active ranking visit up to 40% more often — their position on the leaderboard gives them a reason to return every week.</p>
+      </div>
+      <div class="venue-value-card">
+        <div class="venue-value-card__icon">&#x1F4CA;</div>
+        <h3 class="venue-value-card__title">Player analytics</h3>
+        <p class="venue-value-card__desc">See who your most active players are, track weekly engagement, and understand your community at a glance — from your admin dashboard.</p>
+      </div>
+      <div class="venue-value-card">
+        <div class="venue-value-card__icon">&#x1F3C6;</div>
+        <h3 class="venue-value-card__title">Run tournaments</h3>
+        <p class="venue-value-card__desc">Built-in tournament and Mexicano match module. Brackets managed automatically, scores submitted directly — no spreadsheets needed.</p>
+      </div>
+      <div class="venue-value-card">
+        <div class="venue-value-card__icon">&#x1F4AC;</div>
+        <h3 class="venue-value-card__title">Replace WhatsApp</h3>
+        <p class="venue-value-card__desc">No more manual results in group chats. Match history, rankings, and schedules all live in one place your whole community can access.</p>
+      </div>
+    </div>
+    <div class="venue-value-cta">
+      <button class="btn btn--primary" onclick="location.href='https://admin.trekkr.online'" style="padding:14px 32px;font-size:14px">Get your venue listed &rarr;</button>
+      <button class="btn btn--ghost" onclick="document.getElementById('mainContent').scrollIntoView({behavior:'smooth'})" style="padding:14px 32px;font-size:14px">Browse venues below</button>
+    </div>
+  </div>
+</section>
+
+<div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
+<footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://trekkr.online#how-it-works">How It Works</a><a href="https://trekkr.online">National Ranking</a><a href="https://admin.trekkr.online">Venue Login</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
 <script src="https://trekkr.online/trekkr-api.js"></script>
 <script>
 
