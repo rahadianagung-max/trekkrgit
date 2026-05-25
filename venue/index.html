@@ -685,16 +685,23 @@ async function loadRanking(){
     if (top3.length) {
       h += '<div class="liga-top3">';
       top3.forEach(function(p, i) {
-        const pts      = p.w * 3;
-        const pname    = dn(p);
-        const initials = pname.trim().split(/\s+/).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
-        const photoSrc = ava(p);
-        const hasPhoto = photoSrc.indexOf('ui-avatars.com') === -1;
-        const photoHtml = hasPhoto
-          ? '<img class="liga-hero-photo" src="' + photoSrc + '" alt="' + pname + '" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">'
-            + '<div class="liga-hero-initials" style="display:none">' + initials + '</div>'
-          : '<div class="liga-hero-initials">' + initials + '</div>';
-        h += '<div class="' + heroCards[i] + ' liga-hero-card" onclick="location.href='https://trekkr.online/player/' + encodeURIComponent(p.name) + ''">'
+        var pts      = p.w * 3;
+        var pname    = dn(p);
+        var initials = pname.trim().split(' ').map(function(w){ return w ? w[0] : ''; }).join('').toUpperCase().slice(0,2);
+        var photoSrc = ava(p);
+        var hasPhoto = photoSrc.indexOf('ui-avatars.com') === -1;
+        var fallbackSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pname) + '&background=e5eeff&color=003ec7&bold=true&size=200';
+        var playerUrl   = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
+
+        var photoHtml;
+        if (hasPhoto) {
+          photoHtml = '<img class="liga-hero-photo" src="' + photoSrc + '" alt="' + pname + '" onerror="this.src=' + "'" + fallbackSrc + "'" + '">'
+            + '<div class="liga-hero-initials" style="display:none">' + initials + '</div>';
+        } else {
+          photoHtml = '<div class="liga-hero-initials">' + initials + '</div>';
+        }
+
+        h += '<div class="' + heroCards[i] + ' liga-hero-card" onclick="location.href=' + "'" + playerUrl + "'" + '">'
           + '<div class="liga-hero-photo-wrap">'
           + '<div class="liga-hero-medal">' + medals[i] + '</div>'
           + photoHtml
@@ -705,7 +712,7 @@ async function loadRanking(){
           + '<span class="liga-hero-pts">' + pts + '</span>'
           + '<span class="liga-hero-pts-label">PTS</span>'
           + '</div>'
-          + '<div class="liga-hero-wl">' + p.w + 'W &nbsp;·&nbsp; ' + p.l + 'L &nbsp;·&nbsp; ' + (p.w+p.l) + ' played</div>'
+          + '<div class="liga-hero-wl">' + p.w + 'W · ' + p.l + 'L · ' + (p.w + p.l) + ' played</div>'
           + '<div class="liga-hero-form">' + formDots(p.name, true) + '</div>'
           + '</div>'
           + '</div>';
@@ -729,7 +736,8 @@ async function loadRanking(){
       rest.forEach(function(p, i) {
         var rank = i + 4;
         var pts  = p.w * 3;
-        h += '<div class="liga-row" onclick="location.href='https://trekkr.online/player/' + encodeURIComponent(p.name) + ''">'
+        var rUrl = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
+        h += '<div class="liga-row" onclick="location.href=' + "'" + rUrl + "'" + '">'
           + '<span class="liga-rank">' + rank + '</span>'
           + '<div class="liga-player">'
           + '<img class="liga-player-av" src="' + ava(p) + '" alt="' + dn(p) + '" onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(dn(p)) + '&background=e5eeff&color=003ec7&bold=true&size=200'">'
