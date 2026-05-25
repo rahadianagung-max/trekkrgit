@@ -682,12 +682,26 @@ async function loadPlayer(){
       }
       
       const targetName = name.toLowerCase().trim();
-      const myMatches = allMatches.filter(m => 
+      const myMatchesRaw = allMatches.filter(m => 
           (m.p1t1 || "").toLowerCase().trim() === targetName || 
           (m.p2t1 || "").toLowerCase().trim() === targetName || 
           (m.p1t2 || "").toLowerCase().trim() === targetName || 
           (m.p2t2 || "").toLowerCase().trim() === targetName
       );
+
+      // De-duplicate: same match can appear in multiple venues
+      // Key = sorted player names + scores (venue-agnostic fingerprint)
+      const seenKeys = new Set();
+      const myMatches = myMatchesRaw.filter(m => {
+          const players = [m.p1t1||'', m.p2t1||'', m.p1t2||'', m.p2t2||'']
+              .map(p => p.toLowerCase().trim())
+              .sort()
+              .join('|');
+          const key = `${players}__${m.scoreT1}_${m.scoreT2}__${m.date||''}`;
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
+          return true;
+      });
       
       myMatches.reverse(); // Data terbaru di atas
 
