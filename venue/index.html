@@ -354,21 +354,28 @@ async function showVenueList(){
 async function loadVenueDetail(){
   try{const d=await TrekkrAPI.getVenues();vData=d.venues.find(v=>v.name.toLowerCase()===vName.toLowerCase())}catch(e){}
   const v=vData||{name:vName};
-  const venueShareUrl=`https://venue.trekkr.online/${encodeURIComponent((v.name||vName).trim().replace(/\s+/g,''))}`;
-  const venueShareText=encodeURIComponent(`Cek leaderboard ${v.name||vName} di Trekkr!\n${venueShareUrl}`);
-  let h=`<section class="vd-hero"><div class="container"><div>
-    <h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1>
-    <p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>
-    <p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">Your padel ranking, at your court. Trekkr gives every padel court its own live leaderboard. Play, win, and climb the ranks — reset every Monday.</p>
-    <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
-      ${v.registerUrl?`<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>`:''}
-      <button class="btn btn--ghost" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)" onclick="shareVenuePage('${(v.name||vName).replace(/'/g,\"\\'\")}')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share this page
-      </button>
-      <a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a>
-    </div></div>
-    ${v.schedule||v.prizePool?`<div class="vd-info"><p class="vd-info-title">Info</p>${v.schedule?`<div class="vd-info-line"><span>Schedule</span><strong>${v.schedule}</strong></div>`:''}
-    ${v.prizePool?`<div class="vd-info-kpi"><div><p class="vd-info-label">Prize Pool</p><p class="vd-info-value">${v.prizePool}</p></div></div>`:''}</div>`:''}</div></section>`;
+  // Store venue name globally so share button can access it safely
+  window._currentVenueName = v.name || vName;
+  const _registerBtn = v.registerUrl ? `<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>` : '';
+  const _infoBlock = (v.schedule||v.prizePool)
+    ? `<div class="vd-info"><p class="vd-info-title">Info</p>`
+      + (v.schedule ? `<div class="vd-info-line"><span>Schedule</span><strong>${v.schedule}</strong></div>` : '')
+      + (v.prizePool ? `<div class="vd-info-kpi"><div><p class="vd-info-label">Prize Pool</p><p class="vd-info-value">${v.prizePool}</p></div></div>` : '')
+      + `</div>`
+    : '';
+  let h = `<section class="vd-hero"><div class="container"><div>`
+    + `<h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1>`
+    + `<p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>`
+    + `<p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">Your padel ranking, at your court. Trekkr gives every padel court its own live leaderboard. Play, win, and climb the ranks — reset every Monday.</p>`
+    + `<div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">`
+    + _registerBtn
+    + `<button class="btn btn--ghost" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)" onclick="shareVenuePage(window._currentVenueName)">`
+    + `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share this page`
+    + `</button>`
+    + `<a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a>`
+    + `</div></div>`
+    + _infoBlock
+    + `</div></section>`;
 
   h+=`<section class="section"><div class="container"><div class="vd-controls"><div class="vd-week"><button class="vd-week-btn" onclick="changeWeek(-1)">←</button><p class="vd-week-label" id="weekLabel">Week ${cW}</p><button class="vd-week-btn" onclick="changeWeek(1)">→</button></div>
   <div class="seg-control"><button class="seg-control__item is-active" data-gender="M" onclick="switchGender('M')">Men</button><button class="seg-control__item" data-gender="F" onclick="switchGender('F')">Women</button></div></div>
