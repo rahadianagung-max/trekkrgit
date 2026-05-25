@@ -220,6 +220,46 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
 /* ── TOPTEN additions ─────────────────────────────────────────── */
 .topten-item__info { display: flex; flex-direction: column; gap: 2px; }
 .topten-item__right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+/* ── HERO CTA ROW ─────────────────────────────────────────────── */
+.hero__cta-row{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.hero__cta-btn{padding:14px 28px;font-size:14px;border-radius:var(--radius-pill)}
+.hero__stats{display:flex;align-items:center;gap:20px;margin-top:24px;flex-wrap:wrap}
+.hero__stat{display:flex;flex-direction:column;gap:2px}
+.hero__stat-val{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--on-surface)}
+.hero__stat-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
+.hero__stat-divider{width:1px;height:28px;background:rgba(115,118,136,0.2)}
+
+/* ── HOW IT WORKS SECTION ─────────────────────────────────────── */
+.how-section{margin-top:80px;padding:72px 0;background:var(--surface-lowest);border-top:1px solid rgba(115,118,136,0.1);border-bottom:1px solid rgba(115,118,136,0.1)}
+.how-header{text-align:center;margin-bottom:56px}
+.how-eyebrow{display:inline-block;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
+.how-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,5vw,48px);font-weight:900;letter-spacing:-0.03em;line-height:1;text-transform:uppercase;color:var(--on-surface)}
+.how-subtitle{margin-top:12px;font-size:17px;color:var(--on-surface-variant);max-width:520px;margin-left:auto;margin-right:auto}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.how-card{position:relative;background:var(--surface-low);border-radius:var(--radius-xl);padding:32px 28px;transition:transform var(--motion-base) var(--ease-out),box-shadow var(--motion-base)}
+.how-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(11,28,48,0.09)}
+.how-card__num{font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:900;line-height:1;color:var(--surface-container);position:absolute;top:16px;right:20px;pointer-events:none;user-select:none}
+.how-card__icon{width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.how-card__icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.how-card__title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase;color:var(--on-surface);margin-bottom:10px}
+.how-card__desc{font-size:14px;color:var(--on-surface-variant);line-height:1.6}
+.how-card__tag{margin-top:20px;display:inline-block;padding:5px 14px;border-radius:var(--radius-pill);background:var(--surface-container);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary)}
+
+/* User type split */
+.how-for-whom{margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.for-card{border-radius:var(--radius-xl);padding:28px 32px;cursor:pointer;transition:transform var(--motion-base),box-shadow var(--motion-base)}
+.for-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,28,48,0.1)}
+.for-card--player{background:linear-gradient(135deg,#003ec7,#0052ff);color:#fff}
+.for-card--venue{background:linear-gradient(135deg,#1c1c2e,#2d1b69);color:#fff}
+.for-card__label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;opacity:0.75;margin-bottom:10px}
+.for-card__title{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:10px}
+.for-card__desc{font-size:14px;opacity:0.85;line-height:1.55;margin-bottom:20px}
+.for-card__cta{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.18);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fff;transition:background var(--motion-base)}
+.for-card__cta:hover{background:rgba(255,255,255,0.28)}
+
+@media(max-width:1023px){.how-grid{grid-template-columns:1fr 1fr}.how-for-whom{grid-template-columns:1fr}}
+@media(max-width:767px){.how-grid{grid-template-columns:1fr}.how-section{padding:48px 0}.hero__cta-row{flex-direction:column}.hero__cta-btn{width:100%;text-align:center}.hero__stats{gap:14px}.hero__stat-divider{display:none}}
 </style>
 </head>
 <body>
@@ -228,28 +268,41 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
     <a href="https://trekkr.online" class="brand">Trekkr</a>
     <nav class="nav-links" aria-label="Primary">
       <a class="nav-link is-active" href="https://trekkr.online">National Ranking</a>
-      <a class="nav-link" href="https://venue.trekkr.online">Venue</a>
-      <a class="nav-link" href="https://sportsactvd.com/onboarding-process">Learn More</a>
+      <a class="nav-link" href="https://venue.trekkr.online">Venues</a>
+      <a class="nav-link" href="#how-it-works">How It Works</a>
     </nav>
     <div class="header-actions">
-      <button class="btn btn--text" type="button" onclick="location.href='https://admin.trekkr.online'">Sign In</button>
+      <button class="btn btn--ghost" type="button" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">I'm a Player</button>
+      <button class="btn btn--primary" type="button" onclick="location.href='https://admin.trekkr.online'">Venue Login</button>
     </div>
   </div>
 </header>
 <div class="mobile-nav" role="navigation" aria-label="Mobile navigation">
   <div class="mobile-nav__inner">
     <a class="mobile-nav__link is-active" href="https://trekkr.online">National Ranking</a>
-    <a class="mobile-nav__link" href="https://venue.trekkr.online">Venue</a>
-    <a class="mobile-nav__link" href="https://sportsactvd.com/onboarding-process">Learn More</a>
+    <a class="mobile-nav__link" href="https://venue.trekkr.online">Venues</a>
+    <a class="mobile-nav__link" href="#how-it-works">How It Works</a>
+    <a class="mobile-nav__link mobile-nav__link--highlight" href="https://admin.trekkr.online">Venue Login</a>
   </div>
 </div>
 
 <main>
   <section class="hero">
     <div class="container">
-      <span class="hero__eyebrow" id="heroEyebrow">Official Data</span>
-      <h1 class="hero__title" id="heroTitle">National<br/>Rankings</h1>
-      <p class="hero__subtitle" id="heroSubtitle">The definitive padel ELO ranking system for Indonesia. Track performance, compare players and follow player progression.</p>
+      <span class="hero__eyebrow" id="heroEyebrow">&#127952; Indonesia's Padel Community</span>
+      <h1 class="hero__title" id="heroTitle">Your padel<br/>ranking,<br/>at your court.</h1>
+      <p class="hero__subtitle" id="heroSubtitle">Trekkr gives every padel court its own live leaderboard. Play, win, and climb the ranks — reset every Monday.</p>
+      <div class="hero__cta-row">
+        <button class="btn btn--primary hero__cta-btn" type="button" onclick="location.href='https://venue.trekkr.online'">Find my venue</button>
+        <button class="btn btn--ghost hero__cta-btn" type="button" onclick="location.href='https://venue.trekkr.online'">I own a court</button>
+      </div>
+      <div class="hero__stats" id="heroStats">
+        <div class="hero__stat"><span class="hero__stat-val" id="statVenues">25+</span><span class="hero__stat-label">active venues</span></div>
+        <div class="hero__stat-divider"></div>
+        <div class="hero__stat"><span class="hero__stat-val" id="statPlayers">1,400+</span><span class="hero__stat-label">registered players</span></div>
+        <div class="hero__stat-divider"></div>
+        <div class="hero__stat"><span class="hero__stat-val">Jakarta &middot; Bandung &middot; Surabaya</span><span class="hero__stat-label">active cities</span></div>
+      </div>
 
       <div class="controls" role="group" aria-label="Ranking filters">
         <div class="segmented" aria-label="Gender selector">
@@ -292,18 +345,97 @@ a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p
   <div id="loadMoreWrap" style="display:none">
     <div class="container"><div class="load-more"><button class="btn btn--ghost" type="button" onclick="loadMore()">Load More</button></div></div>
   </div>
+
+  <!-- ── HOW IT WORKS ──────────────────────────────────────────── -->
+  <section class="how-section" id="how-it-works" aria-labelledby="how-title">
+    <div class="container">
+      <div class="how-header">
+        <p class="how-eyebrow">Get started in minutes</p>
+        <h2 class="how-title" id="how-title">How Trekkr works</h2>
+        <p class="how-subtitle">Join thousands of padel players across Indonesia who track their performance every week.</p>
+      </div>
+
+      <div class="how-grid">
+        <div class="how-card">
+          <span class="how-card__num" aria-hidden="true">1</span>
+          <div class="how-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+          <h3 class="how-card__title">Find your venue</h3>
+          <p class="how-card__desc">Browse active Trekkr venues near you. Each venue has its own community leaderboard — find the court you play at most.</p>
+          <span class="how-card__tag">Browse venues &rarr;</span>
+        </div>
+
+        <div class="how-card">
+          <span class="how-card__num" aria-hidden="true">2</span>
+          <div class="how-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 8l2 2-5 5"/></svg>
+          </div>
+          <h3 class="how-card__title">Get registered</h3>
+          <p class="how-card__desc">Ask your venue admin to add you to the leaderboard. Once you're in, every match result goes straight to your ranking.</p>
+          <span class="how-card__tag">Talk to your admin</span>
+        </div>
+
+        <div class="how-card">
+          <span class="how-card__num" aria-hidden="true">3</span>
+          <div class="how-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </div>
+          <h3 class="how-card__title">Track & climb</h3>
+          <p class="how-card__desc">Your ELO ranking updates after every match. Leaderboards reset every Monday — fight your way back to the top, every week.</p>
+          <span class="how-card__tag">See the rankings</span>
+        </div>
+      </div>
+
+      <div class="how-for-whom">
+        <div class="for-card for-card--player" role="button" tabindex="0" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})" onkeydown="if(event.key==='Enter')this.click()">
+          <p class="for-card__label">For players</p>
+          <h3 class="for-card__title">Know where you stand</h3>
+          <p class="for-card__desc">Live ELO ranking, match history, partner stats, and weekly performance charts — all tied to the court you actually play at.</p>
+          <span class="for-card__cta">View national rankings &rarr;</span>
+        </div>
+
+        <div class="for-card for-card--venue" role="button" tabindex="0" onclick="location.href='https://venue.trekkr.online'" onkeydown="if(event.key==='Enter')this.click()">
+          <p class="for-card__label">For court owners</p>
+          <h3 class="for-card__title">Build a loyal community</h3>
+          <p class="for-card__desc">Give your players a reason to keep coming back. Weekly rankings, tournaments, and analytics — all in one platform.</p>
+          <span class="for-card__cta">Get your venue listed &rarr;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
 </main>
 
 <footer class="site-footer">
   <div class="container site-footer__inner">
     <div class="footer-brand">Trekkr</div>
-    <div class="footer-links"><a href="https://sportsactvd.com/trekkr" target="_blank">About</a><a href="https://venue.trekkr.online">Venues</a></div>
+    <div class="footer-links"><a href="#how-it-works">How It Works</a><a href="https://venue.trekkr.online">Venues</a><a href="https://venue.trekkr.online">For Court Owners</a></div>
     <div class="footer-copy">© 2026 Trekkr. All rights reserved.</div>
   </div>
 </footer>
 
 <script src="/trekkr-api.js"></script>
 <script>
+
+
+// ── UPDATE HERO STATS FROM LIVE DATA ─────────────────────────────────────
+async function updateHeroStats() {
+  try {
+    const data = await TrekkrAPI.getLeaderboard({ gender: 'M', limit: 500 });
+    const players = data.players || [];
+    const venues = new Set(players.map(p => p.venue).filter(Boolean));
+    const venueCount = venues.size;
+    const playerCount = players.length;
+    const statV = document.getElementById('statVenues');
+    const statP = document.getElementById('statPlayers');
+    if (statV && venueCount > 0) statV.textContent = venueCount + '+';
+    if (statP && playerCount > 0) statP.textContent = playerCount.toLocaleString('id-ID') + '+';
+  } catch(e) { /* keep defaults */ }
+}
+updateHeroStats();
+
 
 // ── CALIBRATION & TIER HELPERS ────────────────────────────────────────────
 const CALIB_THRESHOLD = 15;
