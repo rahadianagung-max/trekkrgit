@@ -1,426 +1,2896 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trekkr — Venue Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#003ec7"/>
+<title>Venue Admin | Trekkr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#0a0c12;--s1:#10131a;--s2:#161a24;--s3:#1c2130;--border:#1e2333;--border2:#2a3045;--lime:#d4f53c;--lime2:#b8d930;--coral:#ff5757;--text:#eeeef5;--muted:#4a5068;--muted2:#6b7394}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
-.wrap{max-width:680px;margin:0 auto;padding:20px 20px 80px;position:relative;z-index:1}
-.page-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;color:var(--lime);margin-bottom:6px}
-.page-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:24px}
-.login-card{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:32px;max-width:380px;margin:60px auto}
-.login-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--lime);margin-bottom:20px;text-align:center}
-.field{margin-bottom:14px}
-.field-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
-.field-input,.field-select,.field-textarea{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color 0.2s}
-.field-input:focus,.field-textarea:focus{border-color:var(--lime)}.field-input::placeholder,.field-textarea::placeholder{color:var(--muted)}
-.field-textarea{min-height:60px;resize:vertical}
-.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;transition:all 0.15s}
-.btn-primary{background:var(--lime);color:var(--bg)}.btn-primary:hover{background:var(--lime2)}
-.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted2);font-size:12px}.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
-.btn-sm{padding:6px 14px;font-size:11px}.btn-full{width:100%}
-.section{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
-.section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section-title .dot{width:6px;height:6px;border-radius:50%;background:var(--lime)}
-.match-entry{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.match-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
-.match-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--lime);letter-spacing:2px}
-.team-row{display:grid;grid-template-columns:1fr 1fr 60px;gap:8px;align-items:end;margin-bottom:8px}
-.team-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:4px}
-.vs-row{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--muted);margin:6px 0;letter-spacing:4px}
-.gender-toggle{display:flex;gap:0}
-.gender-opt{padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;border:1px solid var(--border);background:var(--s3);color:var(--muted);cursor:pointer;transition:all 0.15s}
-.gender-opt:first-child{border-radius:4px 0 0 4px}.gender-opt:last-child{border-radius:0 4px 4px 0}
-.gender-opt.active{background:rgba(212,245,60,0.1);border-color:rgba(212,245,60,0.3);color:var(--lime)}
-.status-msg{padding:10px 14px;border-radius:8px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none}
-.status-msg.success{display:block;background:rgba(212,245,60,0.08);border:1px solid rgba(212,245,60,0.3);color:var(--lime)}
-.status-msg.error{display:block;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.3);color:var(--coral)}
-.logout-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.logout-bar .user-info{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)}
-footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
-footer span{color:var(--lime)}
+
+:root{--primary:#003ec7;--primary-container:#0052ff;--secondary:#a33800;--secondary-container:#cd4800;--on-surface:#0b1c30;--on-surface-variant:#434656;--on-inverse:#eaf1ff;--on-primary:#fff;--surface:#f8f9ff;--surface-low:#eff4ff;--surface-container:#e5eeff;--surface-high:#dce9ff;--surface-highest:#d3e4fe;--surface-lowest:#fff;--surface-inverse:#213145;--ok:#1f9d63;--warn:#c17c00;--danger:#ba1a1a;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-soft:0 16px 34px rgba(11,28,48,0.08);--motion-base:220ms;--ease-out:cubic-bezier(0.22,0.61,0.36,1)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,0.11),transparent 58%),radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,0.1),transparent 54%),var(--surface)}
+a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
+.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}
+.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
+.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.03em;text-transform:uppercase;color:var(--primary)}
+.nav-links{display:flex;gap:6px}
+.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base) var(--ease-out)}
+.nav-link:hover{background:var(--surface-container)}
+.header-actions{display:flex;align-items:center;gap:12px}
+.btn-trekkr{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base) var(--ease-out)}
+.btn-trekkr--primary{background:var(--primary);color:var(--on-primary)}.btn-trekkr--primary:hover{background:var(--primary-container)}
+.btn-trekkr--ghost{background:var(--surface-container);color:var(--primary)}.btn-trekkr--ghost:hover{background:var(--surface-highest)}
+.btn-trekkr--danger{background:rgba(186,26,26,0.1);color:var(--danger);border:1px solid rgba(186,26,26,0.2)}.btn-trekkr--danger:hover{background:rgba(186,26,26,0.18)}
+.btn-trekkr--sm{padding:8px 16px;font-size:11px}
+#loginScreen{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.login-card{background:var(--surface-lowest);border-radius:var(--radius-xl);padding:48px 40px;width:100%;max-width:440px;box-shadow:var(--shadow-soft);border:1px solid rgba(115,118,136,0.12)}
+.login-eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
+.login-title{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:900;letter-spacing:-0.03em;text-transform:uppercase;color:var(--on-surface);line-height:1;margin-bottom:8px}
+.login-sub{font-size:14px;color:var(--on-surface-variant);margin-bottom:32px;line-height:1.6}
+.t-field{margin-bottom:16px}
+.t-field-label{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:8px}
+.t-field-input{width:100%;background:var(--surface-low);border:1.5px solid var(--surface-high);border-radius:var(--radius-md);padding:12px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--on-surface);outline:none;transition:border-color var(--motion-base)}
+.t-field-input:focus{border-color:var(--primary);background:var(--surface-lowest)}
+.t-field-input::placeholder{color:var(--on-surface-variant);opacity:0.6}
+.t-status{margin-top:12px;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;font-family:'Inter',sans-serif;display:none}
+.t-status.success{display:block;background:rgba(31,157,99,0.1);border:1px solid rgba(31,157,99,0.3);color:var(--ok)}
+.t-status.error{display:block;background:rgba(186,26,26,0.08);border:1px solid rgba(186,26,26,0.25);color:var(--danger)}
+#adminScreen{display:none}
+.dash-hero{background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:40px 0 0}
+.dash-eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;opacity:0.75;margin-bottom:8px}
+.dash-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-0.03em;text-transform:uppercase;line-height:0.95}
+.dash-venue-name{color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-top:10px}
+.tab-nav{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.15);margin-top:32px}
+.tab-btn{padding:14px 28px;background:transparent;border:0;border-bottom:3px solid transparent;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);cursor:pointer;transition:all var(--motion-base);margin-bottom:-1px}
+.tab-btn:hover{color:rgba(255,255,255,0.85)}
+.tab-btn.is-active{color:#fff;border-bottom-color:#fff}
+.dash-panel{display:none;padding:40px 0 80px}
+.dash-panel.is-active{display:block}
+.section-card{background:var(--surface-lowest);border-radius:var(--radius-xl);padding:28px;margin-bottom:20px;border:1px solid rgba(115,118,136,0.1)}
+.section-card-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.section-card-dot{width:8px;height:8px;border-radius:50%;background:var(--primary)}
+.section-card-label{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-0.01em}
+.t-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.site-footer{margin-top:auto;border-top:1px solid rgba(115,118,136,0.12);padding:32px 0}
+.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase}
+.footer-copy{font-size:12px;color:var(--on-surface-variant)}
+/* Ranked Match panel wrapper */
+#ranked-match-container{max-width:480px;margin:0 auto}
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.t-form-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.login-card{padding:32px 24px}.tab-btn{padding:12px 16px;font-size:11px}}
+
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --blue: #1A6FE8;
+      --blue-dark: #0D52B8;
+      --blue-light: #EBF2FF;
+      --blue-mid: #C5D9FA;
+      --white: #FFFFFF;
+      --bg: #F0F5FF;
+      --card: #FFFFFF;
+      --text: #0F172A;
+      --text2: #475569;
+      --text3: #94A3B8;
+      --border: #E2E8F0;
+      --green: #16A34A;
+      --green-light: #DCFCE7;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
+      --gold: #F59E0B;
+      --gold-light: #FEF3C7;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 2px 12px rgba(26,111,232,0.08);
+      --shadow-md: 0 4px 24px rgba(26,111,232,0.12);
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+
+    .hidden { display: none !important; }
+
+    /* HEADER */
+    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header-logo { display: flex; align-items: center; gap: 8px; }
+    .header-logo-mark { width: 32px; height: 32px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .header-title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 11px; color: var(--text3); font-weight: 500; margin-top: 1px; }
+    .header-badge { background: var(--blue-light); color: var(--blue); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    /* SCREEN */
+    .screen { padding: 20px; }
+    .screen-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; }
+    .screen-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+    /* CARD */
+    .card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 12px; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+    /* INPUTS */
+    .input-group { margin-bottom: 14px; }
+    .input-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+    .input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .input:focus { border-color: var(--blue); background: white; }
+    .input::placeholder { color: var(--text3); }
+    select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+    /* BUTTONS */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; width: 100%; min-height: 48px; }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-secondary { background: var(--blue-light); color: var(--blue); }
+    .btn-secondary:hover { background: var(--blue-mid); }
+    .btn-danger { background: var(--red-light); color: var(--red); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
+    .btn-sm { padding: 8px 14px; font-size: 13px; min-height: 36px; border-radius: 8px; width: auto; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* SEGMENT */
+    .segment { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 4px; gap: 4px; margin-bottom: 14px; }
+    .seg-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; border-radius: 7px; cursor: pointer; transition: all 0.15s; color: var(--text2); background: transparent; }
+    .seg-btn.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+    /* COUNTER */
+    .counter { display: flex; align-items: center; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid var(--border); overflow: hidden; }
+    .counter-btn { width: 44px; height: 44px; border: none; background: transparent; font-size: 20px; color: var(--blue); cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 600; transition: background 0.1s; }
+    .counter-btn:hover { background: var(--blue-light); }
+    .counter-val { flex: 1; text-align: center; font-size: 18px; font-weight: 700; color: var(--text); }
+
+    /* PLAYER CHIP */
+    .player-chip { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .player-chip.selected { background: var(--blue-light); border-color: var(--blue); }
+    .player-chip.selected .chip-name { color: var(--blue); }
+    .chip-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+    .chip-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .chip-check { width: 20px; height: 20px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .chip-gender { font-size: 11px; color: var(--text3); background: var(--border); padding: 1px 6px; border-radius: 20px; }
+
+    /* SEARCH */
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
+    .search-input { padding-left: 38px !important; }
+
+    /* SCORE */
+    .score-row { display: flex; align-items: center; gap: 8px; }
+    .score-team { flex: 1; }
+    .score-team-name { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-align: center; line-height: 1.4; min-height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .score-vs { font-size: 18px; font-weight: 800; color: var(--text3); padding: 0 4px; margin-top: 22px; }
+    .score-input { width: 100%; text-align: center; font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; transition: all 0.15s; }
+    .score-input:focus { border-color: var(--blue); background: white; }
+    .score-input.winner { border-color: var(--green); background: var(--green-light); color: var(--green); }
+    .score-input.loser { border-color: var(--red-light); background: var(--red-light); color: var(--red); }
+
+    /* COURT CARD */
+    .court-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); border: 1.5px solid var(--border); margin-bottom: 14px; }
+    .court-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .court-badge { background: var(--blue); color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+    .court-status { font-size: 12px; font-weight: 600; }
+    .court-status.done { color: var(--green); }
+    .court-status.pending { color: var(--text3); }
+
+    /* LEADERBOARD */
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1.5px solid var(--border); }
+    .lb-row.rank1 { border-color: #FFD700; background: #FFFBEB; }
+    .lb-row.rank2 { border-color: #C0C0C0; background: #F8FAFC; }
+    .lb-row.rank3 { border-color: #CD7F32; background: #FFF8F5; }
+    .lb-rank { font-size: 16px; font-weight: 800; width: 28px; text-align: center; color: var(--text3); }
+    .lb-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+    .lb-info { flex: 1; }
+    .lb-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .lb-elo { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+    .lb-stats { text-align: right; }
+    .lb-wl { font-size: 14px; font-weight: 700; color: var(--text); }
+    .lb-diff { font-size: 12px; font-weight: 600; }
+    .lb-diff.pos { color: var(--green); }
+    .lb-diff.neg { color: var(--red); }
+    .lb-diff.zero { color: var(--text3); }
+
+    /* ROUND BADGE */
+    .round-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--blue); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+
+    /* PODIUM */
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 24px 0; }
+    .podium-slot { display: flex; flex-direction: column; align-items: center; }
+    .podium-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; margin-bottom: 8px; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .podium-name { font-size: 12px; font-weight: 700; text-align: center; max-width: 80px; line-height: 1.3; }
+    .podium-base { border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: white; width: 80px; margin-top: 8px; }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 61px; z-index: 99; }
+    .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; background: transparent; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ALERT */
+    .alert { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+    .alert-red { background: var(--red-light); color: var(--red); }
+    .alert-blue { background: var(--blue-light); color: var(--blue); }
+    .alert-green { background: var(--green-light); color: var(--green); }
+
+    /* SPINNER */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    .spinner-blue { border-color: rgba(26,111,232,0.2); border-top-color: var(--blue); }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.25s ease; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+    .modal { background: var(--white); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 430px; max-height: 90vh; overflow-y: auto; }
+    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+
+    /* MISC */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-12 { margin-bottom: 12px; }
+    .text-center { text-align: center; }
+    .pb-safe { padding-bottom: 40px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .empty { text-align: center; padding: 32px 0; color: var(--text3); font-size: 14px; }
+    .partner-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--blue-light); border-radius: 8px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--blue); }
+
+    /* FIXED BOTTOM BAR */
+    .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: white; border-top: 1px solid var(--border); padding: 12px 20px; z-index: 50; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+    /* SELECTED TAGS */
+    .selected-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-light); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--blue); margin: 0 4px 4px 0; }
+    .selected-tag button { background: none; border: none; cursor: pointer; color: var(--blue); padding: 0; line-height: 1; font-size: 14px; }
+
+    /* PLAYER MINI */
+    .player-mini { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .mini-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; }
+
+    /* ROUND RECOMMENDATION */
+    .rec-banner { display:flex; align-items:flex-start; gap:10px; background:linear-gradient(135deg,#EBF2FF,#E0EAFF); border:1.5px solid var(--blue-mid); border-radius:var(--radius-sm); padding:12px 14px; margin-top:12px; }
+    .rec-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+    .rec-body { flex:1; }
+    .rec-title { font-size:12px; font-weight:700; color:var(--blue); margin-bottom:3px; text-transform:uppercase; letter-spacing:0.4px; }
+    .rec-text { font-size:13px; color:var(--text); line-height:1.5; }
+    .rec-text strong { color:var(--blue); }
+    .rec-detail { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
+  
 </style>
 </head>
 <body>
-<datalist id="existing-players"></datalist>
-<div class="wrap">
-  <div id="loginScreen">
-    <div class="login-card">
-      <div class="login-title">VENUE ADMIN</div>
-      <div class="field"><label class="field-label">Username</label><input class="field-input" id="loginUser" type="text" placeholder="admin"></div>
-      <div class="field"><label class="field-label">Password</label><input class="field-input" id="loginPass" type="password" placeholder="••••••"></div>
-      <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
-      <div class="status-msg" id="loginStatus"></div>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a href="https://trekkr.online" class="brand">Trekkr</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="https://trekkr.online">National Ranking</a>
+      <a class="nav-link" href="https://venue.trekkr.online">Venues</a>
+      <a class="nav-link" href="https://trekkr.online#how-it-works">How It Works</a>
+    </nav>
+    <div class="header-actions">
+      <span id="headerVenueLabel" style="font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary);display:none"></span>
+      <button class="btn-trekkr btn-trekkr--danger btn-trekkr--sm" id="headerLogout" style="display:none" onclick="doAdminLogout()">Sign Out</button>
     </div>
   </div>
-  <div id="adminScreen" style="display:none">
-    <div class="page-title">VENUE ADMIN</div>
-    <div class="page-sub" id="adminVenueLabel">MANAGING: —</div>
-    <div class="logout-bar"><span class="user-info" id="userLabel">—</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>IMPORT FROM URL</div>
-      <div class="field"><label class="field-label">Americano-Padel.com URL</label><input class="field-input" id="parseUrl" type="text" placeholder="https://americano-padel.com/r/..."></div>
-      <button class="btn btn-primary" onclick="parseUrl()">Parse & Import →</button>
-      <div class="status-msg" id="parseStatus"></div>
-    </div>
+</header>
 
-    <!-- SKORAPP PASTE IMPORT -->
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>IMPORT FROM SKORAPP</div>
-      <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px">
-        Open your SkorApp game link → scroll to the match results → select all match text → paste below.
-        <br>Format: "Match 1 ... Score1 Score2 ... Player1 Player2 VS Player3 Player4"
-      </p>
-      <div class="field">
-        <label class="field-label">Paste SkorApp Match Data</label>
-        <textarea class="field-textarea" id="skorPaste" rows="8" placeholder="Match 1&#10;04  01&#10;Yaska  Agung&#10;Radius  VS  Wayan&#10;Court 3&#10;04  01&#10;Argya  Alfian&#10;Garindhaka  VS  mendra&#10;..."></textarea>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- LOGIN SCREEN                                           -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <p class="login-eyebrow">Venue Portal</p>
+    <h1 class="login-title">Venue<br/>Admin</h1>
+    <p class="login-sub">Sign in to manage your court info and run Trekkr Ranked Match sessions.</p>
+    <div class="t-field">
+      <label class="t-field-label" for="loginUser">Username</label>
+      <input class="t-field-input" id="loginUser" type="text" placeholder="venue username" autocomplete="username"/>
+    </div>
+    <div class="t-field">
+      <label class="t-field-label" for="loginPass">Password</label>
+      <input class="t-field-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key='Enter')doAdminLogin()"/>
+    </div>
+    <button class="btn-trekkr btn-trekkr--primary" style="width:100%;padding:14px;font-size:14px;margin-top:8px" onclick="doAdminLogin()">Sign In &rarr;</button>
+    <div class="t-status" id="loginStatus"></div>
+    <p style="margin-top:20px;font-size:12px;color:var(--on-surface-variant);text-align:center">Not a Trekkr venue yet? <a href="https://venue.trekkr.online" style="color:var(--primary);font-weight:700">Get listed &rarr;</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- ADMIN DASHBOARD                                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="adminScreen">
+  <div class="dash-hero">
+    <div class="container">
+      <div style="padding-bottom:0">
+        <p class="dash-eyebrow">Venue Admin Portal</p>
+        <h1 class="dash-title">Admin<br/>Dashboard</h1>
+        <p class="dash-venue-name" id="adminVenueLabel">Loading...</p>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div class="field" style="margin-bottom:0">
-          <label class="field-label">Gender</label>
-          <div class="gender-toggle">
-            <div class="gender-opt active" onclick="skorGender='M';this.parentElement.querySelectorAll('.gender-opt').forEach(o=>o.classList.remove('active'));this.classList.add('active')">MEN</div>
-            <div class="gender-opt" onclick="skorGender='F';this.parentElement.querySelectorAll('.gender-opt').forEach(o=>o.classList.remove('active'));this.classList.add('active')">WOMEN</div>
-            <div class="gender-opt" onclick="skorGender='X';this.parentElement.querySelectorAll('.gender-opt').forEach(o=>o.classList.remove('active'));this.classList.add('active')">MIXED</div>
+      <nav class="tab-nav" aria-label="Admin sections">
+        <button class="tab-btn is-active" onclick="switchAdminTab('venue-info')" id="atab-venue-info">Venue Info</button>
+        <button class="tab-btn" onclick="switchAdminTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ── TAB: VENUE INFO ── -->
+  <div class="dash-panel is-active" id="apanel-venue-info">
+    <div class="container">
+      <div class="section-card">
+        <div class="section-card-title">
+          <span class="section-card-dot"></span>
+          <span class="section-card-label">Venue Information</span>
+        </div>
+        <div class="t-form-grid">
+          <div class="t-field">
+            <label class="t-field-label" for="venueSchedule">Playing Schedule</label>
+            <textarea class="t-field-input" id="venueSchedule" placeholder="e.g. Every Monday 8am–10am" style="min-height:72px;resize:vertical"></textarea>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venuePrize">Prize Pool</label>
+            <input class="t-field-input" id="venuePrize" placeholder="e.g. IDR 2,500,000"/>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueContact">Contact / Social</label>
+            <input class="t-field-input" id="venueContact" placeholder="@instagram or WhatsApp"/>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueLocation">Location</label>
+            <input class="t-field-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="parseSkorApp()">Parse SkorApp →</button>
+        <button class="btn-trekkr btn-trekkr--primary" onclick="updateVenueInfo()" style="margin-top:8px">Save Changes &rarr;</button>
+        <div class="t-status" id="venueStatus"></div>
       </div>
-      <div id="skorPreview" style="display:none;margin-top:14px">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);margin-bottom:8px" id="skorSummary"></div>
-        <div id="skorMatchList" style="max-height:300px;overflow-y:auto"></div>
-        <button class="btn btn-primary" style="margin-top:12px" onclick="submitSkorMatches()">Submit All SkorApp Matches →</button>
-      </div>
-      <div class="status-msg" id="skorStatus"></div>
-    </div>
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>MANUAL MATCH ENTRY</div>
-      <div id="matchEntries"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn btn-ghost btn-sm" onclick="addMatchEntry()">+ Add Match</button>
-        <button class="btn btn-primary" onclick="submitMatches()">Submit All Matches →</button>
-      </div>
-      <div class="status-msg" id="matchStatus"></div>
-    </div>
-    <div class="section">
-      <div class="section-title"><span class="dot"></span>EDIT VENUE INFO</div>
-      <div class="field"><label class="field-label">Schedule</label><textarea class="field-textarea" id="venueSchedule" placeholder="Every Monday 8am-10am"></textarea></div>
-      <div class="field"><label class="field-label">Prize Pool</label><input class="field-input" id="venuePrize" placeholder="IDR 2.5 Million"></div>
-      <div class="field"><label class="field-label">Contact</label><input class="field-input" id="venueContact" placeholder="@instagram or phone"></div>
-      <button class="btn btn-primary" onclick="updateVenueInfo()">Save Changes →</button>
-      <div class="status-msg" id="venueStatus"></div>
     </div>
   </div>
-  <footer>TREKKR · <span>VENUE ADMIN</span> · © 2026</footer>
-</div>
-<script src="trekkr-api.js"></script>
-<script>
-let matchCount=0,adminVenue='';
 
-function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&(s.role==='venue_admin'||s.role==='superadmin')){adminVenue=s.venue;showDash(s)}}
+  <!-- ── TAB: RANKED MATCH ── -->
+  <div class="dash-panel" id="apanel-ranked-match">
+    <div class="container">
+      <div id="ranked-match-container">
+<div id="ranked-match-container">
 
-async function doLogin(){
-  const u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value,st=document.getElementById('loginStatus');
-  try{const d=await TrekkrAPI.login(u,p);if(d.role!=='venue_admin'&&d.role!=='superadmin'){st.className='status-msg error';st.textContent='Access denied';return}adminVenue=d.venue;showDash(d)}
-  catch(e){st.className='status-msg error';st.textContent=e.message||'Login failed'}
-}
 
-function showDash(s){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('adminScreen').style.display='block';
-  document.getElementById('adminVenueLabel').textContent=`MANAGING: ${adminVenue||'ALL'}`;
-  document.getElementById('userLabel').textContent=`Logged in as ${s.username||''}`;
-  addMatchEntry();loadVenueInfo();
-}
+    <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: LOGIN                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: SETUP                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-setup" class="screen fade-up hidden pb-safe">
+    <div class="screen-title">Setup Match</div>
+    <div class="screen-sub">Konfigurasi Trekkr Ranked Match</div>
+    <div class="alert alert-red hidden" id="setup-error"></div>
 
-function doLogout(){TrekkrAPI.logout();location.reload()}
-
-async function parseUrl(){
-  const url=document.getElementById('parseUrl').value,st=document.getElementById('parseStatus');
-  if(!url){st.className='status-msg error';st.textContent='Please enter a URL';return}
-  if(!url.includes('americano-padel.com/r/')){st.className='status-msg error';st.textContent='Only americano-padel.com URLs supported';return}
-  st.className='status-msg success';st.textContent='Fetching and parsing...';
-  try{
-    const r=await TrekkrAPI.parseUrl(url,adminVenue,'M');
-    if(!r.success){st.className='status-msg error';st.textContent=r.error||'Parse failed';return}
-    if(r.matches&&r.matches.length>0){
-      document.getElementById('matchEntries').innerHTML='';matchCount=0;
-      r.matches.forEach(m=>{
-        matchCount++;const e=document.createElement('div');e.className='match-entry';e.id=`match-${matchCount}`;
-        e.innerHTML=`<div class="match-header"><span class="match-num">R${m.round||matchCount} C${m.court||1}</span>
-          <div class="gender-toggle"><div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div><div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div><div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div></div>
-          <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button></div>
-          <input type="hidden" id="match-${matchCount}-gender" value="M">
-          <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" value="${m.p1t1}" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t1" value="${m.p2t1}" list="existing-players"><input class="field-input" id="match-${matchCount}-s1" type="number" value="${m.scoreT1}" min="0"></div>
-          <div class="vs-row">VS</div>
-          <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" value="${m.p1t2}" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t2" value="${m.p2t2}" list="existing-players"><input class="field-input" id="match-${matchCount}-s2" type="number" value="${m.scoreT2}" min="0"></div>`;
-        document.getElementById('matchEntries').appendChild(e);
-      });
-      st.textContent=`✓ Parsed "${r.sessionName}" — ${r.matchCount} matches, ${r.playerCount} players. Review & submit below.`;
-    }else if(r.standings&&r.standings.length>0){st.textContent=`✓ Found ${r.playerCount} players in standings. Individual matches not extractable — use manual entry.`}
-    else{st.className='status-msg error';st.textContent='Could not extract match data. Try manual entry.'}
-  }catch(e){st.className='status-msg error';st.textContent=`Parse failed: ${e.message}`}
-}
-
-function addMatchEntry(){
-  matchCount++;const c=document.getElementById('matchEntries'),e=document.createElement('div');
-  e.className='match-entry';e.id=`match-${matchCount}`;
-  e.innerHTML=`<div class="match-header"><span class="match-num">MATCH #${matchCount}</span>
-    <div class="gender-toggle"><div class="gender-opt active" data-g="M" onclick="setMG(${matchCount},'M',this)">MEN</div><div class="gender-opt" data-g="F" onclick="setMG(${matchCount},'F',this)">WOMEN</div><div class="gender-opt" data-g="X" onclick="setMG(${matchCount},'X',this)">MIXED</div></div>
-    <button class="btn btn-ghost btn-sm" onclick="rmMatch(${matchCount})" style="margin-left:8px">✕</button></div>
-    <input type="hidden" id="match-${matchCount}-gender" value="M">
-    <div class="team-label">TEAM 1</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t1" placeholder="Player 1" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t1" placeholder="Player 2" list="existing-players"><input class="field-input" id="match-${matchCount}-s1" type="number" placeholder="Score" min="0"></div>
-    <div class="vs-row">VS</div>
-    <div class="team-label">TEAM 2</div><div class="team-row"><input class="field-input" id="match-${matchCount}-p1t2" placeholder="Player 1" list="existing-players"><input class="field-input" id="match-${matchCount}-p2t2" placeholder="Player 2" list="existing-players"><input class="field-input" id="match-${matchCount}-s2" type="number" placeholder="Score" min="0"></div>`;
-  c.appendChild(e);
-}
-
-function setMG(id,g,el){document.getElementById(`match-${id}-gender`).value=g;el.parentElement.querySelectorAll('.gender-opt').forEach(o=>o.classList.remove('active'));el.classList.add('active')}
-function rmMatch(id){const e=document.getElementById(`match-${id}`);if(e)e.remove()}
-
-// --- 1. RUMUS ELO TREKKR (2v2 PADEL ENGINE) ---
-function calculateTrekkrELOChange(avgRatingTeam1, avgRatingTeam2, score1, score2, isProvisional = false) {
-    const expected1 = 1 / (1 + Math.pow(10, (avgRatingTeam2 - avgRatingTeam1) / 400));
-    const expected2 = 1 / (1 + Math.pow(10, (avgRatingTeam1 - avgRatingTeam2) / 400));
-
-    let actual1 = 0.5, actual2 = 0.5; 
-    const margin = Math.abs(score1 - score2);
-    if (score1 > score2) { actual1 = 1; actual2 = 0; }
-    else if (score2 > score1) { actual1 = 0; actual2 = 1; }
-
-    const mov = margin === 0 ? 1 : 1 + (margin * 0.1); 
-    const K = isProvisional ? 50 : 32;
-
-    const change1 = Math.round(K * mov * (actual1 - expected1));
-    const change2 = Math.round(K * mov * (actual2 - expected2));
-
-    return { change1, change2 };
-}
-
-// --- 2. FUNGSI SUBMIT MATCHES TERBARU ---
-async function submitMatches(){
-// D. Kalkulasi ELO per game (Berurutan)
-matches.forEach(m => {
-        const avgEloT1 = (playerRatings[m.p1t1] + playerRatings[m.p2t1]) / 2;
-        const avgEloT2 = (playerRatings[m.p1t2] + playerRatings[m.p2t2]) / 2;
-        const isProv = (playerRatings[m.p1t1] === 1350 || playerRatings[m.p2t1] === 1350 || playerRatings[m.p1t2] === 1350 || playerRatings[m.p2t2] === 1350);
-        
-        const { change1, change2 } = calculateTrekkrELOChange(avgEloT1, avgEloT2, m.scoreT1, m.scoreT2, isProv);
-        
-        playerRatings[m.p1t1] += change1;
-        playerRatings[m.p2t1] += change1;
-        playerRatings[m.p1t2] += change2;
-        playerRatings[m.p2t2] += change2;
-        
-        elo_results.push(
-            { player: m.p1t1, new_elo: playerRatings[m.p1t1], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
-            { player: m.p2t1, new_elo: playerRatings[m.p2t1], elo_change: change1, w: m.scoreT1 > m.scoreT2 ? 1 : 0, l: m.scoreT1 < m.scoreT2 ? 1 : 0 },
-            { player: m.p1t2, new_elo: playerRatings[m.p1t2], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 },
-            { player: m.p2t2, new_elo: playerRatings[m.p2t2], elo_change: change2, w: m.scoreT2 > m.scoreT1 ? 1 : 0, l: m.scoreT2 < m.scoreT1 ? 1 : 0 }
-        );
-    });
-
-    // --- UBAH URUTANNYA DI SINI ---
-    
-    // F. (PINDAHKAN KE ATAS) Simpan ke tab Venue DULU. 
-    // Ini akan mendeteksi pemain baru dan membuatkan profil INITIAL 1350 di database.
-    const r = await TrekkrAPI.addVenueMatch(adminVenue, matches);
-
-    // E. (PINDAHKAN KE BAWAH) Simpan ke tab Sessions & ELO Log.
-    // Ini akan menimpa angka 1350 tadi dengan ELO hasil pertandingan yang sesungguhnya.
-    const sessionPayload = {
-        sessionName: document.getElementById('parseUrl')?.value ? "Americano Import" : "Manual Match Entry",
-        venue: adminVenue,
-        sourceUrl: document.getElementById('parseUrl')?.value || "",
-        matchCount: matches.length,
-        playerCount: uniquePlayers.length,
-        players: uniquePlayers,
-        matches: matches,
-        elo_results: elo_results
-    };
-    
-    await TrekkrAPI.saveSession(sessionPayload);
-    // --------------------------------
-
-    st.className='status-msg success';
-    st.textContent=`✓ ${r.added} matches & ELO successfully submitted!`;
-    document.getElementById('matchEntries').innerHTML='';matchCount=0;addMatchEntry();
-
-async function loadVenueInfo(){
-  if(!adminVenue)return;
-  try{const d=await TrekkrAPI.getVenues();const v=d.venues.find(x=>x.name.toLowerCase()===adminVenue.toLowerCase());
-    if(v){document.getElementById('venueSchedule').value=v.schedule||'';document.getElementById('venuePrize').value=v.prizePool||'';document.getElementById('venueContact').value=v.contact||''}}
-  catch(e){console.warn('Could not load venue info')}
-}
-
-async function updateVenueInfo(){
-  const st=document.getElementById('venueStatus');if(!adminVenue){st.className='status-msg error';st.textContent='No venue assigned';return}
-  try{await TrekkrAPI.updateVenue(adminVenue,{schedule:document.getElementById('venueSchedule').value,prizePool:document.getElementById('venuePrize').value,contact:document.getElementById('venueContact').value});
-    st.className='status-msg success';st.textContent='✓ Venue info updated'}
-  catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to update'}
-}
-
-async function loadPlayerAutocomplete() {
-    try {
-        const eloData = await TrekkrAPI.getLatestElo();
-        const players = Object.keys(eloData.players || {});
-
-        const datalist = document.getElementById('existing-players');
-        // Masukkan semua nama pemain ke dalam daftar dropdown
-        datalist.innerHTML = players.map(p => `<option value="${p}">`).join('');
-    } catch (e) {
-        console.warn("Gagal memuat daftar pemain untuk autocomplete");
-    }
-}
-
-// ── SKORAPP PASTE PARSER ──
-let skorGender='M', skorParsedMatches=[];
-
-function parseSkorApp(){
-  const raw=document.getElementById('skorPaste').value.trim();
-  const st=document.getElementById('skorStatus');
-  const preview=document.getElementById('skorPreview');
-  if(!raw){st.className='status-msg error';st.textContent='Paste SkorApp data first';preview.style.display='none';return}
-
-  skorParsedMatches=[];
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-
-  let i=0;
-  while(i<lines.length){
-    // Look for score line: two numbers like "04  01" or "4 1"
-    const scoreMatch=lines[i].match(/^(\d{1,2})\s+(\d{1,2})$/);
-    if(scoreMatch){
-      const s1=parseInt(scoreMatch[1]), s2=parseInt(scoreMatch[2]);
-      // Collect name lines until next score/match/court
-      let nameLines=[], j=i+1;
-      while(j<lines.length){
-        const nextScore=lines[j].match(/^(\d{1,2})\s+(\d{1,2})$/);
-        if(nextScore||/^Match\s+\d/i.test(lines[j]))break;
-        if(!/^Court\s+\d/i.test(lines[j]))nameLines.push(lines[j]);
-        j++;
-      }
-      // Parse: find the VS line, names before=T1, names after=T2
-      let t1=[],t2=[],foundVS=false;
-      nameLines.forEach(line=>{
-        if(/\sVS\s/i.test(line)){
-          const parts=line.split(/\s+VS\s+/i);
-          t1.push(parts[0].trim());
-          t2.push(parts[1].trim());
-          foundVS=true;
-        }else if(!foundVS){
-          t1.push(line);
-        }else{
-          t2.push(line);
-        }
-      });
-      if(t1.length&&t2.length){
-        skorParsedMatches.push({p1t1:t1[0],p2t1:t1[1]||'',p1t2:t2[0],p2t2:t2[1]||'',scoreT1:s1,scoreT2:s2,gender:skorGender});
-      }
-      i=j;
-    }else{
-      i++;
-    }
-  }
-
-  if(!skorParsedMatches.length){
-    st.className='status-msg error';st.textContent='Could not parse any matches. Make sure you paste the match results (not just the leaderboard).';
-    preview.style.display='none';return;
-  }
-
-  // Show preview
-  const players=[...new Set(skorParsedMatches.flatMap(m=>[m.p1t1,m.p2t1,m.p1t2,m.p2t2].filter(Boolean)))];
-  document.getElementById('skorSummary').textContent=`✓ Parsed ${skorParsedMatches.length} matches · ${players.length} players`;
-
-  let ph='';
-  skorParsedMatches.forEach((m,idx)=>{
-    const w1=m.scoreT1>m.scoreT2, w2=m.scoreT2>m.scoreT1;
-    ph+=`<div class="match-entry" style="padding:10px;margin-bottom:6px">
-      <div class="match-header"><span class="match-num">GAME ${idx+1}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${w1?'var(--lime)':'var(--muted2)'}">${m.scoreT1}</span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted)">vs</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${w2?'var(--lime)':'var(--muted2)'}">${m.scoreT2}</span></div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;justify-content:space-between">
-        <span style="color:${w1?'var(--lime)':'var(--text)'}">${m.p1t1}${m.p2t1?' & '+m.p2t1:''}</span>
-        <span style="color:${w2?'var(--lime)':'var(--text)'}">${m.p1t2}${m.p2t2?' & '+m.p2t2:''}</span>
+    <!-- Courts -->
+    <div class="card">
+      <div class="card-title">Jumlah Court</div>
+      <div class="counter">
+        <button class="counter-btn" onclick="changeCourts(-1)">−</button>
+        <div class="counter-val" id="courts-val">2</div>
+        <button class="counter-btn" onclick="changeCourts(1)">+</button>
       </div>
-    </div>`;
-  });
-  document.getElementById('skorMatchList').innerHTML=ph;
-  preview.style.display='block';
-  st.className='status-msg success';st.textContent='Review matches below, then click Submit.';
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="courts-hint">Minimal 8 pemain diperlukan</div>
+    </div>
+
+    <!-- Format -->
+    <div class="card">
+      <div class="card-title">Format Match</div>
+      <div class="segment">
+        <button class="seg-btn active" id="fmt-individual" onclick="setFormat('individual')">🔀 Individual</button>
+        <button class="seg-btn" id="fmt-fixed" onclick="setFormat('fixed')">👥 Fixed Partner</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2)" id="format-hint">Partner berubah setiap ronde berdasarkan ranking</div>
+    </div>
+
+    <!-- Score Format -->
+    <div class="card">
+      <div class="card-title">Format Skor</div>
+      <div class="segment">
+        <button class="seg-btn active" id="sfmt-race" onclick="setScoreFormat('race')">Race To</button>
+        <button class="seg-btn" id="sfmt-bestof" onclick="setScoreFormat('bestof')">Best Of</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:13px;color:var(--text2);font-weight:600" id="score-label">Race to</div>
+        <div class="counter" style="flex:1">
+          <button class="counter-btn" onclick="changeScoreTarget(-1)">−</button>
+          <div class="counter-val" id="score-target-val">4</div>
+          <button class="counter-btn" onclick="changeScoreTarget(1)">+</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3)" id="score-hint">Race to 4 games</div>
+    </div>
+
+        <div class="card">
+      <div class="card-title">Kategori Pemain</div>
+      <div class="segment">
+        <button class="seg-btn active" id="sg-auto" onclick="setSessionGender('auto')">🔀 Auto</button>
+        <button class="seg-btn" id="sg-M" onclick="setSessionGender('M')">♂ Men</button>
+        <button class="seg-btn" id="sg-F" onclick="setSessionGender('F')">♀ Women</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3)" id="sg-hint">Auto: ditentukan dari gender pemain yang dipilih</div>
+      <div style="margin-top:8px;padding:8px 10px;background:rgba(245,158,11,0.08);
+        border:1px solid rgba(245,158,11,0.25);border-radius:8px;
+        font-size:11px;color:var(--gold);line-height:1.5">
+        ⚠️ Untuk menjaga fairness dalam Trekkr ranked match, pertandingan ganda campuran (fixed mixed) belum diperbolehkan.
+      </div>
+    </div>
+
+    <button class="btn btn-primary mt-8" onclick="goToPlayers()">Pilih Pemain →</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PLAYERS                                     -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-players" class="fade-up hidden">
+    <div style="padding:16px 20px 0;background:var(--bg)">
+      <div style="margin-bottom:10px">
+        <div class="screen-title" style="margin-bottom:2px">Pilih Pemain</div>
+        <div style="font-size:13px;color:var(--text2)">
+          <span id="player-count-label" style="font-weight:700;color:var(--blue)">0</span>
+          <span id="player-min-label"> / min 8 dipilih</span>
+        </div>
+      </div>
+      <div class="alert alert-red hidden" id="players-error"></div>
+      <!-- Single search input — jadi satu-satunya entry point -->
+      <div class="search-wrap" style="position:relative">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        </span>
+        <input class="input search-input" id="player-search"
+          placeholder="Ketik nama pemain..."
+          oninput="renderPlayerList()"
+          autocomplete="off" autocorrect="off" spellcheck="false" />
+        <!-- Clear button -->
+        <button id="search-clear-btn" onclick="clearSearch()"
+          style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                 background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;
+                 line-height:1;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+          ×
+        </button>
+      </div>
+    </div>
+
+    <!-- Selected chips -->
+    <div id="selected-chips-wrap" style="padding:0 20px 8px;display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Dipilih (<span id="selected-count">0</span>)</div>
+      <div id="selected-chips"></div>
+    </div>
+
+
+    <!-- Round recommendation -->
+    <div id="round-rec-wrap" style="padding:0 20px 8px;display:none">
+      <div class="rec-banner">
+        <div class="rec-icon">💡</div>
+        <div class="rec-body">
+          <div class="rec-title">Rekomendasi Ronde</div>
+          <div class="rec-text" id="rec-main-text">–</div>
+          <div class="rec-detail" id="rec-detail-text"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Fixed partner section -->
+    <div id="partner-section" style="padding:0 20px 8px;display:none">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Pilih Partner (Fixed)</div>
+        <div id="partner-list"></div>
+      </div>
+    </div>
+
+    <!-- Player list -->
+    <div id="player-list" style="padding:0 20px;padding-bottom:100px"></div>
+
+    <!-- Bottom CTA -->
+    <div class="bottom-bar">
+      <button class="btn btn-primary" id="btn-start-match" onclick="startMatch()">Pilih pemain dahulu</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: MATCH                                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-match" class="hidden">
+    <div class="tabs">
+      <button class="tab active" id="tab-courts" onclick="switchTab('courts')">🎾 Courts</button>
+      <button class="tab" id="tab-leaderboard" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
+      <button class="tab" id="tab-history" onclick="switchTab('history')">📋 Riwayat</button>
+    </div>
+
+    <!-- Courts Tab -->
+    <div id="tab-content-courts" class="screen pb-safe fade-up">
+      <div class="flex items-center justify-between mb-12">
+        <div>
+          <div class="round-pill" id="round-pill">Ronde 1</div>
+          <div style="font-size:13px;color:var(--text2)" id="score-format-label">Race to 4</div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)" id="courts-progress">0/0 selesai</div>
+      </div>
+      <div class="alert alert-red hidden" id="match-error"></div>
+      <div class="submit-status" id="submit-status"></div>
+      <!-- Equal-match status bar — updates after every round -->
+      <div id="eq-status-bar" style="display:none"></div>
+      <div id="court-cards"></div>
+      <div id="bye-section" style="display:none">
+        <div class="card" style="background:var(--gold-light);border-color:var(--gold)">
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Istirahat Ronde Ini</div>
+          <div id="bye-players"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" id="btn-submit-round" onclick="submitRound()">Submit Skor & Lanjut Ronde →</button>
+        <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Akhiri Match</button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Tab -->
+    <div id="tab-content-leaderboard" class="screen pb-safe hidden fade-up">
+      <div class="flex items-center justify-between mb-12">
+        <div class="screen-title" style="margin-bottom:0">Live Leaderboard</div>
+        <div style="background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px" id="lb-round-badge">Ronde 1</div>
+      </div>
+      <div id="leaderboard-list"></div>
+      <div style="margin-top:20px">
+        <button class="btn btn-danger" onclick="showEndConfirm()">🏁 Akhiri Match</button>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="tab-content-history" class="screen pb-safe hidden fade-up">
+      <div class="screen-title mb-12">Riwayat Ronde</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SCREEN: DONE                                        -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="screen-done" class="screen fade-up hidden pb-safe">
+    <!-- Final result card — clean white -->
+    <div id="share-card">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:36px;margin-bottom:6px">🎉</div>
+        <div class="screen-title">Trekkr Ranked Match Selesai!</div>
+        <div class="screen-sub" id="done-sub"></div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px" id="done-venue"></div>
+      </div>
+
+      <!-- Podium top 3 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="text-align:center">🏆 Podium</div>
+        <div id="podium" class="podium"></div>
+      </div>
+
+      <!-- Full standings list -->
+      <div class="card">
+        <div class="card-title">Final Standings</div>
+        <div id="final-standings"></div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button id="btn-share" class="btn btn-primary" onclick="shareVenueUrl()"
+        style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;padding:14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Lihat Leaderboard Venue
+      </button>
+      <button class="btn btn-ghost" onclick="newMatch()">+ Match Baru</button>
+    </div>
+  </div>
+
+
+</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <div class="footer-brand">Trekkr</div>
+      <div class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</div>
+    </div>
+  </footer>
+</div>
+
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MODAL: ADD PLAYER                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-add-player" onclick="closeAddPlayerModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Tambah Pemain Baru</div>
+    <div class="alert alert-red hidden" id="add-player-error"></div>
+    <div class="input-group">
+      <label class="input-label">First Name *</label>
+      <input class="input" id="new-first-name" placeholder="Contoh: Budi" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Last Name *</label>
+      <input class="input" id="new-last-name" placeholder="Contoh: Santoso" />
+    </div>
+    <div class="input-group">
+      <label class="input-label">Gender</label>
+      <div class="segment">
+        <button class="seg-btn active" id="g-male" onclick="setNewGender('M')">♂ Male</button>
+        <button class="seg-btn" id="g-female" onclick="setNewGender('F')">♀ Female</button>
+      </div>
+    </div>
+    <div class="alert alert-blue hidden" id="add-player-preview"></div>
+    <!-- similar-players-wrap retained for JS compatibility but hidden -->
+    <div class="similar-players-wrap" id="similar-players-wrap" style="display:none!important">
+      <div id="similar-players-list"></div>
+    </div>
+    <div class="grid-2">
+      <button class="btn btn-ghost" onclick="closeAddPlayerModal()">Batal</button>
+      <button class="btn btn-primary" id="btn-add-player" onclick="handleAddPlayer()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- FULL CYCLE WARNING MODAL — mobile bottom sheet -->
+<div class="modal-overlay hidden" id="modal-fullcycle" onclick="closeCycleModal()">
+  <div class="fullcycle-sheet" onclick="event.stopPropagation()">
+    <div class="fullcycle-drag"></div>
+    <!-- gradient header -->
+    <div class="fc-header">
+      <div class="fc-header-top">
+        <div class="fc-badge">🔄</div>
+        <div class="fc-header-txt">
+          <div class="fc-title">Full Cycle Tercapai!</div>
+          <div class="fc-sub">Semua pemain sudah pernah bermain bersama</div>
+        </div>
+      </div>
+      <div class="fc-pills" id="fc-pills">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <!-- body -->
+    <div class="fc-body">
+      <!-- time estimate -->
+      <div class="fc-time-card" id="fc-time-card" style="display:none">
+        <div class="fc-time-big" id="fc-time-val">—</div>
+        <div class="fc-time-desc" id="fc-time-desc"></div>
+      </div>
+      <!-- match count per player -->
+      <div class="fc-players-label">Match dimainkan tiap pemain</div>
+      <div id="fc-player-rows"></div>
+      <!-- actions -->
+      <div class="fc-actions">
+        <button class="fc-btn fc-btn-end" onclick="closeCycleModal(); showEndConfirm()">🏁 Akhiri</button>
+        <button class="fc-btn fc-btn-cont" onclick="closeCycleModal()">▶ Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MODAL: END CONFIRM                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-end-confirm" onclick="closeEndConfirm()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏁 Akhiri Match?</div>
+    <div style="font-size:14px;color:var(--text2);margin-bottom:20px">
+      Ranked Match akan diakhiri dan hasil disimpan ke Trekkr. Pemenang ditentukan berdasarkan W/L saat ini.
+    </div>
+    <div class="card" style="background:var(--blue-light);border-color:var(--blue-mid);margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">Top 3 Saat Ini</div>
+      <div id="end-top3"></div>
+    </div>
+    <div class="grid-2">
+      <button class="btn btn-ghost" onclick="closeEndConfirm()">Kembali</button>
+      <button class="btn btn-danger" id="btn-end-match" onclick="endMatch()">Ya, Akhiri</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://trekkr.online/trekkr-api.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════
+   ADMIN AUTH — uses TrekkrAPI (same as venue pages)
+   Token is shared with Ranked Match state below
+   ══════════════════════════════════════════════════ */
+function showTStatus(el, type, msg) {
+  el.className = 't-status ' + type;
+  el.textContent = msg;
 }
 
-async function submitSkorMatches(){
-  const st=document.getElementById('skorStatus');
-  if(!skorParsedMatches.length){st.className='status-msg error';st.textContent='No matches to submit. Parse first.';return}
-  st.className='status-msg success';st.textContent='Submitting matches & calculating ELO...';
-  try{
-    // A. Get current ELO ratings
-    const eloData=await TrekkrAPI.getLatestElo();
-    const playerRatings={};
-    const uniquePlayers=[...new Set(skorParsedMatches.flatMap(m=>[m.p1t1,m.p2t1,m.p1t2,m.p2t2].filter(Boolean)))];
-    uniquePlayers.forEach(p=>{playerRatings[p]=eloData.players?.[p]?.elo||1350});
-
-    // B. Calculate ELO changes
-    const elo_results=[];
-    skorParsedMatches.forEach(m=>{
-      const avgT1=(playerRatings[m.p1t1]+(playerRatings[m.p2t1]||playerRatings[m.p1t1]))/( m.p2t1?2:1);
-      const avgT2=(playerRatings[m.p1t2]+(playerRatings[m.p2t2]||playerRatings[m.p1t2]))/( m.p2t2?2:1);
-      const isProv=uniquePlayers.some(p=>playerRatings[p]===1350);
-      const {change1,change2}=calculateTrekkrELOChange(avgT1,avgT2,m.scoreT1,m.scoreT2,isProv);
-      [m.p1t1,m.p2t1].filter(Boolean).forEach(p=>{
-        playerRatings[p]+=change1;
-        elo_results.push({player:p,new_elo:playerRatings[p],elo_change:change1,w:m.scoreT1>m.scoreT2?1:0,l:m.scoreT1<m.scoreT2?1:0});
-      });
-      [m.p1t2,m.p2t2].filter(Boolean).forEach(p=>{
-        playerRatings[p]+=change2;
-        elo_results.push({player:p,new_elo:playerRatings[p],elo_change:change2,w:m.scoreT2>m.scoreT1?1:0,l:m.scoreT2<m.scoreT1?1:0});
-      });
-    });
-
-    // C. Save to venue tab
-    await TrekkrAPI.addVenueMatch(adminVenue,skorParsedMatches);
-
-    // D. Save session with ELO
-    await TrekkrAPI.saveSession({
-      sessionName:"SkorApp Import",
-      venue:adminVenue,
-      sourceUrl:"skorapp.id",
-      matchCount:skorParsedMatches.length,
-      playerCount:uniquePlayers.length,
-      players:uniquePlayers,
-      matches:skorParsedMatches,
-      elo_results
-    });
-
-    st.className='status-msg success';
-    st.textContent=`✓ ${skorParsedMatches.length} matches submitted! ELO updated for ${uniquePlayers.length} players.`;
-    st.style.whiteSpace='pre-line';
-
-    // Show ELO summary
-    let summary='\n\nELO Updates:';
-    uniquePlayers.forEach(p=>{
-      const final=playerRatings[p];
-      const orig=eloData.players?.[p]?.elo||1350;
-      const d=final-orig;
-      summary+=`\n  ${p}: ${final} (${d>=0?'+':''}${d})`;
-    });
-    st.textContent+=summary;
-
-    skorParsedMatches=[];
-    document.getElementById('skorPreview').style.display='none';
-    document.getElementById('skorPaste').value='';
-  }catch(e){
-    st.className='status-msg error';st.textContent=`Submit failed: ${e.message}`;
+function checkAdminAuth() {
+  const s = TrekkrAPI.getSession();
+  if (s.token && (s.role === 'venue_admin' || s.role === 'superadmin')) {
+    // Sync token to mexicano state so ranked match works immediately
+    state.token = s.token;
+    state.venue = s.venue || '';
+    state.username = s.username || '';
+    sessionStorage.setItem('mx_tab_token', s.token);
+    sessionStorage.setItem('mx_tab_venue', s.venue || '');
+    sessionStorage.setItem('mx_tab_user', s.username || '');
+    showAdminDash(s);
   }
 }
+
+async function doAdminLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const st = document.getElementById('loginStatus');
+  if (!u || !p) { showTStatus(st, 'error', 'Please enter username and password'); return; }
+  const btn = document.querySelector('#loginScreen .btn-trekkr--primary');
+  btn.textContent = 'Signing in...'; btn.disabled = true;
+  try {
+    const d = await TrekkrAPI.login(u, p);
+    if (d.role !== 'venue_admin' && d.role !== 'superadmin') {
+      showTStatus(st, 'error', 'Access denied — venue admin accounts only');
+      return;
+    }
+    // Share token with ranked match state
+    state.token = d.token;
+    state.venue = d.venue || '';
+    state.username = d.username || '';
+    sessionStorage.setItem('mx_tab_token', d.token);
+    sessionStorage.setItem('mx_tab_venue', d.venue || '');
+    sessionStorage.setItem('mx_tab_user', d.username || '');
+    localStorage.setItem('mx_token', d.token);
+    localStorage.setItem('mx_venue', d.venue || '');
+    localStorage.setItem('mx_user', d.username || '');
+    showAdminDash(d);
+  } catch(e) {
+    showTStatus(st, 'error', e.message || 'Login failed');
+  } finally {
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
+}
+
+function showAdminDash(s) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('adminVenueLabel').textContent = (s.venue ? '📍 ' + s.venue : 'All Venues');
+  document.getElementById('headerVenueLabel').textContent = s.venue || '';
+  document.getElementById('headerVenueLabel').style.display = 'inline';
+  document.getElementById('headerLogout').style.display = 'inline-flex';
+  // Update ranked match header
+  const hv = document.getElementById('header-venue');
+  if (hv) hv.textContent = s.venue ? '📍 ' + s.venue : 'Ranked Match System';
+  loadVenueInfo();
+  // Retry pending match submissions
+  setTimeout(retryAllPending, 2000);
+}
+
+function doAdminLogout() {
+  TrekkrAPI.logout();
+  state.token = ''; state.venue = ''; state.username = '';
+  sessionStorage.removeItem('mx_tab_token');
+  sessionStorage.removeItem('mx_tab_venue');
+  sessionStorage.removeItem('mx_tab_user');
+  localStorage.removeItem('mx_token');
+  localStorage.removeItem('mx_venue');
+  localStorage.removeItem('mx_user');
+  location.reload();
+}
+
+/* ══════════════════════════════════════════════════
+   ADMIN TABS
+   ══════════════════════════════════════════════════ */
+let _rankedMatchInited = false;
+function switchAdminTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('is-active'));
+  document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('is-active'));
+  document.getElementById('atab-' + id).classList.add('is-active');
+  document.getElementById('apanel-' + id).classList.add('is-active');
+  if (id === 'ranked-match') {
+    if (!state.token) return;
+    if (!_rankedMatchInited) {
+      _rankedMatchInited = true;
+      initRankedMatch();
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   VENUE INFO
+   ══════════════════════════════════════════════════ */
+async function loadVenueInfo() {
+  if (!state.venue) return;
+  try {
+    const d = await TrekkrAPI.getVenues();
+    const v = d.venues.find(x => x.name.toLowerCase() === state.venue.toLowerCase());
+    if (v) {
+      document.getElementById('venueSchedule').value = v.schedule || '';
+      document.getElementById('venuePrize').value = v.prizePool || '';
+      document.getElementById('venueContact').value = v.contact || '';
+      document.getElementById('venueLocation').value = v.location || '';
+    }
+  } catch(e) { console.warn('Could not load venue info'); }
+}
+
+async function updateVenueInfo() {
+  const st = document.getElementById('venueStatus');
+  if (!state.venue) { showTStatus(st, 'error', 'No venue assigned.'); return; }
+  try {
+    await TrekkrAPI.updateVenue(state.venue, {
+      schedule: document.getElementById('venueSchedule').value,
+      prizePool: document.getElementById('venuePrize').value,
+      contact: document.getElementById('venueContact').value,
+      location: document.getElementById('venueLocation').value
+    });
+    showTStatus(st, 'success', 'Venue information saved successfully.');
+  } catch(e) {
+    showTStatus(st, 'error', e.message || 'Failed to save.');
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   OVERRIDE: handleLogin/handleLogout from mexicano
+   These are now no-ops — admin auth handles everything
+   ══════════════════════════════════════════════════ */
+function handleLogin() { /* handled by doAdminLogin */ }
+function handleLogout() { doAdminLogout(); }
 
 window.addEventListener('load', () => {
-    checkAuth();
-    loadPlayerAutocomplete();
+  checkAdminAuth();
+});
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════
+   TREKKR RANKED MATCH SYSTEM
+   (Full mexicano JS — renamed, login removed)
+   ══════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════════════════════
+const API_BASE = "https://trekkr.online/api";
+
+// Auth: sessionStorage = per-tab (safe for multi-venue on same browser)
+//       localStorage = fallback for single-tab users who reload the page
+const _tabToken = sessionStorage.getItem("mx_tab_token") || localStorage.getItem("mx_token") || "";
+const _tabVenue = sessionStorage.getItem("mx_tab_venue") || localStorage.getItem("mx_venue") || "";
+const _tabUser  = sessionStorage.getItem("mx_tab_user")  || localStorage.getItem("mx_user")  || "";
+
+const state = {
+  token: _tabToken,
+  venue: _tabVenue,
+  username: _tabUser,
+  courts: 2,
+  format: "individual",
+  scoreFormat: "race",
+  scoreTarget: 4,
+  trekkrPlayers: [],
+  selectedPlayers: [],
+  partners: {},
+  playerStats: {},
+  rounds: [],
+  currentRound: 0,
+  newGender: "M",
+  sessionGender: "auto", // auto | M | F | X
+  activeTab: "courts",
+  matchId: "",
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════════════
+async function apiRequest(path, options = {}) {
+  const url = `${API_BASE}/${path}`;
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+    },
+    ...options,
+  };
+  const res = await fetch(url, config);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ELO ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+function getKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function calcExpected(a, b) { return 1 / (1 + Math.pow(10, (b - a) / 400)); }
+
+function calcMatchElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
+  const t1Avg = (p1t1.elo + p2t1.elo) / 2;
+  const t2Avg = (p1t2.elo + p2t2.elo) / 2;
+  const t1R = s1 > s2 ? 1 : s1 < s2 ? 0 : 0.5;
+  const t2R = 1 - t1R;
+  const margin = 1 + Math.min(Math.abs(s1 - s2) * 0.04, 0.3);
+  const exp1 = calcExpected(t1Avg, t2Avg);
+  const exp2 = 1 - exp1;
+  const upd = (p, result, exp) => {
+    const k = getKFactor(p.matchCount || 0) * margin;
+    const delta = Math.round(k * (result - exp));
+    return { name: p.name, newElo: p.elo + delta, delta, w: result === 1 ? 1 : 0, l: result === 0 ? 1 : 0 };
+  };
+  return [upd(p1t1,t1R,exp1), upd(p2t1,t1R,exp1), upd(p1t2,t2R,exp2), upd(p2t2,t2R,exp2)];
+}
+
+function getTierName(elo) {
+  if (elo >= 3000) return "Platinum";
+  if (elo >= 2500) return "Gold";
+  if (elo >= 2100) return "Silver";
+  if (elo >= 1800) return "Upper Bronze";
+  if (elo >= 1500) return "Bronze";
+  if (elo >= 1200) return "Lower Bronze";
+  if (elo >= 900) return "Upper Beginner";
+  return "Beginner";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AVATAR HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const COLORS = ["#1A6FE8","#0D52B8","#7C3AED","#DB2777","#059669","#D97706","#DC2626","#0891B2"];
+function avatarColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % COLORS.length;
+  return COLORS[h];
+}
+function initials(name) {
+  const p = name.trim().split(" ");
+  return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+function avatarHTML(name, size=36, fontSize=13) {
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${avatarColor(name)};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;font-weight:700;color:white;flex-shrink:0">${initials(name)}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  ["setup","players","match","done"].forEach(s => {
+    document.getElementById(`screen-${s}`).classList.add("hidden");
+  });
+  document.getElementById(`screen-${id}`).classList.remove("hidden");
+  document.getElementById(`screen-${id}`).classList.add("fade-up");
+  // Header badge
+  document.getElementById("header-round-badge").classList.toggle("hidden", id !== "match");
+  document.getElementById("btn-logout").classList.toggle("hidden", id === "login");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════
+async function handleLogin() {
+  /* no-op: auth handled by doAdminLogin */
+}
+
+function handleLogout() {
+  state.token = ""; state.venue = ""; state.username = "";
+  sessionStorage.removeItem("mx_tab_token");
+  sessionStorage.removeItem("mx_tab_venue");
+  sessionStorage.removeItem("mx_tab_user");
+  localStorage.removeItem("mx_token"); localStorage.removeItem("mx_venue"); localStorage.removeItem("mx_user");
+  clearMatchStorage();
+  resetMatchState();
+  document.getElementById("header-venue").textContent = "Ranked Match System";
+  showScreen("setup");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════════════════════════════════
+function changeCourts(d) {
+  state.courts = Math.max(1, Math.min(8, state.courts + d));
+  document.getElementById("courts-val").textContent = state.courts;
+  document.getElementById("courts-hint").textContent = `Minimal ${state.courts * 4} pemain diperlukan`;
+  updatePlayerMinLabel();
+  updateRoundRecommendation();
+}
+
+function setSessionGender(g) {
+  state.sessionGender = g;
+  ["auto","M","F","X"].forEach(x => {
+    const el = document.getElementById("sg-" + x);
+    if (el) el.classList.toggle("active", x === g);
+  });
+  const hints = {
+    auto: "Auto: ditentukan otomatis dari gender pemain yang dipilih",
+    M:    "Semua match dicatat sebagai kategori Men",
+    F:    "Semua match dicatat sebagai kategori Women",
+    X:    "Semua match dicatat sebagai Mixed (ganda campuran)",
+  };
+  const hintEl = document.getElementById("sg-hint");
+  if (hintEl) hintEl.textContent = hints[g] || "";
+}
+
+// Detect gender from actual players in a match
+// Returns "M", "F", or "X" (mixed)
+function detectMatchGender(team1, team2) {
+  // If sessionGender is manually set, use that
+  if (state.sessionGender !== "auto") return state.sessionGender;
+
+  // Auto-detect from player genders
+  const allPlayers = [...team1, ...team2];
+  const genders = allPlayers.map(p => {
+    const st = state.playerStats[p.name] || {};
+    const sel = state.selectedPlayers.find(s => s.name === p.name);
+    return st.gender || sel?.gender || "M";
+  });
+  const hasM = genders.some(g => g === "M");
+  const hasF = genders.some(g => g === "F");
+  if (hasM && hasF) return "X";
+  if (hasF && !hasM) return "F";
+  return "M";
+}
+
+function setFormat(f) {
+  state.format = f;
+  document.getElementById("fmt-individual").classList.toggle("active", f === "individual");
+  document.getElementById("fmt-fixed").classList.toggle("active", f === "fixed");
+  document.getElementById("format-hint").textContent = f === "individual"
+    ? "Partner berubah setiap ronde berdasarkan ranking"
+    : "Partner dipilih manual dan tetap sepanjang turnamen";
+}
+
+function setScoreFormat(sf) {
+  state.scoreFormat = sf;
+  document.getElementById("sfmt-race").classList.toggle("active", sf === "race");
+  document.getElementById("sfmt-bestof").classList.toggle("active", sf === "bestof");
+  document.getElementById("score-label").textContent = sf === "race" ? "Race to" : "Best of";
+  updateScoreHint();
+}
+
+function changeScoreTarget(d) {
+  state.scoreTarget = Math.max(1, Math.min(10, state.scoreTarget + d));
+  document.getElementById("score-target-val").textContent = state.scoreTarget;
+  updateScoreHint();
+}
+
+function updateScoreHint() {
+  const t = state.scoreTarget, sf = state.scoreFormat;
+  document.getElementById("score-hint").textContent = sf === "race"
+    ? `Race to ${t} — maks skor: ${t-1} vs ${t}`
+    : `Best of ${t} — butuh ${Math.ceil(t/2)} game untuk menang`;
+}
+
+function goToPlayers() {
+  showScreen("players");
+  updatePlayerMinLabel();
+  loadPlayers();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLAYERS
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadPlayers() {
+  const listEl = document.getElementById("player-list");
+  listEl.innerHTML = `<div class="empty"><div class="spinner spinner-blue" style="margin:0 auto 12px"></div>Memuat database pemain...</div>`;
+  try {
+    const [pRes, eRes] = await Promise.all([
+      apiRequest("players"),
+      apiRequest("elo/latest"),
+    ]);
+    // elo/latest returns { players: { "Name": { elo, delta, w, l, ... } } } — an object, not array
+    const eloMap = eRes.players || {};
+    const allPlayers = (pRes.players || []).map(p => ({
+      ...p,
+      elo: (eloMap[p.name]?.elo) || 1350,
+      matchCount: ((eloMap[p.name]?.w || 0) + (eloMap[p.name]?.l || 0)),
+    }));
+
+    // Filter: nama yang hanya angka/spasi adalah data corrupt (misal "13 13")
+    const corruptPlayers = allPlayers.filter(p => /^[\d\s]+$/.test(p.name.trim()));
+    state.trekkrPlayers = allPlayers.filter(p => !/^[\d\s]+$/.test(p.name.trim()));
+
+    if (corruptPlayers.length > 0) {
+      const errEl = document.getElementById("players-error");
+      errEl.textContent = `⚠️ ${corruptPlayers.length} data pemain rusak ditemukan di database (nama berupa angka) dan disembunyikan. Hubungi admin untuk perbaiki data di Google Sheet.`;
+      errEl.classList.remove("hidden");
+      console.warn("Corrupt players filtered:", corruptPlayers.map(p => p.name));
+    }
+    renderPlayerList();
+  } catch(e) {
+    listEl.innerHTML = `<div class="alert alert-red">Gagal load pemain: ${e.message}</div>`;
+  }
+}
+
+function renderPlayerList() {
+  const raw = document.getElementById("player-search").value;
+  const q = raw.toLowerCase().trim();
+
+  // Show/hide clear button
+  const clearBtn = document.getElementById("search-clear-btn");
+  if (clearBtn) clearBtn.style.display = q ? "flex" : "none";
+
+  const filtered = state.trekkrPlayers.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || (p.displayName||"").toLowerCase().includes(q)
+  );
+  const listEl = document.getElementById("player-list");
+
+  // ── EMPTY STATE ─────────────────────────────────────────────────────────
+  if (!filtered.length) {
+    if (!q) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:32px 0">
+          <div style="font-size:40px;margin-bottom:8px">👥</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text)">Belum ada pemain</div>
+          <div style="font-size:13px;color:var(--text3)">Ketik nama untuk mencari atau tambah pemain baru</div>
+        </div>`;
+      return;
+    }
+
+    // Query ada tapi tidak ketemu → tampilkan tombol tambah inline
+    const nameSuggestion = raw.trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    const words = raw.trim().split(/\s+/);
+    const hasLastName = words.length >= 2;
+    const escapedRaw = raw.trim().replace(/'/g, "\\'");
+
+    listEl.innerHTML = `
+      <div style="padding:8px 0 16px">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+             background:var(--bg);border-radius:10px;border:1.5px dashed var(--border);margin-bottom:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--border);
+               display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">?</div>
+          <div style="font-size:13px;color:var(--text3)">
+            Tidak ada pemain bernama <strong style="color:var(--text)">"${raw.trim()}"</strong>
+          </div>
+        </div>
+        <button onclick="openAddFromSearch('${escapedRaw}')"
+          style="width:100%;display:flex;align-items:center;gap:12px;
+                 padding:14px 16px;border-radius:12px;cursor:pointer;
+                 background:var(--blue-light);border:1.5px solid var(--blue);
+                 font-family:inherit;transition:all 0.15s;text-align:left">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--blue);
+               display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="white">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${nameSuggestion}"</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">
+              ${hasLastName ? `Daftar sebagai pemain baru · ELO awal 1350` : `Ketik nama lengkap (depan + belakang) untuk mendaftar`}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        ${!hasLastName ? `<div style="margin-top:8px;padding:10px 12px;background:var(--gold-light);
+             border:1px solid var(--gold);border-radius:8px;font-size:12px;color:var(--gold);font-weight:600">
+          💡 Tip: Ketik nama depan dan belakang. Contoh: "Budi Santoso"
+        </div>` : ""}
+      </div>`;
+    return;
+  }
+
+  // ── NORMAL LIST ─────────────────────────────────────────────────────────
+  listEl.innerHTML = filtered.map(p => {
+    const sel = state.selectedPlayers.some(s => s.name === p.name);
+    return `
+      <div class="player-chip ${sel ? "selected" : ""}" onclick="togglePlayer('${p.name.replace(/'/g,"\\'")}')">
+        ${avatarHTML(p.name)}
+        <div style="flex:1;min-width:0">
+          <div class="chip-name">${p.displayName || p.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            <span class="chip-gender">${p.gender === "F" ? "♀ F" : "♂ M"}</span>
+            <span style="font-size:11px;color:var(--text3)">${getTierName(p.elo)}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${p.elo}</div>
+        </div>
+        ${sel ? `<div class="chip-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>` : ""}
+      </div>`;
+  }).join("");
+}
+
+function clearSearch() {
+  const inp = document.getElementById("player-search");
+  inp.value = ""; inp.focus();
+  renderPlayerList();
+}
+
+function openAddFromSearch(rawName) {
+  const words = rawName.trim().replace(/\s+/g," ").split(" ");
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+  const firstName = cap(words[0] || "");
+  const lastName  = words.slice(1).map(cap).join(" ");
+  showAddPlayerModal(firstName, lastName);
+}
+
+function togglePlayer(name) {
+  const p = state.trekkrPlayers.find(x => x.name === name);
+  if (!p) return;
+  const idx = state.selectedPlayers.findIndex(x => x.name === name);
+  if (idx >= 0) {
+    state.selectedPlayers.splice(idx, 1);
+    // Remove partners
+    const partnerName = state.partners[name];
+    if (partnerName) { delete state.partners[partnerName]; }
+    delete state.partners[name];
+  } else {
+    state.selectedPlayers.push({ ...p });
+  }
+  renderSelectedChips();
+  renderPlayerList();
+  renderPartnerSection();
+  updateStartBtn();
+  updateRoundRecommendation();
+}
+
+function renderSelectedChips() {
+  const wrap = document.getElementById("selected-chips-wrap");
+  const chips = document.getElementById("selected-chips");
+  const count = document.getElementById("selected-count");
+  const countLabel = document.getElementById("player-count-label");
+  countLabel.textContent = state.selectedPlayers.length;
+  countLabel.style.color = state.selectedPlayers.length >= state.courts * 4 ? "var(--green)" : "var(--blue)";
+  count.textContent = state.selectedPlayers.length;
+  if (!state.selectedPlayers.length) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  chips.innerHTML = state.selectedPlayers.map(p =>
+    `<span class="selected-tag">${p.name.split(" ")[0]}<button onclick="togglePlayer('${p.name.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join("");
+}
+
+function renderPartnerSection() {
+  const sec = document.getElementById("partner-section");
+  const list = document.getElementById("partner-list");
+  if (state.format !== "fixed" || state.selectedPlayers.length < 2) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+
+  // Show each player who doesn't have a partner yet as row
+  const rows = state.selectedPlayers.map(p => {
+    const myPartner = state.partners[p.name];
+    const available = state.selectedPlayers.filter(s =>
+      s.name !== p.name && (!state.partners[s.name] || state.partners[s.name] === p.name)
+    );
+    // Don't show row if already shown as partner
+    return `
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">${p.name}</div>
+        <select class="input" style="font-size:13px;padding:8px 12px" onchange="setPartner('${p.name.replace(/'/g,"\\'")}', this.value)">
+          <option value="">-- Pilih partner --</option>
+          ${available.map(a => `<option value="${a.name}" ${myPartner === a.name ? "selected" : ""}>${a.name}</option>`).join("")}
+        </select>
+        ${myPartner ? `<div class="partner-row">🤝 ${p.name.split(" ")[0]} + ${myPartner.split(" ")[0]}</div>` : ""}
+      </div>`;
+  }).join("");
+  list.innerHTML = rows;
+}
+
+function setPartner(playerName, partnerName) {
+  // Clear old links
+  Object.keys(state.partners).forEach(k => { if (state.partners[k] === playerName) delete state.partners[k]; });
+  if (state.partners[playerName]) { delete state.partners[state.partners[playerName]]; }
+  delete state.partners[playerName];
+  if (partnerName) { state.partners[playerName] = partnerName; state.partners[partnerName] = playerName; }
+  renderPartnerSection();
+  updateStartBtn();
+}
+
+function updatePlayerMinLabel() {
+  document.getElementById("player-min-label").textContent = ` / min ${state.courts * 4} dipilih`;
+}
+
+function updateStartBtn() {
+  const btn = document.getElementById("btn-start-match");
+  const min = state.courts * 4;
+  const n = state.selectedPlayers.length;
+  if (n < min) {
+    btn.textContent = `Kurang ${min - n} pemain lagi`;
+    btn.disabled = true;
+  } else {
+    btn.textContent = `Mulai Ranked Match (${n} pemain) →`;
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADD PLAYER MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function showAddPlayerModal(prefillFirst, prefillLast) {
+  const firstEl = document.getElementById("new-first-name");
+  const lastEl  = document.getElementById("new-last-name");
+  firstEl.value = prefillFirst || "";
+  lastEl.value  = prefillLast  || "";
+  document.getElementById("add-player-error").classList.add("hidden");
+  document.getElementById("add-player-preview").classList.add("hidden");
+  setNewGender("M");
+  document.getElementById("modal-add-player").classList.remove("hidden");
+  // Focus the appropriate field
+  setTimeout(() => { (prefillFirst ? lastEl : firstEl).focus(); }, 100);
+}
+function closeAddPlayerModal() { document.getElementById("modal-add-player").classList.add("hidden"); }
+
+function setNewGender(g) {
+  state.newGender = g;
+  document.getElementById("g-male").classList.toggle("active", g === "M");
+  document.getElementById("g-female").classList.toggle("active", g === "F");
+}
+
+// Preview name as user types
+document.addEventListener("DOMContentLoaded", () => {
+  ["new-first-name","new-last-name"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateAddPlayerPreview);
+  });
 });
 
+// ── LEVENSHTEIN SIMILARITY ───────────────────────────────────────────────
+function strSimilarity(a, b) {
+  a = a.toLowerCase().trim(); b = b.toLowerCase().trim();
+  if (a === b) return 1;
+  const m = a.length, n = b.length;
+  if (!m || !n) return 0;
+  const dp = Array.from({length:m+1}, (_,i) =>
+    Array.from({length:n+1}, (_,j) => i || j)
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return 1 - dp[m][n] / Math.max(m, n);
+}
+
+// Normalize: trim, collapse spaces, title-case
+function normalizeName(raw) {
+  return raw.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Find similar existing players (score > 0.7), sorted desc
+function findSimilarPlayers(fullName) {
+  if (!fullName || fullName.length < 3) return [];
+  return state.trekkrPlayers
+    .map(p => ({ p, score: strSimilarity(fullName, p.name) }))
+    .filter(x => x.score >= 0.7 && x.p.name.toLowerCase() !== fullName.toLowerCase())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
+function updateAddPlayerPreview() {
+  const fn  = document.getElementById("new-first-name").value.trim();
+  const ln  = document.getElementById("new-last-name").value.trim();
+  const prev = document.getElementById("add-player-preview");
+  const simWrap = document.getElementById("similar-players-wrap");
+  const simList = document.getElementById("similar-players-list");
+
+  if (fn && ln) {
+    const fullName = normalizeName(`${fn} ${ln}`);
+    prev.innerHTML = `Nama: <strong>${fullName}</strong> · ELO awal: 1350`;
+    prev.classList.remove("hidden");
+
+    // Live similarity check
+    const similar = findSimilarPlayers(fullName);
+    if (similar.length) {
+      simList.innerHTML = similar.map(({p, score}) => `
+        <div class="similar-chip" onclick="pickExistingPlayer('${p.name.replace(/'/g,"\'")}')">
+          <div>
+            <div class="similar-chip-name">${p.name}</div>
+            <div class="similar-chip-meta">${getTierName(p.elo)} · ${p.elo} ELO</div>
+          </div>
+          <span class="similar-chip-score">${Math.round(score*100)}% mirip</span>
+          <span class="similar-chip-action">Pilih →</span>
+        </div>`).join("");
+      simWrap.style.display = "block";
+    } else {
+      simWrap.style.display = "none";
+    }
+  } else {
+    prev.classList.add("hidden");
+    simWrap.style.display = "none";
+  }
+}
+
+// User chose an existing player instead of creating new
+function pickExistingPlayer(name) {
+  // Close modal, select the player in the list, clear search
+  closeAddPlayerModal();
+  const searchEl = document.getElementById("player-search");
+  if (searchEl) { searchEl.value = ""; }
+  // Select them
+  const p = state.trekkrPlayers.find(x => x.name === name);
+  if (p && !state.selectedPlayers.find(s => s.name === name)) {
+    state.selectedPlayers.push({...p});
+    renderSelectedChips();
+    renderPlayerList();
+    renderPartnerSection();
+    updateStartBtn();
+    updateRoundRecommendation();
+  }
+}
+
+async function handleAddPlayer() {
+  const fn    = document.getElementById("new-first-name").value.trim();
+  const ln    = document.getElementById("new-last-name").value.trim();
+  const errEl = document.getElementById("add-player-error");
+  const btn   = document.getElementById("btn-add-player");
+
+  if (!fn || !ln) { showError(errEl, "First name dan last name wajib diisi"); return; }
+
+  // Layer 3: Normalize — collapse whitespace + title-case
+  const fullName = normalizeName(`${fn} ${ln}`);
+
+  // Layer 1: Exact duplicate (case + whitespace insensitive)
+  const exactMatch = state.trekkrPlayers.find(
+    p => p.name.toLowerCase().replace(/\s+/g, " ") === fullName.toLowerCase()
+  );
+  if (exactMatch) {
+    showError(errEl, `"${exactMatch.name}" sudah ada di database. Pilih dari daftar.`);
+    return;
+  }
+
+  // Layer 2: High-similarity warning (≥85%) — require second click to confirm
+  const similar = findSimilarPlayers(fullName);
+  const tooClose = similar.find(x => x.score >= 0.85);
+  if (tooClose && !btn._confirming) {
+    btn._confirming = true;
+    btn.innerHTML = "⚠️ Tetap Tambah?";
+    btn.style.background = "var(--gold)";
+    btn.style.color = "white";
+    showError(errEl,
+      `Nama ini sangat mirip dengan "${tooClose.p.name}" yang sudah ada ` +
+      `(${Math.round(tooClose.score * 100)}% mirip). ` +
+      `Klik "Tetap Tambah?" untuk lanjutkan, atau pilih yang sudah ada di atas.`
+    );
+    // Auto-reset confirm state after 5 seconds
+    setTimeout(() => {
+      if (btn._confirming) {
+        btn._confirming = false;
+        btn.innerHTML = "Tambah";
+        btn.style.background = "";
+        btn.style.color = "";
+      }
+    }, 5000);
+    return;
+  }
+
+  // Reset confirm state
+  btn._confirming = false;
+  btn.innerHTML = "Tambah";
+  btn.style.background = "";
+  btn.style.color = "";
+  errEl.classList.add("hidden");
+
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  btn.disabled = true;
+
+  try {
+    await apiRequest("players", {
+      method: "POST",
+      body: JSON.stringify({ name: fullName, gender: state.newGender })
+    });
+    await loadPlayers();
+
+    // Auto-select the newly added player immediately
+    const newP = state.trekkrPlayers.find(p => p.name === fullName);
+    if (newP && !state.selectedPlayers.find(s => s.name === fullName)) {
+      state.selectedPlayers.push({ ...newP });
+    }
+
+    const searchEl = document.getElementById("player-search");
+    if (searchEl) searchEl.value = "";
+    closeAddPlayerModal();
+    renderSelectedChips();
+    renderPlayerList();
+    renderPartnerSection();
+    updateStartBtn();
+    updateRoundRecommendation();
+  } catch(e) {
+    showError(errEl, "Gagal tambah: " + e.message);
+  } finally {
+    btn.innerHTML = "Tambah";
+    btn.disabled = false;
+    btn.style.background = "";
+    btn.style.color = "";
+    btn._confirming = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MEXICANO ALGORITHM — Anti-duplicate, fair bye rotation
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Build match history from submitted rounds
+function buildMatchHistory() {
+  const partnerCount = {};  // name → { partnerName: count }
+  const opponentCount = {}; // name → { opponentName: count }
+  const byeCount = {};      // name → number of byes
+
+  Object.keys(state.playerStats).forEach(n => {
+    partnerCount[n] = {};
+    opponentCount[n] = {};
+    byeCount[n] = 0;
+  });
+
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    (r.byePlayers || []).forEach(p => {
+      if (byeCount[p.name] !== undefined) byeCount[p.name]++;
+    });
+    r.matches.forEach(m => {
+      const t1 = m.team1.map(p => p.name);
+      const t2 = m.team2.map(p => p.name);
+      // Partner history
+      t1.forEach((a, i) => t1.forEach((b, j) => {
+        if (i !== j) partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+      }));
+      t2.forEach((a, i) => t2.forEach((b, j) => {
+        if (i !== j) partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+      }));
+      // Opponent history
+      t1.forEach(a => t2.forEach(b => {
+        opponentCount[a][b] = (opponentCount[a][b] || 0) + 1;
+        opponentCount[b][a] = (opponentCount[b][a] || 0) + 1;
+      }));
+    });
+  });
+
+  return { partnerCount, opponentCount, byeCount };
+}
+
+function generateRound(round1 = false) {
+  const players = Object.values(state.playerStats);
+
+  // Sort by ranking
+  const sorted = [...players].sort((a, b) =>
+    round1
+      ? b.elo - a.elo
+      : b.wins - a.wins || b.pointDiff - a.pointDiff || b.elo - a.elo
+  );
+
+  if (state.format === "fixed") return generateFixedRound(sorted);
+  return generateIndividualRound(sorted, round1);
+}
+
+function generateIndividualRound(sorted, round1 = false) {
+  const { partnerCount, opponentCount, byeCount } = buildMatchHistory();
+  const n = sorted.length;
+  const active = state.courts * 4;
+  const byeNeeded = n - active;
+
+  // ── STEP 1: Select bye players ──────────────────────────────────────────
+  // Fair rotation: players with fewest byes are prioritised for sitting out.
+  // Among ties, lowest-ranked players sit out.
+  let playingPlayers = sorted;
+  let byePlayers = [];
+
+  if (byeNeeded > 0) {
+    // Score each player for "bye priority" — higher score = should sit out
+    const byePriority = sorted.map((p, rank) => ({
+      p,
+      score: -(byeCount[p.name] || 0) * 1000 + rank
+      // Negative byeCount: fewer past byes → higher score → more likely to sit out now
+      // rank tie-break: lower rank (worse position) → higher score → more likely to sit out
+    }));
+    byePriority.sort((a, b) => b.score - a.score);
+    byePlayers = byePriority.slice(0, byeNeeded).map(x => x.p);
+    const byeNames = new Set(byePlayers.map(p => p.name));
+    playingPlayers = sorted.filter(p => !byeNames.has(p.name));
+  }
+
+  // ── STEP 2: Form pairs (avoid repeat partners) ─────────────────────────
+  const pairs = [];
+  const usedInPairing = new Set();
+
+  for (let i = 0; i < playingPlayers.length; i++) {
+    const p = playingPlayers[i];
+    if (usedInPairing.has(p.name)) continue;
+
+    let bestPartner = null;
+    let bestScore = Infinity;
+
+    for (let j = i + 1; j < playingPlayers.length; j++) {
+      const q = playingPlayers[j];
+      if (usedInPairing.has(q.name)) continue;
+      // Score: strongly penalise repeat partners, mildly penalise rank distance
+      const repeats = partnerCount[p.name]?.[q.name] || 0;
+      const dist = j - i;
+      const score = repeats * 1000 + dist;
+      if (score < bestScore) { bestScore = score; bestPartner = q; }
+      if (repeats === 0 && dist === 1) break; // ideal match — stop searching
+    }
+
+    if (bestPartner) {
+      pairs.push([p, bestPartner]);
+      usedInPairing.add(p.name);
+      usedInPairing.add(bestPartner.name);
+    }
+  }
+
+  // ── STEP 3: Match pairs against each other (avoid repeat opponents) ─────
+  const matches = [];
+  const remainingPairs = [...pairs];
+  const usedPairs = new Set();
+
+  for (let c = 0; c < state.courts && remainingPairs.length >= 2; c++) {
+    // Take first unused pair as team1
+    let t1Idx = remainingPairs.findIndex(([a]) => !usedPairs.has(a.name));
+    if (t1Idx === -1) break;
+    const team1 = remainingPairs.splice(t1Idx, 1)[0];
+    usedPairs.add(team1[0].name); usedPairs.add(team1[1].name);
+
+    // Find best opponent: minimise repeat opponents, then minimise rank gap
+    let bestOppIdx = 0;
+    let bestOppScore = Infinity;
+
+    for (let i = 0; i < remainingPairs.length; i++) {
+      const [op1, op2] = remainingPairs[i];
+      if (usedPairs.has(op1.name)) continue;
+      const t1Names = [team1[0].name, team1[1].name];
+      const repeatOpp = t1Names.reduce((sum, a) =>
+        sum + (opponentCount[a]?.[op1.name] || 0) + (opponentCount[a]?.[op2.name] || 0), 0
+      );
+      const score = repeatOpp * 1000 + i; // rank proximity as tie-breaker
+      if (score < bestOppScore) { bestOppScore = score; bestOppIdx = i; }
+    }
+
+    const team2 = remainingPairs.splice(bestOppIdx, 1)[0];
+    usedPairs.add(team2[0].name); usedPairs.add(team2[1].name);
+    matches.push({ court: c + 1, team1, team2, score1: null, score2: null });
+  }
+
+  return { matches, byePlayers };
+}
+
+function generateFixedRound(sorted) {
+  const { opponentCount, byeCount } = buildMatchHistory();
+
+  // Build ordered pair list based on ranking
+  const pairs = [];
+  const seen = new Set();
+  sorted.forEach(p => {
+    if (seen.has(p.name)) return;
+    const partnerName = state.partners[p.name];
+    const partner = sorted.find(s => s.name === partnerName);
+    if (partner && !seen.has(partnerName)) {
+      pairs.push([p, partner]);
+      seen.add(p.name); seen.add(partnerName);
+    }
+  });
+
+  // Bye selection: pairs with fewest total byes sit out first
+  const active = state.courts; // courts = number of pair matchups
+  const byePairs = [];
+  let activePairs = pairs;
+
+  if (pairs.length > state.courts * 2) {
+    const pairBye = pairs.map(pair => ({
+      pair,
+      byeScore: -(pair.reduce((s, p) => s + (byeCount[p.name] || 0), 0))
+    }));
+    pairBye.sort((a, b) => b.byeScore - a.byeScore);
+    const byePairCount = pairs.length - state.courts * 2;
+    byePairs.push(...pairBye.slice(0, byePairCount).map(x => x.pair));
+    const byeNames = new Set(byePairs.flatMap(pair => pair.map(p => p.name)));
+    activePairs = pairs.filter(([a]) => !byeNames.has(a.name));
+  }
+
+  // Match active pairs against each other (avoid repeat opponents)
+  const matches = [];
+  const remainingPairs = [...activePairs];
+  const usedPairs = new Set();
+
+  for (let c = 0; c < state.courts && remainingPairs.length >= 2; c++) {
+    const team1 = remainingPairs.shift();
+    if (!team1) break;
+    usedPairs.add(team1[0].name); usedPairs.add(team1[1].name);
+
+    let bestOppIdx = 0;
+    let bestOppScore = Infinity;
+    for (let i = 0; i < remainingPairs.length; i++) {
+      const [op1, op2] = remainingPairs[i];
+      if (usedPairs.has(op1.name)) continue;
+      const t1Names = [team1[0].name, team1[1].name];
+      const repeatOpp = t1Names.reduce((sum, a) =>
+        sum + (opponentCount[a]?.[op1.name] || 0) + (opponentCount[a]?.[op2.name] || 0), 0
+      );
+      const score = repeatOpp * 1000 + i;
+      if (score < bestOppScore) { bestOppScore = score; bestOppIdx = i; }
+    }
+
+    const team2 = remainingPairs.splice(bestOppIdx, 1)[0];
+    usedPairs.add(team2[0].name); usedPairs.add(team2[1].name);
+    matches.push({ court: c + 1, team1, team2, score1: null, score2: null });
+  }
+
+  const byePlayersFlat = [
+    ...byePairs.flatMap(pair => pair),
+    ...sorted.filter(p => !matches.flatMap(m => [...m.team1, ...m.team2]).some(x => x.name === p.name) && !byePairs.flatMap(x=>x).some(x=>x.name===p.name))
+  ];
+
+  return { matches, byePlayers: byePlayersFlat };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// START MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function startMatch() {
+  const errEl = document.getElementById("players-error");
+  const min = state.courts * 4;
+  if (state.selectedPlayers.length < min) { showError(errEl, `Minimal ${min} pemain untuk ${state.courts} court`); return; }
+  if (state.format === "fixed") {
+    const unpartnered = state.selectedPlayers.filter(p => !state.partners[p.name]);
+    if (unpartnered.length > 0) { showError(errEl, `Belum ada partner: ${unpartnered.map(p=>p.name.split(" ")[0]).join(", ")}`); return; }
+  }
+  errEl.classList.add("hidden");
+
+  // Init stats
+  state.playerStats = {};
+  state.selectedPlayers.forEach(p => {
+    state.playerStats[p.name] = { ...p, wins:0, losses:0, pointsFor:0, pointsAgainst:0, pointDiff:0 };
+  });
+
+  // Generate match ID (unique per venue per match)
+  state.matchId = genMatchId();
+
+  // Generate round 1
+  const { matches, byePlayers } = generateRound(true);
+  state.rounds = [{ roundNum:1, matches, byePlayers, submitted:false, startedAt: Date.now() }];
+  state.currentRound = 0;
+  state._fullCycleNotified = false; // reset for new match
+
+  saveMatchState("match");
+  showScreen("match");
+  switchTab("courts");
+  renderMatchScreen();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATCH SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  state.activeTab = tab;
+  ["courts","leaderboard","history"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
+    document.getElementById(`tab-content-${t}`).classList.toggle("hidden", t !== tab);
+  });
+  if (tab === "leaderboard") renderLeaderboard();
+  if (tab === "history") renderHistory();
+}
+
+function renderMatchScreen() {
+  const round = state.rounds[state.currentRound];
+  if (!round) return;
+  // Refresh eq status bar whenever match screen re-renders
+  setTimeout(renderEqStatusBar, 0);
+
+  // Header badge
+  document.getElementById("header-round-badge").textContent = `Ronde ${round.roundNum}`;
+  document.getElementById("round-pill").textContent = `Ronde ${round.roundNum}`;
+  // Update gender label
+  const _gLabel = document.getElementById("gender-label");
+  if (_gLabel) {
+    const _gMap = { M:"♂ Men", F:"♀ Women", X:"⚥ Mixed" };
+    const _gText = state.sessionGender === "auto" ? "🔀 Auto" : (_gMap[state.sessionGender] || state.sessionGender);
+    const _gCol = state.sessionGender === "F" ? "background:#FDF2F8;color:#9D174D" : state.sessionGender === "X" ? "background:#F0FDF4;color:var(--green)" : "background:var(--blue-light);color:var(--blue)";
+    _gLabel.style.cssText = _gCol + ";font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px";
+    _gLabel.textContent = _gText;
+  }
+  document.getElementById("lb-round-badge").textContent = `Ronde ${round.roundNum}`;
+  document.getElementById("score-format-label").textContent =
+    state.scoreFormat === "race" ? `Race to ${state.scoreTarget}` : `Best of ${state.scoreTarget}`;
+
+  renderCourtCards();
+}
+
+function renderCourtCards() {
+  const round = state.rounds[state.currentRound];
+  const doneCount = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
+  document.getElementById("courts-progress").textContent = `${doneCount}/${round.matches.length} selesai`;
+
+  const el = document.getElementById("court-cards");
+  el.innerHTML = round.matches.map((m, mi) => {
+    const s1 = m.score1, s2 = m.score2;
+    const hasScore = s1 !== null && s2 !== null;
+    const t1Win = hasScore && s1 > s2, t2Win = hasScore && s2 > s1;
+
+    return `
+      <div class="court-card">
+        <div class="court-header">
+          <div class="court-badge">Court ${m.court}</div>
+          <div id="court-${mi}-status" class="court-status ${hasScore ? "done" : "pending"}">${hasScore ? "✓ Skor Masuk" : "Menunggu Skor"}</div>
+        </div>
+        <div class="score-row">
+          <div class="score-team">
+            <div class="score-team-name">${m.team1.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
+            <input type="number" inputmode="numeric"
+              id="court-${mi}-s1"
+              class="score-input ${t1Win?"winner":t2Win?"loser":""}"
+              value="${s1 !== null ? s1 : ""}" placeholder="0" min="0"
+              oninput="updateScore(${mi}, 1, this.value)"
+              onchange="updateScore(${mi}, 1, this.value)" />
+          </div>
+          <div class="score-vs">:</div>
+          <div class="score-team">
+            <div class="score-team-name">${m.team2.map(p => `<span>${p.name.split(" ")[0]}</span>`).join("")}</div>
+            <input type="number" inputmode="numeric"
+              id="court-${mi}-s2"
+              class="score-input ${t2Win?"winner":t1Win?"loser":""}"
+              value="${s2 !== null ? s2 : ""}" placeholder="0" min="0"
+              oninput="updateScore(${mi}, 2, this.value)"
+              onchange="updateScore(${mi}, 2, this.value)" />
+          </div>
+        </div>
+        <!-- Player mini stats -->
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          ${[m.team1, m.team2].map(team => `
+            <div style="background:var(--bg);border-radius:8px;padding:6px 8px">
+              ${team.map(p => {
+                const st = state.playerStats[p.name] || {};
+                return `<div class="player-mini">
+                  ${avatarHTML(p.name, 22, 9)}
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name.split(" ")[0]}</div>
+                    <div style="font-size:10px;color:var(--text3)">${st.wins||0}W ${st.losses||0}L · ${st.elo||p.elo}</div>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }).join("");
+
+  // Bye
+  const byeSec = document.getElementById("bye-section");
+  if (round.byePlayers?.length) {
+    byeSec.style.display = "block";
+    document.getElementById("bye-players").innerHTML = round.byePlayers.map(p =>
+      `<div style="font-size:13px;padding:4px 0">${p.name}</div>`).join("");
+  } else {
+    byeSec.style.display = "none";
+  }
+}
+
+function updateScore(matchIdx, team, val) {
+  // FIX: Jangan re-render seluruh DOM — menyebabkan focus hilang di mobile
+  // Hanya update state + styling input secara targeted
+  const round = state.rounds[state.currentRound];
+  const score = val === "" ? null : Math.max(0, parseInt(val) || 0);
+  if (team === 1) round.matches[matchIdx].score1 = score;
+  else round.matches[matchIdx].score2 = score;
+
+  // Auto-save state saat skor diinput (debounced 800ms)
+  // Ini memastikan skor yang sedang diinput tersimpan walau tab tertutup tiba-tiba
+  clearTimeout(window._autoSaveTimer);
+  window._autoSaveTimer = setTimeout(() => saveMatchState("match"), 800);
+
+  // Update hanya styling input (winner/loser) tanpa destroy DOM
+  const e1 = document.querySelector(`#court-${matchIdx}-s1`);
+  const e2 = document.querySelector(`#court-${matchIdx}-s2`);
+  const stEl = document.querySelector(`#court-${matchIdx}-status`);
+  const progEl = document.getElementById("courts-progress");
+  if (e1 && e2) {
+    const v1 = round.matches[matchIdx].score1;
+    const v2 = round.matches[matchIdx].score2;
+    const both = v1 !== null && v2 !== null;
+    e1.className = "score-input" + (both ? (v1 > v2 ? " winner" : v1 < v2 ? " loser" : "") : "");
+    e2.className = "score-input" + (both ? (v2 > v1 ? " winner" : v2 < v1 ? " loser" : "") : "");
+    if (stEl) {
+      stEl.textContent = both ? "✓ Skor Masuk" : "Menunggu Skor";
+      stEl.className = "court-status " + (both ? "done" : "pending");
+    }
+    if (progEl) {
+      const dc = round.matches.filter(m => m.score1 !== null && m.score2 !== null).length;
+      progEl.textContent = `${dc}/${round.matches.length} selesai`;
+    }
+  }
+}
+
+async function submitRound() {
+  const round = state.rounds[state.currentRound];
+
+  // FIX: Baca score dari DOM terlebih dahulu (lebih reliable di mobile)
+  // Ini memastikan nilai yang terlihat di layar = nilai yang dikirim ke server
+  round.matches.forEach((m, mi) => {
+    const e1 = document.getElementById(`court-${mi}-s1`);
+    const e2 = document.getElementById(`court-${mi}-s2`);
+    if (e1 && e1.value !== "") m.score1 = Math.max(0, parseInt(e1.value) || 0);
+    if (e2 && e2.value !== "") m.score2 = Math.max(0, parseInt(e2.value) || 0);
+  });
+
+  const allScored = round.matches.every(m => m.score1 !== null && m.score2 !== null);
+  const errEl = document.getElementById("match-error");
+  if (!allScored) { showError(errEl, "Isi semua skor terlebih dahulu"); return; }
+
+  // Konfirmasi jika ada skor 0-0
+  const zeros = round.matches.filter(m => m.score1 === 0 && m.score2 === 0);
+  if (zeros.length && !window._confirmZero) {
+    window._confirmZero = true;
+    showError(errEl, `⚠️ ${zeros.length} match punya skor 0-0. Tekan Submit lagi untuk konfirmasi.`);
+    setTimeout(() => { window._confirmZero = false; }, 5000);
+    return;
+  }
+  window._confirmZero = false;
+  errEl.classList.add("hidden");
+
+  const btn = document.getElementById("btn-submit-round");
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+
+  try {
+    // Track round end time for avg duration calculation
+    state.rounds[state.currentRound].submittedAt = Date.now();
+
+    // Simpan ELO sebelum ronde ini untuk hitung delta per-ronde
+    const eloBeforeRound = {};
+    round.matches.flatMap(m => [...m.team1, ...m.team2]).forEach(p => {
+      eloBeforeRound[p.name] = state.playerStats[p.name]?.elo || p.elo || 1350;
+    });
+
+    // Update stats & ELO lokal
+    round.matches.forEach(m => {
+      const p1t1 = state.playerStats[m.team1[0].name];
+      const p2t1 = state.playerStats[m.team1[1].name];
+      const p1t2 = state.playerStats[m.team2[0].name];
+      const p2t2 = state.playerStats[m.team2[1].name];
+
+      const results = calcMatchElo(p1t1, p2t1, p1t2, p2t2, m.score1, m.score2);
+      results.forEach(r => {
+        if (state.playerStats[r.name]) {
+          state.playerStats[r.name].elo = r.newElo;
+          state.playerStats[r.name].matchCount = (state.playerStats[r.name].matchCount || 0) + 1;
+        }
+      });
+
+      const t1Win = m.score1 > m.score2;
+      [...m.team1].forEach(p => {
+        const st = state.playerStats[p.name]; if (!st) return;
+        if (t1Win) st.wins++; else st.losses++;
+        st.pointsFor = (st.pointsFor || 0) + m.score1;
+        st.pointsAgainst = (st.pointsAgainst || 0) + m.score2;
+        st.pointDiff = st.pointsFor - st.pointsAgainst;
+      });
+      [...m.team2].forEach(p => {
+        const st = state.playerStats[p.name]; if (!st) return;
+        if (!t1Win) st.wins++; else st.losses++;
+        st.pointsFor = (st.pointsFor || 0) + m.score2;
+        st.pointsAgainst = (st.pointsAgainst || 0) + m.score1;
+        st.pointDiff = st.pointsFor - st.pointsAgainst;
+      });
+    });
+
+    state.rounds[state.currentRound].submitted = true;
+
+    // ── SUBMIT KE TREKKR ─────────────────────────────────────────────────────
+    if (state.venue && state.token) {
+      const apiMatches = round.matches.map(m => ({
+        p1t1: m.team1[0].name.trim(), p2t1: m.team1[1].name.trim(),
+        p1t2: m.team2[0].name.trim(), p2t2: m.team2[1].name.trim(),
+        scoreT1: Number(m.score1),    scoreT2: Number(m.score2),
+        // Auto-detect gender from player composition (M / F / X for mixed)
+        gender: detectMatchGender(m.team1, m.team2),
+        sourceUrl: "Trekkr Ranked Match Daily Match",
+      }));
+
+      // Hitung w/l per ronde (bukan total kumulatif)
+      const wlThisRound = {};
+      round.matches.forEach(m => {
+        const t1Win = m.score1 > m.score2;
+        [...m.team1, ...m.team2].forEach((p, i) => {
+          if (!wlThisRound[p.name]) wlThisRound[p.name] = { w: 0, l: 0 };
+          const win = i < 2 ? t1Win : !t1Win;
+          if (win) wlThisRound[p.name].w++; else wlThisRound[p.name].l++;
+        });
+      });
+
+      const roundPlayers = [...new Set(
+        round.matches.flatMap(m => [...m.team1, ...m.team2].map(p => p.name))
+      )];
+
+      const eloResults = roundPlayers.map(name => {
+        const st      = state.playerStats[name] || {};
+        const eloBefore = eloBeforeRound[name] || 1350;
+        const eloAfter  = st.elo || eloBefore;
+        const wl        = wlThisRound[name] || { w: 0, l: 0 };
+        return { player: name.trim(), new_elo: eloAfter,
+                 elo_change: eloAfter - eloBefore, w: wl.w, l: wl.l };
+      });
+
+      const sessionPayload = {
+        sessionName: `Ranked Match ${state.venue} – Ronde ${round.roundNum}`,
+        format: state.format === "fixed" ? "Ranked Match Fixed Partner" : "Ranked Match Individual",
+        courts: state.courts, venue: state.venue,
+        players: roundPlayers, rounds: [],
+        elo_results: eloResults,
+      };
+
+      const allNamesValid = apiMatches.every(m => m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2);
+      if (!allNamesValid) {
+        setSubmitStatus("failed", "⚠️ Nama pemain tidak lengkap");
+      } else {
+        // Simpan ke pending queue dulu — jaminan tidak hilang walau network mati
+        // pendingKey includes venue + roundNum + timestamp — unique per tab/venue/round
+        const pendingKey = `mx_pending_${state.venue.replace(/\s+/g,'_')}_r${round.roundNum}_${Date.now()}`;
+        localStorage.setItem(pendingKey, JSON.stringify({ apiMatches, sessionPayload, roundNum: round.roundNum }));
+
+        setSubmitStatus("sending", `Step 1/2: Menyimpan match data... (Ronde ${round.roundNum})`);
+        await submitWithRetry(pendingKey, apiMatches, sessionPayload, round.roundNum);
+      }
+    }
+
+    // Generate next round
+    const { matches, byePlayers } = generateRound(false);
+    state.rounds.push({
+      roundNum: state.rounds.length + 1,
+      matches, byePlayers, submitted: false,
+      startedAt: Date.now(),  // track start time for avg duration
+    });
+    state.currentRound++;
+
+    saveMatchState("match");
+    renderMatchScreen();
+    switchTab("courts");
+    window.scrollTo(0, 0);
+    // Check if full cycle reached and update status bar
+    checkAndNotifyEqualMatch();
+  } catch(e) {
+    showError(errEl, "Error: " + e.message);
+  } finally {
+    btn.innerHTML = "Submit Skor & Lanjut Ronde →"; btn.disabled = false;
+  }
+}
+
+function renderLeaderboard() {
+  const sorted = getLeaderboard();
+  const el = document.getElementById("leaderboard-list");
+  if (!sorted.length) { el.innerHTML = `<div class="empty">Belum ada data</div>`; return; }
+  el.innerHTML = sorted.map((p, i) => {
+    const diff = p.pointDiff || 0;
+    const rankClass = i===0?"rank1":i===1?"rank2":i===2?"rank3":"";
+    const rankLabel = i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`;
+    return `
+      <div class="lb-row ${rankClass}">
+        <div class="lb-rank">${rankLabel}</div>
+        ${avatarHTML(p.name, 38, 13)}
+        <div class="lb-info">
+          <div class="lb-name">${p.name}</div>
+          <div class="lb-elo">${p.elo} ELO · ${getTierName(p.elo)}</div>
+        </div>
+        <div class="lb-stats">
+          <div class="lb-wl">${p.wins}W – ${p.losses}L</div>
+          <div class="lb-diff ${diff>0?"pos":diff<0?"neg":"zero"}">${diff>0?"+":""}${diff} pts</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function renderHistory() {
+  const el = document.getElementById("history-list");
+  const done = state.rounds.filter(r => r.submitted).reverse();
+  if (!done.length) { el.innerHTML = `<div class="empty">Belum ada ronde yang selesai</div>`; return; }
+  el.innerHTML = done.map(r => `
+    <div class="card">
+      <div class="card-title">Ronde ${r.roundNum}</div>
+      ${r.matches.map(m => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1;font-size:12px;font-weight:600">${m.team1.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?"var(--green)":m.score1<m.score2?"var(--red)":"var(--text)"}">${m.score1} – ${m.score2}</div>
+          <div style="flex:1;font-size:12px;font-weight:600;text-align:right">${m.team2.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// END MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function getLeaderboard() {
+  return Object.values(state.playerStats).sort((a, b) =>
+    b.wins - a.wins || b.pointDiff - a.pointDiff || b.pointsFor - a.pointsFor
+  );
+}
+
+function showEndConfirm() {
+  const top3 = getLeaderboard().slice(0, 3);
+  document.getElementById("end-top3").innerHTML = top3.map((p, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span>${["🥇","🥈","🥉"][i]}</span>
+      <span style="font-size:13px;font-weight:700;flex:1">${p.name}</span>
+      <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
+    </div>`).join("");
+  document.getElementById("modal-end-confirm").classList.remove("hidden");
+}
+function closeEndConfirm() { document.getElementById("modal-end-confirm").classList.add("hidden"); }
+
+async function endMatch() {
+  const btn = document.getElementById("btn-end-match");
+  btn.innerHTML = '<span class="spinner"></span> Menyimpan...'; btn.disabled = true;
+
+  try {
+    const standings = getLeaderboard();
+
+    // ELO sudah dikirim per ronde via submitRound → /api/sessions
+    // endMatch hanya simpan summary final match
+    if (state.venue) {
+      const now = new Date().toLocaleDateString("id-ID");
+      const submittedRounds = state.rounds.filter(r => r.submitted).length;
+      // Kirim summary dengan ELO final (cumulative dari semua ronde)
+      await apiRequest("sessions", {
+        method:"POST",
+        body: JSON.stringify({
+          sessionName: `Ranked Match Daily – ${state.venue} – ${now}`,
+          format: state.format === "fixed" ? "Ranked Match Fixed Partner" : "Ranked Match Individual",
+          courts: state.courts,
+          venue: state.venue,
+          players: state.selectedPlayers.map(p => p.name),
+          rounds: [],  // Sudah dikirim per ronde, tidak perlu ulang
+          elo_results: standings.map(p => ({
+            player:     p.name,
+            new_elo:    p.elo,
+            elo_change: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
+            w: p.wins,
+            l: p.losses,
+          })),
+        })
+      }).catch(e => console.warn("Final session warn:", e.message));
+    }
+
+    clearMatchStorage();
+    closeEndConfirm();
+    renderDoneScreen(standings);
+    showScreen("done");
+  } catch(e) {
+    console.error(e);
+    clearMatchStorage();
+    closeEndConfirm();
+    renderDoneScreen(getLeaderboard());
+    showScreen("done");
+  } finally {
+    btn.innerHTML = "Ya, Akhiri"; btn.disabled = false;
+  }
+}
+
+function renderDoneScreen(standings) {
+  const doneRounds = state.rounds.filter(r => r.submitted).length;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+
+  document.getElementById("done-sub").textContent =
+    `${doneRounds} ronde · ${state.selectedPlayers.length} pemain`;
+  document.getElementById("done-date").textContent = dateStr;
+  document.getElementById("done-venue").textContent = state.venue || "Trekkr";
+
+  // ── PODIUM (dark style) ────────────────────────────────────────────────
+  const p1 = standings[0], p2 = standings[1], p3 = standings[2];
+
+  function darkAvatar(name, size, fontSize, border) {
+    return `<div class="podium-dark-avatar" style="width:${size}px;height:${size}px;font-size:${fontSize}px;background:${avatarColor(name)};${border||""}">
+      ${initials(name)}</div>`;
+  }
+
+  document.getElementById("podium").innerHTML = `
+    ${p2 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">🥈</div>
+      ${darkAvatar(p2.name, 52, 17)}
+      <div class="podium-dark-name">${p2.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:52px;background:rgba(148,163,184,0.25);width:100%;padding:6px 0"></div>
+    </div>` : ""}
+    ${p1 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">👑</div>
+      ${darkAvatar(p1.name, 64, 22, "border:3px solid #F59E0B;box-shadow:0 0 20px rgba(245,158,11,0.4);")}
+      <div class="podium-dark-name" style="font-weight:800">${p1.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:68px;background:rgba(245,158,11,0.25);width:100%;padding:8px 0">🥇</div>
+    </div>` : ""}
+    ${p3 ? `<div class="podium-dark-slot">
+      <div class="podium-dark-crown">🥉</div>
+      ${darkAvatar(p3.name, 52, 17)}
+      <div class="podium-dark-name">${p3.name.split(" ")[0]}</div>
+      <div class="podium-dark-base" style="height:40px;background:rgba(180,131,80,0.25);width:100%;padding:5px 0"></div>
+    </div>` : ""}`;
+
+  // ── STANDINGS LIST (dark rows) ─────────────────────────────────────────
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("final-standings").innerHTML = standings.map((p, i) => {
+    const rankColor = i===0?"#F59E0B" : i===1?"#94A3B8" : i===2?"#CD7F32" : "rgba(148,163,184,0.5)";
+    return `<div class="rank-row-dark">
+      <div class="rank-num-dark" style="color:${rankColor}">${medals[i] || i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="rank-name-dark">${p.name}</div>
+        <div class="rank-meta-dark">${getTierName(p.elo)} · ${p.elo} ELO</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rank-wl-dark">${p.wins}W ${p.losses}L</div>
+        <div style="font-size:11px;font-weight:600;color:${p.pointDiff>=0?"#4ADE80":"#F87171"}">${p.pointDiff>=0?"+":""}${p.pointDiff}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── SHARE VENUE URL ──────────────────────────────────────────────────────
+async function shareVenueUrl() {
+  const venue = state.venue || "";
+  const slug = venue.trim().replace(/\s+/g, "");
+  const url = `https://venue.trekkr.online/${encodeURIComponent(slug)}`;
+  const doneRounds = state.rounds.filter(r => r.submitted).length;
+  const text = `Cek leaderboard ${venue} di Trekkr!\n${url}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `Trekkr – ${venue}`, text, url });
+      return;
+    } catch(e) { /* user cancelled or share failed, fallback below */ }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(url);
+    showApiWarning("✓ Link disalin: " + url);
+  } catch(e) {
+    // Last resort: show the URL
+    showApiWarning("Link venue: " + url);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW MATCH
+// ═══════════════════════════════════════════════════════════════════════════
+function resetMatchState() {
+  state.selectedPlayers = [];
+  state.partners = {};
+  state.playerStats = {};
+  state.rounds = [];
+  state.currentRound = 0;
+}
+
+function newMatch() {
+  clearMatchStorage();
+  resetMatchState();
+  showScreen("setup");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+function genMatchId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function matchStorageKey() {
+  // Unique per venue + matchId — safe even if two venues open same browser
+  return `mx_match_${state.venue || "novenvenue"}_${state.matchId}`;
+}
+
+function saveMatchState(screen) {
+  if (!state.matchId) return;
+  const key = matchStorageKey();
+  const data = {
+    screen,
+    rounds: state.rounds,
+    currentRound: state.currentRound,
+    playerStats: state.playerStats,
+    selectedPlayers: state.selectedPlayers,
+    courts: state.courts,
+    format: state.format,
+    scoreFormat: state.scoreFormat,
+    scoreTarget: state.scoreTarget,
+    partners: state.partners,
+    matchId: state.matchId,
+    sessionGender: state.sessionGender,
+    token: state.token,
+    venue: state.venue,
+    username: state.username,
+  };
+  // Keep auth in sessionStorage so this tab survives reload without affecting other tabs
+  if (state.token) {
+    sessionStorage.setItem("mx_tab_token", state.token);
+    sessionStorage.setItem("mx_tab_venue", state.venue);
+    sessionStorage.setItem("mx_tab_user",  state.username);
+  }
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn("Save state warn:", e); }
+}
+
+function clearMatchStorage() {
+  if (state.matchId) {
+    localStorage.removeItem(matchStorageKey());
+  }
+  // Also clean up old sessions for this venue older than 24h
+  const prefix = `mx_match_${state.venue || "novenvenue"}_`;
+  Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => {
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      // Remove if matchId different from current (cleanup old)
+      if (d && d.matchId !== state.matchId) localStorage.removeItem(k);
+    } catch(e) {}
+  });
+}
+
+function restoreLatestMatch() {
+  // Find the latest saved match for this venue
+  const prefix = `mx_match_${state.venue || "novenvenue"}_`;
+  let latest = null;
+  Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => {
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (d && d.rounds && d.rounds.length > 0) latest = d;
+    } catch(e) {}
+  });
+  return latest;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROUND RECOMMENDATION
+// ═══════════════════════════════════════════════════════════════════════════
+function calcRecommendedRounds(players, courts) {
+  const n = players;
+  const c = courts;
+  const playersPerRound = c * 4;
+
+  if (n < 4) return null;
+
+  if (n % 4 === 0 && n === playersPerRound) {
+    // All players always play — no bye
+    // Each player plays every round. Recommend enough rounds so
+    // everyone faces different opponents: typically n-1 rounds covers all combos
+    // but for mexicano, 6–10 rounds is sweet spot
+    const rec = Math.max(6, n - 1);
+    return {
+      rec,
+      min: 4,
+      reason: `${n} pemain, ${c} court — semua pemain main tiap ronde.`,
+      detail: `Rekomendasi <strong>${rec} ronde</strong> agar kombinasi lawan cukup bervariasi.`
+    };
+  }
+
+  if (n % playersPerRound === 0) {
+    // Multiple of courts*4, clean rotation
+    const rec = Math.max(6, n - 1);
+    return {
+      rec,
+      reason: `${n} pemain, ${c} court — semua main tiap ronde tanpa bye.`,
+      detail: `Rekomendasi <strong>${rec} ronde</strong> untuk variasi lawan yang optimal.`
+    };
+  }
+
+  // Has bye players
+  const byePerRound = n - playersPerRound;
+  const byeRoundsPerPlayer = byePerRound > 0
+    ? Math.ceil(n / playersPerRound) // how many rounds before a player gets bye again
+    : 0;
+
+  // Rounds needed so each player gets same number of matches:
+  // LCM approach: each player should play same total matches
+  // With bye: in every set of ceil(n/4) rounds, each player rests once
+  // So recommend multiples of ceil(n/4) rounds
+  const cycleLen = Math.ceil(n / (playersPerRound)); // rounds per full cycle
+  const recCycles = Math.max(2, Math.ceil(6 / cycleLen));
+  const rec = recCycles * cycleLen;
+
+  const matchesPerPlayer = Math.floor(rec * (playersPerRound / n));
+
+  return {
+    rec,
+    min: cycleLen,
+    reason: `${n} pemain, ${c} court — ${byePerRound} pemain istirahat per ronde.`,
+    detail: `Rekomendasi <strong>${rec} ronde</strong> (kelipatan ${cycleLen}) agar setiap pemain main <strong>~${matchesPerPlayer}×</strong> dengan jumlah istirahat yang sama.`
+  };
+}
+
+function updateRoundRecommendation() {
+  const wrap = document.getElementById("round-rec-wrap");
+  const mainEl = document.getElementById("rec-main-text");
+  const detailEl = document.getElementById("rec-detail-text");
+  const n = state.selectedPlayers.length;
+  if (n < 4) { wrap.style.display = "none"; return; }
+
+  const rec = calcRecommendedRounds(n, state.courts);
+  if (!rec) { wrap.style.display = "none"; return; }
+
+  wrap.style.display = "block";
+  mainEl.innerHTML = rec.reason;
+  detailEl.innerHTML = rec.detail;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROBUST SUBMISSION SYSTEM
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── STATUS UI ────────────────────────────────────────────────────────────
+function setSubmitStatus(type, msg) {
+  const el = document.getElementById("submit-status");
+  if (!el) return;
+  el.className = "submit-status " + type;
+  el.innerHTML = msg;
+}
+
+// ── RETRY WITH EXPONENTIAL BACKOFF ───────────────────────────────────────
+async function apiWithRetry(fn, label, maxAttempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await fn();
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const isRateLimit = err.message?.includes("429") || err.message?.includes("quota");
+      const isTimeout   = err.message?.includes("504") || err.message?.includes("timeout");
+      const isNetwork   = err.message?.includes("fetch") || err.message?.includes("network");
+      const shouldRetry = isRateLimit || isTimeout || isNetwork;
+
+      console.warn(`[${label}] Attempt ${attempt}/${maxAttempts} failed:`, err.message);
+      if (!shouldRetry || attempt === maxAttempts) break;
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      setSubmitStatus("sending",
+        `${label}: Percobaan ${attempt + 1}/${maxAttempts} dalam ${delay/1000} detik...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
+// ── MAIN SUBMIT FUNCTION WITH SEPARATE ERROR HANDLING ────────────────────
+async function submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum) {
+  let venueOk = false, sessionOk = false;
+
+  // STEP 1: Venue match (independent try — failure doesn't block ELO update)
+  try {
+    setSubmitStatus("sending", `Step 1/2: Menyimpan ke venue sheet...`);
+    await apiWithRetry(
+      () => apiRequest(
+        `venues/${encodeURIComponent(state.venue)}/matches`,
+        { method: "POST", body: JSON.stringify({ matches: apiMatches }) }
+      ),
+      "Venue Match", 3
+    );
+    venueOk = true;
+    setSubmitStatus("sending", "Step 1/2: ✓ Venue sheet tersimpan");
+  } catch (venueErr) {
+    console.error("[Venue Match] Final failure:", venueErr.message);
+    // Do NOT return — still attempt session (ELO update is more critical)
+  }
+
+  // Short pause between the two Sheets API calls
+  await new Promise(r => setTimeout(r, 600));
+
+  // STEP 2: Session / ELO_Log (independent try)
+  try {
+    setSubmitStatus("sending", "Step 2/2: Menyimpan ELO...");
+    await apiWithRetry(
+      () => apiRequest("sessions", {
+        method: "POST",
+        body: JSON.stringify(sessionPayload),
+      }),
+      "ELO Session", 3
+    );
+    sessionOk = true;
+  } catch (sessionErr) {
+    console.error("[ELO Session] Final failure:", sessionErr.message);
+  }
+
+  // ── RESULT FEEDBACK ──────────────────────────────────────────────────
+  if (venueOk && sessionOk) {
+    // Both succeeded — remove from pending queue
+    localStorage.removeItem(pendingKey);
+    setSubmitStatus("ok", `✓ Ronde ${roundNum} tersimpan ke Trekkr`);
+    setTimeout(() => setSubmitStatus("", ""), 4000);
+
+  } else if (!venueOk && !sessionOk) {
+    // Both failed — keep in queue, show retry button
+    setSubmitStatus("queued",
+      `⚠️ Ronde ${roundNum} gagal terkirim (network/timeout). Data tersimpan lokal.
+       <br><button class="retry-badge" onclick="retryPending('${pendingKey}')">
+         🔄 Coba Kirim Ulang
+       </button>`
+    );
+
+  } else {
+    // Partial success
+    const parts = [venueOk ? "✓ Venue" : "✗ Venue", sessionOk ? "✓ ELO" : "✗ ELO"];
+    if (!venueOk || !sessionOk) {
+      setSubmitStatus("queued",
+        `⚠️ Sebagian tersimpan: ${parts.join(", ")}
+         <br><button class="retry-badge" onclick="retryPending('${pendingKey}')">
+           🔄 Coba Kirim Ulang
+         </button>`
+      );
+    }
+    // Even partial — if ELO ok, remove from queue
+    if (sessionOk) localStorage.removeItem(pendingKey);
+  }
+}
+
+// ── RETRY PENDING SUBMISSION ─────────────────────────────────────────────
+async function retryPending(pendingKey) {
+  const raw = localStorage.getItem(pendingKey);
+  if (!raw) { setSubmitStatus("ok", "✓ Sudah tersimpan"); return; }
+  try {
+    const { apiMatches, sessionPayload, roundNum } = JSON.parse(raw);
+    setSubmitStatus("sending", `🔄 Mencoba ulang Ronde ${roundNum}...`);
+    await submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum);
+  } catch(e) {
+    setSubmitStatus("failed", "Gagal retry: " + e.message);
+  }
+}
+
+// ── AUTO-RETRY PENDING ON APP LOAD ──────────────────────────────────────
+function retryAllPending() {
+  if (!state.venue) return; // Don't retry if not logged in
+  const venueSlug = state.venue.replace(/\s+/g, '_');
+  const pendingKeys = Object.keys(localStorage)
+    .filter(k => k.startsWith(`mx_pending_${venueSlug}_`));
+  if (!pendingKeys.length) return;
+  const count = pendingKeys.length;
+  console.log(`[Queue] Found ${count} pending submission(s) — retrying...`);
+  showApiWarning(`⚠️ ${count} ronde belum tersimpan. Mengirim ulang...`);
+  // Stagger retries to avoid hitting rate limit
+  pendingKeys.forEach((key, i) => {
+    setTimeout(async () => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      try {
+        const { apiMatches, sessionPayload, roundNum } = JSON.parse(raw);
+        await submitWithRetry(key, apiMatches, sessionPayload, roundNum);
+      } catch(e) { console.warn("Auto-retry failed:", e.message); }
+    }, i * 3000); // 3 second gap between each retry
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST / API WARNING
+// ═══════════════════════════════════════════════════════════════════════════
+function showApiWarning(msg) {
+  let toast = document.getElementById("api-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "api-toast";
+    toast.style.cssText = [
+      "position:fixed", "bottom:80px", "left:50%", "transform:translateX(-50%)",
+      "max-width:390px", "width:calc(100% - 40px)", "padding:12px 16px",
+      "border-radius:12px", "font-size:13px", "font-weight:600", "line-height:1.4",
+      "z-index:9999", "box-shadow:0 4px 20px rgba(0,0,0,0.2)",
+      "display:flex", "align-items:flex-start", "gap:10px", "font-family:'DM Sans',sans-serif"
+    ].join(";");
+    document.body.appendChild(toast);
+  }
+  const isOk = msg.startsWith("✓");
+  toast.style.background = isOk ? "#16A34A" : "#7C3AED";
+  toast.style.color = "white";
+  toast.innerHTML = `<span style="font-size:18px;flex-shrink:0">${isOk ? "✓" : "⚠️"}</span><div>${msg}</div>`;
+  toast.style.display = "flex";
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.display = "none"; }, isOk ? 4000 : 8000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATCH RESTORE PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
+let _savedToRestore = null;
+
+function showRestorePrompt(saved) {
+  _savedToRestore = saved;
+  const doneRounds  = (saved.rounds||[]).filter(r=>r.submitted).length;
+  const players     = saved.selectedPlayers?.length || 0;
+  const courts      = saved.courts || 1;
+  const fmt         = saved.format === "fixed" ? "Fixed Partner" : "Individual";
+  const rn          = (saved.currentRound || 0) + 1;
+  document.getElementById("restore-info").innerHTML =
+    "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>PEMAIN</div><div style='font-size:18px;font-weight:800'>" + players + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>COURT</div><div style='font-size:18px;font-weight:800'>" + courts + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>FORMAT</div><div style='font-size:13px;font-weight:700'>" + fmt + "</div></div>" +
+    "<div><div style='font-size:10px;font-weight:700;opacity:0.7'>POSISI</div><div style='font-size:13px;font-weight:700'>Ronde " + rn + " (" + doneRounds + " selesai)</div></div>" +
+    "</div>";
+  document.getElementById("modal-restore").classList.remove("hidden");
+}
+
+function doRestore() {
+  const saved = _savedToRestore; if (!saved) return;
+  document.getElementById("modal-restore").classList.add("hidden");
+  state.matchId        = saved.matchId;
+  state.rounds         = saved.rounds;
+  state.currentRound   = saved.currentRound;
+  state.playerStats    = saved.playerStats;
+  state.selectedPlayers= saved.selectedPlayers;
+  state.courts         = saved.courts;
+  state.format         = saved.format;
+  state.scoreFormat    = saved.scoreFormat;
+  state.scoreTarget    = saved.scoreTarget;
+  state.partners       = saved.partners || {};
+  state.sessionGender  = saved.sessionGender || "auto";
+  if (!state.token && saved.token) {
+    state.token = saved.token; state.venue = saved.venue; state.username = saved.username;
+    localStorage.setItem("mx_token", saved.token);
+    localStorage.setItem("mx_venue", saved.venue);
+    localStorage.setItem("mx_user",  saved.username);
+  }
+  showScreen("match"); renderMatchScreen(); switchTab("courts");
+  _savedToRestore = null;
+}
+
+function dismissRestore() {
+  document.getElementById("modal-restore").classList.add("hidden");
+  if (_savedToRestore) {
+    localStorage.removeItem("mx_match_" + (_savedToRestore.venue||"novenvenue") + "_" + _savedToRestore.matchId);
+  }
+  _savedToRestore = null;
+  showScreen("setup");
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EQUAL MATCH TRACKING
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Track round start time — called when round is generated
+function markRoundStart() {
+  const round = state.rounds[state.currentRound];
+  if (round && !round.startedAt) round.startedAt = Date.now();
+}
+
+// Track round end time — called just before submitRound processes
+function markRoundEnd() {
+  const round = state.rounds[state.currentRound];
+  if (round) round.submittedAt = Date.now();
+}
+
+// Average round duration in minutes from completed rounds
+function getAvgRoundMinutes() {
+  const durations = state.rounds
+    .filter(r => r.submitted && r.startedAt && r.submittedAt)
+    .map(r => (r.submittedAt - r.startedAt) / 60000);
+  if (!durations.length) return null;
+  return durations.reduce((s, v) => s + v, 0) / durations.length;
+}
+
+// Count how many times each pair of players has shared a court
+function getMeetMatrix() {
+  const players = Object.keys(state.playerStats);
+  const meet = {};
+  players.forEach(a => players.forEach(b => {
+    if (a < b) meet[`${a}|${b}`] = 0;
+  }));
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    r.matches.forEach(m => {
+      const four = [...m.team1, ...m.team2].map(p => p.name);
+      for (let i = 0; i < four.length; i++) {
+        for (let j = i + 1; j < four.length; j++) {
+          const k = four[i] < four[j] ? `${four[i]}|${four[j]}` : `${four[j]}|${four[i]}`;
+          if (k in meet) meet[k]++;
+        }
+      }
+    });
+  });
+  return meet;
+}
+
+// Match count per player (only counting played matches, not byes)
+function getMatchCounts() {
+  const counts = {};
+  Object.keys(state.playerStats).forEach(p => { counts[p] = 0; });
+  state.rounds.filter(r => r.submitted).forEach(r => {
+    r.matches.forEach(m => {
+      [...m.team1, ...m.team2].forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+    });
+  });
+  return counts;
+}
+
+// Full status object
+function getEqualMatchStatus() {
+  const n = state.selectedPlayers.length;
+  if (n < 4 || state.rounds.filter(r => r.submitted).length === 0) return null;
+
+  const meet   = getMeetMatrix();
+  const counts = getMatchCounts();
+  const totalPairs = Object.keys(meet).length;
+  const metPairs   = Object.values(meet).filter(v => v > 0).length;
+  const notMet     = Object.entries(meet).filter(([_, v]) => v === 0);
+
+  const matchArr   = Object.values(counts);
+  const minMatches = Math.min(...matchArr);
+  const maxMatches = Math.max(...matchArr);
+  const avgMatches = matchArr.reduce((s, v) => s + v, 0) / matchArr.length;
+
+  // "Equal" = all players have played the same number ±1 (bye tolerance)
+  const isEqual   = (maxMatches - minMatches) <= 1;
+  // "Full cycle" = every pair has shared a court at least once
+  const isFullCycle = notMet.length === 0;
+
+  // Rounds until next equal point
+  const active = state.courts * 4;
+  const byePerRound = n - active;
+  let rondesUntilEqual = 0;
+  if (!isEqual && byePerRound > 0) {
+    const cycleLen = Math.ceil(n / active);
+    rondesUntilEqual = (maxMatches - minMatches) * cycleLen;
+  }
+
+  const avgDur = getAvgRoundMinutes();
+  const minsUntilEqual = (avgDur && rondesUntilEqual > 0)
+    ? Math.round(avgDur * rondesUntilEqual)
+    : null;
+
+  return {
+    n, totalPairs, metPairs, notMet,
+    minMatches, maxMatches, avgMatches,
+    isEqual, isFullCycle,
+    rondesUntilEqual, minsUntilEqual,
+    avgDur, counts,
+    pct: Math.round(metPairs / totalPairs * 100),
+  };
+}
+
+// ── RENDER STATUS BAR (shown on courts tab after every round) ─────────────
+function renderEqStatusBar() {
+  const bar = document.getElementById("eq-status-bar");
+  if (!bar) return;
+  const st = getEqualMatchStatus();
+  if (!st) { bar.style.display = "none"; return; }
+
+  bar.style.display = "block";
+
+  if (st.isFullCycle && st.isEqual) {
+    bar.innerHTML = `<div class="eq-bar ok">
+      <span class="eq-bar-icon">✅</span>
+      <div class="eq-bar-text">
+        <div>Full cycle tercapai — semua pemain sudah bertemu!</div>
+        <div class="eq-bar-detail">${st.avgMatches.toFixed(1)} match/pemain rata-rata · ${st.metPairs}/${st.totalPairs} pasang bertemu</div>
+      </div>
+    </div>`;
+  } else if (st.isFullCycle && !st.isEqual) {
+    bar.innerHTML = `<div class="eq-bar warn">
+      <span class="eq-bar-icon">⚠️</span>
+      <div class="eq-bar-text">
+        <div>Semua sudah bertemu, tapi belum merata</div>
+        <div class="eq-bar-detail">Min ${st.minMatches} – Max ${st.maxMatches} match · ${st.rondesUntilEqual} ronde lagi untuk equal${st.minsUntilEqual ? ` (~${st.minsUntilEqual} menit)` : ""}</div>
+      </div>
+    </div>`;
+  } else {
+    const pct = st.pct;
+    const fillColor = pct >= 75 ? "var(--green)" : pct >= 40 ? "var(--blue)" : "var(--gold)";
+    bar.innerHTML = `<div class="eq-bar info">
+      <span class="eq-bar-icon">🎾</span>
+      <div class="eq-bar-text" style="width:100%">
+        <div>${st.metPairs} dari ${st.totalPairs} pasang sudah bertemu (${pct}%)</div>
+        <div class="eq-progress-wrap">
+          <div class="eq-progress-label">
+            <span>Progress</span><span>${st.metPairs}/${st.totalPairs}</span>
+          </div>
+          <div class="eq-progress-bg">
+            <div class="eq-progress-fill" style="width:${pct}%;background:${fillColor}"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+// ── FULL CYCLE MODAL ──────────────────────────────────────────────────────
+function showCycleModal(st) {
+  const submitted = state.rounds.filter(r => r.submitted).length;
+  const avgStr = st.avgDur ? `${Math.round(st.avgDur)}m/ronde` : "—";
+
+  // Pills in header
+  document.getElementById("fc-pills").innerHTML = `
+    <div class="fc-pill"><div class="fc-pill-val">${submitted}</div><div class="fc-pill-lbl">Ronde</div></div>
+    <div class="fc-pill"><div class="fc-pill-val">${st.avgMatches.toFixed(1)}</div><div class="fc-pill-lbl">Avg Match</div></div>
+    <div class="fc-pill"><div class="fc-pill-val">${avgStr}</div><div class="fc-pill-lbl">Durasi</div></div>`;
+
+  // Time estimate card
+  const card = document.getElementById("fc-time-card");
+  const timeVal = document.getElementById("fc-time-val");
+  const timeDesc = document.getElementById("fc-time-desc");
+
+  if (st.isEqual) {
+    card.className = "fc-time-card already-equal";
+    card.style.display = "block";
+    timeVal.style.color = "var(--green)";
+    timeVal.textContent = "✅ Sudah Equal";
+    timeDesc.textContent = `Semua pemain main ${st.minMatches}–${st.maxMatches} match. Waktu yang tepat untuk mengakhiri!`;
+  } else if (st.rondesUntilEqual > 0) {
+    card.className = "fc-time-card needs-more";
+    card.style.display = "block";
+    timeVal.style.color = "var(--blue)";
+    timeVal.textContent = st.minsUntilEqual ? `~${st.minsUntilEqual} menit` : `${st.rondesUntilEqual} ronde`;
+    timeDesc.textContent = `${st.rondesUntilEqual} ronde lagi agar semua main sama banyak` +
+      (st.minsUntilEqual ? ` (estimasi ${st.minsUntilEqual} menit)` : "");
+  } else {
+    card.style.display = "none";
+  }
+
+  // Player rows with dot visualization
+  const sorted = Object.entries(st.counts).sort((a,b) => b[1]-a[1]);
+  document.getElementById("fc-player-rows").innerHTML = sorted.map(([name, c]) => `
+    <div class="fc-player-row">
+      <div class="fc-player-name">${name.split(" ")[0]}</div>
+      <div class="fc-player-dots">
+        ${Array.from({length:st.maxMatches}).map((_,i) => {
+          const bg = i < st.minMatches ? "#16A34A"
+                   : i < c             ? "#1A6FE8"
+                   :                     "rgba(0,0,0,0.08)";
+          return `<div class="fc-dot" style="background:${bg}"></div>`;
+        }).join("")}
+      </div>
+      <div class="fc-player-count" style="color:${c===st.minMatches?"#DC2626":c===st.maxMatches?"#16A34A":"var(--text)"}">${c}</div>
+    </div>`).join("");
+
+  document.getElementById("modal-fullcycle").classList.remove("hidden");
+}
+
+function closeCycleModal() {
+  document.getElementById("modal-fullcycle").classList.add("hidden");
+}
+
+// ── CHECK AND SHOW (called after each round is generated) ─────────────────
+function checkAndNotifyEqualMatch() {
+  renderEqStatusBar();
+  const st = getEqualMatchStatus();
+  if (!st) return;
+
+  // Full cycle modal auto-popup disabled — status bar only
+  // Modal still accessible via end-confirm if needed
+}
+
+function initRankedMatch() {
+  // Re-read from sessionStorage in case another tab overwrote localStorage
+  const tabToken = sessionStorage.getItem("mx_tab_token");
+  const tabVenue = sessionStorage.getItem("mx_tab_venue");
+  if (tabToken) { state.token = tabToken; }
+  if (tabVenue) { state.venue = tabVenue; state.username = sessionStorage.getItem("mx_tab_user") || ""; }
+
+  if (state.token) {
+    document.getElementById("btn-logout").classList.remove("hidden");
+    document.getElementById("header-venue").textContent = state.venue ? `📍 ${state.venue}` : "Ranked Match System";
+
+    // Try to restore active match
+    const saved = restoreLatestMatch();
+    if (saved && saved.screen === "match") {
+      state.matchId = saved.matchId;
+      state.rounds = saved.rounds;
+      state.currentRound = saved.currentRound;
+      state.playerStats = saved.playerStats;
+      state.selectedPlayers = saved.selectedPlayers;
+      state.courts = saved.courts;
+      state.format = saved.format;
+      state.scoreFormat = saved.scoreFormat;
+      state.scoreTarget = saved.scoreTarget;
+      state.partners = saved.partners || {};
+      showScreen("match");
+      renderMatchScreen();
+      switchTab("courts");
+      // Retry any pending from before reload
+      setTimeout(retryAllPending, 3000);
+    } else {
+      showScreen("setup");
+    }
+  } else {
+    showScreen("setup");
+  }
+}
+
 </script>
+
 </body>
 </html>
