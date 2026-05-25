@@ -217,42 +217,6 @@
   </div>
 </div>
 
-<section class="venue-value" id="why-trekkr" aria-labelledby="vv-title">
-  <div class="container">
-    <div class="venue-value__header">
-      <p class="venue-value__eyebrow">For court owners</p>
-      <h2 class="venue-value__title" id="vv-title">Turn your court<br/>into a community.</h2>
-      <p class="venue-value__sub">Trekkr gives your players a live weekly leaderboard, ELO rankings, and match history — keeping them engaged and coming back.</p>
-    </div>
-    <div class="venue-value__grid">
-      <div class="venue-value-card">
-        <div class="venue-value-card__icon">&#x1F501;</div>
-        <h3 class="venue-value-card__title">More return visits</h3>
-        <p class="venue-value-card__desc">Players with an active ranking visit up to 40% more often — their position on the leaderboard gives them a reason to return every week.</p>
-      </div>
-      <div class="venue-value-card">
-        <div class="venue-value-card__icon">&#x1F4CA;</div>
-        <h3 class="venue-value-card__title">Player analytics</h3>
-        <p class="venue-value-card__desc">See who your most active players are, track weekly engagement, and understand your community at a glance — from your admin dashboard.</p>
-      </div>
-      <div class="venue-value-card">
-        <div class="venue-value-card__icon">&#x1F3C6;</div>
-        <h3 class="venue-value-card__title">Run tournaments</h3>
-        <p class="venue-value-card__desc">Built-in tournament and Mexicano match module. Brackets managed automatically, scores submitted directly — no spreadsheets needed.</p>
-      </div>
-      <div class="venue-value-card">
-        <div class="venue-value-card__icon">&#x1F4AC;</div>
-        <h3 class="venue-value-card__title">Replace WhatsApp</h3>
-        <p class="venue-value-card__desc">No more manual results in group chats. Match history, rankings, and schedules all live in one place your whole community can access.</p>
-      </div>
-    </div>
-    <div class="venue-value-cta">
-      <button class="btn btn--primary" onclick="location.href='https://admin.trekkr.online'" style="padding:14px 32px;font-size:14px">Get your venue listed &rarr;</button>
-      <button class="btn btn--ghost" onclick="document.getElementById('mainContent').scrollIntoView({behavior:'smooth'})" style="padding:14px 32px;font-size:14px">Browse venues below</button>
-    </div>
-  </div>
-</section>
-
 <div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://trekkr.online#how-it-works">How It Works</a><a href="https://trekkr.online">National Ranking</a><a href="https://admin.trekkr.online">Venue Login</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
 <script src="https://trekkr.online/trekkr-api.js"></script>
@@ -331,6 +295,18 @@ function getTierName(elo) {
   return "Beginner";
 }
 
+
+async function shareVenuePage(venueName) {
+  const slug = venueName.trim().replace(/\s+/g, '');
+  const url = `https://venue.trekkr.online/${encodeURIComponent(slug)}`;
+  const text = `Cek leaderboard ${venueName} di Trekkr!\n${url}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: `Trekkr – ${venueName}`, text, url }); return; } catch(e) {}
+  }
+  // WhatsApp fallback
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
 async function init(){
   const p=window.location.pathname.replace(/\/$/,'').split('/').filter(Boolean);
   vName=p.length>0&&p[0]!=='venue'?decodeURIComponent(p[p.length-1]):(p.length>1?decodeURIComponent(p[1]):'');
@@ -353,6 +329,24 @@ async function showVenueList(){
     });
     if(!sorted.length)h+='<div class="state-panel" style="grid-column:1/-1"><h2 class="state-title">No Venues</h2><p class="state-copy">No venues configured yet</p></div>';
     h+=`</div></div></section>`;
+    h+=`<section class=\"venue-value\" id=\"why-trekkr\" aria-labelledby=\"vv-title\">
+  <div class=\"container\">
+    <div class=\"venue-value__header\">
+      <p class=\"venue-value__eyebrow\">For court owners</p>
+      <h2 class=\"venue-value__title\" id=\"vv-title\">Turn your court<br/>into a community.</h2>
+      <p class=\"venue-value__sub\">Trekkr gives your players a live weekly leaderboard, ELO rankings, and match history — keeping them engaged and coming back.</p>
+    </div>
+    <div class=\"venue-value__grid\">
+      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F501;</div><h3 class=\"venue-value-card__title\">More return visits</h3><p class=\"venue-value-card__desc\">Players with an active ranking visit up to 40% more often — their position on the leaderboard gives them a reason to return every week.</p></div>
+      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F4CA;</div><h3 class=\"venue-value-card__title\">Player analytics</h3><p class=\"venue-value-card__desc\">See who your most active players are, track weekly engagement, and understand your community at a glance — from your admin dashboard.</p></div>
+      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F3C6;</div><h3 class=\"venue-value-card__title\">Run tournaments</h3><p class=\"venue-value-card__desc\">Built-in tournament and Ranked Match module. Brackets managed automatically, scores submitted directly — no spreadsheets needed.</p></div>
+      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F4AC;</div><h3 class=\"venue-value-card__title\">Replace WhatsApp</h3><p class=\"venue-value-card__desc\">No more manual results in group chats. Match history, rankings, and schedules all live in one place your whole community can access.</p></div>
+    </div>
+    <div class=\"venue-value-cta\">
+      <button class=\"btn btn--primary\" onclick=\"location.href='https://admin.trekkr.online'\" style=\"padding:14px 32px;font-size:14px\">Get your venue listed &rarr;</button>
+    </div>
+  </div>
+</section>`;
     document.getElementById('mainContent').innerHTML=h;
   }catch(e){document.getElementById('mainContent').innerHTML='<div class="container"><div class="state-panel"><h2 class="state-title">Error</h2><p class="state-copy">Could not load venues</p></div></div>'}
 }
@@ -360,9 +354,19 @@ async function showVenueList(){
 async function loadVenueDetail(){
   try{const d=await TrekkrAPI.getVenues();vData=d.venues.find(v=>v.name.toLowerCase()===vName.toLowerCase())}catch(e){}
   const v=vData||{name:vName};
-  let h=`<section class="vd-hero"><div class="container"><div><h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1><p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>
-    <div style="margin-top:16px;display:flex;gap:8px">${v.registerUrl?`<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>`:''}
-    <a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a></div></div>
+  const venueShareUrl=`https://venue.trekkr.online/${encodeURIComponent((v.name||vName).trim().replace(/\s+/g,''))}`;
+  const venueShareText=encodeURIComponent(`Cek leaderboard ${v.name||vName} di Trekkr!\n${venueShareUrl}`);
+  let h=`<section class="vd-hero"><div class="container"><div>
+    <h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1>
+    <p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>
+    <p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">Your padel ranking, at your court. Trekkr gives every padel court its own live leaderboard. Play, win, and climb the ranks — reset every Monday.</p>
+    <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
+      ${v.registerUrl?`<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>`:''}
+      <button class="btn btn--ghost" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)" onclick="shareVenuePage('${(v.name||vName).replace(/'/g,\"\\'\")}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share this page
+      </button>
+      <a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a>
+    </div></div>
     ${v.schedule||v.prizePool?`<div class="vd-info"><p class="vd-info-title">Info</p>${v.schedule?`<div class="vd-info-line"><span>Schedule</span><strong>${v.schedule}</strong></div>`:''}
     ${v.prizePool?`<div class="vd-info-kpi"><div><p class="vd-info-label">Prize Pool</p><p class="vd-info-value">${v.prizePool}</p></div></div>`:''}</div>`:''}</div></section>`;
 
