@@ -824,19 +824,17 @@ function doAdminLogout() {
 /* ══════════════════════════════════════════════════
    ADMIN TABS
    ══════════════════════════════════════════════════ */
+let _rankedMatchInited = false;
 function switchAdminTab(id) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('is-active'));
   document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('is-active'));
   document.getElementById('atab-' + id).classList.add('is-active');
   document.getElementById('apanel-' + id).classList.add('is-active');
-  // When switching to ranked match, go to setup screen if not already in match
   if (id === 'ranked-match') {
     if (!state.token) return;
-    const saved = restoreLatestMatch();
-    if (saved && saved.screen === 'match') {
-      showRestorePrompt(saved);
-    } else if (!state.rounds || !state.rounds.length) {
-      showScreen('setup');
+    if (!_rankedMatchInited) {
+      _rankedMatchInited = true;
+      initRankedMatch();
     }
   }
 }
@@ -2917,7 +2915,7 @@ function checkAndNotifyEqualMatch() {
   // Modal still accessible via end-confirm if needed
 }
 
-(function init() {
+function initRankedMatch() {
   // Re-read from sessionStorage in case another tab overwrote localStorage
   const tabToken = sessionStorage.getItem("mx_tab_token");
   const tabVenue = sessionStorage.getItem("mx_tab_venue");
@@ -2950,9 +2948,9 @@ function checkAndNotifyEqualMatch() {
       showScreen("setup");
     }
   } else {
-    showScreen("login");
+    showScreen("setup");
   }
-})();
+}
 
 </script>
 
