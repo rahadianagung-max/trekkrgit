@@ -671,15 +671,23 @@ async function loadPlayer(){
       const vData = await vRes.json();
       let allMatches = [];
       
+      const playedVenueSet = new Set();
       for (const v of vData.venues) {
           try {
               const mRes = await fetch(`https://trekkr.online/api/venues/${encodeURIComponent(v.name)}/matches`);
               const mData = await mRes.json();
               if (mData.matches) {
                   allMatches = allMatches.concat(mData.matches);
+                  // Check if player appeared in any match at this venue
+                  const tgt = name.toLowerCase().trim();
+                  const appearedHere = mData.matches.some(m =>
+                      [m.p1t1,m.p2t1,m.p1t2,m.p2t2].some(n => (n||'').toLowerCase().trim() === tgt)
+                  );
+                  if (appearedHere) playedVenueSet.add(v.name);
               }
           } catch(err) {}
       }
+      d.playedVenues = Array.from(playedVenueSet);
       
       const targetName = name.toLowerCase().trim();
       const myMatchesRaw = allMatches.filter(m => 
@@ -793,7 +801,7 @@ async function loadPlayer(){
   try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;if(st.passport_image){document.querySelector('.pp-header').style.setProperty('--pp-bg','url('+st.passport_image+')')}}catch(e){}
 }
 
-function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges}){
+function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
   const ti=tierProg(s.currentElo);
   document.title=`${p.displayName} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E'">
@@ -823,7 +831,8 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
     ${ti.next?`<p class="pp-tier-next">Next: ${ti.next.name} · ${ti.ptsAway} pts away</p>`:'<p class="pp-tier-next">Maximum tier reached!</p>'}
     <div class="pp-bar-bg"><div class="pp-bar-fill" style="width:${ti.progress}%"></div></div></div>
     <div class="pp-card"><p class="pp-card-title">Info</p><div class="pp-info-grid">
-    ${p.clubs?`<div class="pp-info-item"><p class="pp-info-label">Club / Venue</p><p class="pp-info-value">${p.clubs}</p></div>`:''} 
+    ${(playedVenues&&playedVenues.length)?`<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">Playing History</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${playedVenues.map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface-container);padding:2px 10px;border-radius:99px;margin:2px 3px 2px 0;font-size:12px">🏟 ${v}</span>`).join('')}</p></div>`:''}
+    ${p.winnerAt?`<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">🏆 Winner at</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${p.winnerAt.split(',').map(w=>w.trim()).filter(Boolean).map(w=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);padding:2px 10px;border-radius:99px;margin:2px 3px 2px 0;font-size:12px;color:#7a5800">🥇 ${w}</span>`).join('')}</p></div>`:''}
     ${p.region?`<div class="pp-info-item"><p class="pp-info-label">Region</p><p class="pp-info-value">${p.region}</p></div>`:''}
     ${p.ig?`<div class="pp-info-item"><p class="pp-info-label">Instagram</p><p class="pp-info-value">${p.ig}</p></div>`:''}
     <div class="pp-info-item"><p class="pp-info-label">Gender</p><p class="pp-info-value">${p.gender==='F'?'Female':'Male'}</p></div>
