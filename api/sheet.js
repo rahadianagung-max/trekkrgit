@@ -167,12 +167,13 @@ async function login({ username, password }) {
 // ── PLAYERS ──
 async function getPlayers(params) {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const rows = res.data.values || [];
   let players = rows.map((r) => ({
     name: r[0] || "", ig: r[1] || "", verified: r[2] === "TRUE",
     displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
     region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", createdAt: r[8] || "",
+    winnerAt: r[9] || "",
   }));
   if (params.gender) players = players.filter((p) => p.gender === params.gender.toUpperCase());
   if (params.region) players = players.filter((p) => p.region.toLowerCase().includes(params.region.toLowerCase()));
@@ -185,7 +186,7 @@ async function getPlayers(params) {
 
 async function getPlayerDetail(name) {
   const sheets = getSheets();
-  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const pRows = pRes.data.values || [];
   const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
   if (!pRow) return respond(404, { error: "Player not found" });
@@ -194,6 +195,7 @@ async function getPlayerDetail(name) {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
     displayName: pRow[3] || pRow[0], gender: (pRow[4] || "M").toUpperCase(),
     region: pRow[5] || "", photoUrl: pRow[6] || "", clubs: pRow[7] || "", createdAt: pRow[8] || "",
+    winnerAt: pRow[9] || "",
   };
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
@@ -237,7 +239,7 @@ async function updatePlayer(body) {
   const { name, updates } = body;
   if (!name || !updates) return respond(400, { error: "name and updates required" });
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
   if (ri === -1) return respond(404, { error: "Player not found" });
@@ -245,10 +247,10 @@ async function updatePlayer(body) {
   const updated = [
     updates.name || c[0] || "", updates.ig || c[1] || "", updates.ig ? "TRUE" : c[2] || "FALSE",
     updates.displayName || c[3] || c[0] || "", (updates.gender || c[4] || "M").toUpperCase(),
-    updates.region || c[5] || "", updates.photoUrl || c[6] || "", updates.clubs || c[7] || "", c[8] || "",
+    updates.region || c[5] || "", updates.photoUrl || c[6] || "", updates.clubs || c[7] || "", c[8] || "", c[9] || "",
   ];
   await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID, range: `${TABS.players}!A${sr}:I${sr}`, valueInputOption: "USER_ENTERED",
+    spreadsheetId: SHEET_ID, range: `${TABS.players}!A${sr}:J${sr}`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [updated] },
   });
   return respond(200, { success: true });
@@ -262,7 +264,7 @@ async function claimProfile({ name, ig_handle, session_id }) {
     spreadsheetId: SHEET_ID, range: `${TABS.claims}!A:E`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[name, ig_handle, session_id || "", "PENDING", now]] },
   });
-  const existing = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const existing = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const rows = existing.data.values || [];
   const ri = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
   
@@ -532,7 +534,7 @@ function getTierName(elo) {
 
 async function getNationalLeaderboard(params) {
   const sheets = getSheets();
-  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:I` });
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const pRows = pRes.data.values || [];
   const playersInfo = {};
   pRows.forEach((r) => {
@@ -540,7 +542,7 @@ async function getNationalLeaderboard(params) {
       playersInfo[r[0].toLowerCase()] = {
         name: r[0], ig: r[1] || "", verified: r[2] === "TRUE",
         displayName: r[3] || r[0], gender: (r[4] || "M").toUpperCase(),
-        region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "",
+        region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", winnerAt: r[9] || "",
       };
     }
   });
@@ -606,7 +608,7 @@ async function getNationalLeaderboard(params) {
   let leaderboard = Object.keys(playerStats).map((k) => {
     const ps  = playerStats[k];
     const elo = ps.elo;
-    const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "" };
+    const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "" };
     return {
       ...info,
       elo,
