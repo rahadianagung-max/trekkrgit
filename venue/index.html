@@ -276,9 +276,10 @@
   padding: 14px 14px 16px; position: relative; z-index: 1;
 }
 .liga-hero-name {
-  font-family: 'Space Grotesk', sans-serif; font-size: clamp(13px, 1.8vw, 16px);
-  font-weight: 800; text-transform: uppercase; letter-spacing: -.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px;
+  font-family: 'Space Grotesk', sans-serif; font-size: clamp(18px, 2.8vw, 26px);
+  font-weight: 900; text-transform: uppercase; letter-spacing: -.02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;
+  line-height: 1;
 }
 .liga-hero-pts-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
 .liga-hero-pts {
@@ -292,15 +293,8 @@
 .liga-hero-wl { font-size: 12px; opacity: .75; margin-bottom: 6px; }
 .liga-hero-form { display: flex; gap: 3px; flex-wrap: wrap; }
 
-/* Form dots */
-.form-dot {
-  width: 19px; height: 19px; border-radius: 50%; font-family: 'Inter', sans-serif;
-  font-size: 9px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
-}
-.form-dot--w   { background: var(--ok,#1f9d63); color: #fff; }
-.form-dot--l   { background: rgba(255,255,255,.18); color: rgba(255,255,255,.65); }
-.form-dot--w-tbl { background: #dcfce7; color: #15803d; }
-.form-dot--l-tbl { background: #fce4e4; color: var(--danger,#ba1a1a); }
+/* Form text labels (circles removed) */
+.form-dot { display: none; } /* kept for compatibility only */
 
 /* ── LIGA TABLE ── */
 .liga-table-wrap {
@@ -577,7 +571,7 @@ async function loadVenueDetail(){
   let h = `<section class="vd-hero"><div class="container"><div>`
     + `<h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1>`
     + `<p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>`
-    + `<p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">Your padel ranking, at your court. Trekkr gives every padel court its own live leaderboard. Play, win, and climb the ranks — reset every Monday.</p>`
+    + `<p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">The weekly leaderboard resets every week — play more, win more, and climb higher. Every match counts at this venue.</p>`
     + `<div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">`
     + _registerBtn
     + `<button class="btn btn--ghost" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)" onclick="shareVenuePage(window._currentVenueName)">`
@@ -711,7 +705,7 @@ async function loadRanking(){
           + '<span class="liga-hero-pts">' + pts + '</span>'
           + '<span class="liga-hero-pts-label">PTS</span>'
           + '</div>'
-          + '<div class="liga-hero-wl">' + p.w + 'W \u00b7 ' + p.l + 'L \u00b7 ' + (p.w + p.l) + ' played</div>'
+          + '<div class="liga-hero-wl">Win <strong>' + p.w + '</strong> &nbsp;·&nbsp; Lose <strong>' + p.l + '</strong> &nbsp;·&nbsp; Played <strong>' + (p.w + p.l) + '</strong></div>'
           + '<div class="liga-hero-form">' + formDots(p.name, true) + '</div>'
           + '</div>'
           + '</div>';
@@ -753,15 +747,15 @@ async function loadRanking(){
       });
 
       h += '<div class="liga-legend">'
-        + '<div class="liga-legend-item"><span class="form-dot form-dot--w-tbl" style="width:14px;height:14px;font-size:8px">W</span>&nbsp;Win = 3 pts</div>'
-        + '<div class="liga-legend-item"><span class="form-dot form-dot--l-tbl" style="width:14px;height:14px;font-size:8px">L</span>&nbsp;Loss = 0 pts</div>'
+        + '<div class="liga-legend-item"><strong style="color:var(--ok,#1f9d63)">W</strong>&nbsp;= Win (3 pts)</div>'
+        + '<div class="liga-legend-item"><strong style="color:var(--danger,#ba1a1a)">L</strong>&nbsp;= Loss (0 pts)</div>'
         + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
         + '</div>'
         + '</div>';
     } else {
       h += '<div class="liga-legend" style="background:var(--surface-lowest);border-radius:var(--radius-xl);padding:12px 16px;border:1px solid rgba(115,118,136,.1);margin-top:8px">'
-        + '<div class="liga-legend-item"><span class="form-dot form-dot--w-tbl" style="width:14px;height:14px;font-size:8px">W</span>&nbsp;Win = 3 pts</div>'
-        + '<div class="liga-legend-item"><span class="form-dot form-dot--l-tbl" style="width:14px;height:14px;font-size:8px">L</span>&nbsp;Loss = 0 pts</div>'
+        + '<div class="liga-legend-item"><strong style="color:var(--ok,#1f9d63)">W</strong>&nbsp;= Win (3 pts)</div>'
+        + '<div class="liga-legend-item"><strong style="color:var(--danger,#ba1a1a)">L</strong>&nbsp;= Loss (0 pts)</div>'
         + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
         + '</div>';
     }
