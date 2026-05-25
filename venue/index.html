@@ -668,43 +668,42 @@ async function loadRanking(){
 
     // ── CONTEXT BANNER ──
     h += '<div class="liga-wrap">';
+
+    // Context banner
     h += '<div class="liga-banner">'
-      + '<div class="liga-banner-icon">🏆</div>'
+      + '<div class="liga-banner-icon">\uD83C\uDFC6</div>'
       + '<div>'
-      + '<div class="liga-banner-title">Weekly Standings — Week ' + cW + '</div>'
+      + '<div class="liga-banner-title">Weekly Standings \u2014 Week ' + cW + '</div>'
       + '<div class="liga-banner-sub">Most wins = top of the table. Win = 3 pts. Resets every Monday at midnight.</div>'
       + '</div>'
-      + '<div class="liga-reset-pill">↺ Resets Monday</div>'
+      + '<div class="liga-reset-pill">\u21BA Resets Monday</div>'
       + '</div>';
 
-    // ── TOP 3 HERO CARDS ──
-    d.ranking.sort((a,b) => b.w - a.w || a.l - b.l || b.elo - a.elo);
-    const top3 = d.ranking.slice(0, 3);
-    const rest  = d.ranking.slice(3);
+    // Sort: wins desc, losses asc, elo tiebreak
+    d.ranking.sort(function(a,b){ return b.w - a.w || a.l - b.l || b.elo - a.elo; });
+    var top3 = d.ranking.slice(0,3);
+    var rest  = d.ranking.slice(3);
+    var medals2 = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var heroCards2 = ['liga-hero-card--1','liga-hero-card--2','liga-hero-card--3'];
+    var fbBase = 'https://ui-avatars.com/api/?background=e5eeff&color=003ec7&bold=true&size=200&name=';
 
+    // TOP 3 HERO CARDS
     if (top3.length) {
       h += '<div class="liga-top3">';
       top3.forEach(function(p, i) {
         var pts      = p.w * 3;
         var pname    = dn(p);
-        var initials = pname.trim().split(' ').map(function(w){ return w ? w[0] : ''; }).join('').toUpperCase().slice(0,2);
+        var inits    = pname.trim().split(' ').filter(function(w){return w;}).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
         var photoSrc = ava(p);
-        var hasPhoto = photoSrc.indexOf('ui-avatars.com') === -1;
-        var fallbackSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(pname) + '&background=e5eeff&color=003ec7&bold=true&size=200';
-        var playerUrl   = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
+        var isAva    = photoSrc.indexOf('ui-avatars.com') !== -1;
+        var imgHtml  = isAva
+          ? '<div class="liga-hero-initials">' + inits + '</div>'
+          : '<img class="liga-hero-photo" src="' + photoSrc + '" alt="" onerror="this.parentNode.innerHTML=\'<div class=liga-hero-initials>' + inits + '</div>\'">';
 
-        var photoHtml;
-        if (hasPhoto) {
-          photoHtml = '<img class="liga-hero-photo" src="' + photoSrc + '" alt="' + pname + '" onerror="this.src=' + "'" + fallbackSrc + "'" + '">'
-            + '<div class="liga-hero-initials" style="display:none">' + initials + '</div>';
-        } else {
-          photoHtml = '<div class="liga-hero-initials">' + initials + '</div>';
-        }
-
-        h += '<div class="' + heroCards[i] + ' liga-hero-card" onclick="location.href=' + "'" + playerUrl + "'" + '">'
+        h += '<div class="' + heroCards2[i] + ' liga-hero-card" data-href="https://trekkr.online/player/' + encodeURIComponent(p.name) + '">'
           + '<div class="liga-hero-photo-wrap">'
-          + '<div class="liga-hero-medal">' + medals[i] + '</div>'
-          + photoHtml
+          + '<div class="liga-hero-medal">' + medals2[i] + '</div>'
+          + imgHtml
           + '</div>'
           + '<div class="liga-hero-info">'
           + '<div class="liga-hero-name">' + pname + '</div>'
@@ -712,7 +711,7 @@ async function loadRanking(){
           + '<span class="liga-hero-pts">' + pts + '</span>'
           + '<span class="liga-hero-pts-label">PTS</span>'
           + '</div>'
-          + '<div class="liga-hero-wl">' + p.w + 'W · ' + p.l + 'L · ' + (p.w + p.l) + ' played</div>'
+          + '<div class="liga-hero-wl">' + p.w + 'W \u00b7 ' + p.l + 'L \u00b7 ' + (p.w + p.l) + ' played</div>'
           + '<div class="liga-hero-form">' + formDots(p.name, true) + '</div>'
           + '</div>'
           + '</div>';
@@ -720,10 +719,10 @@ async function loadRanking(){
       h += '</div>';
     }
 
-    // ── TABLE: Rank 4+ only ──
+    // TABLE: rank 4+
     if (rest.length) {
-      h += '<div class="liga-table-wrap">';
-      h += '<div class="liga-table-header">'
+      h += '<div class="liga-table-wrap">'
+        + '<div class="liga-table-header">'
         + '<div class="liga-th liga-th--center">#</div>'
         + '<div class="liga-th">Player</div>'
         + '<div class="liga-th liga-th--center">Pts</div>'
@@ -734,17 +733,19 @@ async function loadRanking(){
         + '</div>';
 
       rest.forEach(function(p, i) {
-        var rank = i + 4;
-        var pts  = p.w * 3;
-        var rUrl = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
-        h += '<div class="liga-row" onclick="location.href=' + "'" + rUrl + "'" + '">'
+        var rank  = i + 4;
+        var pts   = p.w * 3;
+        var pname = dn(p);
+        var avSrc = ava(p);
+        var avHtml = '<img class="liga-player-av" src="' + avSrc + '" alt="">';
+        h += '<div class="liga-row" data-href="https://trekkr.online/player/' + encodeURIComponent(p.name) + '">'
           + '<span class="liga-rank">' + rank + '</span>'
           + '<div class="liga-player">'
-          + '<img class="liga-player-av" src="' + ava(p) + '" alt="' + dn(p) + '" onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(dn(p)) + '&background=e5eeff&color=003ec7&bold=true&size=200'">'
-          + '<div style="min-width:0"><div class="liga-player-name">' + dn(p) + '</div></div>'
+          + avHtml
+          + '<div style="min-width:0"><div class="liga-player-name">' + pname + '</div></div>'
           + '</div>'
           + '<div class="liga-cell liga-cell--pts">' + pts + '</div>'
-          + '<div class="liga-cell">' + (p.w+p.l) + '</div>'
+          + '<div class="liga-cell">' + (p.w + p.l) + '</div>'
           + '<div class="liga-cell liga-cell--w">' + p.w + '</div>'
           + '<div class="liga-cell liga-cell--l">' + p.l + '</div>'
           + '<div class="liga-form">' + formDots(p.name, false) + '</div>'
@@ -754,19 +755,28 @@ async function loadRanking(){
       h += '<div class="liga-legend">'
         + '<div class="liga-legend-item"><span class="form-dot form-dot--w-tbl" style="width:14px;height:14px;font-size:8px">W</span>&nbsp;Win = 3 pts</div>'
         + '<div class="liga-legend-item"><span class="form-dot form-dot--l-tbl" style="width:14px;height:14px;font-size:8px">L</span>&nbsp;Loss = 0 pts</div>'
-        + '<div class="liga-legend-cta">Tap your name for full stats →</div>'
+        + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
+        + '</div>'
         + '</div>';
-      h += '</div>';
     } else {
       h += '<div class="liga-legend" style="background:var(--surface-lowest);border-radius:var(--radius-xl);padding:12px 16px;border:1px solid rgba(115,118,136,.1);margin-top:8px">'
         + '<div class="liga-legend-item"><span class="form-dot form-dot--w-tbl" style="width:14px;height:14px;font-size:8px">W</span>&nbsp;Win = 3 pts</div>'
         + '<div class="liga-legend-item"><span class="form-dot form-dot--l-tbl" style="width:14px;height:14px;font-size:8px">L</span>&nbsp;Loss = 0 pts</div>'
-        + '<div class="liga-legend-cta">Tap your name for full stats →</div>'
+        + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
         + '</div>';
     }
 
-    h += '</div>';
+    h += '</div>'; // end liga-wrap
     c.innerHTML = h;
+
+    // Attach click handlers via data-href (avoids quote nesting in HTML strings)
+    c.querySelectorAll('[data-href]').forEach(function(el) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', function() {
+        location.href = el.getAttribute('data-href');
+      });
+    });
+
     loadMatchHistory();
   } catch(e) {
     c.innerHTML = '<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week.</p></div>';
