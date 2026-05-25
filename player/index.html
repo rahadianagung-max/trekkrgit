@@ -689,15 +689,24 @@ async function loadPlayer(){
           (m.p2t2 || "").toLowerCase().trim() === targetName
       );
 
-      // De-duplicate: same match can appear in multiple venues
-      // Key = sorted player names + scores (venue-agnostic fingerprint)
+      // De-duplicate: only remove exact duplicates where ALL fields match
+      // (same players + same scores + same date + same week)
+      // This handles the case where a match is stored in multiple venue tabs
+      // but preserves valid matches that happen to have same score on same day
       const seenKeys = new Set();
       const myMatches = myMatchesRaw.filter(m => {
-          const players = [m.p1t1||'', m.p2t1||'', m.p1t2||'', m.p2t2||'']
-              .map(p => p.toLowerCase().trim())
-              .sort()
-              .join('|');
-          const key = `${players}__${m.scoreT1}_${m.scoreT2}__${m.date||''}`;
+          // Use ALL four player names in original order (not sorted) + scores + date + week
+          // to create a truly unique fingerprint
+          const key = [
+              (m.week||'').trim(),
+              (m.date||'').trim(),
+              (m.p1t1||'').toLowerCase().trim(),
+              (m.p2t1||'').toLowerCase().trim(),
+              (m.p1t2||'').toLowerCase().trim(),
+              (m.p2t2||'').toLowerCase().trim(),
+              String(m.scoreT1),
+              String(m.scoreT2),
+          ].join('__');
           if (seenKeys.has(key)) return false;
           seenKeys.add(key);
           return true;
