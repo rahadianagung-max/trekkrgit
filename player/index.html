@@ -561,6 +561,77 @@ canvas#shareCanvas{display:none}
 .state-copy{margin:10px auto 0;max-width:700px;color:var(--on-surface-variant);font-size:16px}
 @media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.pp-hero{grid-template-columns:1fr}.pp-meta-grid{grid-template-columns:repeat(2,1fr)}.pp-stats{grid-template-columns:repeat(3,1fr)}.pp-dual{grid-template-columns:1fr}}
 @media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.pp-stats{grid-template-columns:repeat(2,1fr)}.pp-share{flex-direction:column;align-items:stretch}.pp-share-btns{justify-content:center}}
+
+/* ── SHARE v2 ─────────────────────────────────────── */
+.pp-share-v2{margin-top:var(--space-6);background:var(--surface-low);border-radius:var(--radius-lg);padding:20px}
+.pp-share-v2-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.pp-share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pp-share-card{background:var(--surface-lowest,#fff);border:1px solid rgba(115,118,136,0.12);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;transition:all var(--motion-base);text-align:left}
+.pp-share-card:hover{border-color:var(--primary);background:var(--surface-container)}
+.pp-share-card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:19px}
+.pp-share-card-label{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;color:var(--on-surface)}
+.pp-share-card-sub{font-size:12px;color:var(--on-surface-variant);margin-top:3px;line-height:1.4}
+
+/* Share modal overlay */
+.share-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-end;justify-content:center;padding:0 0 0 0}
+.share-modal-overlay.open{display:flex}
+.share-modal{background:var(--surface-lowest,#fff);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:480px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.share-modal-handle{width:36px;height:4px;background:var(--surface-high,#dce9ff);border-radius:2px;margin:0 auto 16px}
+.share-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.share-modal-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
+.share-modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--on-surface-variant);cursor:pointer;padding:0 4px}
+.share-modal-sub{font-size:13px;color:var(--on-surface-variant);margin-bottom:16px}
+
+/* URL modal */
+.url-copy-row{display:flex;align-items:center;gap:8px;background:var(--surface-low);border:1px solid var(--surface-high);border-radius:var(--radius-md);padding:11px 14px;margin-bottom:14px}
+.url-copy-text{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--on-surface-variant);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.url-copy-btn{background:var(--primary);color:#fff;border:none;border-radius:var(--radius-md);padding:7px 14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background var(--motion-base)}
+.url-copy-btn.copied{background:var(--ok,#1f9d63)}
+.share-also-label{font-size:12px;color:var(--on-surface-variant);margin-bottom:10px}
+.share-also-row{display:flex;gap:8px;flex-wrap:wrap}
+.share-also-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-pill);border:1px solid rgba(115,118,136,.15);background:var(--surface-low);font-size:12px;font-weight:600;color:var(--on-surface);cursor:pointer;transition:background var(--motion-base)}
+.share-also-chip:hover{background:var(--surface-container)}
+
+/* Result card preview in modal */
+.result-layout{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start}
+.night-card-preview{background:#080808;border-radius:16px;aspect-ratio:9/16;display:flex;flex-direction:column;overflow:hidden}
+.ncp-photo{flex:1.8;background:#141414;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ncp-initials{font-size:28px;font-weight:700;color:#222;font-family:'Space Grotesk',sans-serif}
+.ncp-img{width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;inset:0}
+.ncp-gradient{position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(to top,#080808,transparent)}
+.ncp-rank-pill{position:absolute;top:8px;right:8px;background:#FFD700;color:#1a1000;font-size:7px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
+.ncp-name-area{position:absolute;bottom:8px;left:10px;right:10px}
+.ncp-pname{font-size:11px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif;text-transform:uppercase;letter-spacing:-.01em}
+.ncp-psub{font-size:8px;color:rgba(255,255,255,.4);margin-top:1px}
+.ncp-bottom{padding:9px 10px 10px;display:flex;flex-direction:column;gap:7px}
+.ncp-elo-row{display:flex;align-items:flex-end;justify-content:space-between}
+.ncp-elo-lbl{font-size:7px;color:rgba(255,255,255,.35);letter-spacing:.1em}
+.ncp-elo-val{font-size:20px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif;line-height:1}
+.ncp-tier-lbl{font-size:7px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-align:right}
+.ncp-tier-val{font-size:10px;font-weight:700;color:#FFD700;text-align:right}
+.ncp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.ncp-sbox{background:#141414;border-radius:6px;padding:5px 4px;text-align:center}
+.ncp-sv{font-size:11px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif}
+.ncp-sl{font-size:7px;color:rgba(255,255,255,.3);letter-spacing:.05em;margin-top:1px}
+.ncp-badges{display:flex;gap:3px;flex-wrap:wrap}
+.ncp-badge{font-size:7px;font-weight:700;padding:2px 5px;border-radius:4px;border:0.5px solid;display:flex;align-items:center;gap:2px}
+.ncp-badge-gold{color:#FFD700;border-color:#3d2e00;background:#1e1700}
+.ncp-badge-purple{color:#AFA9EC;border-color:#2e2a5c;background:#16143a}
+.ncp-badge-teal{color:#5DCAA5;border-color:#0c3528;background:#071d15}
+.ncp-badge-blue{color:#85b7eb;border-color:#0c2a50;background:#03122d}
+.ncp-footer{display:flex;align-items:center;justify-content:space-between;border-top:0.5px solid #1e1e1e;padding-top:6px}
+.ncp-brand{font-size:9px;font-weight:700;color:#fff;letter-spacing:.1em;font-family:'Space Grotesk',sans-serif}
+.ncp-url{font-size:7px;color:rgba(255,255,255,.3)}
+
+/* Share option rows */
+.share-opt-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius-md);border:1px solid rgba(115,118,136,.12);background:var(--surface-low);cursor:pointer;transition:all var(--motion-base);margin-bottom:8px}
+.share-opt-row:hover{border-color:var(--primary);background:var(--surface-container)}
+.share-opt-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.share-opt-body{flex:1}
+.share-opt-label{font-size:13px;font-weight:700;color:var(--on-surface)}
+.share-opt-sub{font-size:11px;color:var(--on-surface-variant);margin-top:1px}
+.share-opt-arr{font-size:16px;color:var(--on-surface-variant)}
 </style>
 </head>
 <body>
@@ -897,12 +968,29 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
       </div>`;
   }
 
-  // UI SHARE BUTTONS
-  h+=`<div class="pp-share"><div><p class="pp-share-title">Share Passport</p><p style="font-size:13px;color:var(--on-surface-variant);margin-top:2px">Share this player's profile</p></div><div class="pp-share-btns">
-
-    <button class="btn btn--ghost" onclick="copyLink()">Copy Link</button>
-    <button class="btn btn--wa" onclick="shareWA()">WhatsApp</button>
-  </div></div>`;
+  // UI SHARE BUTTONS v2
+  h+=`<div class="pp-share-v2">
+    <div class="pp-share-v2-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.7"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Share your profile
+    </div>
+    <div class="pp-share-grid">
+      <button class="pp-share-card" onclick="openUrlModal()">
+        <div class="pp-share-card-icon" style="background:var(--surface-container)">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div class="pp-share-card-label">Copy passport URL</div>
+        <div class="pp-share-card-sub">Share your profile link anywhere</div>
+      </button>
+      <button class="pp-share-card" onclick="openResultModal()">
+        <div class="pp-share-card-icon" style="background:#1e1700">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+        </div>
+        <div class="pp-share-card-label">Share your result</div>
+        <div class="pp-share-card-sub">Night card with stats &amp; badges</div>
+      </button>
+    </div>
+  </div>`;
 
   document.getElementById('content').innerHTML=h;
   if(history&&history.length>1)drawChart(history);
@@ -1488,6 +1576,391 @@ function buildCalibBadge(totalMatches) {
 }
 
 window.addEventListener('load',loadPlayer);
+
+/* ══ SHARE v2 FUNCTIONS ══════════════════════════════════════ */
+
+function openUrlModal() {
+  if (!playerData) return;
+  const url = 'trekkr.online/player/' + encodeURIComponent(playerData.player.name);
+  document.getElementById('urlModalText').textContent = url;
+  document.getElementById('urlModal').classList.add('open');
+}
+function closeUrlModal(e) {
+  if (e && e.target !== document.getElementById('urlModal')) return;
+  document.getElementById('urlModal').classList.remove('open');
+}
+
+function doUrlCopy() {
+  const url = 'https://trekkr.online/player/' + encodeURIComponent(playerData?.player?.name || '');
+  const btn = document.getElementById('urlCopyBtn');
+  navigator.clipboard.writeText(url).catch(function() {
+    var ta = document.createElement('textarea'); ta.value = url;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  });
+  btn.textContent = 'Copied!'; btn.classList.add('copied');
+  setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+}
+
+function openResultModal() {
+  if (!playerData) return;
+  var p = playerData.player, s = playerData.stats, badges = playerData.badges || [];
+  var ti = tierProg(s.currentElo);
+  var displayName = (p.displayName || p.name).toUpperCase();
+  var sub = (p.clubs || p.region || '');
+
+  // Populate preview card
+  document.getElementById('ncpName').textContent = displayName;
+  document.getElementById('ncpSub').textContent = sub;
+  document.getElementById('ncpRankPill').textContent = ti.current.toUpperCase();
+  document.getElementById('ncpElo').textContent = s.currentElo;
+  document.getElementById('ncpTier').textContent = ti.current;
+  document.getElementById('ncpM').textContent = s.totalMatches;
+  document.getElementById('ncpWR').textContent = s.winRate + '%';
+  document.getElementById('ncpWL').textContent = s.totalW + 'W-' + s.totalL + 'L';
+
+  // Photo
+  var photoEl = document.getElementById('ncpPhoto');
+  var initEl = document.getElementById('ncpInitials');
+  var parts = (p.displayName || p.name).trim().split(/\s+/);
+  initEl.textContent = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : (p.name||'').slice(0,2).toUpperCase();
+  if (p.photoUrl) {
+    var img = document.createElement('img');
+    img.className = 'ncp-img'; img.src = p.photoUrl; img.alt = displayName;
+    img.onerror = function() { img.remove(); };
+    photoEl.insertBefore(img, photoEl.firstChild);
+  }
+
+  // Badges — pick earned ones, max 4, map to night card style
+  var badgeMap = {
+    'rated':       {cls:'ncp-badge-blue',   icon:'★'},
+    'hot_streak':  {cls:'ncp-badge-teal',   icon:'▲'},
+    'win_machine': {cls:'ncp-badge-gold',   icon:'⚡'},
+    'first_win':   {cls:'ncp-badge-purple', icon:'◆'},
+    'consistent':  {cls:'ncp-badge-teal',   icon:'●'},
+    'veteran':     {cls:'ncp-badge-blue',   icon:'◈'},
+  };
+  var earned = badges.filter(function(b) { return b.earned; }).slice(0, 4);
+  // Also add winnerAt entries
+  var winnerAtBadges = [];
+  if (p.winnerAt && p.winnerAt !== 'N/A') {
+    p.winnerAt.split(',').map(function(w) { return w.trim(); }).filter(Boolean).slice(0, 2).forEach(function(w) {
+      winnerAtBadges.push({ id: 'winner', name: w });
+    });
+  }
+  var badgeContainer = document.getElementById('ncpBadges');
+  badgeContainer.innerHTML = '';
+  winnerAtBadges.slice(0, 1).forEach(function(b) {
+    var span = document.createElement('span');
+    span.className = 'ncp-badge ncp-badge-gold';
+    span.innerHTML = '&#9733; ' + b.name.replace(/^(1st|2nd|3rd|Winner at)\s*/i,'').slice(0,18);
+    badgeContainer.appendChild(span);
+  });
+  earned.slice(0, 3).forEach(function(b) {
+    var cfg = badgeMap[b.id] || {cls:'ncp-badge-blue', icon:'◆'};
+    var span = document.createElement('span');
+    span.className = 'ncp-badge ' + cfg.cls;
+    span.innerHTML = cfg.icon + ' ' + b.name;
+    badgeContainer.appendChild(span);
+  });
+
+  document.getElementById('resultModal').classList.add('open');
+}
+function closeResultModal(e) {
+  if (e && e.target !== document.getElementById('resultModal')) return;
+  document.getElementById('resultModal').classList.remove('open');
+}
+
+function shareResultWA() {
+  if (!playerData) return;
+  var p = playerData.player, s = playerData.stats;
+  var ti = tierProg(s.currentElo);
+  var url = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
+  var text = (p.displayName || p.name) + ' di Trekkr\n'
+    + ti.current + ' · ELO ' + s.currentElo + '\n'
+    + 'Matches: ' + s.totalMatches + ' · Win Rate: ' + s.winRate + '%\n'
+    + url;
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+function downloadNightCard() {
+  if (!playerData) return;
+  var p = playerData.player, s = playerData.stats, badges = playerData.badges || [];
+  var ti = tierProg(s.currentElo);
+  var c = document.getElementById('shareCanvas');
+  var ctx = c.getContext('2d');
+  var W = 1080, H = 1920;
+  c.width = W; c.height = H;
+
+  // Background
+  ctx.fillStyle = '#080808';
+  ctx.fillRect(0, 0, W, H);
+
+  function drawCard() {
+    var pname = (p.displayName || p.name).toUpperCase();
+    var sub = p.clubs || p.region || '';
+
+    // ── Rank pill (top right) ──
+    ctx.fillStyle = '#FFD700';
+    roundRect(ctx, W - 220, 60, 160, 52, 26);
+    ctx.fill();
+    ctx.fillStyle = '#1a1000';
+    ctx.font = '700 22px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ti.current.toUpperCase(), W - 140, 94);
+
+    // ── Name area (over photo) ──
+    // gradient from bottom
+    var g2 = ctx.createLinearGradient(0, H * 0.55, 0, H * 0.65);
+    g2.addColorStop(0, 'transparent');
+    g2.addColorStop(1, '#080808');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, H * 0.55, W, H * 0.12);
+
+    ctx.fillStyle = '#080808';
+    ctx.fillRect(0, H * 0.63, W, H * 0.37);
+
+    // player name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 80px Space Grotesk, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(pname, 60, H * 0.67);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '400 36px Inter, sans-serif';
+    ctx.fillText(sub, 60, H * 0.67 + 58);
+
+    // ── ELO + tier ──
+    var eloY = H * 0.67 + 160;
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '700 22px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('ELO RATING', 60, eloY);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 130px Space Grotesk, sans-serif';
+    ctx.fillText(String(s.currentElo), 60, eloY + 130);
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '700 48px Space Grotesk, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(ti.current, W - 60, eloY + 130);
+
+    // ── Stat boxes ──
+    var bY = eloY + 180, bW = 300, bH = 130, bGap = 30;
+    var bStart = 60;
+    var stats3 = [
+      {v: s.totalMatches, l: 'PLAYED'},
+      {v: s.winRate + '%', l: 'WIN RATE'},
+      {v: s.totalW + 'W ' + s.totalL + 'L', l: 'RECORD'}
+    ];
+    stats3.forEach(function(st, i) {
+      ctx.fillStyle = '#141414';
+      roundRect(ctx, bStart + i * (bW + bGap), bY, bW, bH, 20);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 64px Space Grotesk, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(st.v), bStart + i * (bW + bGap) + bW / 2, bY + 86);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '700 24px Inter, sans-serif';
+      ctx.fillText(st.l, bStart + i * (bW + bGap) + bW / 2, bY + bH - 18);
+    });
+
+    // ── Badges ──
+    var bdY = bY + bH + 50;
+    var badgesToDraw = [];
+    if (p.winnerAt && p.winnerAt !== 'N/A') {
+      p.winnerAt.split(',').slice(0, 1).forEach(function(w) {
+        badgesToDraw.push({ text: '★ ' + w.trim().slice(0, 24), bg: '#1e1700', col: '#FFD700', bdr: '#3d2e00' });
+      });
+    }
+    var earnedB = badges.filter(function(b) { return b.earned; }).slice(0, 3);
+    earnedB.forEach(function(b) {
+      var colMap = {rated:'#85b7eb', hot_streak:'#5DCAA5', win_machine:'#FFD700', first_win:'#AFA9EC', consistent:'#5DCAA5', veteran:'#85b7eb'};
+      var bgMap  = {rated:'#03122d', hot_streak:'#071d15', win_machine:'#1e1700', first_win:'#16143a', consistent:'#071d15', veteran:'#03122d'};
+      badgesToDraw.push({ text: b.name, bg: bgMap[b.id] || '#1a1a1a', col: colMap[b.id] || '#aaa', bdr: 'transparent' });
+    });
+    ctx.font = '600 30px Inter, sans-serif';
+    var bdX = 60;
+    badgesToDraw.forEach(function(bd) {
+      var tw = ctx.measureText(bd.text).width;
+      var pw = tw + 40, ph = 60, pr = 12;
+      if (bdX + pw > W - 60) { bdX = 60; bdY += ph + 20; }
+      ctx.fillStyle = bd.bg;
+      roundRect(ctx, bdX, bdY, pw, ph, pr);
+      ctx.fill();
+      ctx.fillStyle = bd.col;
+      ctx.textAlign = 'center';
+      ctx.fillText(bd.text, bdX + pw / 2, bdY + 40);
+      bdX += pw + 20;
+    });
+
+    // ── Footer ──
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, H - 120, W, 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 44px Space Grotesk, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('TREKKR', 60, H - 52);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '400 32px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('trekkr.online', W - 60, H - 52);
+
+    // ── Download ──
+    var link = document.createElement('a');
+    link.download = 'trekkr-' + (p.name||'player').toLowerCase().replace(/\s+/g,'-') + '.png';
+    link.href = c.toDataURL('image/png');
+    link.click();
+    showToast('Story card downloaded!');
+    closeResultModal();
+  }
+
+  // Draw photo if available
+  if (p.photoUrl) {
+    var img2 = new Image();
+    img2.crossOrigin = 'anonymous';
+    img2.onload = function() {
+      // Photo fills top 65% of card
+      var photoH = H * 0.65;
+      ctx.drawImage(img2, 0, 0, W, photoH);
+      // gradient overlay on photo
+      var g1 = ctx.createLinearGradient(0, photoH * 0.45, 0, photoH);
+      g1.addColorStop(0, 'transparent');
+      g1.addColorStop(1, '#080808');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, photoH * 0.45, W, photoH * 0.55);
+      drawCard();
+    };
+    img2.onerror = function() { drawCard(); };
+    img2.src = p.photoUrl;
+  } else {
+    // Initials placeholder
+    ctx.fillStyle = '#141414';
+    ctx.fillRect(0, 0, W, H * 0.65);
+    var iparts = (p.displayName || p.name).trim().split(/\s+/);
+    var inits = iparts.length >= 2 ? (iparts[0][0] + iparts[iparts.length-1][0]).toUpperCase() : (p.name||'??').slice(0,2).toUpperCase();
+    ctx.fillStyle = '#222222';
+    ctx.font = '700 320px Space Grotesk, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(inits, W/2, H * 0.4);
+    drawCard();
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+/* ═════════════════════════════════════════════════════════════ */
 </script>
+
+<!-- ══ MODAL: Copy Passport URL ══ -->
+<div class="share-modal-overlay" id="urlModal" onclick="closeUrlModal(event)">
+  <div class="share-modal">
+    <div class="share-modal-handle"></div>
+    <div class="share-modal-head">
+      <div class="share-modal-title">Copy passport URL</div>
+      <button class="share-modal-close" onclick="closeUrlModal()">&times;</button>
+    </div>
+    <p class="share-modal-sub">Anyone with this link can view your full Trekkr profile.</p>
+    <div class="url-copy-row">
+      <span class="url-copy-text" id="urlModalText">trekkr.online/player/...</span>
+      <button class="url-copy-btn" id="urlCopyBtn" onclick="doUrlCopy()">Copy</button>
+    </div>
+    <p class="share-also-label">Or share directly via:</p>
+    <div class="share-also-row">
+      <div class="share-also-chip" onclick="shareWA()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.557 4.135 1.532 5.875L0 24l6.335-1.635A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.37l-.36-.214-3.728.961.995-3.625-.234-.373A9.815 9.815 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+        WhatsApp
+      </div>
+      <div class="share-also-chip" onclick="shareIG()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c13584" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Instagram
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Share Result ══ -->
+<div class="share-modal-overlay" id="resultModal" onclick="closeResultModal(event)">
+  <div class="share-modal" style="max-height:90vh;overflow-y:auto">
+    <div class="share-modal-handle"></div>
+    <div class="share-modal-head">
+      <div class="share-modal-title">Share your result</div>
+      <button class="share-modal-close" onclick="closeResultModal()">&times;</button>
+    </div>
+    <div class="result-layout" style="margin-bottom:16px">
+      <!-- Card preview column -->
+      <div>
+        <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:8px">Preview</p>
+        <div class="night-card-preview" id="nightCardPreview">
+          <div class="ncp-photo" id="ncpPhoto">
+            <div class="ncp-initials" id="ncpInitials">TP</div>
+            <div class="ncp-gradient"></div>
+            <div class="ncp-rank-pill" id="ncpRankPill">BRONZE</div>
+            <div class="ncp-name-area">
+              <div class="ncp-pname" id="ncpName">TOMMY PRASS</div>
+              <div class="ncp-psub" id="ncpSub">Gabuters</div>
+            </div>
+          </div>
+          <div class="ncp-bottom">
+            <div class="ncp-elo-row">
+              <div>
+                <div class="ncp-elo-lbl">ELO RATING</div>
+                <div class="ncp-elo-val" id="ncpElo">1412</div>
+              </div>
+              <div>
+                <div class="ncp-tier-lbl">TIER</div>
+                <div class="ncp-tier-val" id="ncpTier">Bronze</div>
+              </div>
+            </div>
+            <div class="ncp-stats">
+              <div class="ncp-sbox"><div class="ncp-sv" id="ncpM">7</div><div class="ncp-sl">PLAYED</div></div>
+              <div class="ncp-sbox"><div class="ncp-sv" id="ncpWR">57%</div><div class="ncp-sl">WIN RATE</div></div>
+              <div class="ncp-sbox"><div class="ncp-sv" id="ncpWL">4W-3L</div><div class="ncp-sl">RECORD</div></div>
+            </div>
+            <div class="ncp-badges" id="ncpBadges"></div>
+            <div class="ncp-footer">
+              <span class="ncp-brand">TREKKR</span>
+              <span class="ncp-url">trekkr.online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Share options -->
+      <div>
+        <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:10px">Share via</p>
+        <div class="share-opt-row" onclick="shareResultWA()">
+          <div class="share-opt-icon" style="background:#e8ffe8">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.557 4.135 1.532 5.875L0 24l6.335-1.635A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.37l-.36-.214-3.728.961.995-3.625-.234-.373A9.815 9.815 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+          </div>
+          <div class="share-opt-body">
+            <div class="share-opt-label">WhatsApp</div>
+            <div class="share-opt-sub">Kirim link + stats ke chat / group</div>
+          </div>
+          <svg class="share-opt-arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="share-opt-row" onclick="downloadNightCard()">
+          <div class="share-opt-icon" style="background:#141414">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12l4 4 4-4"/></svg>
+          </div>
+          <div class="share-opt-body">
+            <div class="share-opt-label">Download PNG</div>
+            <div class="share-opt-sub">Story card 1080×1920 untuk IG / TikTok</div>
+          </div>
+          <svg class="share-opt-arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
