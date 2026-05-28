@@ -562,18 +562,15 @@ canvas#shareCanvas{display:none}
 @media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.pp-hero{grid-template-columns:1fr}.pp-meta-grid{grid-template-columns:repeat(2,1fr)}.pp-stats{grid-template-columns:repeat(3,1fr)}.pp-dual{grid-template-columns:1fr}}
 @media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.pp-stats{grid-template-columns:repeat(2,1fr)}.pp-share{flex-direction:column;align-items:stretch}.pp-share-btns{justify-content:center}}
 
-/* ── SHARE v2 ─────────────────────────────────────── */
 .pp-share-v2{margin-top:var(--space-6);background:var(--surface-low);border-radius:var(--radius-lg);padding:20px}
 .pp-share-v2-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;margin-bottom:14px}
 .pp-share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pp-share-card{background:var(--surface-lowest,#fff);border:1px solid rgba(115,118,136,0.12);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;transition:all var(--motion-base);text-align:left}
 .pp-share-card:hover{border-color:var(--primary);background:var(--surface-container)}
-.pp-share-card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:19px}
+.pp-share-card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
 .pp-share-card-label{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;color:var(--on-surface)}
 .pp-share-card-sub{font-size:12px;color:var(--on-surface-variant);margin-top:3px;line-height:1.4}
-
-/* Share modal overlay */
-.share-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-end;justify-content:center;padding:0 0 0 0}
+.share-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:flex-end;justify-content:center}
 .share-modal-overlay.open{display:flex}
 .share-modal{background:var(--surface-lowest,#fff);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:480px;animation:slideUp .25s ease}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -582,22 +579,19 @@ canvas#shareCanvas{display:none}
 .share-modal-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
 .share-modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--on-surface-variant);cursor:pointer;padding:0 4px}
 .share-modal-sub{font-size:13px;color:var(--on-surface-variant);margin-bottom:16px}
-
-/* URL modal */
 .url-copy-row{display:flex;align-items:center;gap:8px;background:var(--surface-low);border:1px solid var(--surface-high);border-radius:var(--radius-md);padding:11px 14px;margin-bottom:14px}
-.url-copy-text{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--on-surface-variant);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.url-copy-text{font-size:12px;font-family:monospace;color:var(--on-surface-variant);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .url-copy-btn{background:var(--primary);color:#fff;border:none;border-radius:var(--radius-md);padding:7px 14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background var(--motion-base)}
 .url-copy-btn.copied{background:var(--ok,#1f9d63)}
 .share-also-label{font-size:12px;color:var(--on-surface-variant);margin-bottom:10px}
 .share-also-row{display:flex;gap:8px;flex-wrap:wrap}
 .share-also-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-pill);border:1px solid rgba(115,118,136,.15);background:var(--surface-low);font-size:12px;font-weight:600;color:var(--on-surface);cursor:pointer;transition:background var(--motion-base)}
 .share-also-chip:hover{background:var(--surface-container)}
-
-/* Result card preview in modal */
 .result-layout{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start}
 .night-card-preview{background:#080808;border-radius:16px;aspect-ratio:9/16;display:flex;flex-direction:column;overflow:hidden}
 .ncp-photo{flex:1.8;background:#141414;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .ncp-initials{font-size:28px;font-weight:700;color:#222;font-family:'Space Grotesk',sans-serif}
+/* FIX: photo fills with contain so no crop distortion */
 .ncp-img{width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;inset:0}
 .ncp-gradient{position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(to top,#080808,transparent)}
 .ncp-rank-pill{position:absolute;top:8px;right:8px;background:#FFD700;color:#1a1000;font-size:7px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
@@ -620,18 +614,16 @@ canvas#shareCanvas{display:none}
 .ncp-badge-purple{color:#AFA9EC;border-color:#2e2a5c;background:#16143a}
 .ncp-badge-teal{color:#5DCAA5;border-color:#0c3528;background:#071d15}
 .ncp-badge-blue{color:#85b7eb;border-color:#0c2a50;background:#03122d}
-.ncp-footer{display:flex;align-items:center;justify-content:space-between;border-top:0.5px solid #1e1e1e;padding-top:6px}
-.ncp-brand{font-size:9px;font-weight:700;color:#fff;letter-spacing:.1em;font-family:'Space Grotesk',sans-serif}
-.ncp-url{font-size:7px;color:rgba(255,255,255,.3)}
-
-/* Share option rows */
+/* FIX: footer clear white */
+.ncp-footer{display:flex;align-items:center;justify-content:space-between;border-top:0.5px solid #2a2a2a;padding-top:6px;margin-top:2px}
+.ncp-brand{font-size:10px;font-weight:800;color:#fff;letter-spacing:.15em;font-family:'Space Grotesk',sans-serif}
+.ncp-visit{font-size:7px;color:#fff;opacity:.7;letter-spacing:.06em}
 .share-opt-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius-md);border:1px solid rgba(115,118,136,.12);background:var(--surface-low);cursor:pointer;transition:all var(--motion-base);margin-bottom:8px}
 .share-opt-row:hover{border-color:var(--primary);background:var(--surface-container)}
-.share-opt-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.share-opt-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .share-opt-body{flex:1}
 .share-opt-label{font-size:13px;font-weight:700;color:var(--on-surface)}
 .share-opt-sub{font-size:11px;color:var(--on-surface-variant);margin-top:1px}
-.share-opt-arr{font-size:16px;color:var(--on-surface-variant)}
 </style>
 </head>
 <body>
@@ -998,7 +990,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
 
 function drawChart(history){const canvas=document.getElementById('eloChart');if(!canvas)return;const ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1;const rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={t:10,r:10,b:24,l:40};const elos=history.map(e=>e.elo),minE=Math.min(...elos)-20,maxE=Math.max(...elos)+20;const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;ctx.strokeStyle='rgba(234,241,255,0.15)';ctx.lineWidth=0.5;for(let i=0;i<=4;i++){const y=pad.t+(plotH/4)*i;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();const v=Math.round(maxE-((maxE-minE)/4)*i);ctx.fillStyle='rgba(234,241,255,0.5)';ctx.font='9px Inter';ctx.textAlign='right';ctx.fillText(v,pad.l-6,y+3)}ctx.beginPath();ctx.strokeStyle='#6ea1ff';ctx.lineWidth=2;ctx.lineJoin='round';history.forEach((e,i)=>{const x=pad.l+(plotW/(history.length-1))*i;const y=pad.t+plotH-((e.elo-minE)/(maxE-minE))*plotH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke();history.forEach((e,i)=>{const x=pad.l+(plotW/(history.length-1))*i;const y=pad.t+plotH-((e.elo-minE)/(maxE-minE))*plotH;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#6ea1ff';ctx.fill()})}
 
-function shareIG(){if(!playerData)return;const p=playerData.player,s=playerData.stats,c=document.getElementById('shareCanvas'),ctx=c.getContext('2d');c.width=1080;c.height=1920;const g=ctx.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#001c6f');g.addColorStop(1,'#003ec7');ctx.fillStyle=g;ctx.fillRect(0,0,1080,1920);ctx.font='700 48px Space Grotesk';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText('TREKKR',540,160);ctx.font='700 16px Inter';ctx.fillStyle='rgba(234,241,255,0.6)';ctx.fillText('PADEL ELO PASSPORT',540,195);ctx.font='900 72px Space Grotesk';ctx.fillStyle='#fff';ctx.fillText((p.displayName||p.name).toUpperCase(),540,700);ctx.font='900 180px Space Grotesk';ctx.fillStyle='#6ea1ff';ctx.fillText(String(s.currentElo),540,950);const tier=TrekkrAPI.getTierName(s.currentElo);ctx.font='700 32px Inter';ctx.fillStyle='rgba(234,241,255,0.7)';ctx.fillText(tier.toUpperCase(),540,1020);ctx.font='500 28px Plus Jakarta Sans';ctx.fillStyle='#eaf1ff';ctx.fillText(`Matches: ${s.totalMatches}    W/L: ${s.totalW}/${s.totalL}    Win Rate: ${s.winRate}%`,540,1140);ctx.font='500 20px Plus Jakarta Sans';ctx.fillStyle='rgba(234,241,255,0.4)';ctx.fillText('trekkr.online',540,1840);const link=document.createElement('a');link.download=`trekkr-${(p.name||'player').replace(/\s+/g,'-').toLowerCase()}.png`;link.href=c.toDataURL('image/png');link.click();showToast('IG Story card downloaded!')}
+function shareIG(){downloadNightCard();}
 function copyLink(){const url=`https://trekkr.online/player/${encodeURIComponent(playerData?.player?.name||'')}`;navigator.clipboard.writeText(url).then(()=>showToast('Link copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Link copied!')})}
 function shareWA(){if(!playerData)return;const p=playerData.player,s=playerData.stats,tier=TrekkrAPI.getTierName(s.currentElo),url=`https://trekkr.online/player/${encodeURIComponent(p.name)}`,text=`🎾 ${p.displayName||p.name} — ELO ${s.currentElo} (${tier})\nMatches: ${s.totalMatches} · Win Rate: ${s.winRate}%\n${url}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank')}
 
@@ -1577,292 +1569,163 @@ function buildCalibBadge(totalMatches) {
 
 window.addEventListener('load',loadPlayer);
 
-/* ══ SHARE v2 FUNCTIONS ══════════════════════════════════════ */
-
-function openUrlModal() {
-  if (!playerData) return;
-  const url = 'trekkr.online/player/' + encodeURIComponent(playerData.player.name);
-  document.getElementById('urlModalText').textContent = url;
+function openUrlModal(){
+  if(!playerData)return;
+  document.getElementById('urlModalText').textContent='trekkr.online/player/'+encodeURIComponent(playerData.player.name);
   document.getElementById('urlModal').classList.add('open');
 }
-function closeUrlModal(e) {
-  if (e && e.target !== document.getElementById('urlModal')) return;
-  document.getElementById('urlModal').classList.remove('open');
+function closeUrlModal(){document.getElementById('urlModal').classList.remove('open');}
+
+function doUrlCopy(){
+  var url='https://trekkr.online/player/'+encodeURIComponent(playerData?.player?.name||'');
+  var btn=document.getElementById('urlCopyBtn');
+  navigator.clipboard.writeText(url).catch(function(){var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+  btn.textContent='Copied!';btn.classList.add('copied');
+  setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied');},2000);
 }
 
-function doUrlCopy() {
-  const url = 'https://trekkr.online/player/' + encodeURIComponent(playerData?.player?.name || '');
-  const btn = document.getElementById('urlCopyBtn');
-  navigator.clipboard.writeText(url).catch(function() {
-    var ta = document.createElement('textarea'); ta.value = url;
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-  });
-  btn.textContent = 'Copied!'; btn.classList.add('copied');
-  setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-}
-
-function openResultModal() {
-  if (!playerData) return;
-  var p = playerData.player, s = playerData.stats, badges = playerData.badges || [];
-  var ti = tierProg(s.currentElo);
-  var displayName = (p.displayName || p.name).toUpperCase();
-  var sub = (p.clubs || p.region || '');
-
-  // Populate preview card
-  document.getElementById('ncpName').textContent = displayName;
-  document.getElementById('ncpSub').textContent = sub;
-  document.getElementById('ncpRankPill').textContent = ti.current.toUpperCase();
-  document.getElementById('ncpElo').textContent = s.currentElo;
-  document.getElementById('ncpTier').textContent = ti.current;
-  document.getElementById('ncpM').textContent = s.totalMatches;
-  document.getElementById('ncpWR').textContent = s.winRate + '%';
-  document.getElementById('ncpWL').textContent = s.totalW + 'W-' + s.totalL + 'L';
-
-  // Photo
-  var photoEl = document.getElementById('ncpPhoto');
-  var initEl = document.getElementById('ncpInitials');
-  var parts = (p.displayName || p.name).trim().split(/\s+/);
-  initEl.textContent = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : (p.name||'').slice(0,2).toUpperCase();
-  if (p.photoUrl) {
-    var img = document.createElement('img');
-    img.className = 'ncp-img'; img.src = p.photoUrl; img.alt = displayName;
-    img.onerror = function() { img.remove(); };
-    photoEl.insertBefore(img, photoEl.firstChild);
-  }
-
-  // Badges — pick earned ones, max 4, map to night card style
-  var badgeMap = {
-    'rated':       {cls:'ncp-badge-blue',   icon:'★'},
-    'hot_streak':  {cls:'ncp-badge-teal',   icon:'▲'},
-    'win_machine': {cls:'ncp-badge-gold',   icon:'⚡'},
-    'first_win':   {cls:'ncp-badge-purple', icon:'◆'},
-    'consistent':  {cls:'ncp-badge-teal',   icon:'●'},
-    'veteran':     {cls:'ncp-badge-blue',   icon:'◈'},
-  };
-  var earned = badges.filter(function(b) { return b.earned; }).slice(0, 4);
-  // Also add winnerAt entries
-  var winnerAtBadges = [];
-  if (p.winnerAt && p.winnerAt !== 'N/A') {
-    p.winnerAt.split(',').map(function(w) { return w.trim(); }).filter(Boolean).slice(0, 2).forEach(function(w) {
-      winnerAtBadges.push({ id: 'winner', name: w });
-    });
-  }
-  var badgeContainer = document.getElementById('ncpBadges');
-  badgeContainer.innerHTML = '';
-  winnerAtBadges.slice(0, 1).forEach(function(b) {
-    var span = document.createElement('span');
-    span.className = 'ncp-badge ncp-badge-gold';
-    span.innerHTML = '&#9733; ' + b.name.replace(/^(1st|2nd|3rd|Winner at)\s*/i,'').slice(0,18);
-    badgeContainer.appendChild(span);
-  });
-  earned.slice(0, 3).forEach(function(b) {
-    var cfg = badgeMap[b.id] || {cls:'ncp-badge-blue', icon:'◆'};
-    var span = document.createElement('span');
-    span.className = 'ncp-badge ' + cfg.cls;
-    span.innerHTML = cfg.icon + ' ' + b.name;
-    badgeContainer.appendChild(span);
-  });
-
+function openResultModal(){
+  if(!playerData)return;
+  var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
+  var ti=tierProg(s.currentElo);
+  document.getElementById('ncpName').textContent=(p.displayName||p.name).toUpperCase();
+  document.getElementById('ncpSub').textContent=p.clubs||p.region||'';
+  document.getElementById('ncpRankPill').textContent=ti.current.toUpperCase();
+  document.getElementById('ncpElo').textContent=s.currentElo;
+  document.getElementById('ncpTier').textContent=ti.current;
+  document.getElementById('ncpM').textContent=s.totalMatches;
+  document.getElementById('ncpWR').textContent=s.winRate+'%';
+  document.getElementById('ncpWL').textContent=s.totalW+'W-'+s.totalL+'L';
+  var photoEl=document.getElementById('ncpPhoto');
+  var oldImg=photoEl.querySelector('.ncp-img');if(oldImg)oldImg.remove();
+  if(p.photoUrl){var img=document.createElement('img');img.className='ncp-img';img.src=p.photoUrl;img.alt='';img.onerror=function(){img.remove();};photoEl.insertBefore(img,photoEl.firstChild);}
+  var iparts=(p.displayName||p.name).trim().split(/\s+/);
+  document.getElementById('ncpInitials').textContent=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'').slice(0,2).toUpperCase();
+  var badgeMap={rated:{cls:'ncp-badge-blue',ico:'★'},hot_streak:{cls:'ncp-badge-teal',ico:'▲'},win_machine:{cls:'ncp-badge-gold',ico:'⚡'},first_win:{cls:'ncp-badge-purple',ico:'◆'},consistent:{cls:'ncp-badge-teal',ico:'●'},veteran:{cls:'ncp-badge-blue',ico:'◈'}};
+  var bc=document.getElementById('ncpBadges');bc.innerHTML='';
+  if(p.winnerAt&&p.winnerAt!=='N/A'){p.winnerAt.split(',').slice(0,1).forEach(function(w){var sp=document.createElement('span');sp.className='ncp-badge ncp-badge-gold';sp.textContent='★ '+w.trim().slice(0,20);bc.appendChild(sp);});}
+  badges.filter(function(b){return b.earned;}).slice(0,3).forEach(function(b){var cfg=badgeMap[b.id]||{cls:'ncp-badge-blue',ico:'◆'};var sp=document.createElement('span');sp.className='ncp-badge '+cfg.cls;sp.textContent=cfg.ico+' '+b.name;bc.appendChild(sp);});
   document.getElementById('resultModal').classList.add('open');
 }
-function closeResultModal(e) {
-  if (e && e.target !== document.getElementById('resultModal')) return;
-  document.getElementById('resultModal').classList.remove('open');
+function closeResultModal(){document.getElementById('resultModal').classList.remove('open');}
+
+function shareResultWA(){
+  if(!playerData)return;
+  var p=playerData.player,s=playerData.stats,ti=tierProg(s.currentElo);
+  var url='https://trekkr.online/player/'+encodeURIComponent(p.name);
+  var text=(p.displayName||p.name)+' di Trekkr\n'+ti.current+' · ELO '+s.currentElo+'\nMatches: '+s.totalMatches+' · Win Rate: '+s.winRate+'%\n'+url;
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
 
-function shareResultWA() {
-  if (!playerData) return;
-  var p = playerData.player, s = playerData.stats;
-  var ti = tierProg(s.currentElo);
-  var url = 'https://trekkr.online/player/' + encodeURIComponent(p.name);
-  var text = (p.displayName || p.name) + ' di Trekkr\n'
-    + ti.current + ' · ELO ' + s.currentElo + '\n'
-    + 'Matches: ' + s.totalMatches + ' · Win Rate: ' + s.winRate + '%\n'
-    + url;
-  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
-function downloadNightCard() {
-  if (!playerData) return;
-  var p = playerData.player, s = playerData.stats, badges = playerData.badges || [];
-  var ti = tierProg(s.currentElo);
-  var c = document.getElementById('shareCanvas');
-  var ctx = c.getContext('2d');
-  var W = 1080, H = 1920;
-  c.width = W; c.height = H;
+function downloadNightCard(){
+  if(!playerData)return;
+  var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
+  var ti=tierProg(s.currentElo);
+  var c=document.getElementById('shareCanvas'),ctx=c.getContext('2d');
+  var W=1080,H=1920;c.width=W;c.height=H;
 
-  // Background
-  ctx.fillStyle = '#080808';
-  ctx.fillRect(0, 0, W, H);
+  function drawCard(){
+    var pname=(p.displayName||p.name).toUpperCase();
+    var sub=p.clubs||p.region||'';
+    var PHOTO_H=Math.round(H*0.60);
+    var CONTENT_Y=PHOTO_H+60;
 
-  function drawCard() {
-    var pname = (p.displayName || p.name).toUpperCase();
-    var sub = p.clubs || p.region || '';
+    // Rank pill top-right
+    ctx.fillStyle='#FFD700';roundRect(ctx,W-240,56,180,54,27);ctx.fill();
+    ctx.fillStyle='#1a1000';ctx.font='700 22px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(ti.current.toUpperCase(),W-150,93);
 
-    // ── Rank pill (top right) ──
-    ctx.fillStyle = '#FFD700';
-    roundRect(ctx, W - 220, 60, 160, 52, 26);
-    ctx.fill();
-    ctx.fillStyle = '#1a1000';
-    ctx.font = '700 22px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(ti.current.toUpperCase(), W - 140, 94);
+    // Name + venue over gradient
+    ctx.fillStyle='#fff';ctx.font='700 74px Space Grotesk,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-36);
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='400 34px Inter,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);
 
-    // ── Name area (over photo) ──
-    // gradient from bottom
-    var g2 = ctx.createLinearGradient(0, H * 0.55, 0, H * 0.65);
-    g2.addColorStop(0, 'transparent');
-    g2.addColorStop(1, '#080808');
-    ctx.fillStyle = g2;
-    ctx.fillRect(0, H * 0.55, W, H * 0.12);
+    // Divider line
+    ctx.strokeStyle='#1e1e1e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,CONTENT_Y);ctx.lineTo(W-60,CONTENT_Y);ctx.stroke();
 
-    ctx.fillStyle = '#080808';
-    ctx.fillRect(0, H * 0.63, W, H * 0.37);
+    // ELO + tier row
+    var eloY=CONTENT_Y+56;
+    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Inter,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
+    ctx.fillStyle='#fff';ctx.font='700 120px Space Grotesk,sans-serif';ctx.fillText(String(s.currentElo),60,eloY+118);
+    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Inter,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
+    ctx.fillStyle='#FFD700';ctx.font='700 48px Space Grotesk,sans-serif';ctx.fillText(ti.current,W-60,eloY+50);
 
-    // player name
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 80px Space Grotesk, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(pname, 60, H * 0.67);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '400 36px Inter, sans-serif';
-    ctx.fillText(sub, 60, H * 0.67 + 58);
-
-    // ── ELO + tier ──
-    var eloY = H * 0.67 + 160;
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = '700 22px Inter, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('ELO RATING', 60, eloY);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 130px Space Grotesk, sans-serif';
-    ctx.fillText(String(s.currentElo), 60, eloY + 130);
-    ctx.fillStyle = '#FFD700';
-    ctx.font = '700 48px Space Grotesk, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(ti.current, W - 60, eloY + 130);
-
-    // ── Stat boxes ──
-    var bY = eloY + 180, bW = 300, bH = 130, bGap = 30;
-    var bStart = 60;
-    var stats3 = [
-      {v: s.totalMatches, l: 'PLAYED'},
-      {v: s.winRate + '%', l: 'WIN RATE'},
-      {v: s.totalW + 'W ' + s.totalL + 'L', l: 'RECORD'}
-    ];
-    stats3.forEach(function(st, i) {
-      ctx.fillStyle = '#141414';
-      roundRect(ctx, bStart + i * (bW + bGap), bY, bW, bH, 20);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 64px Space Grotesk, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(st.v), bStart + i * (bW + bGap) + bW / 2, bY + 86);
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '700 24px Inter, sans-serif';
-      ctx.fillText(st.l, bStart + i * (bW + bGap) + bW / 2, bY + bH - 18);
+    // Stat boxes
+    var bY=eloY+148,bW=306,bH=128,bGap=30,bX=60;
+    [{v:s.totalMatches,l:'PLAYED'},{v:s.winRate+'%',l:'WIN RATE'},{v:s.totalW+'W '+s.totalL+'L',l:'RECORD'}].forEach(function(st,i){
+      ctx.fillStyle='#141414';roundRect(ctx,bX+i*(bW+bGap),bY,bW,bH,18);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='700 58px Space Grotesk,sans-serif';ctx.textAlign='center';ctx.fillText(String(st.v),bX+i*(bW+bGap)+bW/2,bY+82);
+      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='700 22px Inter,sans-serif';ctx.fillText(st.l,bX+i*(bW+bGap)+bW/2,bY+bH-16);
     });
 
-    // ── Badges ──
-    var bdY = bY + bH + 50;
-    var badgesToDraw = [];
-    if (p.winnerAt && p.winnerAt !== 'N/A') {
-      p.winnerAt.split(',').slice(0, 1).forEach(function(w) {
-        badgesToDraw.push({ text: '★ ' + w.trim().slice(0, 24), bg: '#1e1700', col: '#FFD700', bdr: '#3d2e00' });
-      });
-    }
-    var earnedB = badges.filter(function(b) { return b.earned; }).slice(0, 3);
-    earnedB.forEach(function(b) {
-      var colMap = {rated:'#85b7eb', hot_streak:'#5DCAA5', win_machine:'#FFD700', first_win:'#AFA9EC', consistent:'#5DCAA5', veteran:'#85b7eb'};
-      var bgMap  = {rated:'#03122d', hot_streak:'#071d15', win_machine:'#1e1700', first_win:'#16143a', consistent:'#071d15', veteran:'#03122d'};
-      badgesToDraw.push({ text: b.name, bg: bgMap[b.id] || '#1a1a1a', col: colMap[b.id] || '#aaa', bdr: 'transparent' });
-    });
-    ctx.font = '600 30px Inter, sans-serif';
-    var bdX = 60;
-    badgesToDraw.forEach(function(bd) {
-      var tw = ctx.measureText(bd.text).width;
-      var pw = tw + 40, ph = 60, pr = 12;
-      if (bdX + pw > W - 60) { bdX = 60; bdY += ph + 20; }
-      ctx.fillStyle = bd.bg;
-      roundRect(ctx, bdX, bdY, pw, ph, pr);
-      ctx.fill();
-      ctx.fillStyle = bd.col;
-      ctx.textAlign = 'center';
-      ctx.fillText(bd.text, bdX + pw / 2, bdY + 40);
-      bdX += pw + 20;
+    // Badges
+    var bdY=bY+bH+46,bdX=60;
+    ctx.font='600 28px Inter,sans-serif';
+    var bdList=[];
+    if(p.winnerAt&&p.winnerAt!=='N/A'){p.winnerAt.split(',').slice(0,1).forEach(function(w){bdList.push({txt:'★ '+w.trim().slice(0,24),bg:'#1e1700',col:'#FFD700'});});}
+    var colMap={rated:'#85b7eb',hot_streak:'#5DCAA5',win_machine:'#FFD700',first_win:'#AFA9EC',consistent:'#5DCAA5',veteran:'#85b7eb'};
+    var bgMap={rated:'#03122d',hot_streak:'#071d15',win_machine:'#1e1700',first_win:'#16143a',consistent:'#071d15',veteran:'#03122d'};
+    badges.filter(function(b){return b.earned;}).slice(0,3).forEach(function(b){bdList.push({txt:b.name,bg:bgMap[b.id]||'#1a1a1a',col:colMap[b.id]||'#aaa'});});
+    bdList.forEach(function(bd){
+      var tw=ctx.measureText(bd.txt).width,pw=tw+44,ph=58,pr=10;
+      if(bdX+pw>W-60){bdX=60;bdY+=ph+18;}
+      ctx.fillStyle=bd.bg;roundRect(ctx,bdX,bdY,pw,ph,pr);ctx.fill();
+      ctx.fillStyle=bd.col;ctx.textAlign='center';ctx.fillText(bd.txt,bdX+pw/2,bdY+38);
+      bdX+=pw+18;
     });
 
-    // ── Footer ──
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, H - 120, W, 1);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 44px Space Grotesk, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('TREKKR', 60, H - 52);
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '400 32px Inter, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('trekkr.online', W - 60, H - 52);
+    // Footer — FIXED: white text, "Visit trekkr.online"
+    var footerY=H-100;
+    ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,footerY);ctx.lineTo(W-60,footerY);ctx.stroke();
+    ctx.fillStyle='#ffffff';ctx.font='800 46px Space Grotesk,sans-serif';ctx.textAlign='left';ctx.fillText('TREKKR',60,H-44);
+    ctx.fillStyle='#ffffff';ctx.font='400 28px Inter,sans-serif';ctx.textAlign='right';ctx.fillText('Visit trekkr.online',W-60,H-44);
 
-    // ── Download ──
-    var link = document.createElement('a');
-    link.download = 'trekkr-' + (p.name||'player').toLowerCase().replace(/\s+/g,'-') + '.png';
-    link.href = c.toDataURL('image/png');
-    link.click();
-    showToast('Story card downloaded!');
-    closeResultModal();
+    var link=document.createElement('a');link.download='trekkr-'+(p.name||'player').toLowerCase().replace(/\s+/g,'-')+'.png';link.href=c.toDataURL('image/png');link.click();
+    showToast('Story card downloaded!');closeResultModal();
   }
 
-  // Draw photo if available
-  if (p.photoUrl) {
-    var img2 = new Image();
-    img2.crossOrigin = 'anonymous';
-    img2.onload = function() {
-      // Photo fills top 65% of card
-      var photoH = H * 0.65;
-      ctx.drawImage(img2, 0, 0, W, photoH);
-      // gradient overlay on photo
-      var g1 = ctx.createLinearGradient(0, photoH * 0.45, 0, photoH);
-      g1.addColorStop(0, 'transparent');
-      g1.addColorStop(1, '#080808');
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, photoH * 0.45, W, photoH * 0.55);
+  // Black background always
+  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+
+  if(p.photoUrl){
+    var imgEl=new Image();imgEl.crossOrigin='anonymous';
+    imgEl.onload=function(){
+      var PHOTO_H=Math.round(H*0.60);
+      // FIX: maintain aspect ratio — fit width, center vertically, no crop distortion
+      var naturalRatio=imgEl.naturalWidth/imgEl.naturalHeight;
+      var targetRatio=W/PHOTO_H;
+      var dw,dh,dx,dy;
+      if(naturalRatio>targetRatio){
+        // image wider — fit by height, center horizontally
+        dh=PHOTO_H;dw=dh*naturalRatio;dx=(W-dw)/2;dy=0;
+      } else {
+        // image taller — fit by width, top-align
+        dw=W;dh=dw/naturalRatio;dx=0;dy=0;
+      }
+      // clip to photo area
+      ctx.save();ctx.beginPath();ctx.rect(0,0,W,PHOTO_H);ctx.clip();
+      ctx.drawImage(imgEl,dx,dy,dw,dh);
+      ctx.restore();
+      // gradient overlay bottom of photo
+      var g1=ctx.createLinearGradient(0,PHOTO_H*0.4,0,PHOTO_H);
+      g1.addColorStop(0,'transparent');g1.addColorStop(1,'#080808');
+      ctx.fillStyle=g1;ctx.fillRect(0,PHOTO_H*0.4,W,PHOTO_H*0.6);
+      ctx.fillStyle='#080808';ctx.fillRect(0,PHOTO_H,W,H-PHOTO_H);
       drawCard();
     };
-    img2.onerror = function() { drawCard(); };
-    img2.src = p.photoUrl;
+    imgEl.onerror=function(){drawCard();};
+    imgEl.src=p.photoUrl;
   } else {
-    // Initials placeholder
-    ctx.fillStyle = '#141414';
-    ctx.fillRect(0, 0, W, H * 0.65);
-    var iparts = (p.displayName || p.name).trim().split(/\s+/);
-    var inits = iparts.length >= 2 ? (iparts[0][0] + iparts[iparts.length-1][0]).toUpperCase() : (p.name||'??').slice(0,2).toUpperCase();
-    ctx.fillStyle = '#222222';
-    ctx.font = '700 320px Space Grotesk, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(inits, W/2, H * 0.4);
+    var iparts=(p.displayName||p.name).trim().split(/\s+/);
+    var inits=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'??').slice(0,2).toUpperCase();
+    ctx.fillStyle='#141414';ctx.fillRect(0,0,W,Math.round(H*0.60));
+    ctx.fillStyle='#222';ctx.font='700 300px Space Grotesk,sans-serif';ctx.textAlign='center';ctx.fillText(inits,W/2,Math.round(H*0.38));
     drawCard();
   }
 }
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-/* ═════════════════════════════════════════════════════════════ */
 </script>
 
-<!-- ══ MODAL: Copy Passport URL ══ -->
-<div class="share-modal-overlay" id="urlModal" onclick="closeUrlModal(event)">
+<div class="share-modal-overlay" id="urlModal" onclick="if(event.target===this)closeUrlModal()">
   <div class="share-modal">
     <div class="share-modal-handle"></div>
     <div class="share-modal-head">
@@ -1880,7 +1743,7 @@ function roundRect(ctx, x, y, w, h, r) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.557 4.135 1.532 5.875L0 24l6.335-1.635A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.37l-.36-.214-3.728.961.995-3.625-.234-.373A9.815 9.815 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
         WhatsApp
       </div>
-      <div class="share-also-chip" onclick="shareIG()">
+      <div class="share-also-chip" onclick="downloadNightCard()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c13584" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
         Instagram
       </div>
@@ -1888,8 +1751,7 @@ function roundRect(ctx, x, y, w, h, r) {
   </div>
 </div>
 
-<!-- ══ MODAL: Share Result ══ -->
-<div class="share-modal-overlay" id="resultModal" onclick="closeResultModal(event)">
+<div class="share-modal-overlay" id="resultModal" onclick="if(event.target===this)closeResultModal()">
   <div class="share-modal" style="max-height:90vh;overflow-y:auto">
     <div class="share-modal-handle"></div>
     <div class="share-modal-head">
@@ -1897,7 +1759,6 @@ function roundRect(ctx, x, y, w, h, r) {
       <button class="share-modal-close" onclick="closeResultModal()">&times;</button>
     </div>
     <div class="result-layout" style="margin-bottom:16px">
-      <!-- Card preview column -->
       <div>
         <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:8px">Preview</p>
         <div class="night-card-preview" id="nightCardPreview">
@@ -1912,14 +1773,8 @@ function roundRect(ctx, x, y, w, h, r) {
           </div>
           <div class="ncp-bottom">
             <div class="ncp-elo-row">
-              <div>
-                <div class="ncp-elo-lbl">ELO RATING</div>
-                <div class="ncp-elo-val" id="ncpElo">1412</div>
-              </div>
-              <div>
-                <div class="ncp-tier-lbl">TIER</div>
-                <div class="ncp-tier-val" id="ncpTier">Bronze</div>
-              </div>
+              <div><div class="ncp-elo-lbl">ELO RATING</div><div class="ncp-elo-val" id="ncpElo">1412</div></div>
+              <div><div class="ncp-tier-lbl">TIER</div><div class="ncp-tier-val" id="ncpTier">Bronze</div></div>
             </div>
             <div class="ncp-stats">
               <div class="ncp-sbox"><div class="ncp-sv" id="ncpM">7</div><div class="ncp-sl">PLAYED</div></div>
@@ -1929,12 +1784,11 @@ function roundRect(ctx, x, y, w, h, r) {
             <div class="ncp-badges" id="ncpBadges"></div>
             <div class="ncp-footer">
               <span class="ncp-brand">TREKKR</span>
-              <span class="ncp-url">trekkr.online</span>
+              <span class="ncp-visit">Visit trekkr.online</span>
             </div>
           </div>
         </div>
       </div>
-      <!-- Share options -->
       <div>
         <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:10px">Share via</p>
         <div class="share-opt-row" onclick="shareResultWA()">
@@ -1945,7 +1799,7 @@ function roundRect(ctx, x, y, w, h, r) {
             <div class="share-opt-label">WhatsApp</div>
             <div class="share-opt-sub">Kirim link + stats ke chat / group</div>
           </div>
-          <svg class="share-opt-arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
         <div class="share-opt-row" onclick="downloadNightCard()">
           <div class="share-opt-icon" style="background:#141414">
@@ -1955,7 +1809,7 @@ function roundRect(ctx, x, y, w, h, r) {
             <div class="share-opt-label">Download PNG</div>
             <div class="share-opt-sub">Story card 1080×1920 untuk IG / TikTok</div>
           </div>
-          <svg class="share-opt-arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
       </div>
     </div>
