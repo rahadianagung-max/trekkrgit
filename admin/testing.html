@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#003ec7"/>
+<title>Venue Admin | Trekkr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── TREKKR DESIGN TOKENS ─────────────────────────────────────────────── */
+:root {
+  --pr:#003ec7; --pr2:#0052ff; --sec:#cd4800;
+  --sur:#f8f9ff; --sur-lo:#eff4ff; --sur-ct:#e5eeff; --sur-hi:#dce9ff; --sur-0:#fff;
+  --on:#0b1c30; --on-v:#434656; --on-pr:#fff;
+  --ok:#1f9d63; --warn:#c17c00; --danger:#ba1a1a;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-pill:999px;
+  --sh:0 16px 34px rgba(11,28,48,0.08);
+  --t:220ms; --ease:cubic-bezier(.22,.61,.36,1);
+  /* Ranked match vars */
+  --blue:#1A6FE8; --blue-dk:#0D52B8; --blue-lt:#EBF2FF; --blue-mid:#C5D9FA;
+  --bg-rm:#F0F5FF; --card-rm:#fff;
+  --txt:#0F172A; --txt2:#475569; --txt3:#94A3B8;
+  --bdr:#E2E8F0;
+  --green:#16A34A; --green-lt:#DCFCE7;
+  --red:#DC2626; --red-lt:#FEE2E2;
+  --gold:#F59E0B; --gold-lt:#FEF3C7;
+  --r-rm:16px; --r-rm-sm:10px;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{color:var(--on);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;
+  background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,.11),transparent 58%),
+             radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,.1),transparent 54%),var(--sur)}
+a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
+.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+
+/* ── HEADER ── */
+.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,.1)}
+.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
+.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-.03em;text-transform:uppercase;color:var(--pr)}
+.nav-links{display:flex;gap:6px}
+.nav-link{border-radius:var(--r-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);transition:all var(--t) var(--ease)}
+.nav-link:hover{background:var(--sur-ct)}
+.hdr-actions{display:flex;align-items:center;gap:12px}
+
+/* ── BUTTONS ── */
+.btn{border:0;border-radius:var(--r-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all var(--t) var(--ease)}
+.btn-primary{background:var(--pr);color:var(--on-pr)}.btn-primary:hover{background:var(--pr2)}
+.btn-ghost{background:var(--sur-ct);color:var(--pr)}.btn-ghost:hover{background:var(--sur-hi)}
+.btn-danger{background:rgba(186,26,26,.1);color:var(--danger);border:1px solid rgba(186,26,26,.2)}.btn-danger:hover{background:rgba(186,26,26,.18)}
+.btn-sm{padding:8px 16px;font-size:11px}
+
+/* ── LOGIN ── */
+#loginScreen{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.login-card{background:var(--sur-0);border-radius:var(--r-xl);padding:48px 40px;width:100%;max-width:440px;box-shadow:var(--sh);border:1px solid rgba(115,118,136,.12)}
+.login-eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--pr);margin-bottom:12px}
+.login-title{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--on);line-height:1;margin-bottom:8px}
+.login-sub{font-size:14px;color:var(--on-v);margin-bottom:32px;line-height:1.6}
+.f-label{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:8px}
+.f-input{width:100%;background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:12px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--on);outline:none;transition:border-color var(--t)}
+.f-input:focus{border-color:var(--pr);background:var(--sur-0)}
+.f-input::placeholder{color:var(--on-v);opacity:.6}
+.t-status{margin-top:12px;padding:12px 16px;border-radius:var(--r-md);font-size:13px;display:none}
+.t-status.success{display:block;background:rgba(31,157,99,.1);border:1px solid rgba(31,157,99,.3);color:var(--ok)}
+.t-status.error{display:block;background:rgba(186,26,26,.08);border:1px solid rgba(186,26,26,.25);color:var(--danger)}
+
+/* ── DASHBOARD ── */
+#adminScreen{display:none}
+.dash-hero{background:linear-gradient(135deg,#001c6f,#003ec7);color:#fff;padding:40px 0 0}
+.dash-eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.75;margin-bottom:8px}
+.dash-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;line-height:.95}
+.dash-venue{color:rgba(255,255,255,.6);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:10px}
+.tab-nav{display:flex;border-bottom:1px solid rgba(255,255,255,.15);margin-top:32px}
+.tab-btn{padding:14px 28px;background:transparent;border:0;border-bottom:3px solid transparent;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all var(--t);margin-bottom:-1px}
+.tab-btn:hover{color:rgba(255,255,255,.85)}
+.tab-btn.is-active{color:#fff;border-bottom-color:#fff}
+.dash-panel{display:none;padding:40px 0 80px}
+.dash-panel.is-active{display:block}
+
+/* ── VENUE INFO FORM ── */
+.section-card{background:var(--sur-0);border-radius:var(--r-xl);padding:28px;margin-bottom:20px;border:1px solid rgba(115,118,136,.1)}
+.sc-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.sc-dot{width:8px;height:8px;border-radius:50%;background:var(--pr)}
+.sc-label{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.f-group{margin-bottom:0}
+
+/* ── RANKED MATCH SYSTEM ────────────────────────────────────────────────── */
+/* Scoped inside #rm-root */
+#rm-root{font-family:'DM Sans',sans-serif}
+
+/* SCREENS */
+.rm-screen{display:none;animation:rmFadeUp .2s ease both}
+.rm-screen.active{display:block}
+@keyframes rmFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* INTRO (landing) */
+.rm-intro{max-width:560px;margin:0 auto;padding:32px 0 40px}
+.rm-intro-badge{display:inline-flex;align-items:center;gap:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;margin-bottom:16px}
+.rm-intro-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--on);margin-bottom:16px;line-height:1}
+.rm-rules{display:grid;gap:12px;margin-bottom:28px}
+.rm-rule{display:flex;align-items:flex-start;gap:14px;background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px 18px}
+.rm-rule-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rm-rule-body{}
+.rm-rule-title{font-size:14px;font-weight:700;color:var(--on);margin-bottom:3px}
+.rm-rule-desc{font-size:13px;color:var(--on-v);line-height:1.55}
+.rm-rule.highlight{border-color:rgba(0,62,199,.2);background:var(--sur-lo)}
+.rm-rule.highlight .rm-rule-title{color:var(--pr)}
+
+/* SETUP */
+.rm-setup{max-width:520px;margin:0 auto;padding:28px 0}
+.rm-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;margin-bottom:20px;background:none;border:none;padding:0}
+.rm-back:hover{color:var(--on)}
+.rm-section-title{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--on-v);margin-bottom:16px}
+.rm-card{background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-xl);padding:22px 24px;margin-bottom:16px}
+.rm-card-label{font-size:13px;font-weight:600;color:var(--on-v);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.rm-counter{display:flex;align-items:center;background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);overflow:hidden;max-width:160px}
+.rm-counter-btn{width:44px;height:44px;border:none;background:transparent;font-size:20px;font-weight:600;color:var(--pr);cursor:pointer;transition:background .1s}
+.rm-counter-btn:hover{background:var(--sur-ct)}
+.rm-counter-val{flex:1;text-align:center;font-size:18px;font-weight:700;color:var(--on)}
+.rm-segment{display:flex;background:var(--sur-lo);border-radius:var(--r-md);padding:4px;gap:4px}
+.rm-seg-btn{flex:1;padding:10px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;border:none;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--txt2);background:transparent}
+.rm-seg-btn.active{background:white;color:var(--pr);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.rm-hint{font-size:12px;color:var(--txt3);margin-top:8px}
+.rm-gender-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rm-gender-card{border:2px solid var(--bdr);border-radius:var(--r-rm);padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--sur-0)}
+.rm-gender-card:hover{border-color:var(--blue-mid)}
+.rm-gender-card.active{border-color:var(--blue);background:var(--blue-lt)}
+.rm-gender-card-icon{font-size:24px;margin-bottom:6px}
+.rm-gender-card-label{font-size:13px;font-weight:700;color:var(--on)}
+.rm-gender-card.active .rm-gender-card-label{color:var(--blue)}
+
+/* PLAYERS */
+.rm-players{max-width:520px;margin:0 auto;padding:20px 0}
+.rm-search-wrap{position:relative;margin-bottom:14px}
+.rm-search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--txt3)}
+.rm-search{width:100%;background:var(--sur-0);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:11px 38px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on);outline:none;transition:border-color var(--t)}
+.rm-search:focus{border-color:var(--pr)}
+.rm-search::placeholder{color:var(--txt3)}
+.rm-search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;padding:0;display:none}
+.rm-chip-wrap{margin-bottom:12px}
+.rm-chip-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--on-v);margin-bottom:6px}
+.rm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rm-chip{display:inline-flex;align-items:center;gap:5px;background:var(--sur-ct);padding:5px 10px;border-radius:99px;font-size:12px;font-weight:600;color:var(--pr)}
+.rm-chip button{background:none;border:none;cursor:pointer;color:var(--pr);padding:0;font-size:14px;line-height:1}
+.rm-player-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;background:var(--sur-0)}
+.rm-player-item:hover{border-color:var(--blue-mid);background:var(--blue-lt)}
+.rm-player-item.selected{border-color:var(--blue);background:var(--blue-lt)}
+.rm-player-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.rm-player-name{font-size:14px;font-weight:600;color:var(--on);flex:1}
+.rm-player-elo{font-size:12px;color:var(--txt3);font-family:'DM Mono',monospace}
+.rm-player-check{width:22px;height:22px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rm-player-gender{font-size:10px;color:var(--txt3);background:var(--bdr);padding:1px 6px;border-radius:20px}
+.rm-player-tier{font-size:11px;color:var(--txt3)}
+.rm-add-btn{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-rm-sm);cursor:pointer;background:var(--blue-lt);border:1.5px solid var(--blue);font-family:'DM Sans',sans-serif;transition:all .15s;text-align:left;margin-top:4px}
+.rm-add-btn:hover{background:var(--blue-mid)}
+.rm-bottom-bar{position:sticky;bottom:0;background:var(--sur-0);border-top:1px solid var(--bdr);padding:14px 0;margin:0 -24px;padding-left:24px;padding-right:24px}
+
+/* MATCH SCREEN */
+.rm-match{max-width:520px;margin:0 auto}
+.rm-tabs{display:flex;background:var(--sur-0);border-bottom:1px solid var(--bdr);position:sticky;top:80px;z-index:30}
+.rm-tab{flex:1;padding:12px 8px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;border:none;background:transparent;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.rm-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.rm-tab-panel{padding:16px 0;display:none}
+.rm-tab-panel.active{display:block}
+.rm-round-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:white;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:700;margin-bottom:4px}
+.rm-court-card{background:var(--sur-0);border:1.5px solid var(--bdr);border-radius:var(--r-rm);padding:18px;margin-bottom:14px}
+.rm-court-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rm-court-badge{background:var(--blue);color:white;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+.rm-court-status-done{color:var(--green);font-size:12px;font-weight:600}
+.rm-court-status-pend{color:var(--txt3);font-size:12px;font-weight:600}
+.rm-score-row{display:flex;align-items:center;gap:8px}
+.rm-score-team{flex:1}
+.rm-score-team-name{font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:6px;text-align:center;min-height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.4}
+.rm-score-vs{font-size:18px;font-weight:800;color:var(--txt3);padding:0 4px;margin-top:20px}
+.rm-score-input{width:100%;text-align:center;font-size:28px;font-weight:800;font-family:'DM Mono',monospace;padding:12px 8px;border:2px solid var(--bdr);border-radius:var(--r-rm-sm);background:var(--bg-rm);color:var(--on);outline:none;transition:all .15s}
+.rm-score-input:focus{border-color:var(--blue);background:white}
+.rm-score-input.win{border-color:var(--green);background:var(--green-lt);color:var(--green)}
+.rm-score-input.lose{border-color:var(--red-lt);background:var(--red-lt);color:var(--red)}
+.rm-bye-card{background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm);padding:14px 16px;margin-bottom:14px}
+.rm-submit-status{font-size:13px;font-weight:500;padding:10px 14px;border-radius:var(--r-rm-sm);margin-bottom:12px;display:none}
+.rm-submit-status.sending{display:block;background:var(--blue-lt);color:var(--blue)}
+.rm-submit-status.ok{display:block;background:var(--green-lt);color:var(--green)}
+.rm-submit-status.failed{display:block;background:var(--red-lt);color:var(--red)}
+.rm-submit-status.queued{display:block;background:var(--gold-lt);color:var(--gold)}
+
+/* FAIRNESS BAR */
+.rm-fair-bar{border-radius:var(--r-rm-sm);padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:500;display:none}
+.rm-fair-bar.ok{display:flex;background:var(--green-lt);color:var(--green);gap:8px;align-items:center}
+.rm-fair-bar.warn{display:flex;background:var(--gold-lt);color:var(--gold);gap:8px;align-items:center}
+.rm-fair-bar.info{display:flex;background:var(--blue-lt);color:var(--blue);gap:8px;align-items:center}
+
+/* LEADERBOARD */
+.rm-lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sur-0);border-radius:var(--r-rm-sm);margin-bottom:8px;border:1.5px solid var(--bdr)}
+.rm-lb-row.rank1{border-color:#FFD700;background:#FFFBEB}
+.rm-lb-row.rank2{border-color:#C0C0C0;background:#F8FAFC}
+.rm-lb-row.rank3{border-color:#CD7F32;background:#FFF8F5}
+.rm-lb-rank{font-size:16px;font-weight:800;width:28px;text-align:center;color:var(--txt3)}
+.rm-lb-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.rm-lb-name{font-size:14px;font-weight:700;color:var(--on)}
+.rm-lb-elo{font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace}
+.rm-lb-wl{font-size:14px;font-weight:700;color:var(--on)}
+.rm-lb-diff{font-size:12px;font-weight:600}
+
+/* DONE SCREEN */
+.rm-done{max-width:520px;margin:0 auto;padding:24px 0 60px}
+.rm-done-hero{text-align:center;background:linear-gradient(135deg,#001c6f,#003ec7);border-radius:var(--r-xl);padding:32px 24px;color:white;margin-bottom:20px}
+.rm-done-emoji{font-size:48px;margin-bottom:12px}
+.rm-done-title{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:6px}
+.rm-done-sub{font-size:14px;opacity:.75}
+.rm-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:24px 0}
+.rm-podium-slot{display:flex;flex-direction:column;align-items:center}
+.rm-podium-crown{font-size:20px;margin-bottom:6px}
+.rm-podium-av{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;margin-bottom:6px}
+.rm-podium-name{font-size:12px;font-weight:700;text-align:center;max-width:80px;color:rgba(255,255,255,.9)}
+.rm-podium-base{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;width:80px;margin-top:8px}
+.rm-done-card{background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-xl);padding:22px 24px;margin-bottom:14px}
+.rm-done-card-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:14px}
+.rm-rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.rm-rank-row:last-child{border-bottom:none}
+.rm-rank-num{font-size:18px;font-weight:800;width:32px;color:var(--txt3)}
+.rm-rank-name{font-size:14px;font-weight:700;color:var(--on);flex:1}
+.rm-rank-meta{font-size:11px;color:var(--txt3)}
+.rm-rank-wl{font-size:13px;font-weight:700;color:var(--on);text-align:right}
+.rm-rank-diff{font-size:11px;font-weight:600;text-align:right}
+.rm-share-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:var(--r-xl);background:var(--pr);color:white;border:none;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:background .15s;margin-bottom:10px}
+.rm-share-btn:hover{background:var(--pr2)}
+.rm-new-match-btn{width:100%;padding:14px;border-radius:var(--r-xl);background:var(--sur-ct);color:var(--pr);border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
+.rm-new-match-btn:hover{background:var(--sur-hi)}
+
+/* UTILS */
+.rm-btn-full{width:100%;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-rm-sm);padding:14px 20px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;min-height:48px;gap:8px}
+.rm-btn-primary{background:var(--blue);color:white}.rm-btn-primary:hover{background:var(--blue-dk)}
+.rm-btn-secondary{background:var(--blue-lt);color:var(--blue)}.rm-btn-secondary:hover{background:var(--blue-mid)}
+.rm-btn-danger{background:var(--red-lt);color:var(--red)}
+.rm-btn-ghost{background:transparent;color:var(--txt2);border:1.5px solid var(--bdr)}.rm-btn-ghost:hover{border-color:var(--blue-mid)}
+.rm-btn:disabled{opacity:.4;cursor:not-allowed}
+.rm-alert{padding:12px 14px;border-radius:var(--r-rm-sm);font-size:13px;font-weight:500;margin-bottom:14px}
+.rm-alert-red{background:var(--red-lt);color:var(--red)}
+.rm-alert-blue{background:var(--blue-lt);color:var(--blue)}
+.rm-alert-green{background:var(--green-lt);color:var(--green)}
+.rm-alert-warn{background:var(--gold-lt);color:var(--gold)}
+.rm-empty{text-align:center;padding:32px 0;color:var(--txt3);font-size:14px}
+.rm-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:rmSpin .7s linear infinite;display:inline-block}
+.rm-spinner-blue{border-color:rgba(26,111,232,.2);border-top-color:var(--blue)}
+@keyframes rmSpin{to{transform:rotate(360deg)}}
+.rm-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.rm-modal{background:var(--sur-0);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.rm-modal-handle{width:40px;height:4px;background:var(--bdr);border-radius:2px;margin:0 auto 20px}
+.rm-modal-title{font-size:18px;font-weight:800;color:var(--on);margin-bottom:16px}
+.rm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rm-input{width:100%;background:var(--bg-rm);border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);padding:12px 14px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--on);outline:none;transition:border-color .15s}
+.rm-input:focus{border-color:var(--blue);background:white}
+.rm-input::placeholder{color:var(--txt3)}
+.rm-input-group{margin-bottom:14px}
+.rm-input-label{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:6px;display:block}
+.hidden{display:none!important}
+
+/* FOOTER */
+.site-footer{border-top:1px solid rgba(115,118,136,.12);padding:32px 0;margin-top:40px}
+.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase}
+.footer-copy{font-size:12px;color:var(--on-v)}
+
+/* RESPONSIVE */
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.form-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.login-card{padding:32px 24px}.tab-btn{padding:12px 16px;font-size:11px}}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a href="https://trekkr.online" class="brand">Trekkr</a>
+    <nav class="nav-links">
+      <a class="nav-link" href="https://trekkr.online">National Ranking</a>
+      <a class="nav-link" href="https://venue.trekkr.online">Venues</a>
+      <a class="nav-link" href="https://trekkr.online#how-it-works">How It Works</a>
+    </nav>
+    <div class="hdr-actions">
+      <span id="hdrVenue" style="font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pr);display:none"></span>
+      <button class="btn btn-danger btn-sm" id="hdrLogout" style="display:none" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- LOGIN                                          -->
+<!-- ══════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <p class="login-eyebrow">Venue Portal</p>
+    <h1 class="login-title">Venue<br/>Admin</h1>
+    <p class="login-sub">Sign in to manage your court info and run Trekkr Ranked Match sessions.</p>
+    <div class="f-group" style="margin-bottom:16px">
+      <label class="f-label" for="loginUser">Username</label>
+      <input class="f-input" id="loginUser" type="text" placeholder="venue username" autocomplete="username"/>
+    </div>
+    <div class="f-group" style="margin-bottom:20px">
+      <label class="f-label" for="loginPass">Password</label>
+      <input class="f-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px" onclick="doLogin()">Sign In →</button>
+    <div class="t-status" id="loginStatus"></div>
+    <p style="margin-top:20px;font-size:12px;color:var(--on-v);text-align:center">Not a venue yet? <a href="https://trekkr.online/get-listed" style="color:var(--pr);font-weight:700">Get listed →</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- DASHBOARD                                      -->
+<!-- ══════════════════════════════════════════════ -->
+<div id="adminScreen">
+  <div class="dash-hero">
+    <div class="container">
+      <p class="dash-eyebrow">Venue Admin Portal</p>
+      <h1 class="dash-title">Admin<br/>Dashboard</h1>
+      <p class="dash-venue" id="dashVenue">Loading...</p>
+      <nav class="tab-nav">
+        <button class="tab-btn is-active" onclick="switchTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
+        <button class="tab-btn" onclick="switchTab('venue-info')" id="atab-venue-info">Venue Info</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- TAB: VENUE INFO -->
+  <div class="dash-panel" id="apanel-venue-info">
+    <div class="container">
+      <div class="section-card">
+        <div class="sc-title"><span class="sc-dot"></span><span class="sc-label">Venue Information</span></div>
+        <div class="form-grid">
+          <div class="f-group">
+            <label class="f-label" for="venueSchedule">Playing Schedule</label>
+            <textarea class="f-input" id="venueSchedule" placeholder="e.g. Every Monday 8am–10am" style="min-height:72px;resize:vertical"></textarea>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venuePrize">Prize Pool</label>
+            <input class="f-input" id="venuePrize" placeholder="e.g. IDR 2,500,000"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueContact">Contact / Social</label>
+            <input class="f-input" id="venueContact" placeholder="@instagram or WhatsApp"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueLocation">Location</label>
+            <input class="f-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveVenueInfo()" style="margin-top:12px">Save Changes →</button>
+        <div class="t-status" id="venueStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: RANKED MATCH -->
+  <div class="dash-panel is-active" id="apanel-ranked-match">
+    <div class="container">
+      <div id="rm-root">
+
+        <!-- ── SCREEN: INTRO ── -->
+        <div class="rm-screen active" id="rm-intro">
+          <div class="rm-intro">
+            <span class="rm-intro-badge">🏆 Trekkr Ranked Match System</span>
+            <h2 class="rm-intro-title">Ranked Match</h2>
+            <div class="rm-rules">
+              <div class="rm-rule highlight">
+                <div class="rm-rule-icon" style="background:#EBF2FF">🎾</div>
+                <div class="rm-rule-body">
+                  <div class="rm-rule-title">Tennis scoring — wajib</div>
+                  <div class="rm-rule-desc">Semua match dihitung menggunakan sistem skor tenis: <strong>Race to</strong> (contoh: Race to 4, menang saat capai angka tersebut lebih dulu) atau <strong>Best of</strong> (contoh: Best of 7, menang 4 game). Minimal Race to 4 atau Best of 4.</div>
+                </div>
+              </div>
+              <div class="rm-rule">
+                <div class="rm-rule-icon" style="background:#DCFCE7">♂♀</div>
+                <div class="rm-rule-body">
+                  <div class="rm-rule-title">Hanya Men atau Women — tidak ada ganda campuran</div>
+                  <div class="rm-rule-desc">Ranked Match tidak diperuntukkan untuk mixed doubles atau fixed mixed. Setiap sesi harus satu kategori: Men saja atau Women saja. Ini menjaga fairness ranking ELO antar pemain.</div>
+                </div>
+              </div>
+              <div class="rm-rule">
+                <div class="rm-rule-icon" style="background:#FEF3C7">⚖️</div>
+                <div class="rm-rule-body">
+                  <div class="rm-rule-title">Selesaikan setelah semua pemain dapat jatah match yang sama</div>
+                  <div class="rm-rule-desc">Aplikasi akan memberi tahu kapan semua pemain sudah bermain sama banyak (fair cycle). Disarankan mengakhiri match di titik tersebut agar hasil ranking tidak berat sebelah — tidak ada pemain yang untung karena dapat lebih banyak kesempatan bermain.</div>
+                </div>
+              </div>
+              <div class="rm-rule">
+                <div class="rm-rule-icon" style="background:#F0F5FF">🔀</div>
+                <div class="rm-rule-body">
+                  <div class="rm-rule-title">Matchup otomatis berdasarkan ranking berjalan</div>
+                  <div class="rm-rule-desc">Setiap ronde, sistem secara otomatis memasangkan pemain berdasarkan posisi leaderboard saat itu — yang selevel bertemu, sehingga setiap match kompetitif dan bermakna untuk ELO.</div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="padding:14px 36px;font-size:14px" onclick="rmGo('setup')">Mulai Ranked Match →</button>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: SETUP ── -->
+        <div class="rm-screen" id="rm-setup">
+          <div class="rm-setup">
+            <button class="rm-back" onclick="rmGo('intro')">← Kembali</button>
+            <p class="rm-section-title">Konfigurasi Match</p>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Jumlah Court</div>
+              <div class="rm-counter">
+                <button class="rm-counter-btn" onclick="rmChangeCourts(-1)">−</button>
+                <div class="rm-counter-val" id="rm-courts-val">2</div>
+                <button class="rm-counter-btn" onclick="rmChangeCourts(1)">+</button>
+              </div>
+              <p class="rm-hint" id="rm-courts-hint">Minimal 8 pemain diperlukan</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Kategori Pemain</div>
+              <div class="rm-gender-grid">
+                <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
+                  <div class="rm-gender-card-icon">♂</div>
+                  <div class="rm-gender-card-label">Men</div>
+                </div>
+                <div class="rm-gender-card" id="rm-gender-F" onclick="rmSetGender('F')">
+                  <div class="rm-gender-card-icon">♀</div>
+                  <div class="rm-gender-card-label">Women</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Format Match</div>
+              <div class="rm-segment" style="margin-bottom:10px">
+                <button class="rm-seg-btn active" id="rm-fmt-individual" onclick="rmSetFormat('individual')">🔀 Individual</button>
+                <button class="rm-seg-btn" id="rm-fmt-fixed" onclick="rmSetFormat('fixed')">👥 Fixed Partner</button>
+              </div>
+              <p class="rm-hint" id="rm-fmt-hint">Partner berubah setiap ronde berdasarkan ranking</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Format Skor</div>
+              <div class="rm-segment" style="margin-bottom:12px">
+                <button class="rm-seg-btn active" id="rm-sfmt-race" onclick="rmSetScoreFormat('race')">Race To</button>
+                <button class="rm-seg-btn" id="rm-sfmt-bestof" onclick="rmSetScoreFormat('bestof')">Best Of</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:13px;font-weight:600;color:var(--txt2);min-width:60px" id="rm-score-label">Race to</span>
+                <div class="rm-counter" style="flex:1;max-width:none">
+                  <button class="rm-counter-btn" onclick="rmChangeTarget(-1)">−</button>
+                  <div class="rm-counter-val" id="rm-score-target">4</div>
+                  <button class="rm-counter-btn" onclick="rmChangeTarget(1)">+</button>
+                </div>
+              </div>
+              <p class="rm-hint" id="rm-score-hint">Race to 4 — menang saat capai angka 4 lebih dulu</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Level Permainan</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
+              <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
+                <option value="beginner">Beginner</option>
+                <option value="upper_beginner">Upper Beginner</option>
+                <option value="lower_bronze" selected>Lower Bronze</option>
+                <option value="bronze">Bronze</option>
+                <option value="upper_bronze">Upper Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
+                <option value="platinum">Platinum</option>
+              </select>
+              <div style="margin-top:12px;padding:12px 14px;background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);font-size:12.5px;line-height:1.55;color:var(--txt)">
+                <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
+                Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
+              </div>
+              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
+            </div>
+
+            <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: PLAYERS ── -->
+        <div class="rm-screen" id="rm-players">
+          <div class="rm-players">
+            <button class="rm-back" onclick="rmGo('setup')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Setup</button>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+              <p style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pilih Pemain</p>
+              <span style="font-size:13px;color:var(--txt2)"><span id="rm-sel-count" style="font-weight:700;color:var(--blue)">0</span><span id="rm-sel-min"> / min 8</span></span>
+            </div>
+
+            <div id="rm-sel-chips-wrap" style="display:none;margin-bottom:12px">
+              <div class="rm-chip-label">Dipilih</div>
+              <div class="rm-chips" id="rm-sel-chips"></div>
+            </div>
+
+            <div id="rm-rec-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
+              <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 Rekomendasi</div>
+              <div style="font-size:13px;color:var(--txt)" id="rm-rec-text">—</div>
+            </div>
+
+            <div class="rm-alert rm-alert-red hidden" id="rm-players-error"></div>
+
+            <div class="rm-search-wrap">
+              <span class="rm-search-icon">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+              </span>
+              <input class="rm-search" id="rm-search" placeholder="Ketik nama pemain..." oninput="rmRenderPlayers()" autocomplete="off" autocorrect="off" spellcheck="false"/>
+              <button class="rm-search-clear" id="rm-search-clear" onclick="rmClearSearch()">×</button>
+            </div>
+
+            <div id="rm-player-list" style="padding-bottom:100px"></div>
+
+            <div class="rm-bottom-bar">
+              <button class="rm-btn-full rm-btn-primary" id="rm-start-btn" onclick="rmStartMatch()" disabled>Pilih pemain dahulu</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: MATCH ── -->
+        <div class="rm-screen" id="rm-match">
+          <div class="rm-match">
+            <div class="rm-tabs">
+              <button class="rm-tab active" id="rmtab-courts" onclick="rmSwitchTab('courts')">🎾 Courts</button>
+              <button class="rm-tab" id="rmtab-leaderboard" onclick="rmSwitchTab('leaderboard')">🏆 Leaderboard</button>
+              <button class="rm-tab" id="rmtab-history" onclick="rmSwitchTab('history')">📋 Riwayat</button>
+            </div>
+
+            <!-- Courts -->
+            <div class="rm-tab-panel active" id="rm-tp-courts" style="padding:16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                  <div class="rm-round-pill" id="rm-round-pill">Ronde 1</div>
+                  <div style="font-size:13px;color:var(--txt2);margin-top:4px" id="rm-score-format-label">Race to 4</div>
+                </div>
+                <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+              </div>
+              <div class="rm-submit-status" id="rm-submit-status"></div>
+              <div class="rm-fair-bar" id="rm-fair-bar"></div>
+              <div id="rm-court-cards"></div>
+              <div id="rm-bye-section" style="display:none">
+                <div class="rm-bye-card">
+                  <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Istirahat Ronde Ini</div>
+                  <div id="rm-bye-players"></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+                <button class="rm-btn-full rm-btn-primary" id="rm-submit-btn" onclick="rmSubmitRound()">Submit Skor & Lanjut Ronde →</button>
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+              </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="rm-tab-panel hidden" id="rm-tp-leaderboard" style="padding:16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <p style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Live Leaderboard</p>
+                <span class="rm-round-pill" id="rm-lb-badge" style="font-size:11px;padding:4px 10px">Ronde 1</span>
+              </div>
+              <div id="rm-lb-list"></div>
+              <div style="margin-top:20px">
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+              </div>
+            </div>
+
+            <!-- History -->
+            <div class="rm-tab-panel hidden" id="rm-tp-history" style="padding:16px 0">
+              <p style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:16px">Riwayat Ronde</p>
+              <div id="rm-history-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: DONE ── -->
+        <div class="rm-screen" id="rm-done">
+          <div class="rm-done">
+            <div class="rm-done-hero">
+              <div class="rm-done-emoji">🎉</div>
+              <div class="rm-done-title">Trekkr Ranked Match Selesai!</div>
+              <div class="rm-done-sub" id="rm-done-sub"></div>
+              <div style="font-size:12px;opacity:.6;margin-top:4px" id="rm-done-meta"></div>
+              <div class="rm-podium" id="rm-podium"></div>
+            </div>
+            <div class="rm-done-card">
+              <div class="rm-done-card-title">Final Standings</div>
+              <div id="rm-final-standings"></div>
+            </div>
+            <button class="rm-share-btn" onclick="rmShare()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Bagikan Leaderboard Venue
+            </button>
+            <button class="rm-new-match-btn" onclick="rmNewMatch()">+ Mulai Match Baru</button>
+          </div>
+        </div>
+
+      </div><!-- #rm-root -->
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <div class="footer-brand">Trekkr</div>
+      <div class="footer-copy">© 2026 Trekkr. All rights reserved.</div>
+    </div>
+  </footer>
+</div>
+
+<!-- MODAL: ADD PLAYER -->
+<div class="rm-modal-overlay hidden" id="rm-modal-add" onclick="rmCloseAdd()">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">Tambah Pemain Baru</div>
+    <div class="rm-alert rm-alert-red hidden" id="rm-add-error"></div>
+    <div class="rm-input-group">
+      <label class="rm-input-label">First Name *</label>
+      <input class="rm-input" id="rm-fn" placeholder="Contoh: Budi" oninput="rmUpdateAddPreview()"/>
+    </div>
+    <div class="rm-input-group">
+      <label class="rm-input-label">Last Name *</label>
+      <input class="rm-input" id="rm-ln" placeholder="Contoh: Santoso" oninput="rmUpdateAddPreview()"/>
+    </div>
+    <div class="rm-input-group" style="margin-bottom:0">
+      <label class="rm-input-label">Gender</label>
+      <div class="rm-segment">
+        <button class="rm-seg-btn active" id="rm-add-gM" onclick="rmSetAddGender('M')">♂ Male</button>
+        <button class="rm-seg-btn" id="rm-add-gF" onclick="rmSetAddGender('F')">♀ Female</button>
+      </div>
+    </div>
+    <div class="rm-alert rm-alert-blue hidden" id="rm-add-preview" style="margin-top:10px"></div>
+    <div style="margin-top:16px" class="rm-grid2">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Batal</button>
+      <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: END CONFIRM -->
+<div class="rm-modal-overlay hidden" id="rm-modal-end" onclick="rmCloseEnd()">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">🏁 Akhiri Match?</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:20px;line-height:1.6">Match akan diakhiri dan hasil final disimpan ke Trekkr. Pemenang ditentukan berdasarkan W/L dan point diff saat ini.</p>
+    <div style="background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Top 3 Saat Ini</div>
+      <div id="rm-end-top3"></div>
+    </div>
+    <div class="rm-grid2">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseEnd()">Kembali</button>
+      <button class="rm-btn-full rm-btn-danger" id="rm-end-btn" onclick="rmEndMatch()">Ya, Akhiri</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RESTORE -->
+<div class="rm-modal-overlay hidden" id="rm-modal-restore" onclick="rmDismissRestore()">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">🔄 Lanjutkan Match?</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Ditemukan sesi match yang belum selesai.</p>
+    <div style="background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);padding:14px;margin-bottom:16px" id="rm-restore-info"></div>
+    <div class="rm-grid2">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmDismissRestore()">Mulai Baru</button>
+      <button class="rm-btn-full rm-btn-primary" onclick="rmDoRestore()">▶ Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://trekkr.online/trekkr-api.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   ADMIN AUTH
+   ══════════════════════════════════════════════════════════════════════ */
+const RM = { // shared state for ranked match
+  token: '', venue: '', username: '',
+  courts: 2, gender: 'M', format: 'individual',
+  scoreFormat: 'race', scoreTarget: 4,
+  level: 'lower_bronze', startElo: 1350,
+  allPlayers: [], selectedPlayers: [], partners: {},
+  playerStats: {}, rounds: [], currentRound: 0,
+  newGender: 'M', matchId: '', activeTab: 'courts',
+  _inited: false, _savedToRestore: null,
+};
+const API_BASE = 'https://trekkr.online/api';
+
+function tStatus(el, type, msg) {
+  el.className = 't-status ' + type; el.textContent = msg;
+}
+function rmShowErr(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg; el.classList.remove('hidden');
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function rmHideErr(elId) { document.getElementById(elId).classList.add('hidden'); }
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const st = document.getElementById('loginStatus');
+  if (!u || !p) { tStatus(st, 'error', 'Please enter username and password'); return; }
+  const btn = document.querySelector('#loginScreen .btn-primary');
+  btn.textContent = 'Signing in...'; btn.disabled = true;
+  try {
+    const d = await TrekkrAPI.login(u, p);
+    if (d.role !== 'venue_admin' && d.role !== 'superadmin') {
+      tStatus(st, 'error', 'Access denied — venue admin accounts only'); return;
+    }
+    RM.token = d.token; RM.venue = d.venue || ''; RM.username = d.username || '';
+    rmSyncStorage();
+    showDash(d);
+  } catch(e) {
+    tStatus(st, 'error', e.message || 'Login failed');
+  } finally { btn.textContent = 'Sign In →'; btn.disabled = false; }
+}
+
+function rmSyncStorage() {
+  sessionStorage.setItem('mx_tab_token', RM.token);
+  sessionStorage.setItem('mx_tab_venue', RM.venue);
+  sessionStorage.setItem('mx_tab_user',  RM.username);
+  localStorage.setItem('mx_token', RM.token);
+  localStorage.setItem('mx_venue', RM.venue);
+  localStorage.setItem('mx_user',  RM.username);
+}
+
+function checkAuth() {
+  const s = TrekkrAPI.getSession();
+  if (s.token && (s.role === 'venue_admin' || s.role === 'superadmin')) {
+    RM.token = s.token; RM.venue = s.venue || ''; RM.username = s.username || '';
+    rmSyncStorage();
+    showDash(s);
+  }
+  // Also restore from sessionStorage (for ranked match state)
+  const t = sessionStorage.getItem('mx_tab_token') || localStorage.getItem('mx_token');
+  if (t && !RM.token) {
+    RM.token = t;
+    RM.venue = sessionStorage.getItem('mx_tab_venue') || localStorage.getItem('mx_venue') || '';
+    RM.username = sessionStorage.getItem('mx_tab_user') || localStorage.getItem('mx_user') || '';
+  }
+}
+
+function showDash(s) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('dashVenue').textContent = RM.venue ? '📍 ' + RM.venue : 'All Venues';
+  document.getElementById('hdrVenue').textContent = RM.venue;
+  document.getElementById('hdrVenue').style.display = RM.venue ? 'inline' : 'none';
+  document.getElementById('hdrLogout').style.display = 'inline-flex';
+  loadVenueInfo();
+  // Ranked Match is the default tab — init immediately after login
+  if (!RM._inited) {
+    RM._inited = true;
+    setTimeout(rmInit, 100);
+  }
+}
+
+function doLogout() {
+  TrekkrAPI.logout();
+  ['mx_tab_token','mx_tab_venue','mx_tab_user'].forEach(k => sessionStorage.removeItem(k));
+  ['mx_token','mx_venue','mx_user'].forEach(k => localStorage.removeItem(k));
+  rmClearStorage();
+  location.reload();
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('is-active'));
+  document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('is-active'));
+  document.getElementById('atab-' + id).classList.add('is-active');
+  document.getElementById('apanel-' + id).classList.add('is-active');
+  if (id === 'ranked-match' && !RM._inited) {
+    RM._inited = true;
+    rmInit();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   VENUE INFO
+   ══════════════════════════════════════════════════════════════════════ */
+async function loadVenueInfo() {
+  if (!RM.venue) return;
+  try {
+    const d = await TrekkrAPI.getVenues();
+    const v = (d.venues || []).find(x => x.name.toLowerCase() === RM.venue.toLowerCase());
+    if (v) {
+      document.getElementById('venueSchedule').value = v.schedule || '';
+      document.getElementById('venuePrize').value    = v.prizePool || '';
+      document.getElementById('venueContact').value  = v.contact || '';
+      document.getElementById('venueLocation').value = v.location || '';
+    }
+  } catch(e) { console.warn('Venue info load failed'); }
+}
+
+async function saveVenueInfo() {
+  const st = document.getElementById('venueStatus');
+  if (!RM.venue) { tStatus(st,'error','No venue assigned.'); return; }
+  try {
+    await TrekkrAPI.updateVenue(RM.venue, {
+      schedule: document.getElementById('venueSchedule').value,
+      prizePool: document.getElementById('venuePrize').value,
+      contact:   document.getElementById('venueContact').value,
+      location:  document.getElementById('venueLocation').value,
+    });
+    tStatus(st, 'success', 'Venue information saved.');
+  } catch(e) { tStatus(st, 'error', e.message || 'Failed to save.'); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — API
+   ══════════════════════════════════════════════════════════════════════ */
+async function rmApi(path, opts = {}) {
+  const res = await fetch(`${API_BASE}/${path}`, {
+    headers: { 'Content-Type': 'application/json',
+      ...(RM.token ? { Authorization: `Bearer ${RM.token}` } : {}) },
+    ...opts,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — ELO ENGINE
+   ══════════════════════════════════════════════════════════════════════ */
+function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
+  const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
+  const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
+  const margin = 1 + Math.min(Math.abs(s1-s2)*.04, .3);
+  const exp1 = 1/(1+Math.pow(10,(t2a-t1a)/400)), exp2 = 1-exp1;
+  const upd = (p, r, e) => {
+    const k = rmKFactor(p.matchCount||0)*margin;
+    return {name:p.name, newElo:p.elo+Math.round(k*(r-e)), delta:Math.round(k*(r-e)), w:r===1?1:0, l:r===0?1:0};
+  };
+  return [upd(p1t1,t1r,exp1),upd(p2t1,t1r,exp1),upd(p1t2,t2r,exp2),upd(p2t2,t2r,exp2)];
+}
+function rmTier(elo) {
+  if(elo>=3000)return'Platinum';if(elo>=2500)return'Gold';if(elo>=2100)return'Silver';
+  if(elo>=1800)return'Upper Bronze';if(elo>=1500)return'Bronze';if(elo>=1200)return'Lower Bronze';
+  if(elo>=900)return'Upper Beginner';return'Beginner';
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — AVATAR
+   ══════════════════════════════════════════════════════════════════════ */
+const RM_COLORS=['#1A6FE8','#0D52B8','#7C3AED','#DB2777','#059669','#D97706','#DC2626','#0891B2'];
+function rmAvaColor(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))%RM_COLORS.length;return RM_COLORS[h];}
+function rmInitials(name){const p=name.trim().split(' ');return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():name.slice(0,2).toUpperCase();}
+function rmAva(name,size=36,fs=13){return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${rmAvaColor(name)};display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;color:white;flex-shrink:0">${rmInitials(name)}</div>`;}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — SCREEN NAVIGATION
+   ══════════════════════════════════════════════════════════════════════ */
+function rmGo(id) {
+  document.querySelectorAll('.rm-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rm-' + id).classList.add('active');
+}
+
+function rmInit() {
+  // Check for saved match to restore
+  const saved = rmRestoreLatest();
+  if (saved && saved.screen === 'match') {
+    rmShowRestorePrompt(saved);
+  } else {
+    rmGo('intro');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — SETUP
+   ══════════════════════════════════════════════════════════════════════ */
+function rmChangeCourts(d) {
+  RM.courts = Math.max(1, Math.min(8, RM.courts+d));
+  document.getElementById('rm-courts-val').textContent = RM.courts;
+  document.getElementById('rm-courts-hint').textContent = `Minimal ${RM.courts*4} pemain diperlukan`;
+  document.getElementById('rm-sel-min').textContent = ` / min ${RM.courts*4}`;
+  rmUpdateStartBtn();
+  rmUpdateRec();
+}
+function rmSetGender(g) {
+  RM.gender = g;
+  ['M','F'].forEach(x => document.getElementById('rm-gender-'+x).classList.toggle('active', x===g));
+}
+function rmSetFormat(f) {
+  RM.format = f;
+  ['individual','fixed'].forEach(x => document.getElementById('rm-fmt-'+x).classList.toggle('active', x===f));
+  document.getElementById('rm-fmt-hint').textContent = f==='individual'
+    ? 'Partner berubah setiap ronde berdasarkan ranking'
+    : 'Partner dipilih manual dan tetap sepanjang turnamen';
+}
+function rmSetScoreFormat(sf) {
+  RM.scoreFormat = sf;
+  ['race','bestof'].forEach(x => document.getElementById('rm-sfmt-'+x).classList.toggle('active', x===sf));
+  document.getElementById('rm-score-label').textContent = sf==='race' ? 'Race to' : 'Best of';
+  rmUpdateScoreHint();
+}
+function rmChangeTarget(d) {
+  RM.scoreTarget = Math.max(4, Math.min(10, RM.scoreTarget+d));
+  document.getElementById('rm-score-target').textContent = RM.scoreTarget;
+  rmUpdateScoreHint();
+}
+function rmUpdateScoreHint() {
+  const t=RM.scoreTarget, sf=RM.scoreFormat;
+  document.getElementById('rm-score-hint').textContent = sf==='race'
+    ? `Race to ${t} — menang saat capai angka ${t} lebih dulu`
+    : `Best of ${t} — butuh ${Math.ceil(t/2)} game untuk menang`;
+}
+function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
+
+/* Level → starting ELO for NEW / unrated players only.
+   Existing rated players keep their real ELO. Lower Bronze (1350) = default. */
+const RM_LEVELS = {
+  beginner:       { label:'Beginner',       elo:750  },
+  upper_beginner: { label:'Upper Beginner', elo:1050 },
+  lower_bronze:   { label:'Lower Bronze',   elo:1350 },
+  bronze:         { label:'Bronze',         elo:1650 },
+  upper_bronze:   { label:'Upper Bronze',   elo:1950 },
+  silver:         { label:'Silver',         elo:2300 },
+  gold:           { label:'Gold',           elo:2750 },
+  platinum:       { label:'Platinum',       elo:3100 },
+};
+function rmSetLevel(lvl) {
+  const m = RM_LEVELS[lvl] || RM_LEVELS.lower_bronze;
+  RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
+  RM.startElo = m.elo;
+  const hint = document.getElementById('rm-level-hint');
+  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
+  rmUpdateAddPreview();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — PLAYERS
+   ══════════════════════════════════════════════════════════════════════ */
+async function rmLoadPlayers() {
+  document.getElementById('rm-player-list').innerHTML =
+    `<div class="rm-empty"><div class="rm-spinner rm-spinner-blue" style="margin:0 auto 12px"></div>Memuat database pemain...</div>`;
+  try {
+    const [pRes, eRes] = await Promise.all([rmApi('players'), rmApi('elo/latest')]);
+    const eloMap = eRes.players || {};
+    RM.allPlayers = (pRes.players || [])
+      .filter(p => !/^[\d\s]+$/.test(p.name.trim()))
+      .map(p => ({
+        ...p,
+        elo: eloMap[p.name]?.elo || RM.startElo,
+        matchCount: (eloMap[p.name]?.w||0)+(eloMap[p.name]?.l||0),
+      }));
+    rmRenderPlayers();
+  } catch(e) {
+    document.getElementById('rm-player-list').innerHTML =
+      `<div class="rm-alert rm-alert-red">Gagal load pemain: ${e.message}</div>`;
+  }
+}
+
+function rmRenderPlayers() {
+  const q = document.getElementById('rm-search').value.toLowerCase().trim();
+  document.getElementById('rm-search-clear').style.display = q ? 'flex' : 'none';
+  const filtered = RM.allPlayers.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || (p.displayName||'').toLowerCase().includes(q)
+  );
+  const listEl = document.getElementById('rm-player-list');
+
+  if (!filtered.length && q) {
+    const cap = w => w ? w[0].toUpperCase()+w.slice(1) : '';
+    const words = q.trim().split(/\s+/);
+    const suggestion = words.map(cap).join(' ');
+    const hasLast = words.length >= 2;
+    listEl.innerHTML = `
+      <div style="padding:8px 0 16px">
+        <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">Tidak ada pemain "<strong style="color:var(--on)">${q}</strong>"</div>
+        ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
+          ${rmAva(suggestion,42,16)}
+          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Daftar sebagai pemain baru · ELO awal ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+        </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Ketik nama depan dan belakang untuk menambah pemain baru. Contoh: "Budi Santoso"</div>`}
+      </div>`;
+    return;
+  }
+  if (!filtered.length) {
+    listEl.innerHTML = `<div class="rm-empty"><div style="font-size:40px;margin-bottom:8px">👥</div>Belum ada pemain. Ketik nama untuk mencari atau menambah.</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(p => {
+    const sel = RM.selectedPlayers.some(s => s.name===p.name);
+    return `<div class="rm-player-item ${sel?'selected':''}" onclick="rmTogglePlayer('${p.name.replace(/'/g,"\\'")}')">
+      ${rmAva(p.name,38,13)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-player-name">${p.displayName||p.name}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+          <span class="rm-player-gender">${p.gender==='F'?'♀ F':'♂ M'}</span>
+          <span class="rm-player-tier">${rmTier(p.elo)}</span>
+        </div>
+      </div>
+      <span class="rm-player-elo">${p.elo}</span>
+      ${sel?`<div class="rm-player-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function rmClearSearch() {
+  document.getElementById('rm-search').value='';
+  document.getElementById('rm-search-clear').style.display='none';
+  rmRenderPlayers();
+}
+
+function rmTogglePlayer(name) {
+  const p = RM.allPlayers.find(x => x.name===name);
+  if (!p) return;
+  const idx = RM.selectedPlayers.findIndex(x => x.name===name);
+  if (idx >= 0) RM.selectedPlayers.splice(idx,1);
+  else RM.selectedPlayers.push({...p});
+  rmRenderChips();
+  rmRenderPlayers();
+  rmUpdateStartBtn();
+  rmUpdateRec();
+}
+
+function rmRenderChips() {
+  const wrap = document.getElementById('rm-sel-chips-wrap');
+  const chips = document.getElementById('rm-sel-chips');
+  document.getElementById('rm-sel-count').textContent = RM.selectedPlayers.length;
+  if (!RM.selectedPlayers.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  chips.innerHTML = RM.selectedPlayers.map(p =>
+    `<span class="rm-chip">${p.name.split(' ')[0]}<button onclick="rmTogglePlayer('${p.name.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join('');
+}
+
+function rmUpdateStartBtn() {
+  const btn = document.getElementById('rm-start-btn');
+  const min = RM.courts*4, n = RM.selectedPlayers.length;
+  if (n < min) { btn.textContent=`Kurang ${min-n} pemain lagi`; btn.disabled=true; }
+  else { btn.textContent=`Mulai Match (${n} pemain) →`; btn.disabled=false; }
+}
+
+function rmUpdateRec() {
+  const n = RM.selectedPlayers.length, c = RM.courts;
+  const banner = document.getElementById('rm-rec-banner');
+  if (n < 4) { banner.style.display='none'; return; }
+  const active = c*4, byePerRound = n-active;
+  let rec, detail;
+  if (byePerRound === 0) {
+    rec = Math.max(6, n-1);
+    detail = `Semua ${n} pemain main tiap ronde. Rekomendasi <strong>${rec} ronde</strong> untuk variasi lawan optimal.`;
+  } else {
+    const cycle = Math.ceil(n/active);
+    rec = Math.max(2, Math.ceil(6/cycle))*cycle;
+    detail = `${byePerRound} pemain istirahat per ronde. Rekomendasi <strong>${rec} ronde</strong> (kelipatan ${cycle}) agar semua main sama banyak.`;
+  }
+  banner.style.display='block';
+  document.getElementById('rm-rec-text').innerHTML = detail;
+}
+
+/* ADD PLAYER */
+function rmOpenAdd(rawName) {
+  const words = (rawName||'').trim().split(/\s+/);
+  const cap = s => s ? s[0].toUpperCase()+s.slice(1).toLowerCase() : '';
+  document.getElementById('rm-fn').value = cap(words[0]||'');
+  document.getElementById('rm-ln').value = words.slice(1).map(cap).join(' ');
+  document.getElementById('rm-add-error').classList.add('hidden');
+  document.getElementById('rm-add-preview').classList.add('hidden');
+  rmSetAddGender('M');
+  document.getElementById('rm-modal-add').classList.remove('hidden');
+  setTimeout(()=>document.getElementById(words.length>1?'rm-ln':'rm-fn').focus(),100);
+}
+function rmCloseAdd() { document.getElementById('rm-modal-add').classList.add('hidden'); }
+function rmSetAddGender(g) {
+  RM.newGender=g;
+  document.getElementById('rm-add-gM').classList.toggle('active',g==='M');
+  document.getElementById('rm-add-gF').classList.toggle('active',g==='F');
+}
+function rmUpdateAddPreview() {
+  const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
+  const prev=document.getElementById('rm-add-preview');
+  if(fn&&ln){prev.innerHTML=`Nama: <strong>${fn} ${ln}</strong> · ELO awal: ${RM.startElo} (${rmTier(RM.startElo)})`;prev.classList.remove('hidden');}
+  else prev.classList.add('hidden');
+}
+async function rmHandleAdd() {
+  const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
+  if(!fn||!ln){rmShowErr('rm-add-error','First name dan last name wajib diisi');return;}
+  const fullName = [fn,ln].map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const exact = RM.allPlayers.find(p=>p.name.toLowerCase()===fullName.toLowerCase());
+  if(exact){rmShowErr('rm-add-error',`"${exact.name}" sudah ada. Pilih dari daftar.`);return;}
+  const btn=document.getElementById('rm-add-btn');
+  btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
+  try {
+    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level})});
+    await rmLoadPlayers();
+    const newP=RM.allPlayers.find(p=>p.name===fullName);
+    if(newP&&!RM.selectedPlayers.find(s=>s.name===fullName)) RM.selectedPlayers.push({...newP});
+    document.getElementById('rm-search').value='';
+    rmCloseAdd(); rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+  } catch(e){rmShowErr('rm-add-error','Gagal tambah: '+e.message);}
+  finally{btn.textContent='Tambah';btn.disabled=false;}
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — MATCH ALGORITHM (same as before, using RM state)
+   ══════════════════════════════════════════════════════════════════════ */
+function rmBuildHistory() {
+  const pCount={},oCount={},byeCount={};
+  Object.keys(RM.playerStats).forEach(n=>{pCount[n]={};oCount[n]={};byeCount[n]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    const active=r.matches.flatMap(m=>[...m.team1,...m.team2].map(p=>p.name));
+    const bye=r.byePlayers||[];
+    bye.forEach(n=>{if(byeCount[n]!==undefined)byeCount[n]++;});
+    r.matches.forEach(m=>{
+      const t1=m.team1.map(p=>p.name),t2=m.team2.map(p=>p.name);
+      t1.forEach(a=>{t1.forEach(b=>{if(a!==b){if(!pCount[a])pCount[a]={};pCount[a][b]=(pCount[a][b]||0)+1;}});
+        t2.forEach(b=>{if(!oCount[a])oCount[a]={};oCount[a][b]=(oCount[a][b]||0)+1;});});
+      t2.forEach(a=>{t2.forEach(b=>{if(a!==b){if(!pCount[a])pCount[a]={};pCount[a][b]=(pCount[a][b]||0)+1;}});
+        t1.forEach(b=>{if(!oCount[a])oCount[a]={};oCount[a][b]=(oCount[a][b]||0)+1;});});
+    });
+  });
+  return {partnerCount:pCount,opponentCount:oCount,byeCount};
+}
+
+function rmGenerateRound(isFirst=false) {
+  const players=[...RM.selectedPlayers].map(p=>({...p,...(RM.playerStats[p.name]||{})}));
+  const n=players.length, courts=RM.courts, active=courts*4;
+  const sorted = isFirst
+    ? players.sort((a,b)=>b.elo-a.elo)
+    : players.sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
+  const {byeCount} = rmBuildHistory();
+  let byePlayers=[];
+  let activePlayers=sorted;
+  if(n>active){
+    const extra=n-active;
+    // rotate byes fairly
+    const byeSorted=[...sorted].sort((a,b)=>(byeCount[a.name]||0)-(byeCount[b.name]||0)||(b.wins||0)-(a.wins||0));
+    byePlayers=byeSorted.slice(0,extra).map(p=>p.name);
+    activePlayers=sorted.filter(p=>!byePlayers.includes(p.name));
+  }
+  const matches=[];
+  if(RM.format==='individual'){
+    // pair 1st+last, 2nd+2nd-last per court
+    const ap=[...activePlayers];
+    for(let c=0;c<courts;c++){
+      const i=c*2;
+      matches.push({court:c+1,team1:[ap[i],ap[ap.length-1-i]],team2:[ap[i+1],ap[ap.length-2-i]],score1:null,score2:null});
+    }
+  } else {
+    // fixed partner — pair by rank order
+    const ap=[...activePlayers];
+    for(let c=0;c<courts;c++){
+      const i=c*4;
+      matches.push({court:c+1,team1:[ap[i],ap[i+1]],team2:[ap[i+2],ap[i+3]],score1:null,score2:null});
+    }
+  }
+  return {matches,byePlayers};
+}
+
+function rmStartMatch() {
+  const min=RM.courts*4;
+  if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`Minimal ${min} pemain untuk ${RM.courts} court`);return;}
+  rmHideErr('rm-players-error');
+  RM.playerStats={};
+  RM.selectedPlayers.forEach(p=>{RM.playerStats[p.name]={...p,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0};});
+  RM.matchId='rm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const {matches,byePlayers}=rmGenerateRound(true);
+  RM.rounds=[{roundNum:1,matches,byePlayers,submitted:false,startedAt:Date.now()}];
+  RM.currentRound=0;
+  rmSaveState('match');
+  rmGo('match');
+  rmSwitchTab('courts');
+  rmRenderMatchScreen();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — MATCH SCREEN
+   ══════════════════════════════════════════════════════════════════════ */
+function rmSwitchTab(tab) {
+  RM.activeTab=tab;
+  ['courts','leaderboard','history'].forEach(t=>{
+    document.getElementById('rmtab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('rm-tp-'+t).classList.toggle('active',t===tab);
+    document.getElementById('rm-tp-'+t).classList.toggle('hidden',t!==tab);
+  });
+  if(tab==='leaderboard') rmRenderLeaderboard();
+  if(tab==='history') rmRenderHistory();
+}
+
+function rmRenderMatchScreen() {
+  const round=RM.rounds[RM.currentRound];
+  if(!round) return;
+  document.getElementById('rm-round-pill').textContent=`Ronde ${round.roundNum}`;
+  document.getElementById('rm-lb-badge').textContent=`Ronde ${round.roundNum}`;
+  document.getElementById('rm-score-format-label').textContent=
+    RM.scoreFormat==='race'?`Race to ${RM.scoreTarget}`:`Best of ${RM.scoreTarget}`;
+
+  const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+
+  // Court cards
+  document.getElementById('rm-court-cards').innerHTML=round.matches.map((m,i)=>`
+    <div class="rm-court-card">
+      <div class="rm-court-hdr">
+        <span class="rm-court-badge">Court ${m.court}</span>
+        <span id="rm-court-status-${i}" class="${m.score1!==null?'rm-court-status-done':'rm-court-status-pend'}">${m.score1!==null?'✓ Selesai':'Menunggu skor'}</span>
+      </div>
+      <div class="rm-score-row">
+        <div class="rm-score-team">
+          <div class="rm-score-team-name">${m.team1.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
+          <input class="rm-score-input" id="rm-s1-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+            value="${m.score1!==null?m.score1:''}"
+            oninput="rmUpdateScore(${i})"
+            style="${m.score1!==null&&m.score1>m.score2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score1!==null&&m.score1<m.score2?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+        </div>
+        <div class="rm-score-vs">VS</div>
+        <div class="rm-score-team">
+          <div class="rm-score-team-name">${m.team2.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
+          <input class="rm-score-input" id="rm-s2-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+            value="${m.score2!==null?m.score2:''}"
+            oninput="rmUpdateScore(${i})"
+            style="${m.score2!==null&&m.score2>m.score1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score2!==null&&m.score2<m.score1?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Bye section
+  const byeSec=document.getElementById('rm-bye-section');
+  if(round.byePlayers&&round.byePlayers.length){
+    byeSec.style.display='block';
+    document.getElementById('rm-bye-players').innerHTML=round.byePlayers.map(n=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0">${rmAva(n,28,10)}<span style="font-size:13px;font-weight:600">${n}</span></div>`).join('');
+  } else byeSec.style.display='none';
+
+  rmUpdateFairBar();
+}
+
+function rmUpdateScore(courtIdx) {
+  const round=RM.rounds[RM.currentRound];
+  const s1=parseInt(document.getElementById(`rm-s1-${courtIdx}`).value);
+  const s2=parseInt(document.getElementById(`rm-s2-${courtIdx}`).value);
+  if(!isNaN(s1)) round.matches[courtIdx].score1=s1;
+  if(!isNaN(s2)) round.matches[courtIdx].score2=s2;
+  // Update input colors
+  const i1=document.getElementById(`rm-s1-${courtIdx}`), i2=document.getElementById(`rm-s2-${courtIdx}`);
+  if(!isNaN(s1)&&!isNaN(s2)){
+    i1.style.cssText=s1>s2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
+    i2.style.cssText=s2>s1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
+    document.getElementById(`rm-court-status-${courtIdx}`).className='rm-court-status-done';
+    document.getElementById(`rm-court-status-${courtIdx}`).textContent='✓ Selesai';
+  }
+  const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+}
+
+function rmUpdateFairBar() {
+  const bar=document.getElementById('rm-fair-bar');
+  const submitted=RM.rounds.filter(r=>r.submitted).length;
+  if(submitted===0){bar.className='rm-fair-bar';return;}
+  const counts={};
+  Object.keys(RM.playerStats).forEach(p=>{counts[p]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>{[...m.team1,...m.team2].forEach(p=>{counts[p.name]=(counts[p.name]||0)+1;});});
+  });
+  const vals=Object.values(counts);
+  const min=Math.min(...vals),max=Math.max(...vals);
+  if(max-min===0){
+    bar.className='rm-fair-bar ok';
+    bar.innerHTML=`<span>✅</span><span>Semua pemain sudah dapat jatah match yang sama — waktu yang tepat untuk mengakhiri!</span>`;
+  } else if(max-min===1){
+    bar.className='rm-fair-bar info';
+    bar.innerHTML=`<span>🎾</span><span>Hampir merata — ${max-min} ronde lagi agar semua pemain dapat jatah yang sama.</span>`;
+  } else {
+    bar.className='rm-fair-bar warn';
+    bar.innerHTML=`<span>⚠️</span><span>Jatah match belum merata (selisih ${max-min}). Lanjutkan beberapa ronde lagi sebelum mengakhiri.</span>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — SUBMIT ROUND
+   ══════════════════════════════════════════════════════════════════════ */
+function rmSetStatus(type, msg) {
+  const el=document.getElementById('rm-submit-status');
+  el.className='rm-submit-status '+(type||'');
+  el.innerHTML=msg||'';
+  if(!type) el.style.display='none'; else el.style.display='block';
+}
+
+async function rmSubmitRound() {
+  const round=RM.rounds[RM.currentRound];
+  const incomplete=round.matches.filter(m=>m.score1===null||m.score2===null);
+  if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court belum ada skornya.`);return;}
+
+  const btn=document.getElementById('rm-submit-btn');
+  btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div> Menyimpan...'; btn.disabled=true;
+  round.submittedAt=Date.now();
+
+  const eloBeforeRound={};
+  round.matches.flatMap(m=>[...m.team1,...m.team2]).forEach(p=>{
+    eloBeforeRound[p.name]=RM.playerStats[p.name]?.elo||p.elo||RM.startElo;
+  });
+
+  // Update local stats & ELO
+  round.matches.forEach(m=>{
+    const ps=name=>RM.playerStats[name];
+    const res=rmCalcElo(ps(m.team1[0].name),ps(m.team1[1].name),ps(m.team2[0].name),ps(m.team2[1].name),m.score1,m.score2);
+    res.forEach(r=>{
+      if(RM.playerStats[r.name]){
+        RM.playerStats[r.name].elo=r.newElo;
+        RM.playerStats[r.name].matchCount=(RM.playerStats[r.name].matchCount||0)+1;
+      }
+    });
+    const t1Win=m.score1>m.score2;
+    [...m.team1].forEach(p=>{
+      const st=RM.playerStats[p.name];if(!st)return;
+      if(t1Win)st.wins++;else st.losses++;
+      st.pointsFor=(st.pointsFor||0)+m.score1; st.pointsAgainst=(st.pointsAgainst||0)+m.score2;
+      st.pointDiff=st.pointsFor-st.pointsAgainst;
+    });
+    [...m.team2].forEach(p=>{
+      const st=RM.playerStats[p.name];if(!st)return;
+      if(!t1Win)st.wins++;else st.losses++;
+      st.pointsFor=(st.pointsFor||0)+m.score2; st.pointsAgainst=(st.pointsAgainst||0)+m.score1;
+      st.pointDiff=st.pointsFor-st.pointsAgainst;
+    });
+  });
+  round.submitted=true;
+
+  // Submit to API
+  if(RM.venue&&RM.token){
+    const apiMatches=round.matches.map(m=>({
+      p1t1:m.team1[0].name, p2t1:m.team1[1].name,
+      p1t2:m.team2[0].name, p2t2:m.team2[1].name,
+      scoreT1:Number(m.score1), scoreT2:Number(m.score2),
+      gender:RM.gender,
+      sourceUrl:'Trekkr Ranked Match',
+    }));
+    const roundPlayers=[...new Set(round.matches.flatMap(m=>[...m.team1,...m.team2].map(p=>p.name)))];
+    const wlRound={};
+    round.matches.forEach(m=>{
+      const t1Win=m.score1>m.score2;
+      [...m.team1,...m.team2].forEach((p,i)=>{
+        if(!wlRound[p.name])wlRound[p.name]={w:0,l:0};
+        const win=i<2?t1Win:!t1Win;
+        if(win)wlRound[p.name].w++;else wlRound[p.name].l++;
+      });
+    });
+    const eloResults=roundPlayers.map(name=>({
+      player:name, new_elo:RM.playerStats[name]?.elo||RM.startElo,
+      elo_change:(RM.playerStats[name]?.elo||RM.startElo)-eloBeforeRound[name],
+      w:wlRound[name]?.w||0, l:wlRound[name]?.l||0,
+    }));
+    // payload only used at rmEndMatch for final ELO write
+    try {
+      rmSetStatus('sending','Menyimpan hasil ronde '+round.roundNum+'...');
+      await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:apiMatches})});
+      // ELO (saveSession) hanya ditulis SEKALI saat match diakhiri via rmEndMatch
+      // Tidak ditulis per ronde — ini mencegah double counting di ELO_Log
+      rmSetStatus('ok','Ronde '+round.roundNum+' tersimpan');
+      setTimeout(function(){rmSetStatus('','');},3000);
+    } catch(e){
+      rmSetStatus('failed','Gagal simpan: '+e.message+' — data lokal tetap aman.');
+    }
+  }
+
+  // Generate next round
+  const {matches,byePlayers}=rmGenerateRound(false);
+  RM.rounds.push({roundNum:RM.rounds.length+1,matches,byePlayers,submitted:false,startedAt:Date.now()});
+  RM.currentRound++;
+  rmSaveState('match');
+  rmRenderMatchScreen();
+  rmSwitchTab('courts');
+  rmUpdateFairBar();
+  window.scrollTo(0,0);
+  btn.textContent='Submit Skor & Lanjut Ronde →'; btn.disabled=false;
+}
+
+/* LEADERBOARD */
+function rmGetLeaderboard(){
+  return Object.values(RM.playerStats).sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
+}
+function rmRenderLeaderboard(){
+  const sorted=rmGetLeaderboard(), el=document.getElementById('rm-lb-list');
+  if(!sorted.length){el.innerHTML='<div class="rm-empty">Belum ada data</div>';return;}
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=sorted.map((p,i)=>{
+    const diff=p.pointDiff||0;
+    const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
+    return `<div class="rm-lb-row ${rankClass}">
+      <div class="rm-lb-rank">${medals[i]||i+1}</div>
+      ${rmAva(p.name,38,13)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-lb-name">${p.name}</div>
+        <div class="rm-lb-elo">${p.elo} ELO · ${rmTier(p.elo)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-lb-wl">${p.wins}W – ${p.losses}L</div>
+        <div class="rm-lb-diff" style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* HISTORY */
+function rmRenderHistory(){
+  const el=document.getElementById('rm-history-list');
+  const done=[...RM.rounds].filter(r=>r.submitted).reverse();
+  if(!done.length){el.innerHTML='<div class="rm-empty">Belum ada ronde selesai</div>';return;}
+  el.innerHTML=done.map(r=>`
+    <div style="background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Ronde ${r.roundNum}</div>
+      ${r.matches.map(m=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--sur-hi);font-size:12px">
+          <div style="flex:1;font-weight:600">${m.team1.map(p=>p.name.split(' ')[0]).join(' / ')}</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?'var(--green)':m.score1<m.score2?'var(--red)':'var(--on)'}">${m.score1} – ${m.score2}</div>
+          <div style="flex:1;font-weight:600;text-align:right">${m.team2.map(p=>p.name.split(' ')[0]).join(' / ')}</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — END MATCH
+   ══════════════════════════════════════════════════════════════════════ */
+function rmShowEndConfirm(){
+  const top3=rmGetLeaderboard().slice(0,3);
+  document.getElementById('rm-end-top3').innerHTML=top3.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span>${['🥇','🥈','🥉'][i]}</span>${rmAva(p.name,26,10)}
+      <span style="font-size:13px;font-weight:700;flex:1">${p.name}</span>
+      <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
+    </div>`).join('');
+  document.getElementById('rm-modal-end').classList.remove('hidden');
+}
+function rmCloseEnd(){document.getElementById('rm-modal-end').classList.add('hidden');}
+
+async function rmEndMatch(){
+  const btn=document.getElementById('rm-end-btn');
+  btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
+  const standings=rmGetLeaderboard();
+  // Save final summary
+  if(RM.venue&&RM.token){
+    const now=new Date().toLocaleDateString('id-ID');
+    const submittedRounds=RM.rounds.filter(r=>r.submitted).length;
+    try {
+      await rmApi('sessions',{method:'POST',body:JSON.stringify({
+        sessionName:`Ranked Match Daily – ${RM.venue} – ${now}`,
+        format:RM.format==='fixed'?'Ranked Match Fixed Partner':'Ranked Match Individual',
+        courts:RM.courts, venue:RM.venue,
+        players:RM.selectedPlayers.map(p=>p.name), rounds:[],
+        elo_results:standings.map(p=>({
+          player:p.name, new_elo:p.elo,
+          elo_change:p.elo-(RM.selectedPlayers.find(s=>s.name===p.name)?.elo||RM.startElo),
+          w:p.wins, l:p.losses,
+        })),
+      })});
+    } catch(e){console.warn('Final session warn:',e.message);}
+  }
+  rmClearStorage();
+  rmCloseEnd();
+  rmRenderDoneScreen(standings);
+  rmGo('done');
+  btn.textContent='Ya, Akhiri'; btn.disabled=false;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — DONE SCREEN
+   ══════════════════════════════════════════════════════════════════════ */
+function rmRenderDoneScreen(standings){
+  const doneRounds=RM.rounds.filter(r=>r.submitted).length;
+  const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('rm-done-sub').textContent=`${doneRounds} ronde · ${RM.selectedPlayers.length} pemain`;
+  document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue}`;
+
+  const p1=standings[0],p2=standings[1],p3=standings[2];
+  document.getElementById('rm-podium').innerHTML=`
+    ${p2?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">🥈</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p2.name)}">${rmInitials(p2.name)}</div>
+      <div class="rm-podium-name">${p2.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:52px;background:rgba(148,163,184,.25);width:80px"></div>
+    </div>`:''}
+    ${p1?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">👑</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p1.name)};width:68px;height:68px;font-size:24px;border:3px solid #F59E0B">${rmInitials(p1.name)}</div>
+      <div class="rm-podium-name" style="font-weight:800">${p1.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:68px;background:rgba(245,158,11,.25);width:80px">🥇</div>
+    </div>`:''}
+    ${p3?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">🥉</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p3.name)}">${rmInitials(p3.name)}</div>
+      <div class="rm-podium-name">${p3.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:40px;background:rgba(180,131,80,.25);width:80px"></div>
+    </div>`:''}`;
+
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('rm-final-standings').innerHTML=standings.map((p,i)=>`
+    <div class="rm-rank-row">
+      <div class="rm-rank-num" style="color:${i===0?'#F59E0B':i===1?'#94A3B8':i===2?'#CD7F32':'rgba(148,163,184,.5)'}">${medals[i]||i+1}</div>
+      ${rmAva(p.name,32,11)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-rank-name">${p.name}</div>
+        <div class="rm-rank-meta">${rmTier(p.elo)} · ${p.elo} ELO</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-rank-wl">${p.wins}W ${p.losses}L</div>
+        <div class="rm-rank-diff" style="color:${p.pointDiff>=0?'var(--green)':'var(--red)'}">${p.pointDiff>=0?'+':''}${p.pointDiff} pts</div>
+      </div>
+    </div>`).join('');
+}
+
+async function rmShare(){
+  const venue=RM.venue||'';
+  const url=`https://venue.trekkr.online/${encodeURIComponent(venue.trim().replace(/\s+/g,''))}`;
+  const text=`Cek hasil Trekkr Ranked Match di ${venue}!\n${url}`;
+  if(navigator.share){
+    try{await navigator.share({title:`Trekkr – ${venue}`,text,url});return;}catch(e){}
+  }
+  // WhatsApp fallback
+  const waUrl=`https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(waUrl,'_blank');
+}
+
+function rmNewMatch(){
+  rmClearStorage();
+  RM.selectedPlayers=[]; RM.partners={}; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
+  rmGo('intro');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — PERSIST / RESTORE
+   ══════════════════════════════════════════════════════════════════════ */
+function rmStorageKey(){return`rm_match_${(RM.venue||'novenue').replace(/\s+/g,'_')}_${RM.matchId}`;}
+function rmSaveState(screen){
+  if(!RM.matchId)return;
+  try{
+    localStorage.setItem(rmStorageKey(),JSON.stringify({
+      screen,matchId:RM.matchId,rounds:RM.rounds,currentRound:RM.currentRound,
+      playerStats:RM.playerStats,selectedPlayers:RM.selectedPlayers,
+      courts:RM.courts,format:RM.format,scoreFormat:RM.scoreFormat,
+      scoreTarget:RM.scoreTarget,partners:RM.partners,
+      level:RM.level,startElo:RM.startElo,
+      token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
+    }));
+  }catch(e){console.warn('Save state warn:',e);}
+}
+function rmClearStorage(){
+  if(RM.matchId){try{localStorage.removeItem(rmStorageKey());}catch(e){}}
+}
+function rmRestoreLatest(){
+  const prefix=`rm_match_${(RM.venue||'novenue').replace(/\s+/g,'_')}_`;
+  let latest=null;
+  Object.keys(localStorage).filter(k=>k.startsWith(prefix)).forEach(k=>{
+    try{const d=JSON.parse(localStorage.getItem(k));if(d&&d.rounds&&d.rounds.length>0)latest=d;}catch(e){}
+  });
+  return latest;
+}
+function rmShowRestorePrompt(saved){
+  RM._savedToRestore=saved;
+  const done=(saved.rounds||[]).filter(r=>r.submitted).length;
+  document.getElementById('rm-restore-info').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Pemain</div><div style="font-size:18px;font-weight:800">${saved.selectedPlayers?.length||0}</div></div>
+      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Courts</div><div style="font-size:18px;font-weight:800">${saved.courts||1}</div></div>
+      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Ronde Selesai</div><div style="font-size:14px;font-weight:700">${done}</div></div>
+      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Posisi</div><div style="font-size:14px;font-weight:700">Ronde ${(saved.currentRound||0)+1}</div></div>
+    </div>`;
+  document.getElementById('rm-modal-restore').classList.remove('hidden');
+}
+function rmDoRestore(){
+  const saved=RM._savedToRestore;if(!saved)return;
+  document.getElementById('rm-modal-restore').classList.add('hidden');
+  Object.assign(RM,{
+    matchId:saved.matchId, rounds:saved.rounds, currentRound:saved.currentRound,
+    playerStats:saved.playerStats, selectedPlayers:saved.selectedPlayers,
+    courts:saved.courts, format:saved.format, scoreFormat:saved.scoreFormat,
+    scoreTarget:saved.scoreTarget, partners:saved.partners||{},
+    level:saved.level||'lower_bronze', startElo:saved.startElo||1350,
+    gender:saved.gender||'M',
+  });
+  rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen();
+  RM._savedToRestore=null;
+}
+function rmDismissRestore(){
+  document.getElementById('rm-modal-restore').classList.add('hidden');
+  if(RM._savedToRestore){
+    try{localStorage.removeItem(`rm_match_${(RM._savedToRestore.venue||'novenue').replace(/\s+/g,'_')}_${RM._savedToRestore.matchId}`);}catch(e){}
+  }
+  RM._savedToRestore=null;
+  rmGo('intro');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════════════ */
+window.addEventListener('load', () => { checkAuth(); });
+</script>
+</body>
+</html>
