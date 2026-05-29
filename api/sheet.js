@@ -222,6 +222,7 @@ async function getPlayerDetail(name) {
 async function addPlayer(body) {
   const { name, gender, ig, displayName, region, photoUrl, clubs } = body;
   if (!name) return respond(400, { error: "Name is required" });
+  const startElo = parseInt(body.elo) || 1350;
   const sheets = getSheets();
   const now = new Date().toISOString();
   await sheets.spreadsheets.values.append({
@@ -230,7 +231,7 @@ async function addPlayer(body) {
   });
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [["INITIAL", name, 1350, 0, 0, 0, now]] },
+    requestBody: { values: [["INITIAL", name, startElo, 0, 0, 0, now]] },
   });
   return respond(200, { success: true });
 }
