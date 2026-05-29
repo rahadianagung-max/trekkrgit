@@ -453,6 +453,26 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <p class="rm-hint" id="rm-score-hint">Race to 4 — menang saat capai angka 4 lebih dulu</p>
             </div>
 
+            <div class="rm-card">
+              <div class="rm-card-label">Level Permainan</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
+              <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
+                <option value="beginner">Beginner</option>
+                <option value="upper_beginner">Upper Beginner</option>
+                <option value="lower_bronze" selected>Lower Bronze</option>
+                <option value="bronze">Bronze</option>
+                <option value="upper_bronze">Upper Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
+                <option value="platinum">Platinum</option>
+              </select>
+              <div style="margin-top:12px;padding:12px 14px;background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);font-size:12.5px;line-height:1.55;color:var(--txt)">
+                <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
+                Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
+              </div>
+              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
+            </div>
+
             <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
           </div>
         </div>
@@ -651,6 +671,7 @@ const RM = { // shared state for ranked match
   token: '', venue: '', username: '',
   courts: 2, gender: 'M', format: 'individual',
   scoreFormat: 'race', scoreTarget: 4,
+  level: 'lower_bronze', startElo: 1350,
   allPlayers: [], selectedPlayers: [], partners: {},
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
@@ -880,6 +901,27 @@ function rmUpdateScoreHint() {
 }
 function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
 
+/* Level → starting ELO for NEW / unrated players only.
+   Existing rated players keep their real ELO. Lower Bronze (1350) = default. */
+const RM_LEVELS = {
+  beginner:       { label:'Beginner',       elo:750  },
+  upper_beginner: { label:'Upper Beginner', elo:1050 },
+  lower_bronze:   { label:'Lower Bronze',   elo:1350 },
+  bronze:         { label:'Bronze',         elo:1650 },
+  upper_bronze:   { label:'Upper Bronze',   elo:1950 },
+  silver:         { label:'Silver',         elo:2300 },
+  gold:           { label:'Gold',           elo:2750 },
+  platinum:       { label:'Platinum',       elo:3100 },
+};
+function rmSetLevel(lvl) {
+  const m = RM_LEVELS[lvl] || RM_LEVELS.lower_bronze;
+  RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
+  RM.startElo = m.elo;
+  const hint = document.getElementById('rm-level-hint');
+  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
+  rmUpdateAddPreview();
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    RANKED MATCH — PLAYERS
    ══════════════════════════════════════════════════════════════════════ */
@@ -893,7 +935,7 @@ async function rmLoadPlayers() {
       .filter(p => !/^[\d\s]+$/.test(p.name.trim()))
       .map(p => ({
         ...p,
-        elo: eloMap[p.name]?.elo || 1350,
+        elo: eloMap[p.name]?.elo || RM.startElo,
         matchCount: (eloMap[p.name]?.w||0)+(eloMap[p.name]?.l||0),
       }));
     rmRenderPlayers();
@@ -922,7 +964,7 @@ function rmRenderPlayers() {
         ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
           ${rmAva(suggestion,42,16)}
           <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Daftar sebagai pemain baru · ELO awal 1350</div></div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Daftar sebagai pemain baru · ELO awal ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
         </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Ketik nama depan dan belakang untuk menambah pemain baru. Contoh: "Budi Santoso"</div>`}
       </div>`;
@@ -1024,7 +1066,7 @@ function rmSetAddGender(g) {
 function rmUpdateAddPreview() {
   const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
   const prev=document.getElementById('rm-add-preview');
-  if(fn&&ln){prev.innerHTML=`Nama: <strong>${fn} ${ln}</strong> · ELO awal: 1350`;prev.classList.remove('hidden');}
+  if(fn&&ln){prev.innerHTML=`Nama: <strong>${fn} ${ln}</strong> · ELO awal: ${RM.startElo} (${rmTier(RM.startElo)})`;prev.classList.remove('hidden');}
   else prev.classList.add('hidden');
 }
 async function rmHandleAdd() {
@@ -1036,7 +1078,7 @@ async function rmHandleAdd() {
   const btn=document.getElementById('rm-add-btn');
   btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
   try {
-    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender})});
+    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level})});
     await rmLoadPlayers();
     const newP=RM.allPlayers.find(p=>p.name===fullName);
     if(newP&&!RM.selectedPlayers.find(s=>s.name===fullName)) RM.selectedPlayers.push({...newP});
@@ -1242,7 +1284,7 @@ async function rmSubmitRound() {
 
   const eloBeforeRound={};
   round.matches.flatMap(m=>[...m.team1,...m.team2]).forEach(p=>{
-    eloBeforeRound[p.name]=RM.playerStats[p.name]?.elo||p.elo||1350;
+    eloBeforeRound[p.name]=RM.playerStats[p.name]?.elo||p.elo||RM.startElo;
   });
 
   // Update local stats & ELO
@@ -1291,8 +1333,8 @@ async function rmSubmitRound() {
       });
     });
     const eloResults=roundPlayers.map(name=>({
-      player:name, new_elo:RM.playerStats[name]?.elo||1350,
-      elo_change:(RM.playerStats[name]?.elo||1350)-eloBeforeRound[name],
+      player:name, new_elo:RM.playerStats[name]?.elo||RM.startElo,
+      elo_change:(RM.playerStats[name]?.elo||RM.startElo)-eloBeforeRound[name],
       w:wlRound[name]?.w||0, l:wlRound[name]?.l||0,
     }));
     // payload only used at rmEndMatch for final ELO write
@@ -1394,7 +1436,7 @@ async function rmEndMatch(){
         players:RM.selectedPlayers.map(p=>p.name), rounds:[],
         elo_results:standings.map(p=>({
           player:p.name, new_elo:p.elo,
-          elo_change:p.elo-(RM.selectedPlayers.find(s=>s.name===p.name)?.elo||1350),
+          elo_change:p.elo-(RM.selectedPlayers.find(s=>s.name===p.name)?.elo||RM.startElo),
           w:p.wins, l:p.losses,
         })),
       })});
@@ -1483,6 +1525,7 @@ function rmSaveState(screen){
       playerStats:RM.playerStats,selectedPlayers:RM.selectedPlayers,
       courts:RM.courts,format:RM.format,scoreFormat:RM.scoreFormat,
       scoreTarget:RM.scoreTarget,partners:RM.partners,
+      level:RM.level,startElo:RM.startElo,
       token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
     }));
   }catch(e){console.warn('Save state warn:',e);}
@@ -1518,6 +1561,7 @@ function rmDoRestore(){
     playerStats:saved.playerStats, selectedPlayers:saved.selectedPlayers,
     courts:saved.courts, format:saved.format, scoreFormat:saved.scoreFormat,
     scoreTarget:saved.scoreTarget, partners:saved.partners||{},
+    level:saved.level||'lower_bronze', startElo:saved.startElo||1350,
     gender:saved.gender||'M',
   });
   rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen();
