@@ -97,6 +97,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 .refresh-progress{height:2px;background:var(--border);border-radius:2px;overflow:hidden;width:120px;}
 .refresh-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 1s linear;}
 .refresh-btn{font-size:10px;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:'Barlow',sans-serif;}
+
+/* TREKKR avatars + elo */
+.avt{width:22px;height:22px;border-radius:50%;object-fit:cover;background:#0a0e1a;border:1.5px solid var(--border);flex-shrink:0;}
+.avt.sm{width:18px;height:18px;}
+.avt-ph{width:22px;height:22px;border-radius:50%;background:#0a0e1a;border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.avt-ph.sm{width:18px;height:18px;font-size:8px;}
+.avt-stack{display:inline-flex;align-items:center;}
+.avt-stack .avt,.avt-stack .avt-ph{margin-right:-6px;box-shadow:0 0 0 2px var(--card);}
+.elo{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;border-radius:4px;padding:1px 6px;letter-spacing:.5px;flex-shrink:0;}
+.elo.sm{font-size:10px;padding:0 5px;}
+.teamline{display:flex;align-items:center;gap:7px;min-width:0;}
+.teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.split-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.split-title .pill{font-size:9px;padding:2px 8px;border-radius:20px;letter-spacing:1px;}
 </style>
 </head>
 <body>
@@ -134,6 +148,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow
 <script>
 let T=null, groups={}, sched=[], playoff=null;
 let countdownVal=120, progInt=null, refreshInt=null;
+
+/* TREKKR render helpers (data already carries players+elo from admin) */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function avatar(p,cls=''){
+  if(p&&p.photo) return `<img class="avt ${cls}" src="${esc(p.photo)}" alt="" onerror="this.outerHTML='<span class=&quot;avt-ph ${cls}&quot;>${p.name?esc(p.name[0]):'?'}</span>'">`;
+  const ini=(p&&p.name)?esc(p.name.trim()[0].toUpperCase()):'?';
+  return `<span class="avt-ph ${cls}">${ini}</span>`;
+}
+function teamAvatars(playersArr,cls=''){
+  if(!playersArr||!playersArr.length) return '';
+  return `<span class="avt-stack">${playersArr.map(p=>avatar(p,cls)).join('')}</span>`;
+}
+function teamByName(name){
+  for(const g of GL.slice(0,T?.numGroups||0)){
+    const t=(groups[g]||[]).find(x=>x.name===name);
+    if(t) return t;
+  }
+  return null;
+}
 
 function load(){
   const raw = spLoad();
@@ -183,7 +216,7 @@ function renderGroups(){
       const q=i<adv, gd=t.GF-t.GA, p=t.W+t.L;
       h+=`<tr class="${q?'qualify':''}">
         <td><span class="rank-badge" style="background:${col}${q?'22':'11'};color:${col};">${i+1}</span></td>
-        <td style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${t.name}</td>
+        <td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td>
         <td>${p}</td><td>${t.W}</td><td>${t.L}</td>
         <td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#4a6a8a'}">${gd>0?'+':''}${gd}</td>
         <td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td>
@@ -232,70 +265,57 @@ function matchCard(m){
         <span class="badge" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${m.court}</span>
         <span class="badge" style="color:${gc};background:${gc}11;border:1px solid ${gc}33;">Grup ${m.group}</span>
       </div>
-      <div class="match-teams"><b>${m.home}</b> <span style="color:#3a5070;margin:0 4px;">vs</span> <b>${m.away}</b></div>
+      <div class="match-teams" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<b class="nm">${esc(m.home)}</b></span><span style="color:#3a5070;">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<b class="nm">${esc(m.away)}</b></span></div>
     </div>
     ${scoreHtml}
   </div>`;
 }
 
+function bmTeamHTML(side,m){
+  const t=side==='A'?m.teamA:m.teamB, sc=side==='A'?m.scoreA:m.scoreB;
+  const won=m.done&&m.winner?.team===t.team, tbd=t.team==='TBD';
+  const col=t.group?GC[t.group]:'#4a6a8a';
+  const seed=t.seed?`<span class="bm-seed" style="color:${col};background:${col}11;">#${t.seed}</span>`:'';
+  const av=(t.players&&t.players.length)?teamAvatars(t.players,'sm'):'';
+  const label=t.isBye?'BYE':esc(t.team);
+  return `<div class="bm-slot">${seed}<span class="teamline" style="flex:1;">${av}<span class="bm-team${won?' w':tbd?' tbd':''} nm">${label}</span></span><span class="bm-score${won?' w':''}">${sc??''}</span></div>`;
+}
+function oneBracketHTML(struct){
+  const totalR=struct.rounds.length;let h='';
+  struct.rounds.forEach((round,ri)=>{
+    h+=`<div class="bracket-round"><div class="bracket-round-title">${getRoundLabel(ri,totalR)}</div>`;
+    round.matches.forEach(m=>{h+=`<div class="bracket-match${m.done?' decided':''}">${bmTeamHTML('A',m)}${bmTeamHTML('B',m)}</div>`;});
+    h+='</div>';
+  });
+  const tm=struct.thirdMatch;
+  if(tm){h+=`<div class="bracket-round"><div class="bracket-round-title" style="color:#ff9955;">Perebutan Juara 3</div><div class="bracket-match${tm.done?' decided':''}">${bmTeamHTML('A',tm)}${bmTeamHTML('B',tm)}</div></div>`;}
+  return h;
+}
+function podiumHTML(struct,title){
+  const fr=struct.rounds[struct.rounds.length-1],fm=fr?.matches[0];
+  const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
+  const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
+  if(!champ)return '';
+  const pl=[{r:1,t:champ?.team,c:'#f5c842',m:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',m:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',m:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',m:'4️⃣'}];
+  let h=`<div class="section-title" style="margin-top:16px;">${title}</div><div class="podium">`;
+  pl.forEach(p=>h+=`<div class="podium-card" style="background:${p.c}11;border:1.5px solid ${p.c}33;"><div class="podium-medal">${p.m}</div><div class="podium-rank" style="color:${p.c};">${p.r}</div><div class="podium-name" style="color:#e0ecff;">${esc(p.t)}</div></div>`);
+  return h+'</div>';
+}
 function renderBracket(){
   const el=document.getElementById('view-bracket');
   if(!playoff){
     el.innerHTML='<div class="no-data"><div class="no-data-icon">🏆</div><div class="no-data-title">Bracket Belum Dibuat</div><div class="no-data-sub">Bracket playoff akan muncul setelah group stage selesai.</div></div>';
     return;
   }
+  if(playoff.mode==='split'){
+    let h=`<div class="split-title" style="color:#ffd24a;">🏆 Upper Bracket <span class="pill" style="color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;">peringkat atas</span></div>`;
+    h+=oneBracketHTML(playoff.upper)+podiumHTML(playoff.upper,'🏆 Hasil Upper');
+    h+=`<div class="split-title" style="color:#4ecdc4;">🛡 Lower Bracket <span class="pill" style="color:#4ecdc4;background:#4ecdc414;border:1px solid #4ecdc433;">peringkat bawah</span></div>`;
+    h+=oneBracketHTML(playoff.lower)+podiumHTML(playoff.lower,'🛡 Hasil Lower');
+    el.innerHTML=h;return;
+  }
   let h='<div class="section-title">Playoff Bracket</div>';
-  const totalR=playoff.rounds.length;
-  playoff.rounds.forEach((round,ri)=>{
-    const lbl=getRoundLabel(ri,totalR);
-    h+=`<div class="bracket-round"><div class="bracket-round-title">${lbl}</div>`;
-    round.matches.forEach(m=>{
-      const aW=m.done&&m.winner?.team===m.teamA.team;
-      const bW=m.done&&m.winner?.team===m.teamB.team;
-      const aC=m.teamA.group?GC[m.teamA.group]:'#4a6a8a';
-      const bC=m.teamB.group?GC[m.teamB.group]:'#4a6a8a';
-      h+=`<div class="bracket-match${m.done?' decided':''}">
-        <div class="bm-slot">
-          ${m.teamA.seed?`<span class="bm-seed" style="color:${aC};background:${aC}11;">#${m.teamA.seed}</span>`:''}
-          <span class="bm-team${aW?' w':m.teamA.team==='TBD'?' tbd':''}">${m.teamA.isBye?'BYE':m.teamA.team}</span>
-          <span class="bm-score${aW?' w':''}">${m.scoreA??''}</span>
-        </div>
-        <div class="bm-slot">
-          ${m.teamB.seed?`<span class="bm-seed" style="color:${bC};background:${bC}11;">#${m.teamB.seed}</span>`:''}
-          <span class="bm-team${bW?' w':m.teamB.team==='TBD'?' tbd':''}">${m.teamB.isBye?'BYE':m.teamB.team}</span>
-          <span class="bm-score${bW?' w':''}">${m.scoreB??''}</span>
-        </div>
-      </div>`;
-    });
-    h+='</div>';
-  });
-
-  // 3rd place
-  const tm=playoff.thirdMatch;
-  if(tm){
-    const aW=tm.done&&tm.winner?.team===tm.teamA.team;
-    const bW=tm.done&&tm.winner?.team===tm.teamB.team;
-    h+=`<div class="bracket-round"><div class="bracket-round-title" style="color:#ff9955;">Perebutan Juara 3</div>
-      <div class="bracket-match${tm.done?' decided':''}">
-        <div class="bm-slot"><span class="bm-team${aW?' w':''}">${tm.teamA.team}</span><span class="bm-score${aW?' w':''}">${tm.scoreA??''}</span></div>
-        <div class="bm-slot"><span class="bm-team${bW?' w':''}">${tm.teamB.team}</span><span class="bm-score${bW?' w':''}">${tm.scoreB??''}</span></div>
-      </div></div>`;
-  }
-
-  // Podium
-  const fr=playoff.rounds[playoff.rounds.length-1], fm=fr?.matches[0];
-  const champ=fm?.winner, ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
-  const third=tm?.winner, fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
-  if(champ){
-    const pl=[{r:1,t:champ?.team,c:'#f5c842',m:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',m:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',m:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',m:'4️⃣'}];
-    h+=`<div class="section-title" style="margin-top:16px;">🏆 Hasil Akhir</div><div class="podium">`;
-    pl.forEach(p=>h+=`<div class="podium-card" style="background:${p.c}11;border:1.5px solid ${p.c}33;">
-      <div class="podium-medal">${p.m}</div>
-      <div class="podium-rank" style="color:${p.c};">${p.r}</div>
-      <div class="podium-name" style="color:#e0ecff;">${p.t}</div>
-    </div>`);
-    h+='</div>';
-  }
+  h+=oneBracketHTML(playoff)+podiumHTML(playoff,'🏆 Hasil Akhir');
   el.innerHTML=h;
 }
 

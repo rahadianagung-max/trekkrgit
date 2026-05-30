@@ -185,6 +185,57 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 18px;border-radius:9px;font-size:12px;font-weight:600;z-index:9999;display:none;align-items:center;gap:6px;box-shadow:0 4px 20px #00c87544;}
 .toast.show{display:flex;}
 .toast.err{background:var(--red);}
+
+/* ── TREKKR: avatars + elo ── */
+.avt{width:22px;height:22px;border-radius:50%;object-fit:cover;background:var(--card2);border:1.5px solid var(--border);flex-shrink:0;}
+.avt.sm{width:18px;height:18px;}
+.avt.lg{width:30px;height:30px;}
+.avt-ph{width:22px;height:22px;border-radius:50%;background:var(--card2);border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.avt-stack{display:inline-flex;align-items:center;}
+.avt-stack .avt,.avt-stack .avt-ph{margin-right:-6px;box-shadow:0 0 0 2px var(--card);}
+.elo{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;border-radius:4px;padding:1px 6px;letter-spacing:.5px;flex-shrink:0;}
+.elo.sm{font-size:10px;padding:0 5px;}
+.teamline{display:flex;align-items:center;gap:7px;min-width:0;}
+.teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ── TREKKR: format selector ── */
+.fmt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.fmt-card{border:1.5px solid var(--border);background:var(--bg);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .18s;}
+.fmt-card:hover{border-color:var(--dim);}
+.fmt-card.active{border-color:var(--blue);background:#1e9fff0d;}
+.fmt-card .ft{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e0ecff;}
+.fmt-card .fd{font-size:10px;color:var(--dim);line-height:1.4;margin-top:2px;}
+.fmt-card.active .ft{color:var(--blue);}
+
+/* ── TREKKR: pair picker ── */
+.pair-grid{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;padding-right:4px;}
+.pair-grid::-webkit-scrollbar{width:4px;}
+.pair-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.pair-row{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+.pair-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.pair-no{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:1px;}
+.pair-elo{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#ffd24a;}
+.pp-slot{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.pp-slot:last-child{margin-bottom:0;}
+.pp-inp{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:'Barlow',sans-serif;font-size:12px;outline:none;min-width:0;}
+.pp-inp:focus{border-color:var(--blue);}
+.pp-meta{font-size:9px;color:var(--dim);min-width:42px;text-align:right;}
+.roster-note{font-size:10px;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.roster-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);}
+.roster-dot.on{background:var(--green);}
+
+/* ── TREKKR: split brackets ── */
+.split-col-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 0 6px;display:flex;align-items:center;gap:8px;}
+.split-col-title .pill{font-size:9px;padding:2px 8px;border-radius:20px;letter-spacing:1px;}
+.split-up{color:#ffd24a;}
+.split-lo{color:#4ecdc4;}
+
+/* ── TREKKR: sync badge ── */
+.sync-badge{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;color:var(--sub);font-weight:600;letter-spacing:.5px;cursor:pointer;flex-shrink:0;}
+.sync-badge .sd{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.sync-badge.pending{border-color:#ff995555;color:#ff9955;}
+.sync-badge.pending .sd{background:#ff9955;animation:pulse 1.5s infinite;}
+.sync-badge.syncing .sd{background:var(--blue);animation:pulse .8s infinite;}
 </style>
 </head>
 <body>
@@ -204,6 +255,21 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
   </div>
 </div>
 
+<!-- TREKKR LOGIN MODAL (venue admin) -->
+<div class="mb" id="m-tklogin">
+  <div class="modal">
+    <div class="mt" style="color:#ffd24a;">🔗 Login Trekkr</div>
+    <div class="ms">Masuk dengan akun venue admin Trekkr untuk menulis hasil match & update ELO ke leaderboard.</div>
+    <div class="mf"><label>Username</label><input type="text" id="tk-user" placeholder="mis. stellar" onkeydown="if(event.key==='Enter')document.getElementById('tk-pass').focus()"></div>
+    <div class="mf"><label>Password</label><input type="password" id="tk-pass" placeholder="••••••" onkeydown="if(event.key==='Enter')tkDoLogin()"></div>
+    <div class="merr" id="tk-err" style="display:none;"></div>
+    <div class="mbtns">
+      <button class="btn btn-ghost" onclick="cm('m-tklogin')">Batal</button>
+      <button class="btn btn-primary" style="flex:1;padding:10px;" onclick="tkDoLogin()">Masuk & Sinkron</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW TOURNAMENT WIZARD -->
 <div class="mb" id="m-new">
   <div class="modal">
@@ -214,6 +280,17 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
       <div class="wiz-step" id="ws3"><div class="wd">3</div><span class="wl">Konfirmasi</span></div>
     </div>
     <div id="wz1">
+      <input type="hidden" id="n-format" value="group">
+      <div class="fmt-grid">
+        <div class="fmt-card active" id="fmt-group" onclick="pickFormat('group')">
+          <div class="ft">Grup + Playoff</div>
+          <div class="fd">Round-robin per grup, lalu bracket gugur dari juara grup.</div>
+        </div>
+        <div class="fmt-card" id="fmt-split" onclick="pickFormat('split')">
+          <div class="ft">Round Robin → Split</div>
+          <div class="fd">Round-robin, peringkat dibagi rata: atas → Upper, bawah → Lower bracket.</div>
+        </div>
+      </div>
       <div class="mf"><label>Nama Turnamen</label><input type="text" id="n-name" value="Trekkr Open 2026"></div>
       <div class="mgrid">
         <div class="mf"><label>Tanggal</label><input type="date" id="n-date"></div>
@@ -221,7 +298,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
       </div>
       <div class="mgrid">
         <div class="mf"><label>Jumlah Pasangan</label><input type="number" id="n-teams" min="4" max="64" value="8" oninput="wizPrev()"></div>
-        <div class="mf"><label>Jumlah Grup</label><input type="number" id="n-groups" min="2" max="8" value="2" oninput="wizPrev()"></div>
+        <div class="mf"><label>Jumlah Grup</label><input type="number" id="n-groups" min="1" max="8" value="2" oninput="wizPrev()"></div>
       </div>
       <div class="mgrid">
         <div class="mf"><label>Jumlah Court</label><input type="number" id="n-courts" min="1" max="20" value="2"></div>
@@ -236,8 +313,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
       <div class="mbtns"><button class="btn btn-primary" style="flex:1;padding:10px;" onclick="wizGo(2)">Lanjut: Input Pemain →</button><button class="btn btn-ghost" style="padding:10px;" onclick="cm('m-new')">Batal</button></div>
     </div>
     <div id="wz2" style="display:none;">
-      <div class="ms" style="margin-bottom:12px;">Isi nama pasangan atau lewati — bisa diedit kapan saja.</div>
-      <div class="player-grid" id="player-grid"></div>
+      <div class="roster-note"><span class="roster-dot" id="roster-dot"></span><span id="roster-status">Memuat roster Trekkr…</span></div>
+      <datalist id="roster-list"></datalist>
+      <div class="pair-grid" id="pair-grid"></div>
       <div class="mbtns" style="margin-top:14px;"><button class="btn btn-success" style="flex:1;padding:10px;" onclick="wizGo(3)">Konfirmasi →</button><button class="btn btn-ghost" style="padding:10px;" onclick="wizGo(1)">← Kembali</button></div>
     </div>
     <div id="wz3" style="display:none;">
@@ -287,7 +365,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 <!-- MAIN APP -->
 <div id="main-app" style="display:none;">
   <div class="top-nav">
-    <span class="logo">SP</span>
+    <span class="logo">TREKKR</span>
     <span class="t-name" id="nav-name"></span>
     <div class="nav-tabs">
       <button class="tab active" onclick="sv('groups',this)">Grup</button>
@@ -298,6 +376,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
     </div>
     <div style="display:flex;gap:6px;align-items:center;margin-left:6px;">
       <span class="adm-badge"><span class="adm-dot"></span>ADMIN</span>
+      <span class="sync-badge" id="sync-badge" onclick="manualSync()" title="Sinkron ke Trekkr Sheet"><span class="sd"></span><span id="sync-txt">Synced</span></span>
       <button class="btn btn-orange" style="padding:6px 12px;" onclick="cm_open('m-edit')">✏ Edit Nama</button>
       <button class="btn btn-ghost" style="padding:6px 12px;" onclick="goWelcome()">⌂ Menu</button>
     </div>
@@ -353,16 +432,75 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 
 <script src="shared.js"></script>
 <script>
-const PIN='1234', SK='Trekkr_padel_v2';
+const PIN='1234';
 let T=null, groups={}, sched=[], scores={}, playoff=null;
 let isAdmin=false, filt='all';
+let roster=[], pairSel={}, fmt='group';
 
 /* ── BOOT ── */
 function boot(){
   document.getElementById('n-date').value=new Date().toISOString().split('T')[0];
   wizPrev();
-  // Admin always required — show login immediately
+  loadRoster();
+  updateSyncBadge();
   openLogin();
+}
+
+/* ── TREKKR ROSTER ── */
+async function loadRoster(){
+  try{
+    roster = await tkLoadRoster();
+  }catch(e){ roster = tkCachedRoster()||[]; }
+  const dl=document.getElementById('roster-list');
+  if(dl) dl.innerHTML = roster.map(p=>`<option value="${esc(p.name)}">`).join('');
+  const dot=document.getElementById('roster-dot'), st=document.getElementById('roster-status');
+  if(dot&&st){
+    if(roster.length){dot.classList.add('on');st.textContent=`${roster.length} pemain Trekkr siap dipilih`;}
+    else{st.textContent='Roster belum termuat — ketik nama manual (tanpa foto/ELO)';}
+  }
+}
+function pickFormat(f){
+  fmt=f; document.getElementById('n-format').value=f;
+  document.getElementById('fmt-group').classList.toggle('active',f==='group');
+  document.getElementById('fmt-split').classList.toggle('active',f==='split');
+  wizPrev();
+}
+
+/* ── helpers: avatar + elo + escaping ── */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function avatar(p,cls=''){
+  if(p&&p.photo) return `<img class="avt ${cls}" src="${esc(p.photo)}" alt="" onerror="this.outerHTML='<span class=&quot;avt-ph ${cls}&quot;>${p.name?esc(p.name[0]):'?'}</span>'">`;
+  const ini=(p&&p.name)?esc(p.name.trim()[0].toUpperCase()):'?';
+  return `<span class="avt-ph ${cls}">${ini}</span>`;
+}
+function teamAvatars(playersArr,cls=''){
+  if(!playersArr||!playersArr.length) return '';
+  return `<span class="avt-stack">${playersArr.map(p=>avatar(p,cls)).join('')}</span>`;
+}
+// resolve the {players,elo} for a team name from the current groups
+function teamByName(name){
+  for(const g of GL.slice(0,T?.numGroups||0)){
+    const t=(groups[g]||[]).find(x=>x.name===name);
+    if(t) return t;
+  }
+  return null;
+}
+function mkPlayer(nameRaw){
+  const name=(nameRaw||'').trim(); if(!name) return null;
+  const found=tkFindPlayer(name);
+  return found||{name,photo:'',elo:TREKKR.elo.base};
+}
+function onPairInput(i){
+  const v1=document.getElementById('pp-'+i+'-1')?.value||'';
+  const v2=document.getElementById('pp-'+i+'-2')?.value||'';
+  const p1=mkPlayer(v1), p2=mkPlayer(v2);
+  const players=[p1,p2].filter(Boolean);
+  const elo=players.length?Math.round(players.reduce((s,p)=>s+(p.elo||TREKKR.elo.base),0)/players.length):0;
+  pairSel[i]={p1,p2,players,elo,label:players.length?tkTeamLabel(players):('Pasangan '+i)};
+  const m1=document.getElementById('pm-'+i+'-1'),m2=document.getElementById('pm-'+i+'-2'),pe=document.getElementById('pe-'+i);
+  if(m1)m1.textContent=p1?(p1.elo||''):'';
+  if(m2)m2.textContent=p2?(p2.elo||''):'';
+  if(pe)pe.textContent=elo?('ELO '+elo):'';
 }
 
 function openLogin(){
@@ -460,17 +598,26 @@ function wizGo(step){
   if(step===2){
     const nt=parseInt(document.getElementById('n-teams').value)||8;
     let h='';
-    for(let i=1;i<=nt;i++){const ex=document.getElementById('pi-'+i)?.value||'';h+=`<div class="pr"><span class="pn">${i}</span><input class="pi" id="pi-${i}" type="text" placeholder="Pasangan ${i}" value="${ex}"></div>`;}
-    document.getElementById('player-grid').innerHTML=h;
+    for(let i=1;i<=nt;i++){
+      const s=pairSel[i]||{};
+      h+=`<div class="pair-row" id="pair-${i}">
+        <div class="pair-hd"><span class="pair-no">PASANGAN ${i}</span><span class="pair-elo" id="pe-${i}">${s.elo?('ELO '+s.elo):''}</span></div>
+        <div class="pp-slot"><input class="pp-inp" id="pp-${i}-1" list="roster-list" placeholder="Pemain 1" value="${esc(s.p1?.name||'')}" oninput="onPairInput(${i})"><span class="pp-meta" id="pm-${i}-1">${s.p1?.elo||''}</span></div>
+        <div class="pp-slot"><input class="pp-inp" id="pp-${i}-2" list="roster-list" placeholder="Pemain 2" value="${esc(s.p2?.name||'')}" oninput="onPairInput(${i})"><span class="pp-meta" id="pm-${i}-2">${s.p2?.elo||''}</span></div>
+      </div>`;
+    }
+    document.getElementById('pair-grid').innerHTML=h;
   }
   if(step===3){
     const nt=parseInt(document.getElementById('n-teams').value)||8;
     const ng=parseInt(document.getElementById('n-groups').value)||2;
     const nc=parseInt(document.getElementById('n-courts').value)||2;
     const sm={'best4':'Best of 4','best5':'Best of 5','best6':'Best of 6','race3':'Race to 3','race4':'Race to 4','race5':'Race to 5'};
-    const filled=Array.from({length:nt},(_,i)=>document.getElementById('pi-'+(i+1))?.value||'').filter(v=>v.trim()).length;
+    const filled=Array.from({length:nt},(_,i)=>{const s=pairSel[i+1]||{};return (s.p1||s.p2)?1:0;}).filter(Boolean).length;
+    const fLabel=fmt==='split'?'Round Robin → Split':'Grup + Playoff';
+    const lastRow=fmt==='split'?['Bracket','Upper / Lower (bagi rata)']:['Lolos Playoff',`${document.getElementById('n-adv').value}/grup`];
     document.getElementById('wz-confirm').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      ${[['Turnamen',document.getElementById('n-name').value],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Nama Terisi',`${filled}/${nt}`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],['Lolos Playoff',`${document.getElementById('n-adv').value}/grup`]].map(([k,v])=>`<div style="padding:8px;background:#ffffff03;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#e0ecff;font-weight:500;">${v}</div></div>`).join('')}
+      ${[['Turnamen',document.getElementById('n-name').value],['Format',fLabel],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Pasangan Terisi',`${filled}/${nt}`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],lastRow].map(([k,v])=>`<div style="padding:8px;background:#ffffff03;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#e0ecff;font-weight:500;">${v}</div></div>`).join('')}
     </div>`;
   }
   document.getElementById('wz1').style.display=step===1?'block':'none';
@@ -480,9 +627,19 @@ function wizGo(step){
 }
 function createTournament(){
   const nt=parseInt(document.getElementById('n-teams').value)||8;
-  const teams=Array.from({length:nt},(_,i)=>document.getElementById('pi-'+(i+1))?.value.trim()||'Pasangan '+(i+1));
-  T={name:document.getElementById('n-name').value.trim()||'Trekkr Open',date:document.getElementById('n-date').value,startTime:document.getElementById('n-start').value||'08:00',numTeams:nt,numGroups:parseInt(document.getElementById('n-groups').value)||2,numCourts:parseInt(document.getElementById('n-courts').value)||2,matchDuration:parseInt(document.getElementById('n-dur').value)||45,breakDuration:5,stageBreak:15,playoffDuration:60,gsScoring:document.getElementById('n-gs').value,poScoring:document.getElementById('n-po').value,advanceCount:parseInt(document.getElementById('n-adv').value)||2,teams};
-  groups={};sched=[];scores={};playoff=null;
+  const pairs=[];
+  for(let i=1;i<=nt;i++){
+    const s=pairSel[i]||{};
+    const players=(s.players||[]).filter(Boolean);
+    const label=(players.length?tkTeamLabel(players):('Pasangan '+i));
+    pairs.push({label,players,elo:players.length?Math.round(players.reduce((a,p)=>a+(p.elo||TREKKR.elo.base),0)/players.length):TREKKR.elo.base});
+  }
+  // de-dupe identical labels
+  const seen={};pairs.forEach(p=>{if(seen[p.label]){p.label+=' #'+(++seen[p.label]);}else seen[p.label]=1;});
+  const teams=pairs.map(p=>p.label);
+  fmt=document.getElementById('n-format').value||'group';
+  T={name:document.getElementById('n-name').value.trim()||'Trekkr Open',date:document.getElementById('n-date').value,startTime:document.getElementById('n-start').value||'08:00',numTeams:nt,numGroups:parseInt(document.getElementById('n-groups').value)||2,numCourts:parseInt(document.getElementById('n-courts').value)||2,matchDuration:parseInt(document.getElementById('n-dur').value)||45,breakDuration:5,stageBreak:15,playoffDuration:60,gsScoring:document.getElementById('n-gs').value,poScoring:document.getElementById('n-po').value,advanceCount:parseInt(document.getElementById('n-adv').value)||2,format:fmt,teams,pairs};
+  groups={};sched=[];scores={};playoff=null;tkResetSent();
   genGroups();genSchedule();cm('m-new');loadTournament();
   toast(`✓ Turnamen "${T.name}" berhasil dibuat!`);
 }
@@ -525,7 +682,7 @@ function chkReset(){
   const b=document.getElementById('reset-btn');b.disabled=!ok;b.style.opacity=ok?'1':'0.4';b.style.cursor=ok?'pointer':'not-allowed';
 }
 function doReset(){
-  localStorage.removeItem(SK);T=null;groups={};sched=[];scores={};playoff=null;
+  localStorage.removeItem(SP_KEY);T=null;groups={};sched=[];scores={};playoff=null;tkResetSent();
   cm('m-reset');document.getElementById('main-app').style.display='none';
   toast('Data turnamen dihapus');setTimeout(()=>showWelcomeEmpty(),300);
 }
@@ -560,9 +717,15 @@ function loadTournament(){
 
 /* ── GENERATE ── */
 function genGroups(){
-  const teams=T.teams&&T.teams.length?[...T.teams]:Array.from({length:T.numTeams},(_,i)=>'Pasangan '+(i+1));
   const ng=T.numGroups;groups={};GL.slice(0,ng).forEach(g=>groups[g]=[]);
-  for(let i=0;i<teams.length;i++){const r=Math.floor(i/ng),p=i%ng,idx=r%2===0?p:(ng-1-p);groups[GL[idx]].push({name:teams[i],W:0,L:0,GF:0,GA:0,pts:0});}
+  let pairs=(T.pairs&&T.pairs.length)?[...T.pairs]:(T.teams||[]).map(n=>({label:n,players:[],elo:TREKKR.elo.base}));
+  // ELO-seeded snake distribution for balanced groups
+  pairs.sort((a,b)=>(b.elo||0)-(a.elo||0));
+  for(let i=0;i<pairs.length;i++){
+    const r=Math.floor(i/ng),p=i%ng,idx=r%2===0?p:(ng-1-p);
+    const pr=pairs[i];
+    groups[GL[idx]].push({name:pr.label,players:pr.players||[],elo:pr.elo||TREKKR.elo.base,W:0,L:0,GF:0,GA:0,pts:0});
+  }
 }
 function genSchedule(){
   sched=[];
@@ -598,7 +761,81 @@ function saveScore(id){
   if(sv===''||sa==='')return;
   m.scoreHome=sv;m.scoreAway=sa;m.done=true;scores[id]={h:sv,a:sa};
   computeStandings(groups,sched,T.numGroups);save();renderAll();
+  recordMatchWriteback(teamByName(m.home),teamByName(m.away),sv,sa);
   toast('✓ Skor disimpan');
+}
+
+/* ── TREKKR WRITE-BACK ── */
+function pairGender(team){
+  const gs=(team?.players||[]).map(p=>p.gender).filter(Boolean);
+  if(!gs.length) return '';
+  return gs.every(g=>g===gs[0])?gs[0]:'Mixed';
+}
+function recordMatchWriteback(teamA,teamB,sa,sb){
+  if(!teamA||!teamB) return;
+  const pa=teamA.players||[],pb=teamB.players||[];
+  if(pa.length<2||pb.length<2) return; // only write fully-rostered pairs
+  const gA=pairGender(teamA),gB=pairGender(teamB);
+  const gender=(gA&&gA===gB)?gA:(gA||gB||'');
+  const payload=tkMatchPayload(teamA,teamB,parseInt(sa)||0,parseInt(sb)||0,{
+    date:T.date||new Date().toISOString().split('T')[0],
+    gender, source:`Trekkr Tournament — ${T.name}`,
+  });
+  const venue=tkSession().venue||T.venue||'';
+  tkQueueMatch(payload,venue);
+  updateSyncBadge();
+  tkFlushQueue().then(updateSyncBadge);
+}
+function updateSyncBadge(){
+  const b=document.getElementById('sync-badge'),t=document.getElementById('sync-txt');
+  if(!b||!t) return;
+  const sess=tkSession();
+  b.classList.remove('syncing');
+  if(!sess.token){ b.classList.remove('pending'); t.textContent='Login Trekkr'; return; }
+  const pend=tkPendingCount();
+  let eloPend=0;
+  try{ if(T){ const all=tkCollectCompletedMatches(groups,sched,playoff,T.numGroups||0); const s=new Set(tkSentKeys()); eloPend=all.filter(m=>!s.has(m.key)).length; } }catch(e){}
+  if(pend>0||eloPend>0){ b.classList.add('pending'); t.textContent=eloPend?('ELO '+eloPend+' pending'):(pend+' match pending'); }
+  else { b.classList.remove('pending'); t.textContent='Synced'+(sess.venue?' · '+sess.venue:''); }
+}
+async function manualSync(){
+  const b=document.getElementById('sync-badge'),t=document.getElementById('sync-txt');
+  if(!tkSession().token){openTkLogin();return;}
+  b?.classList.add('syncing');if(t)t.textContent='Sinkron…';
+  // 1) match rows -> venue tab
+  const r=await tkFlushQueue();
+  if(r.needAuth){openTkLogin();return;}
+  // 2) ELO -> ELO_Log via sessions
+  const e=await tkPushElo(groups,sched,playoff,T?.numGroups||0,{name:T?.name,venue:tkSession().venue||T?.venue,source:`Trekkr Tournament — ${T?.name||''}`});
+  if(e.needAuth){openTkLogin();return;}
+  if(e.ok&&e.sent){renderAll();} // refresh ELO chips with new values
+  updateSyncBadge();
+  const parts=[];
+  if(r.sent)parts.push(`${r.sent} match`);
+  if(e.ok&&e.sent)parts.push(`ELO ${e.sent} match`);
+  if(parts.length) toast('✓ Tersinkron ke Trekkr: '+parts.join(' + '));
+  else if(r.failed||e.error) toast(`⚠ Sebagian gagal${e.error?' ('+e.error+')':' (cek venue/login)'}`,'err');
+  else toast('Semua sudah tersinkron');
+}
+/* Trekkr login (venue admin credentials) */
+function openTkLogin(){
+  const m=document.getElementById('m-tklogin');if(!m)return;
+  m.classList.add('show');
+  document.getElementById('tk-err').style.display='none';
+  const s=tkSession();if(s.username)document.getElementById('tk-user').value=s.username;
+  setTimeout(()=>document.getElementById('tk-user').focus(),200);
+}
+async function tkDoLogin(){
+  const u=document.getElementById('tk-user').value.trim(),p=document.getElementById('tk-pass').value;
+  const err=document.getElementById('tk-err');err.style.display='none';
+  if(!u||!p){err.textContent='Isi username & password.';err.style.display='block';return;}
+  try{
+    const d=await tkLogin(u,p);
+    if(!d||!d.token)throw new Error('Token tidak diterima');
+    cm('m-tklogin');updateSyncBadge();
+    toast(`✓ Login Trekkr: ${d.username||u}${d.venue?' · '+d.venue:''}`);
+    if(tkPendingCount()>0){const r=await tkFlushQueue();updateSyncBadge();if(r.sent)toast(`✓ ${r.sent} match tersinkron`);}
+  }catch(e){err.textContent='Login gagal: '+e.message;err.style.display='block';}
 }
 
 /* ── RENDER ── */
@@ -611,7 +848,7 @@ function rGroups(){
   GL.slice(0,ng).forEach(g=>{
     const ct=(GL.indexOf(g)%nc)+1,col=GC[g]||'#1e9fff',cc=CC[ct]||'#1e9fff';
     h+=`<div class="gc"><div class="gh"><div class="gl" style="color:${col};">${g}</div><div class="gm">GRUP ${g} · ${(groups[g]||[]).length} PASANGAN</div><div class="gcrt" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${ct}</div></div><table class="st"><tr><th>#</th><th>Pasangan</th><th>M</th><th>W</th><th>L</th><th>GD</th><th>Pts</th></tr>`;
-    (groups[g]||[]).forEach((t,i)=>{const q=i<adv,gd=t.GF-t.GA,p=t.W+t.L;h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Barlow Condensed',sans-serif;">${i+1}</div></td><td style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${t.name}</td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#6a8aaa'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td></tr>`;});
+    (groups[g]||[]).forEach((t,i)=>{const q=i<adv,gd=t.GF-t.GA,p=t.W+t.L;h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Barlow Condensed',sans-serif;">${i+1}</div></td><td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#6a8aaa'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td></tr>`;});
     h+='</table></div>';
   });
   el.innerHTML=h;
@@ -631,7 +868,7 @@ function rSchedule(){
   let h='';
   list.forEach(m=>{
     const gc=GC[m.group]||'#1e9fff',cc=CC[m.court]||'#1e9fff',sv=m.scoreHome??'',sa=m.scoreAway??'';
-    h+=`<div class="mr${m.done?' md':''}"><div class="mt2">${m.startTime}</div><div class="cb" style="color:${cc};background:${cc}1a;border:1px solid ${cc}44;">Court ${m.court}</div><div class="cb" style="color:${gc};background:${gc}1a;border:1px solid ${gc}44;">Grp ${m.group}</div><div class="mts"><span>${m.home}</span><span class="mvs">vs</span><span>${m.away}</span></div><div class="sa"><div class="sia"><input class="sb2" id="sh-${m.id}" type="number" min="0" max="9" value="${sv}" placeholder="-"><span class="ss">:</span><input class="sb2" id="sa-${m.id}" type="number" min="0" max="9" value="${sa}" placeholder="-"><button class="btn btn-save" onclick="saveScore(${m.id})">✓</button></div></div></div>`;
+    h+=`<div class="mr${m.done?' md':''}"><div class="mt2">${m.startTime}</div><div class="cb" style="color:${cc};background:${cc}1a;border:1px solid ${cc}44;">Court ${m.court}</div><div class="cb" style="color:${gc};background:${gc}1a;border:1px solid ${gc}44;">Grp ${m.group}</div><div class="mts"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<span class="nm">${esc(m.home)}</span></span><span class="mvs">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<span class="nm">${esc(m.away)}</span></span></div><div class="sa"><div class="sia"><input class="sb2" id="sh-${m.id}" type="number" min="0" max="9" value="${sv}" placeholder="-"><span class="ss">:</span><input class="sb2" id="sa-${m.id}" type="number" min="0" max="9" value="${sa}" placeholder="-"><button class="btn btn-save" onclick="saveScore(${m.id})">✓</button></div></div></div>`;
   });
   document.getElementById('sl').innerHTML=h||'<p style="color:var(--dim);padding:20px;text-align:center;">Tidak ada match</p>';
 }
@@ -651,74 +888,132 @@ function rCourts(){
 }
 
 /* ── PLAYOFF ── */
-function gbo(sz){if(sz===2)return[1,2];if(sz===4)return[1,4,2,3];if(sz===8)return[1,8,4,5,2,7,3,6];if(sz===16)return[1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];return Array.from({length:sz},(_,i)=>i+1);}
-function bldSeed(){const ng=T.numGroups,adv=T.advanceCount,g2=GL.slice(0,ng),s=[];g2.forEach((g,i)=>s.push({team:groups[g][0]?.name||'TBD',group:g,rank:1,seed:i+1}));if(adv>=2)[...g2].reverse().forEach((g,i)=>s.push({team:groups[g][1]?.name||'TBD',group:g,rank:2,seed:ng+i+1}));if(adv>=3)g2.forEach((g,i)=>s.push({team:groups[g][2]?.name||'TBD',group:g,rank:3,seed:2*ng+i+1}));return s;}
-function prop(rounds){for(let r=0;r<rounds.length-1;r++){rounds[r].matches.forEach((m,i)=>{const nm=rounds[r+1].matches[Math.floor(i/2)];if(!nm||!m.winner)return;if(i%2===0)nm.teamA={...m.winner,fromMatch:m.id};else nm.teamB={...m.winner,fromMatch:m.id};if(nm.teamA.team!=='TBD'&&nm.teamB.team!=='TBD'&&!nm.done){if(nm.teamA.isBye){nm.winner=nm.teamB;nm.done=true;}else if(nm.teamB.isBye){nm.winner=nm.teamA;nm.done=true;}}});}}
+function poSeedsGroup(){
+  const ng=T.numGroups,adv=T.advanceCount,g2=GL.slice(0,ng),s=[];
+  const mk=(g,rank,seed)=>{const t=groups[g]?.[rank-1];return {team:t?.name||'TBD',players:t?.players||[],elo:t?.elo||0,group:g,rank,seed};};
+  g2.forEach((g,i)=>s.push(mk(g,1,i+1)));
+  if(adv>=2)[...g2].reverse().forEach((g,i)=>s.push(mk(g,2,ng+i+1)));
+  if(adv>=3)g2.forEach((g,i)=>s.push(mk(g,3,2*ng+i+1)));
+  return s;
+}
 function genPO(){
   computeStandings(groups,sched,T.numGroups);
-  const seeded=bldSeed(),total=T.numGroups*T.advanceCount,bSz=Math.pow(2,Math.ceil(Math.log2(total))),byes=bSz-total;
-  const rounds=[];let rs=bSz;while(rs>=2){rounds.push({size:rs,matches:[]});rs/=2;}
-  const order=gbo(bSz),slots=order.map(s=>s<=total?seeded[s-1]:{team:'BYE',group:null,rank:0,seed:0,isBye:true});
-  for(let i=0;i<bSz/2;i++){const a=slots[i*2],b=slots[i*2+1],isBye=a.isBye||b.isBye,aw=isBye?(a.isBye?b:a):null;rounds[0].matches.push({id:`r0m${i}`,round:0,pos:i,teamA:a,teamB:b,scoreA:null,scoreB:null,winner:aw,done:!!aw,isByeMatch:isBye});}
-  for(let r=1;r<rounds.length;r++){const prev=rounds[r-1];for(let i=0;i<rounds[r].size/2;i++){const mA=prev.matches[i*2],mB=prev.matches[i*2+1];rounds[r].matches.push({id:`r${r}m${i}`,round:r,pos:i,teamA:{team:'TBD',group:null,seed:0},teamB:{team:'TBD',group:null,seed:0},scoreA:null,scoreB:null,winner:null,done:false});}}
-  prop(rounds);
-  playoff={rounds,seeded,bracketSize:bSz,byes,thirdMatch:{id:'third',isThird:true,teamA:{team:'TBD SF Loser',seed:0},teamB:{team:'TBD SF Loser',seed:0},scoreA:null,scoreB:null,winner:null,done:false}};
+  if((T.format||fmt)==='split'){
+    const ranked=tkOverallRanking(groups,T.numGroups);
+    const {upper,lower}=tkGenSplitBrackets(ranked);
+    playoff={mode:'split',upper,lower};
+    save();rPlayoff();toast('✓ Upper & Lower bracket dibuat');
+    return;
+  }
+  const seeded=poSeedsGroup();
+  const built=tkBuildBracket(seeded,'r',true);
+  playoff={mode:'group',...built};
   save();rPlayoff();toast('✓ Playoff bracket dibuat');
+}
+function poBrackets(){
+  if(!playoff) return [];
+  return playoff.mode==='split'?[playoff.upper,playoff.lower].filter(Boolean):[playoff];
 }
 function savePO(mid){
   if(!playoff)return;
-  let match=null;playoff.rounds.forEach(r=>r.matches.forEach(m=>{if(m.id===mid)match=m;}));
-  if(!match&&playoff.thirdMatch?.id===mid)match=playoff.thirdMatch;
-  if(!match)return;
+  let match=null, struct=null;
+  poBrackets().forEach(b=>{
+    b.rounds.forEach(r=>r.matches.forEach(m=>{if(m.id===mid){match=m;struct=b;}}));
+    if(b.thirdMatch?.id===mid){match=b.thirdMatch;struct=b;}
+  });
+  if(!match||!struct)return;
   const sa=document.getElementById('psa-'+mid)?.value||'',sb=document.getElementById('psb-'+mid)?.value||'';
   if(sa===''||sb==='')return;
-  match.scoreA=sa;match.scoreB=sb;const w=parseInt(sa)>parseInt(sb)?match.teamA:match.teamB;match.winner={...w};match.done=true;
-  prop(playoff.rounds);
-  const sf=playoff.rounds[playoff.rounds.length-2];
-  if(sf){const l=sf.matches.filter(m=>m.done).map(m=>m.teamA.team===m.winner.team?m.teamB:m.teamA);if(l[0])playoff.thirdMatch.teamA=l[0];if(l[1])playoff.thirdMatch.teamB=l[1];}
-  const d=spLoad()||{};if(!d.playoffScores)d.playoffScores={};d.playoffScores[mid]={a:sa,b:sb};d.playoff=playoff;spSave(d);
+  match.scoreA=sa;match.scoreB=sb;
+  const w=parseInt(sa)>parseInt(sb)?match.teamA:match.teamB;
+  match.winner={...w};match.done=true;
+  tkPropagate(struct.rounds);
+  const sf=struct.rounds[struct.rounds.length-2];
+  if(sf&&struct.thirdMatch){const l=sf.matches.filter(m=>m.done).map(m=>m.teamA.team===m.winner.team?m.teamB:m.teamA);if(l[0])struct.thirdMatch.teamA=l[0];if(l[1])struct.thirdMatch.teamB=l[1];}
+  recordMatchWriteback(match.teamA,match.teamB,sa,sb);
+  const d=spLoad()||{};d.playoff=playoff;spSave(d);
   rPlayoff();toast('✓ Skor playoff disimpan');
 }
+/* ── PLAYOFF RENDER HELPERS ── */
+function bmTeamHTML(side, m){
+  const t = side==='A'? m.teamA : m.teamB;
+  const sc = side==='A'? m.scoreA : m.scoreB;
+  const won = m.done && m.winner?.team===t.team;
+  const tbd = t.team==='TBD';
+  const col = t.group? GC[t.group] : '#4a6a8a';
+  const seed = t.seed? `<span class="bmseed" style="color:${col};background:${col}11;">#${t.seed}</span>` : '';
+  const av = (t.players&&t.players.length)? teamAvatars(t.players,'sm') : '';
+  const label = t.isBye? 'BYE' : esc(t.team);
+  return `<div class="bms">${seed}${av}<span class="bmt${won?' w':tbd?' tbd':''}">${label}</span><span class="bmsc${won?' w':''}">${sc??''}</span></div>`;
+}
+function bmHTML(m){
+  let h=`<div class="bm${m.done?' wd':''}">${bmTeamHTML('A',m)}${bmTeamHTML('B',m)}`;
+  if(!m.done&&!m.isByeMatch&&m.teamA.team!=='TBD'&&m.teamB.team!=='TBD')
+    h+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
+  return h+`</div>`;
+}
+function bracketRowHTML(struct){
+  const totalR=struct.rounds.length;let bh='<div class="br">';
+  struct.rounds.forEach((round,ri)=>{
+    bh+=`<div class="brd"><div class="brt">${getRoundLabel(ri,totalR)}</div>`;
+    round.matches.forEach(m=>bh+=bmHTML(m));
+    bh+='</div>';
+  });
+  const tm=struct.thirdMatch;
+  if(tm){
+    bh+=`<div class="brd" style="flex:0 0 auto;width:140px;"><div class="brt" style="color:#ff9955;">Juara 3</div>${bmHTML(tm)}</div>`;
+  }
+  return bh+'</div>';
+}
+function podiumHTML(struct,title,accent){
+  const fr=struct.rounds[struct.rounds.length-1],fm=fr?.matches[0];
+  const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
+  const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
+  if(!champ) return '';
+  const pl=[{r:1,t:champ?.team,c:'#f5c842',l:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',l:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',l:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',l:'4th'}];
+  return `<div style="margin-top:14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${accent||'var(--blue)'};margin-bottom:12px;">${title}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${pl.map(p=>`<div style="text-align:center;padding:12px 8px;border-radius:9px;background:${p.c}11;border:1.5px solid ${p.c}33;"><div style="font-size:20px;">${p.l}</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${p.c};">${p.r}</div><div style="font-size:11px;color:#e0ecff;margin-top:3px;">${esc(p.t)}</div></div>`).join('')}</div></div>`;
+}
+function seedTableHTML(seeded){
+  let sh=`<div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;"><tr style="border-bottom:1px solid var(--border);">${['Seed','Pasangan','Grup','Peringkat'].map(h=>`<th style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);padding:7px 10px;text-align:left;font-weight:600;">${h}</th>`).join('')}</tr>`;
+  seeded.forEach(s=>{const col=s.group?GC[s.group]:'#4a6a8a';sh+=`<tr style="border-top:1px solid var(--bg);"><td style="padding:7px 10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blue);">#${s.seed}</td><td style="padding:7px 10px;"><div class="teamline">${teamAvatars(s.players,'sm')}<span class="nm" style="color:#e0ecff;font-weight:500;font-size:12px;">${esc(s.team)}</span>${s.elo?`<span class="elo sm">${s.elo}</span>`:''}</div></td><td style="padding:7px 10px;">${s.group?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;color:${col};background:${col}11;border:1px solid ${col}33;">Grup ${s.group}</span>`:'—'}</td><td style="padding:7px 10px;color:var(--dim);font-size:12px;">${s.rank?('Peringkat '+s.rank):'—'}</td></tr>`;});
+  return sh+'</table></div>';
+}
+
 function rPlayoff(){
   if(!T)return;
+  const isSplit=(T.format||fmt)==='split';
   if(!playoff){
     const done=sched.filter(m=>m.done).length;
     document.getElementById('po-st').textContent=`Group stage: ${done}/${sched.length} match selesai`;
-    document.getElementById('po-act').innerHTML=`<button class="btn btn-success" onclick="genPO()">⚡ Generate Bracket</button>`;
+    document.getElementById('po-act').innerHTML=`<button class="btn btn-success" onclick="genPO()">⚡ ${isSplit?'Generate Upper/Lower':'Generate Bracket'}</button>`;
     document.getElementById('seed-sec').innerHTML='';
-    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--dim);">Klik Generate Bracket setelah group stage selesai</div></div>`;
+    document.getElementById('bracket').style.display='block';
+    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--dim);">${isSplit?'Klik Generate untuk membagi peringkat ke Upper & Lower bracket':'Klik Generate Bracket setelah group stage selesai'}</div></div>`;
     document.getElementById('pod-sec').innerHTML='';return;
   }
-  document.getElementById('po-st').textContent=`${T.numGroups*T.advanceCount} tim · bracket ${playoff.bracketSize}${playoff.byes>0?' · '+playoff.byes+' BYE':''}`;
-  document.getElementById('po-act').innerHTML=`<button class="btn btn-ghost" style="font-size:10px;" onclick="playoff=null;save();rPlayoff()">↺ Reset</button>`;
-  let sh=`<div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;"><tr style="border-bottom:1px solid var(--border);">${['Seed','Pasangan','Grup','Peringkat'].map(h=>`<th style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);padding:7px 10px;text-align:left;font-weight:600;">${h}</th>`).join('')}</tr>`;
-  playoff.seeded.forEach(s=>{const col=s.group?GC[s.group]:'#4a6a8a';sh+=`<tr style="border-top:1px solid var(--bg);"><td style="padding:7px 10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blue);">#${s.seed}</td><td style="padding:7px 10px;color:#e0ecff;font-weight:500;font-size:12px;">${s.team}</td><td style="padding:7px 10px;"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;color:${col};background:${col}11;border:1px solid ${col}33;">Grup ${s.group}</span></td><td style="padding:7px 10px;color:var(--dim);font-size:12px;">Peringkat ${s.rank}</td></tr>`;});
-  sh+='</table></div>';document.getElementById('seed-sec').innerHTML=sh;
-  const totalR=playoff.rounds.length;let bh='';
-  playoff.rounds.forEach((round,ri)=>{
-    bh+=`<div class="brd"><div class="brt">${getRoundLabel(ri,totalR)}</div>`;
-    round.matches.forEach(m=>{
-      const aW=m.done&&m.winner?.team===m.teamA.team,bW=m.done&&m.winner?.team===m.teamB.team;
-      const aC=m.teamA.group?GC[m.teamA.group]:'#4a6a8a',bC=m.teamB.group?GC[m.teamB.group]:'#4a6a8a';
-      bh+=`<div class="bm${m.done?' wd':''}"><div class="bms">${m.teamA.seed?`<span class="bmseed" style="color:${aC};background:${aC}11;">#${m.teamA.seed}</span>`:''}<span class="bmt${aW?' w':m.teamA.team==='TBD'?' tbd':''}">${m.teamA.isBye?'BYE':m.teamA.team}</span><span class="bmsc${aW?' w':''}">${m.scoreA??''}</span></div><div class="bms">${m.teamB.seed?`<span class="bmseed" style="color:${bC};background:${bC}11;">#${m.teamB.seed}</span>`:''}<span class="bmt${bW?' w':m.teamB.team==='TBD'?' tbd':''}">${m.teamB.isBye?'BYE':m.teamB.team}</span><span class="bmsc${bW?' w':''}">${m.scoreB??''}</span></div>`;
-      if(!m.done&&!m.isByeMatch&&m.teamA.team!=='TBD'&&m.teamB.team!=='TBD')bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
-      bh+=`</div>`;
-    });
-    bh+='</div>';
-  });
-  const tm=playoff.thirdMatch;
-  if(tm){
-    const aW=tm.done&&tm.winner?.team===tm.teamA.team,bW=tm.done&&tm.winner?.team===tm.teamB.team;
-    bh+=`<div class="brd" style="flex:0 0 auto;width:130px;"><div class="brt" style="color:#ff9955;">Juara 3</div><div class="bm${tm.done?' wd':''}"><div class="bms"><span class="bmt${aW?' w':''}">${tm.teamA.team}</span><span class="bmsc${aW?' w':''}">${tm.scoreA??''}</span></div><div class="bms"><span class="bmt${bW?' w':''}">${tm.teamB.team}</span><span class="bmsc${bW?' w':''}">${tm.scoreB??''}</span></div>`;
-    if(!tm.done&&!tm.teamA.team.includes('TBD'))bh+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-third" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-third" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('third')">✓</button></div>`;
-    bh+=`</div></div>`;
+  document.getElementById('po-act').innerHTML=`<button class="btn btn-ghost" style="font-size:10px;" onclick="if(confirm('Reset bracket?')){playoff=null;save();rPlayoff();}">↺ Reset</button>`;
+  document.getElementById('bracket').style.display='block';
+  document.getElementById('pod-sec').innerHTML='';
+
+  if(playoff.mode==='split'){
+    const up=playoff.upper, lo=playoff.lower;
+    const nU=up.seeded.length, nL=lo.seeded.length;
+    document.getElementById('po-st').textContent=`Split bracket · Upper ${nU} · Lower ${nL}`;
+    document.getElementById('seed-sec').innerHTML='';
+    let h='';
+    h+=`<div class="split-col-title split-up">🏆 Upper Bracket <span class="pill" style="color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;">peringkat atas</span></div>`;
+    h+=bracketRowHTML(up)+podiumHTML(up,'🏆 Hasil Upper','#ffd24a');
+    h+=`<div class="split-col-title split-lo" style="margin-top:18px;">🛡 Lower Bracket <span class="pill" style="color:#4ecdc4;background:#4ecdc414;border:1px solid #4ecdc433;">peringkat bawah</span></div>`;
+    h+=bracketRowHTML(lo)+podiumHTML(lo,'🛡 Hasil Lower','#4ecdc4');
+    document.getElementById('bracket').innerHTML=h;
+    return;
   }
-  document.getElementById('bracket').innerHTML=bh;
-  const fr=playoff.rounds[playoff.rounds.length-1],fm=fr?.matches[0],champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
-  if(champ){
-    const pl=[{r:1,t:champ?.team,c:'#f5c842',l:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',l:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',l:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',l:'4th'}];
-    document.getElementById('pod-sec').innerHTML=`<div style="margin-top:18px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;">🏆 Hasil Turnamen</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${pl.map(p=>`<div style="text-align:center;padding:12px 8px;border-radius:9px;background:${p.c}11;border:1.5px solid ${p.c}33;"><div style="font-size:20px;">${p.l}</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${p.c};">${p.r}</div><div style="font-size:11px;color:#e0ecff;margin-top:3px;">${p.t}</div></div>`).join('')}</div></div>`;
-  } else document.getElementById('pod-sec').innerHTML='';
+
+  // group mode
+  document.getElementById('po-st').textContent=`${playoff.seeded.length} tim · bracket ${playoff.bracketSize}${playoff.byes>0?' · '+playoff.byes+' BYE':''}`;
+  document.getElementById('seed-sec').innerHTML=seedTableHTML(playoff.seeded);
+  document.getElementById('bracket').innerHTML=bracketRowHTML(playoff);
+  document.getElementById('pod-sec').innerHTML=podiumHTML(playoff,'🏆 Hasil Turnamen','var(--blue)');
 }
 
 /* ── UTILS ── */

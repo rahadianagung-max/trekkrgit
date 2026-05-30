@@ -156,6 +156,19 @@ html,body{
 .tv-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:200px;}
 .tv-progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 1s linear;}
 .tv-bottom-right{font-size:11px;color:var(--dim);}
+/* TREKKR avatars + elo (TV sized) */
+.avt{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#0a0e1a;border:2px solid var(--border);flex-shrink:0;}
+.avt.sm{width:24px;height:24px;}
+.avt-ph{width:30px;height:30px;border-radius:50%;background:#0a0e1a;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.avt-ph.sm{width:24px;height:24px;font-size:11px;}
+.avt-stack{display:inline-flex;align-items:center;}
+.avt-stack .avt,.avt-stack .avt-ph{margin-right:-8px;box-shadow:0 0 0 2px var(--card);}
+.elo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;border-radius:5px;padding:1px 8px;letter-spacing:.5px;flex-shrink:0;}
+.elo.sm{font-size:12px;padding:0 6px;}
+.teamline{display:flex;align-items:center;gap:9px;min-width:0;}
+.teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.split-title-tv{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px;display:flex;align-items:center;gap:10px;}
+.split-title-tv .pill{font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:1px;font-weight:700;}
 </style>
 </head>
 <body>
@@ -200,6 +213,16 @@ html,body{
 <script src="shared.js"></script>
 <script>
 let T=null, groups={}, sched=[], playoff=null;
+
+/* TREKKR render helpers */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function avatar(p,cls=''){
+  const ini=(p&&p.name)?esc(p.name.trim()[0].toUpperCase()):'?';
+  if(p&&p.photo) return `<img class="avt ${cls}" src="${esc(p.photo)}" alt="${ini}" onerror="this.outerHTML='<span class=&quot;avt-ph ${cls}&quot;>'+this.alt+'</span>'">`;
+  return `<span class="avt-ph ${cls}">${ini}</span>`;
+}
+function teamAvatars(arr,cls=''){ return (!arr||!arr.length)?'':`<span class="avt-stack">${arr.map(p=>avatar(p,cls)).join('')}</span>`; }
+function teamByName(name){ for(const g of GL.slice(0,T?.numGroups||0)){const t=(groups[g]||[]).find(x=>x.name===name);if(t)return t;} return null; }
 let countdownVal=120, progInt=null, activeView='groups';
 
 function load(){
@@ -248,7 +271,7 @@ function renderGroups(){
       const q=i<adv, gd=t.GF-t.GA, p=t.W+t.L;
       h+=`<tr class="${q?'q':''}">
         <td style="color:${col};font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:20px;">${i+1}</td>
-        <td style="color:${q?'#f0f4ff':'#8aaccc'};font-weight:${q?600:400};font-size:16px;">${t.name}</td>
+        <td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#f0f4ff':'#8aaccc'};font-weight:${q?600:400};font-size:16px;">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td>
         <td>${p}</td><td>${t.W}</td><td>${t.L}</td>
         <td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#4a6a8a'}">${gd>0?'+':''}${gd}</td>
         <td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td>
@@ -287,50 +310,52 @@ function schedRow(m){
     <div class="match-time">${m.startTime}</div>
     <div class="match-badge" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${m.court}</div>
     <div class="match-badge" style="color:${gc};background:${gc}11;border:1px solid ${gc}33;">Grp ${m.group}</div>
-    <div class="match-teams-tv"><b>${m.home}</b> <span style="color:#2a3a55;margin:0 6px;">vs</span> <b>${m.away}</b></div>
+    <div class="match-teams-tv" style="display:flex;align-items:center;gap:8px;"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<b class="nm">${esc(m.home)}</b></span><span style="color:#2a3a55;">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<b class="nm">${esc(m.away)}</b></span></div>
     ${score}
   </div>`;
 }
 
+function tvBmTeam(side,m){
+  const t=side==='A'?m.teamA:m.teamB, sc=side==='A'?m.scoreA:m.scoreB;
+  const won=m.done&&m.winner?.team===t.team, tbd=t.team==='TBD';
+  const c=t.group?GC[t.group]:'#4a6a8a';
+  const seed=t.seed?`<span class="tv-seed" style="color:${c};background:${c}11;">#${t.seed}</span>`:'';
+  const av=(t.players&&t.players.length)?teamAvatars(t.players,'sm'):'';
+  const label=t.isBye?'BYE':esc(t.team);
+  return `<div class="tv-bms">${seed}<span class="teamline" style="flex:1;">${av}<span class="tv-bmt${won?' w':tbd?' tbd':''} nm">${label}</span></span><span class="tv-bmsc${won?' w':''}">${sc??''}</span></div>`;
+}
+function tvBracket(struct){
+  const totalR=struct.rounds.length;let h='<div class="bracket-outer">';
+  struct.rounds.forEach((round,ri)=>{
+    h+=`<div class="bracket-round-col"><div class="brc-title">${getRoundLabel(ri,totalR)}</div>`;
+    round.matches.forEach(m=>{h+=`<div class="tv-bm${m.done?' wd':''}">${tvBmTeam('A',m)}${tvBmTeam('B',m)}</div>`;});
+    h+='</div>';
+  });
+  const tm=struct.thirdMatch;
+  if(tm){h+=`<div class="bracket-round-col" style="flex:0 0 auto;min-width:190px;"><div class="brc-title" style="color:#ff9955;">Juara 3</div><div class="tv-bm${tm.done?' wd':''}">${tvBmTeam('A',tm)}${tvBmTeam('B',tm)}</div></div>`;}
+  return h+'</div>';
+}
+function tvPodium(struct){
+  const fr=struct.rounds[struct.rounds.length-1],fm=fr?.matches[0];
+  const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
+  const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
+  if(!champ)return '';
+  const pl=[{r:1,t:champ?.team,c:'#f5c842',e:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',e:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',e:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',e:'4th'}];
+  let h='<div class="podium-tv">';
+  pl.forEach(p=>h+=`<div class="podium-card-tv" style="background:${p.c}11;border:1.5px solid ${p.c}33;"><div class="podium-emoji">${p.e}</div><div class="podium-rank-tv" style="color:${p.c};">${p.r}</div><div class="podium-name-tv">${esc(p.t)}</div></div>`);
+  return h+'</div>';
+}
 function renderBracket(){
   const el=document.getElementById('view-bracket');
   if(!playoff){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#2a3a55;font-size:22px;font-family:\'Barlow Condensed\',sans-serif;">Bracket playoff belum dibuat</div>';return;}
-  const totalR=playoff.rounds.length;
-  let h='<div class="bracket-outer">';
-  playoff.rounds.forEach((round,ri)=>{
-    h+=`<div class="bracket-round-col"><div class="brc-title">${getRoundLabel(ri,totalR)}</div>`;
-    round.matches.forEach(m=>{
-      const aW=m.done&&m.winner?.team===m.teamA.team, bW=m.done&&m.winner?.team===m.teamB.team;
-      const aC=m.teamA.group?GC[m.teamA.group]:'#4a6a8a', bC=m.teamB.group?GC[m.teamB.group]:'#4a6a8a';
-      h+=`<div class="tv-bm${m.done?' wd':''}">
-        <div class="tv-bms">${m.teamA.seed?`<span class="tv-seed" style="color:${aC};background:${aC}11;">#${m.teamA.seed}</span>`:''}<span class="tv-bmt${aW?' w':m.teamA.team==='TBD'?' tbd':''}">${m.teamA.isBye?'BYE':m.teamA.team}</span><span class="tv-bmsc${aW?' w':''}">${m.scoreA??''}</span></div>
-        <div class="tv-bms">${m.teamB.seed?`<span class="tv-seed" style="color:${bC};background:${bC}11;">#${m.teamB.seed}</span>`:''}<span class="tv-bmt${bW?' w':m.teamB.team==='TBD'?' tbd':''}">${m.teamB.isBye?'BYE':m.teamB.team}</span><span class="tv-bmsc${bW?' w':''}">${m.scoreB??''}</span></div>
-      </div>`;
-    });
-    h+='</div>';
-  });
-  // 3rd
-  const tm=playoff.thirdMatch;
-  if(tm){
-    const aW=tm.done&&tm.winner?.team===tm.teamA.team, bW=tm.done&&tm.winner?.team===tm.teamB.team;
-    h+=`<div class="bracket-round-col" style="flex:0 0 auto;min-width:190px;"><div class="brc-title" style="color:#ff9955;">Juara 3</div>
-      <div class="tv-bm${tm.done?' wd':''}">
-        <div class="tv-bms"><span class="tv-bmt${aW?' w':''}">${tm.teamA.team}</span><span class="tv-bmsc${aW?' w':''}">${tm.scoreA??''}</span></div>
-        <div class="tv-bms"><span class="tv-bmt${bW?' w':''}">${tm.teamB.team}</span><span class="tv-bmsc${bW?' w':''}">${tm.scoreB??''}</span></div>
-      </div></div>`;
+  if(playoff.mode==='split'){
+    let h=`<div class="split-title-tv" style="color:#ffd24a;">🏆 Upper Bracket <span class="pill" style="color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;">peringkat atas</span></div>`;
+    h+=tvBracket(playoff.upper)+tvPodium(playoff.upper);
+    h+=`<div class="split-title-tv" style="color:#4ecdc4;margin-top:14px;">🛡 Lower Bracket <span class="pill" style="color:#4ecdc4;background:#4ecdc414;border:1px solid #4ecdc433;">peringkat bawah</span></div>`;
+    h+=tvBracket(playoff.lower)+tvPodium(playoff.lower);
+    el.innerHTML=h;return;
   }
-  h+='</div>';
-  // Podium
-  const fr=playoff.rounds[playoff.rounds.length-1], fm=fr?.matches[0];
-  const champ=fm?.winner, ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
-  const third=tm?.winner, fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
-  if(champ){
-    const pl=[{r:1,t:champ?.team,c:'#f5c842',e:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',e:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',e:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',e:'4th'}];
-    h+='<div class="podium-tv">';
-    pl.forEach(p=>h+=`<div class="podium-card-tv" style="background:${p.c}11;border:1.5px solid ${p.c}33;"><div class="podium-emoji">${p.e}</div><div class="podium-rank-tv" style="color:${p.c};">${p.r}</div><div class="podium-name-tv">${p.t}</div></div>`);
-    h+='</div>';
-  }
-  el.innerHTML=h;
+  el.innerHTML=tvBracket(playoff)+tvPodium(playoff);
 }
 
 function showView(v,el){
