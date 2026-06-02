@@ -1873,7 +1873,7 @@ async function tFinalizeElo(eventId, force) {
   const all = (mR.data.values || []).map(mapMatchRow).filter((m) =>
     tids.includes(m.tournamentId) && (m.stage === "GROUP" || m.stage === "PLAYOFF") &&
     m.status === "DONE" && m.entrantA && m.entrantB && m.scoreA !== "" && m.scoreB !== "");
-  const grp = all.filter((m) => m.stage === "GROUP").sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")) || a.slot - b.slot || a.court - b.court);
+  const grp = all.filter((m) => m.stage === "GROUP").sort((a, b) => a.slot - b.slot || a.court - b.court);
   const ply = all.filter((m) => m.stage === "PLAYOFF").sort((a, b) => ((parseInt(a.round) || 99) - (parseInt(b.round) || 99)) || a.slot - b.slot);
   const ordered = grp.concat(ply);
   if (!ordered.length) return respond(400, { error: "Belum ada match selesai untuk dihitung." });

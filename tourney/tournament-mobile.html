@@ -180,7 +180,7 @@ function renderJadwal(cat){
       const bw = done && String(m.winner)===String(m.entrantB);
       const liveNow = m.matchId===playingId && !done;
       return `<div class="mrow ${done?'done':''} ${liveNow?'live-now':''}">
-        <div class="top"><span class="time">${esc(m.time||"")}</span>
+        <div class="top"><span class="time">${esc(fmtTime(m.time))}</span>
           ${liveNow?'<span class="badge-now">MAIN</span>':`<span class="gl">Grup ${esc(m.groupLabel)}</span>`}</div>
         <div class="team ${aw?'w':''}"><span class="nm">${teamNames(cat,m.entrantA,false)}</span><span class="sc">${done?esc(String(m.scoreA)):"–"}</span></div>
         <div class="team ${bw?'w':''}"><span class="nm">${teamNames(cat,m.entrantB,false)}</span><span class="sc">${done?esc(String(m.scoreB)):"–"}</span></div>
@@ -233,6 +233,7 @@ function pmatch(cat,m){
 }
 
 function toMin(t){ if(!t||t.indexOf(":")<0) return null; const [h,m]=t.split(":").map(Number); return h*60+m; }
+function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const pp=x.split(/[:.]/); let h=parseInt(pp[0],10), m=parseInt(pp[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
 function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
 
 async function load(){

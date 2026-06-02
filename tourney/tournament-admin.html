@@ -437,6 +437,8 @@ function renderContext(){
   document.getElementById("ctxTour").classList.toggle("on", !!t);
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+// Normalize a clock string (Sheets may return "8:00" / "8.00" / "8:00 AM") to "HH:MM".
+function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const p=x.split(/[:.]/); let h=parseInt(p[0],10), m=parseInt(p[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
 
 /* ---- EVENTS ---- */
 async function loadEvents(){
@@ -697,7 +699,7 @@ async function loadMatches(){
 function renderMatches(matches){
   const wrap = document.getElementById("matchesWrap");
   const group = matches.filter(m=>m.stage==="GROUP")
-    .sort((a,b)=> String(a.time||"").localeCompare(String(b.time||"")) || a.slot-b.slot || a.court-b.court);
+    .sort((a,b)=> (a.slot-b.slot) || (a.court-b.court));
   if(!group.length){ wrap.innerHTML = '<p class="empty">Belum ada jadwal untuk kategori ini. Klik “Generate jadwal”.</p>'; return; }
   const firstByCourt = {};
   group.forEach(m=>{ if(m.status!=="DONE" && firstByCourt[m.court]===undefined) firstByCourt[m.court]=m.matchId; });
@@ -713,7 +715,7 @@ function matchRow(m, isPlaying){
   const sb = (m.scoreB!==""&&m.scoreB!=null) ? esc(String(m.scoreB)) : "";
   return `<div class="mrow ${done?'done':''} ${playing?'playing':''}">
     <span class="court">LAP ${m.court||"?"}</span>
-    <span class="time">${esc(m.time||"")}<span class="gl">${playing?'● MAIN · ':''}Grup ${esc(m.groupLabel)}</span></span>
+    <span class="time">${esc(fmtTime(m.time))}<span class="gl">${playing?'● MAIN · ':''}Grup ${esc(m.groupLabel)}</span></span>
     <span class="teams"><span class="${aw?'win':''}">${esc(nameOf(m.entrantA))}</span><span class="vs">vs</span><span class="${bw?'win':''}">${esc(nameOf(m.entrantB))}</span></span>
     <span class="score">
       <input id="sa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
@@ -821,7 +823,7 @@ function prow(m, numRounds){
   if(bye) return `<div class="prow bye">${teams}<span class="byebadge">BYE</span></div>`;
   const ready = m.entrantA && m.entrantB;
   const meta = `<div class="pmeta">
-    <span class="ptime">${esc(m.time||"—")}</span>
+    <span class="ptime">${esc(fmtTime(m.time)||"—")}</span>
     <span class="pcourt">Lap <input id="ct-${m.matchId}" class="ctinp" type="number" min="1" value="${m.court||""}" />
       <button type="button" class="btn btn-ghost btn-sm" onclick="saveCourt('${m.matchId}')">set</button></span>
   </div>`;

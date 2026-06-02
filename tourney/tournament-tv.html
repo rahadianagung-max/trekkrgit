@@ -98,6 +98,7 @@ const TIER = { MAIN:"Bracket Utama", CHAMPION:"Champion", PROSPECT:"Prospect" };
 
 async function api(p){ const r=await fetch(BASE+p); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 function toMin(t){ if(!t||t.indexOf(":")<0) return null; const [h,m]=t.split(":").map(Number); return h*60+m; }
+function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const pp=x.split(/[:.]/); let h=parseInt(pp[0],10), m=parseInt(pp[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
 function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
 function tick(){ document.getElementById("clock").textContent = new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}); }
 
@@ -125,7 +126,7 @@ function liveHtml(){
     courts.push(`<div class="court ${isNow?'now':''}">
       <div class="hd"><span class="cn">LAPANGAN ${ct}</span>
         <span class="st ${isNow?'now':''}">${isNow?'BERLANGSUNG':'SELESAI'}</span></div>
-      <div class="cat">${esc(cur.cat)} · Grup ${esc(cur.groupLabel)}${cur.time?` · ${esc(cur.time)}`:''}</div>
+      <div class="cat">${esc(cur.cat)} · Grup ${esc(cur.groupLabel)}${cur.time?` · ${esc(fmtTime(cur.time))}`:''}</div>
       <div class="tm ${aw?'w':''}">${tA}<span class="sc">${done?esc(String(cur.scoreA)):''}</span></div>
       <div class="tm ${bw?'w':''}">${tB}<span class="sc">${done?esc(String(cur.scoreB)):''}</span></div>
     </div>`);
