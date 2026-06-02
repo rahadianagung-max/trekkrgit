@@ -665,7 +665,11 @@ async function generateSchedule(){
     state.event.numCourts = parseInt(val("schCourts")) || state.event.numCourts;
     state.event.matchMinutes = parseInt(val("schMin")) || state.event.matchMinutes;
     renderContext();
-    toast(`Jadwal dibuat · ${r.scheduledMatches} match · ${r.numCourts} lapangan`);
+    if(r.startTime===undefined){
+      toast("Jadwal dibuat, TAPI backend masih versi lama (sheet.js belum ter-redeploy) — jam mulai diabaikan.", true);
+    } else {
+      toast(`Jadwal dibuat · mulai ${r.startTime} · ${r.scheduledMatches} match · ${r.numCourts} lapangan`);
+    }
     renderClashes(r.clashes||[]);
     loadMatches();
   }catch(e){ toast(e.message, true); }
