@@ -27,6 +27,12 @@ const TABS = {
   venues: "Venues",
   admins: "Admins",
   claims: "Claims",
+  t_events: "Tournament_Events",
+  t_tournaments: "Tournaments",
+  t_entrants: "Tournament_Entrants",
+  t_groups: "Tournament_Groups",
+  t_matches: "Tournament_Matches",
+  t_form: "Form_Responses",
 };
 
 const headers = {
@@ -42,6 +48,72 @@ function respond(statusCode, data) {
     headers,
     body: JSON.stringify(data)
   };
+}
+
+// ==============================================================
+// TOURNAMENT HELPERS (Phase 1)
+// ==============================================================
+const LEVEL_ELO = {
+  beginner: 750, upper_beginner: 1050, lower_bronze: 1350, bronze: 1650,
+  upper_bronze: 1950, silver: 2300, gold: 2750, platinum: 3100,
+};
+function levelToElo(level) {
+  return LEVEL_ELO[String(level || "").toLowerCase().trim().replace(/\s+/g, "_")] || 1350;
+}
+function normName(s) {
+  return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+function genId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+}
+// Balanced group sizes: target is a minimum-ish target (>=3), no max, no group below 3.
+function computeGroupSizes(n, target) {
+  target = Math.max(3, parseInt(target) || 4);
+  if (n <= 0) return [];
+  let g = Math.max(1, Math.ceil(n / target));
+  while (g > 1 && Math.floor(n / g) < 3) g--;
+  const base = Math.floor(n / g), rem = n % g, sizes = [];
+  for (let i = 0; i < g; i++) sizes.push(base + (i < rem ? 1 : 0));
+  return sizes;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function groupLabel(i) { return String.fromCharCode(65 + i); }
+const CAT_CODE = {
+  "men's doubles": "MD", "mens doubles": "MD", "md": "MD",
+  "women's doubles": "WD", "womens doubles": "WD", "wd": "WD",
+  "fixed mixed": "MIXED", "mixed": "MIXED",
+};
+function catCode(s) {
+  return CAT_CODE[normName(s)] || String(s || "").toUpperCase().trim();
+}
+const T_HEADERS = {
+  [TABS.t_events]: ["Event_ID", "Name", "Venue", "Date", "Start_Time", "Num_Courts", "Match_Minutes", "Created_At"],
+  [TABS.t_tournaments]: ["Tournament_ID", "Event_ID", "Category", "Level", "Format", "Group_Size_Target", "Advancers_Per_Group", "Status", "Admin_Username", "Created_At"],
+  [TABS.t_entrants]: ["Tournament_ID", "Entrant_ID", "Player1_Name", "Player1_IG", "Player2_Name", "Player2_IG", "Seed_ELO", "Is_New_P1", "Is_New_P2", "Created_At"],
+  [TABS.t_groups]: ["Tournament_ID", "Category", "Group_Label", "Entrant_ID", "Player1_Name", "Player2_Name", "Seed_ELO"],
+  [TABS.t_matches]: ["Tournament_ID", "Match_ID", "Stage", "Group_Label", "Bracket", "Round", "Court", "Slot_Index", "Scheduled_Time", "Entrant_A", "Entrant_B", "Score_A", "Score_B", "Winner", "Status", "Updated_At"],
+  [TABS.t_form]: ["Timestamp", "Category", "Player1_Name", "Player1_IG", "Player2_Name", "Player2_IG", "Contact_WA"],
+};
+// Create any missing tournament tabs (with header row) so the engine is self-bootstrapping.
+async function ensureTabs(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  const toCreate = Object.keys(T_HEADERS).filter((t) => !existing.includes(t));
+  if (!toCreate.length) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: toCreate.map((title) => ({ addSheet: { properties: { title } } })) },
+  });
+  for (const title of toCreate) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${title}!A1`, valueInputOption: "RAW",
+      requestBody: { values: [T_HEADERS[title]] },
+    });
+  }
 }
 
 // ==============================================================
@@ -109,6 +181,54 @@ const netlifyHandler = async (event) => {
 
     if (path === "admins" && method === "GET") return await getAdmins();
     if (path === "admins" && method === "POST") return await addAdmin(body);
+
+    // --- TOURNAMENT ROUTES (Phase 1) ---
+    if (path === "tournament/event" && method === "POST") return await tCreateEvent(body);
+    if (path === "tournament/events" && method === "GET") return await tListEvents();
+    if (path.startsWith("tournament/event/") && path.endsWith("/schedule") && method === "POST") {
+      return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")));
+    }
+    if (path.startsWith("tournament/event/") && path.endsWith("/finalize-elo") && method === "POST") {
+      return await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
+    }
+    if (path.startsWith("tournament/event/") && path.endsWith("/public") && method === "GET") {
+      return await tPublicEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/public", "")));
+    }
+    if (path.startsWith("tournament/event/") && path.endsWith("/schedule") && method === "GET") {
+      return await tGetEventSchedule(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")));
+    }
+    if (path === "tournament/list" && method === "GET") return await tListTournaments(params);
+    if (path === "tournament" && method === "POST") return await tCreateTournament(body);
+    if (path === "tournament/entrant" && method === "PUT") return await tUpdateEntrant(body);
+    if (path === "tournament/match" && method === "PUT") return await tUpdateMatchScore(body);
+    if (path === "tournament/playoff/match" && method === "PUT") return await tUpdatePlayoffScore(body);
+    if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
+      return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/import") && method === "POST") {
+      return await tImport(decodeURIComponent(path.replace("tournament/", "").replace("/import", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/draw") && method === "POST") {
+      return await tDrawGroups(decodeURIComponent(path.replace("tournament/", "").replace("/draw", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/groups") && method === "GET") {
+      return await tGetGroups(decodeURIComponent(path.replace("tournament/", "").replace("/groups", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/matches") && method === "GET") {
+      return await tListMatches(decodeURIComponent(path.replace("tournament/", "").replace("/matches", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/entrants") && method === "GET") {
+      return await tListEntrants(decodeURIComponent(path.replace("tournament/", "").replace("/entrants", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/standings") && method === "GET") {
+      return await tGetStandings(decodeURIComponent(path.replace("tournament/", "").replace("/standings", "")));
+    }
+    if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "GET") {
+      return await tGetPlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")));
+    }
+    if (path.startsWith("tournament/") && method === "GET") {
+      return await tGetTournament(decodeURIComponent(path.replace("tournament/", "")));
+    }
 
     return respond(404, { error: "Route not found", route: path });
   } catch (err) {
@@ -766,4 +886,911 @@ async function getSettings() {
     // Settings tab may not exist yet — return defaults
     return respond(200, { settings: {} });
   }
+}
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 1: events, tournaments, import, entrants)
+// ==============================================================
+async function tCreateEvent(body) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const id = genId("EV");
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A:H`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[
+      id, body.name || "Untitled Event", body.venue || "", body.date || "",
+      body.startTime || "", parseInt(body.numCourts) || 1, parseInt(body.matchMinutes) || 15, now,
+    ]] },
+  });
+  return respond(200, { success: true, eventId: id });
+}
+
+async function tListEvents() {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` });
+  const events = (r.data.values || []).map((x) => ({
+    eventId: x[0], name: x[1], venue: x[2], date: x[3], startTime: x[4],
+    numCourts: parseInt(x[5]) || 0, matchMinutes: parseInt(x[6]) || 15, createdAt: x[7],
+  }));
+  return respond(200, { events });
+}
+
+async function tCreateTournament(body) {
+  if (!body.eventId) return respond(400, { error: "eventId required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const id = genId("TM");
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A:J`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[
+      id, body.eventId, catCode(body.category), String(body.level || "lower_bronze").toLowerCase().trim(),
+      String(body.format || "SINGLE").toUpperCase(), parseInt(body.groupSizeTarget) || 4,
+      parseInt(body.advancersPerGroup) || 2, "SETUP", body.adminUsername || "", now,
+    ]] },
+  });
+  return respond(200, { success: true, tournamentId: id });
+}
+
+async function tListTournaments(params) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  let rows = r.data.values || [];
+  if (params.eventId) rows = rows.filter((x) => x[1] === params.eventId);
+  const tournaments = rows.map((x) => ({
+    tournamentId: x[0], eventId: x[1], category: x[2], level: x[3], format: x[4],
+    groupSizeTarget: parseInt(x[5]) || 4, advancersPerGroup: parseInt(x[6]) || 2,
+    status: x[7], adminUsername: x[8], createdAt: x[9],
+  }));
+  return respond(200, { tournaments });
+}
+
+async function tGetTournamentRow(sheets, id) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  const rows = r.data.values || [];
+  const idx = rows.findIndex((x) => x[0] === id);
+  if (idx === -1) return null;
+  const x = rows[idx];
+  return {
+    rowIndex: idx + 2,
+    tournament: {
+      tournamentId: x[0], eventId: x[1], category: x[2], level: x[3], format: x[4],
+      groupSizeTarget: parseInt(x[5]) || 4, advancersPerGroup: parseInt(x[6]) || 2,
+      status: x[7], adminUsername: x[8], createdAt: x[9],
+    },
+  };
+}
+
+async function tGetTournament(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const t = await tGetTournamentRow(sheets, id);
+  if (!t) return respond(404, { error: "Tournament not found" });
+  const enr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:A` });
+  const entrantCount = (enr.data.values || []).filter((x) => x[0] === id).length;
+  return respond(200, { tournament: t.tournament, entrantCount });
+}
+
+// Import pairs from Form_Responses for this tournament's category.
+// Existing Trekkr players keep their last ELO; unknown names are auto-created at the category level ELO.
+async function tImport(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const t = await tGetTournamentRow(sheets, id);
+  if (!t) return respond(404, { error: "Tournament not found" });
+  const category = t.tournament.category;
+  const startElo = levelToElo(t.tournament.level);
+
+  const [pRes, eRes, fRes, enRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_form}!A2:G` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` }),
+  ]);
+  const pRows = pRes.data.values || [];
+  const eRows = eRes.data.values || [];
+  const fRows = fRes.data.values || [];
+  const enRows = enRes.data.values || [];
+
+  const playerByName = new Map();
+  for (const r of pRows) playerByName.set(normName(r[0]), { name: r[0], displayName: r[3] || r[0] });
+  const eloByName = new Map();
+  for (const r of eRows) { const v = parseInt(r[2]); if (!isNaN(v)) eloByName.set(normName(r[1]), v); }
+
+  const existingPairs = new Set();
+  for (const r of enRows) { if (r[0] === id) existingPairs.add([normName(r[2]), normName(r[4])].sort().join("|")); }
+
+  const now = new Date().toISOString();
+  const newPlayerRows = [], newEloRows = [], newEntrantRows = [];
+  const createdThisRun = new Set();
+  let matched = 0, created = 0, skipped = 0;
+
+  function resolvePlayer(rawName, ig) {
+    const nm = normName(rawName);
+    if (!nm) return null;
+    if (playerByName.has(nm)) {
+      matched++;
+      return { name: playerByName.get(nm).name, elo: eloByName.has(nm) ? eloByName.get(nm) : startElo, isNew: false };
+    }
+    const cleanName = String(rawName).trim();
+    created++;
+    createdThisRun.add(nm);
+    newPlayerRows.push([cleanName, ig || "", ig ? "TRUE" : "FALSE", cleanName, "", "", "", "", now]);
+    newEloRows.push(["INITIAL", cleanName, startElo, 0, 0, 0, now]);
+    eloByName.set(nm, startElo);
+    playerByName.set(nm, { name: cleanName, displayName: cleanName });
+    return { name: cleanName, elo: startElo, isNew: true };
+  }
+
+  for (const f of fRows) {
+    if (catCode(f[1]) !== category) continue;
+    const p1 = resolvePlayer(f[2], f[3]);
+    const p2 = resolvePlayer(f[4], f[5]);
+    if (!p1 || !p2) continue;
+    const key = [normName(p1.name), normName(p2.name)].sort().join("|");
+    if (existingPairs.has(key)) { skipped++; continue; }
+    existingPairs.add(key);
+    const seed = Math.round((p1.elo + p2.elo) / 2);
+    newEntrantRows.push([
+      id, genId("EN"), p1.name, f[3] || "", p2.name, f[5] || "", seed,
+      p1.isNew ? "TRUE" : "FALSE", p2.isNew ? "TRUE" : "FALSE", now,
+    ]);
+  }
+
+  if (newPlayerRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: newPlayerRows } });
+  if (newEloRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: newEloRows } });
+  if (newEntrantRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: newEntrantRows } });
+
+  return respond(200, {
+    success: true, imported: newEntrantRows.length, newPlayers: newPlayerRows.length,
+    matchedNames: matched, skippedDuplicates: skipped, startElo,
+  });
+}
+
+async function tListEntrants(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` });
+  const entrants = (r.data.values || []).filter((x) => x[0] === id).map((x) => ({
+    tournamentId: x[0], entrantId: x[1], player1Name: x[2], player1Ig: x[3],
+    player2Name: x[4], player2Ig: x[5], seedElo: parseInt(x[6]) || 0,
+    isNewP1: x[7] === "TRUE", isNewP2: x[8] === "TRUE", createdAt: x[9],
+  }));
+  return respond(200, { entrants });
+}
+
+async function tUpdateEntrant(body) {
+  const { entrantId, updates } = body;
+  if (!entrantId || !updates) return respond(400, { error: "entrantId and updates required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` });
+  const rows = r.data.values || [];
+  const idx = rows.findIndex((x) => x[1] === entrantId);
+  if (idx === -1) return respond(404, { error: "Entrant not found" });
+  const row = rows[idx];
+  while (row.length < 10) row.push("");
+  const map = { player1Name: 2, player1Ig: 3, player2Name: 4, player2Ig: 5, seedElo: 6 };
+  for (const [k, v] of Object.entries(updates)) { if (k in map) row[map[k]] = v; }
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A${idx + 2}:J${idx + 2}`,
+    valueInputOption: "USER_ENTERED", requestBody: { values: [row] },
+  });
+  return respond(200, { success: true });
+}
+
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 2: group draw & read/sync)
+// ==============================================================
+async function rewriteGroups(sheets, id, newRows) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const rows = r.data.values || [];
+  const keep = rows.filter((x) => x[0] !== id);
+  const all = keep.concat(newRows);
+  await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  if (all.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: all },
+    });
+  }
+}
+
+// Random draw of entrants into balanced groups; overwrites this tournament's group rows.
+async function tDrawGroups(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const t = await tGetTournamentRow(sheets, id);
+  if (!t) return respond(404, { error: "Tournament not found" });
+  const enr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` });
+  const entrants = (enr.data.values || []).filter((x) => x[0] === id);
+  if (!entrants.length) return respond(400, { error: "Belum ada peserta untuk diundi" });
+
+  const sizes = computeGroupSizes(entrants.length, t.tournament.groupSizeTarget);
+  const shuffled = shuffle(entrants);
+  const newRows = [], summary = [];
+  let cursor = 0;
+  for (let gi = 0; gi < sizes.length; gi++) {
+    const label = groupLabel(gi);
+    const members = shuffled.slice(cursor, cursor + sizes[gi]);
+    cursor += sizes[gi];
+    for (const e of members) {
+      newRows.push([id, t.tournament.category, label, e[1], e[2], e[4], parseInt(e[6]) || 0]);
+    }
+    const matches = (sizes[gi] * (sizes[gi] - 1)) / 2;
+    summary.push({
+      label, size: sizes[gi], matches,
+      members: members.map((e) => ({ entrantId: e[1], player1Name: e[2], player2Name: e[4], seedElo: parseInt(e[6]) || 0 })),
+    });
+  }
+  await rewriteGroups(sheets, id, newRows);
+  return respond(200, { success: true, groupCount: sizes.length, sizes, groups: summary });
+}
+
+// Read current groups for a tournament (also used as "sync from sheet" after manual edits).
+async function tGetGroups(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const rows = (r.data.values || []).filter((x) => x[0] === id);
+  const map = new Map();
+  for (const x of rows) {
+    const label = x[2] || "?";
+    if (!map.has(label)) map.set(label, []);
+    map.get(label).push({ entrantId: x[3], player1Name: x[4], player2Name: x[5], seedElo: parseInt(x[6]) || 0 });
+  }
+  const groups = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([label, members]) => ({
+    label, size: members.length, matches: (members.length * (members.length - 1)) / 2, members,
+  }));
+  return respond(200, { groups });
+}
+
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 3a: group-stage scheduler)
+// ==============================================================
+// Round-robin via circle method, returned as equal-sized rounds (each entrant plays <=1 per round).
+function roundRobinRounds(ids) {
+  let arr = ids.slice();
+  const n = arr.length;
+  if (n < 2) return [];
+  if (n % 2 === 1) arr.push(null);
+  const m = arr.length, R = m - 1, half = m / 2;
+  let list = arr.slice();
+  const rounds = [];
+  for (let r = 0; r < R; r++) {
+    const round = [];
+    for (let i = 0; i < half; i++) {
+      const a = list[i], b = list[m - 1 - i];
+      if (a !== null && b !== null) round.push([a, b]);
+    }
+    rounds.push(round);
+    const fixed = list[0], rest = list.slice(1);
+    rest.unshift(rest.pop());
+    list = [fixed, ...rest];
+  }
+  return rounds;
+}
+// Concatenate rounds starting at a given round offset (preserves <=2 consecutive guarantee).
+function flattenRounds(rounds, offset) {
+  const R = rounds.length, out = [];
+  for (let i = 0; i < R; i++) for (const mt of rounds[(i + offset) % R]) out.push(mt);
+  return out;
+}
+// Candidate court-orderings: round-offset x within-round rotation. Each keeps <=2 consecutive
+// (rounds stay intact; any intra-round order keeps each entrant <=1 per round).
+function buildOrderings(rounds) {
+  const R = rounds.length;
+  if (!R) return [[]];
+  const maxLen = Math.max(1, ...rounds.map((r) => r.length));
+  const out = [], seen = new Set();
+  for (let off = 0; off < R; off++) {
+    for (let rot = 0; rot < maxLen; rot++) {
+      const order = [];
+      for (let i = 0; i < R; i++) {
+        const ri = (i + off) % R, round = rounds[ri], L = round.length;
+        for (let k = 0; k < L; k++) { const [a, b] = round[(k + rot) % L]; order.push({ a, b, round: ri + 1 }); }
+      }
+      const sig = order.map((m) => m.a + "-" + m.b).join("|");
+      if (!seen.has(sig)) { seen.add(sig); out.push(order); }
+    }
+  }
+  return out;
+}
+// Greedy LPT: assign each group to the court that frees earliest (creates waves when groups > courts).
+function assignGroupsToCourts(groups, numCourts) {
+  const courts = Array.from({ length: Math.max(1, numCourts) }, () => 0);
+  const sorted = groups.slice().sort((a, b) => b.length - a.length);
+  const assign = {};
+  for (const g of sorted) {
+    let ci = 0;
+    for (let i = 1; i < courts.length; i++) if (courts[i] < courts[ci]) ci = i;
+    assign[g.key] = { court: ci + 1, startSlot: courts[ci] };
+    courts[ci] += g.length;
+  }
+  return assign;
+}
+function addMinutesToTime(hhmm, minutes) {
+  const parts = String(hhmm || "09:00").split(":");
+  let total = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0) + minutes;
+  total = ((total % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+// Count player clashes (same player in 2+ matches at the same absolute slot, across courts).
+function totalClashes(groups, namesMap) {
+  const slot = new Map();
+  for (const g of groups) {
+    const order = g.orderings[g.oi || 0] || [];
+    for (let j = 0; j < order.length; j++) {
+      const players = [...(namesMap[order[j].a] || []), ...(namesMap[order[j].b] || [])].filter(Boolean);
+      const s = g.startSlot + j;
+      if (!slot.has(s)) slot.set(s, []);
+      slot.get(s).push(players);
+    }
+  }
+  let clashes = 0;
+  const detail = [];
+  for (const [s, arr] of slot) {
+    const count = {};
+    for (const players of arr) for (const p of players) count[normName(p)] = (count[normName(p)] || 0) + 1;
+    const clashed = Object.keys(count).filter((p) => count[p] > 1);
+    if (clashed.length) { clashes += clashed.length; detail.push({ slot: s, players: clashed }); }
+  }
+  return { clashes, detail };
+}
+// Coordinate descent over each group's round-offset to minimise clashes (best-effort).
+function reduceClashes(groups, namesMap) {
+  let best = totalClashes(groups, namesMap).clashes;
+  for (let pass = 0; pass < 4 && best > 0; pass++) {
+    let improved = false;
+    for (const g of groups) {
+      const N = (g.orderings || []).length;
+      if (N < 2) continue;
+      let bestOi = g.oi || 0, bestC = best;
+      for (let o = 0; o < N; o++) {
+        g.oi = o;
+        const c = totalClashes(groups, namesMap).clashes;
+        if (c < bestC) { bestC = c; bestOi = o; }
+      }
+      g.oi = bestOi;
+      if (bestC < best) { best = bestC; improved = true; }
+    }
+    if (!improved) break;
+  }
+  return best;
+}
+function mapMatchRow(x) {
+  return {
+    tournamentId: x[0], matchId: x[1], stage: x[2], groupLabel: x[3], bracket: x[4], round: x[5],
+    court: parseInt(x[6]) || 0, slot: parseInt(x[7]) || 0, time: x[8], entrantA: x[9], entrantB: x[10],
+    scoreA: x[11], scoreB: x[12], winner: x[13], status: x[14], updatedAt: x[15],
+  };
+}
+async function rewriteEventGroupMatches(sheets, tids, newRows) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const keep = rows.filter((x) => !(tids.includes(x[0]) && x[2] === "GROUP"));
+  const all = keep.concat(newRows);
+  await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  if (all.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: all },
+    });
+  }
+}
+// Generate the full group-stage schedule for an event (all categories share the court pool).
+async function tScheduleEvent(eventId) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const evRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` });
+  const evRow = (evRes.data.values || []).find((x) => x[0] === eventId);
+  if (!evRow) return respond(404, { error: "Event not found" });
+  const numCourts = parseInt(evRow[5]) || 1, startTime = evRow[4] || "09:00", matchMinutes = parseInt(evRow[6]) || 15;
+
+  const trRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  const tournaments = (trRes.data.values || []).filter((x) => x[1] === eventId);
+  if (!tournaments.length) return respond(400, { error: "Belum ada kategori di event ini" });
+  const tids = tournaments.map((x) => x[0]);
+
+  const grRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const grRows = (grRes.data.values || []).filter((x) => tids.includes(x[0]));
+  if (!grRows.length) return respond(400, { error: "Belum ada grup. Undi grup tiap kategori dulu." });
+
+  const namesMap = {};
+  const gmap = new Map();
+  for (const x of grRows) {
+    const key = `${x[0]}|${x[2]}`;
+    if (!gmap.has(key)) gmap.set(key, { key, tid: x[0], label: x[2], category: x[1], entrantIds: [], offset: 0 });
+    gmap.get(key).entrantIds.push(x[3]);
+    namesMap[x[3]] = [x[4] || "", x[5] || ""];
+  }
+  const groups = [...gmap.values()];
+  for (const g of groups) { g.rounds = roundRobinRounds(g.entrantIds); g.orderings = buildOrderings(g.rounds); g.oi = 0; g.length = (g.orderings[0] || []).length; }
+
+  const assign = assignGroupsToCourts(groups.map((g) => ({ key: g.key, length: g.length })), numCourts);
+  for (const g of groups) { g.court = assign[g.key].court; g.startSlot = assign[g.key].startSlot; }
+
+  reduceClashes(groups, namesMap);
+
+  const now = new Date().toISOString();
+  const newRows = [];
+  let count = 0;
+  for (const g of groups) {
+    const order = g.orderings[g.oi] || [];
+    for (let j = 0; j < order.length; j++) {
+      const { a, b, round } = order[j];
+      const absSlot = g.startSlot + j;
+      const time = addMinutesToTime(startTime, absSlot * matchMinutes);
+      newRows.push([g.tid, genId("MT"), "GROUP", g.label, "", round, g.court, absSlot, time, a, b, "", "", "", "SCHEDULED", now]);
+      count++;
+    }
+  }
+
+  const { detail } = totalClashes(groups, namesMap);
+  const clashes = detail.map((d) => ({ slot: d.slot, time: addMinutesToTime(startTime, d.slot * matchMinutes), players: d.players }));
+
+  await rewriteEventGroupMatches(sheets, tids, newRows);
+  return respond(200, {
+    success: true, scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
+    clashes, clashCount: clashes.length,
+  });
+}
+// All matches for one tournament (admin per-category view).
+async function tListMatches(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const matches = (r.data.values || []).filter((x) => x[0] === id).map(mapMatchRow).sort((a, b) => a.slot - b.slot || a.court - b.court);
+  return respond(200, { matches });
+}
+// Event-wide schedule with team names resolved (for mobile/TV later).
+async function tGetEventSchedule(eventId) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const trRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  const trs = (trRes.data.values || []).filter((x) => x[1] === eventId);
+  const tids = trs.map((x) => x[0]);
+  const catByTid = {};
+  for (const x of trs) catByTid[x[0]] = x[2];
+  const grRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const names = {};
+  for (const x of (grRes.data.values || [])) if (tids.includes(x[0])) names[x[3]] = `${x[4]} + ${x[5]}`;
+  const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const matches = (mRes.data.values || []).filter((x) => tids.includes(x[0]) && x[2] === "GROUP").map((x) => ({
+    ...mapMatchRow(x), category: catByTid[x[0]] || "", teamA: names[x[9]] || x[9], teamB: names[x[10]] || x[10],
+  })).sort((a, b) => a.slot - b.slot || a.court - b.court);
+  return respond(200, { matches });
+}
+
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 3b: standings & score entry)
+// ==============================================================
+// Standings for one group. Tiebreak: wins -> head-to-head (among tied) -> game diff -> games for.
+function computeGroupStandings(matches, entrantIds) {
+  const st = {};
+  for (const id of entrantIds) st[id] = { entrantId: id, played: 0, wins: 0, losses: 0, draws: 0, gf: 0, ga: 0 };
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+  const done = matches.filter((m) => has(m.scoreA) && has(m.scoreB));
+  for (const m of done) {
+    const a = m.entrantA, b = m.entrantB, sa = Number(m.scoreA), sb = Number(m.scoreB);
+    if (!st[a] || !st[b]) continue;
+    st[a].played++; st[b].played++;
+    st[a].gf += sa; st[a].ga += sb; st[b].gf += sb; st[b].ga += sa;
+    if (sa > sb) { st[a].wins++; st[b].losses++; }
+    else if (sb > sa) { st[b].wins++; st[a].losses++; }
+    else { st[a].draws++; st[b].draws++; }
+  }
+  function h2hWins(id, subset) {
+    let w = 0;
+    for (const m of done) {
+      const a = m.entrantA, b = m.entrantB, sa = Number(m.scoreA), sb = Number(m.scoreB);
+      if (a === id && subset.has(b)) { if (sa > sb) w++; }
+      else if (b === id && subset.has(a)) { if (sb > sa) w++; }
+    }
+    return w;
+  }
+  const arr = Object.values(st);
+  arr.forEach((s) => { s.gd = s.gf - s.ga; });
+  arr.sort((x, y) => {
+    if (y.wins !== x.wins) return y.wins - x.wins;
+    const subset = new Set(arr.filter((s) => s.wins === x.wins).map((s) => s.entrantId));
+    const hx = h2hWins(x.entrantId, subset), hy = h2hWins(y.entrantId, subset);
+    if (hy !== hx) return hy - hx;
+    if (y.gd !== x.gd) return y.gd - x.gd;
+    return y.gf - x.gf;
+  });
+  arr.forEach((s, i) => { s.rank = i + 1; });
+  return arr;
+}
+async function tGetStandings(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const grRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const grRows = (grRes.data.values || []).filter((x) => x[0] === id);
+  if (!grRows.length) return respond(200, { groups: [] });
+  const names = {}, members = new Map();
+  for (const x of grRows) {
+    const label = x[2];
+    if (!members.has(label)) members.set(label, []);
+    members.get(label).push(x[3]);
+    names[x[3]] = `${x[4]} + ${x[5]}`;
+  }
+  const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const matches = (mRes.data.values || []).filter((x) => x[0] === id && x[2] === "GROUP").map(mapMatchRow);
+  const groups = [];
+  for (const [label, ids] of [...members.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const gm = matches.filter((m) => m.groupLabel === label);
+    const standings = computeGroupStandings(gm, ids).map((s) => ({ ...s, team: names[s.entrantId] || s.entrantId }));
+    groups.push({ label, standings });
+  }
+  return respond(200, { groups });
+}
+async function tUpdateMatchScore(body) {
+  const { matchId, scoreA, scoreB } = body;
+  if (!matchId) return respond(400, { error: "matchId required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const idx = rows.findIndex((x) => x[1] === matchId);
+  if (idx === -1) return respond(404, { error: "Match not found" });
+  const row = rows[idx];
+  while (row.length < 16) row.push("");
+  const sa = (scoreA === undefined || scoreA === null) ? "" : String(scoreA);
+  const sb = (scoreB === undefined || scoreB === null) ? "" : String(scoreB);
+  row[11] = sa; row[12] = sb;
+  const numeric = sa !== "" && sb !== "" && !isNaN(Number(sa)) && !isNaN(Number(sb));
+  let winner = "";
+  if (numeric) { winner = Number(sa) > Number(sb) ? row[9] : Number(sb) > Number(sa) ? row[10] : ""; }
+  row[13] = winner;
+  row[14] = numeric ? "DONE" : "SCHEDULED";
+  row[15] = new Date().toISOString();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A${idx + 2}:P${idx + 2}`,
+    valueInputOption: "USER_ENTERED", requestBody: { values: [row] },
+  });
+  return respond(200, { success: true, status: row[14], winner });
+}
+
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 4: playoff brackets)
+// ==============================================================
+function nextPow2(n) { let p = 1; while (p < n) p *= 2; return Math.max(1, p); }
+// Standard bracket seed positions: size4 -> [1,4,2,3]; size8 -> [1,8,4,5,2,7,3,6].
+function seedOrder(size) {
+  if (size < 2) return [1].slice(0, size);
+  let pots = [1, 2];
+  const rounds = Math.log2(size);
+  for (let r = 1; r < rounds; r++) {
+    const sum = pots.length * 2 + 1, next = [];
+    for (const p of pots) { next.push(p); next.push(sum - p); }
+    pots = next;
+  }
+  return pots;
+}
+// Build a single-elim bracket from seeded entrant ids (best first). Byes pre-resolved & pre-advanced.
+function buildBracket(seeded, tier) {
+  const nQual = seeded.length;
+  if (nQual < 2) return { matches: [], numRounds: 0, bronze: false, nQual, soleWinner: nQual === 1 ? seeded[0] : null };
+  const size = nextPow2(nQual), numRounds = Math.log2(size);
+  const order = seedOrder(size);
+  const pos = order.map((sn) => (sn <= nQual ? seeded[sn - 1] : null));
+  const rounds = [];
+  for (let r = 1; r <= numRounds; r++) {
+    const cnt = size / Math.pow(2, r), arr = [];
+    for (let i = 0; i < cnt; i++) arr.push({ bracket: tier, round: r, idx: i, a: null, b: null, status: "SCHEDULED", winner: "" });
+    rounds.push(arr);
+  }
+  for (let i = 0; i < rounds[0].length; i++) { rounds[0][i].a = pos[2 * i] || null; rounds[0][i].b = pos[2 * i + 1] || null; }
+  const advance = (winner, r, i) => { if (r >= numRounds) return; const m = rounds[r][Math.floor(i / 2)]; if (i % 2 === 0) m.a = winner; else m.b = winner; };
+  for (let i = 0; i < rounds[0].length; i++) {
+    const m = rounds[0][i];
+    if (m.a && !m.b) { m.winner = m.a; m.status = "BYE"; advance(m.a, 1, i); }
+    else if (!m.a && m.b) { m.winner = m.b; m.status = "BYE"; advance(m.b, 1, i); }
+  }
+  const bronze = nQual >= 4;
+  const matches = [];
+  for (const arr of rounds) for (const m of arr) matches.push(m);
+  if (bronze) matches.push({ bracket: tier, round: "BRONZE", idx: 0, a: null, b: null, status: "SCHEDULED", winner: "" });
+  return { matches, numRounds, bronze, size, nQual };
+}
+async function rewritePlayoffMatches(sheets, id, newRows) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const keep = rows.filter((x) => !(x[0] === id && x[2] === "PLAYOFF"));
+  const all = keep.concat(newRows);
+  await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  if (all.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: all },
+    });
+  }
+}
+// Compute current group standings for a tournament -> [{label, standings:[{entrantId,rank,wins,gd,gf}]}]
+async function computeTournamentStandings(sheets, id) {
+  const grRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const grRows = (grRes.data.values || []).filter((x) => x[0] === id);
+  const members = new Map();
+  for (const x of grRows) { const l = x[2]; if (!members.has(l)) members.set(l, []); members.get(l).push(x[3]); }
+  const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const matches = (mRes.data.values || []).filter((x) => x[0] === id && x[2] === "GROUP").map(mapMatchRow);
+  const out = [];
+  for (const [label, ids] of [...members.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const gm = matches.filter((m) => m.groupLabel === label);
+    out.push({ label, standings: computeGroupStandings(gm, ids) });
+  }
+  return out;
+}
+const seedSort = (a, b) => a.rank - b.rank || b.wins - a.wins || b.gd - a.gd || b.gf - a.gf;
+async function tGeneratePlayoff(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const tRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  const tRow = (tRes.data.values || []).find((x) => x[0] === id);
+  if (!tRow) return respond(404, { error: "Tournament not found" });
+  const format = tRow[4] || "SINGLE", N = parseInt(tRow[6]) || 2;
+  const groups = await computeTournamentStandings(sheets, id);
+  if (!groups.length) return respond(400, { error: "Belum ada grup/standing. Undi grup & input skor dulu." });
+
+  const champ = [], prosp = [];
+  for (const g of groups) for (const s of g.standings) (s.rank <= N ? champ : prosp).push(s);
+  champ.sort(seedSort); prosp.sort(seedSort);
+
+  const now = new Date().toISOString();
+  const newRows = [];
+  const toRow = (m) => [id, genId("MT"), "PLAYOFF", "", m.bracket, m.round, "", m.idx, "", m.a || "", m.b || "", "", "", m.winner || "", m.status, now];
+  const summary = [];
+  const emit = (tier, list) => {
+    const b = buildBracket(list.map((s) => s.entrantId), tier);
+    b.matches.forEach((m) => newRows.push(toRow(m)));
+    summary.push({ tier, entrants: b.nQual, rounds: b.numRounds, bronze: b.bronze, matches: b.matches.length });
+  };
+  if (format === "SPLIT") {
+    if (champ.length < 2) return respond(400, { error: "Champion tier perlu minimal 2 tim." });
+    emit("CHAMPION", champ);
+    if (prosp.length >= 2) emit("PROSPECT", prosp);
+  } else {
+    if (champ.length < 2) return respond(400, { error: `Perlu minimal 2 tim lolos (top ${N}/grup).` });
+    emit("MAIN", champ);
+  }
+  await rewritePlayoffMatches(sheets, id, newRows);
+  await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }).then(async (r) => {
+    const rows = r.data.values || [], i = rows.findIndex((x) => x[0] === id);
+    if (i !== -1) { while (rows[i].length < 8) rows[i].push(""); rows[i][7] = "PLAYOFF";
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A${i + 2}:J${i + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rows[i]] } }); }
+  });
+  return respond(200, { success: true, format, brackets: summary });
+}
+async function tUpdatePlayoffScore(body) {
+  const { matchId, scoreA, scoreB } = body;
+  if (!matchId) return respond(400, { error: "matchId required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const row = rows.find((x) => x[1] === matchId);
+  if (!row) return respond(404, { error: "Match not found" });
+  if (row[2] !== "PLAYOFF") return respond(400, { error: "Bukan match playoff" });
+  while (row.length < 16) row.push("");
+  const tid = row[0], tier = row[4], roundRaw = row[5], mIdx = parseInt(row[7]) || 0, a = row[9], b = row[10];
+  const sa = parseInt(scoreA), sb = parseInt(scoreB), numeric = !isNaN(sa) && !isNaN(sb);
+  row[11] = isNaN(sa) ? "" : sa; row[12] = isNaN(sb) ? "" : sb;
+  const winner = numeric ? (sa > sb ? a : (sb > sa ? b : "")) : "";
+  const loser = winner ? (winner === a ? b : a) : "";
+  row[13] = winner; row[14] = numeric ? "DONE" : "SCHEDULED"; row[15] = new Date().toISOString();
+
+  const inTier = (x) => x[0] === tid && x[2] === "PLAYOFF" && x[4] === tier;
+  const numRounds = Math.max(0, ...rows.filter((x) => inTier(x) && /^\d+$/.test(String(x[5]))).map((x) => parseInt(x[5])));
+  const rnum = /^\d+$/.test(String(roundRaw)) ? parseInt(roundRaw) : null;
+  const resetSlot = (m, slot, val) => { m[slot] = val; m[11] = ""; m[12] = ""; m[13] = ""; m[14] = (m[9] && m[10]) ? "SCHEDULED" : m[14] === "BYE" ? "BYE" : "SCHEDULED"; m[15] = row[15]; };
+  if (numeric && winner && rnum !== null) {
+    if (rnum < numRounds) {
+      const next = rows.find((x) => inTier(x) && /^\d+$/.test(String(x[5])) && parseInt(x[5]) === rnum + 1 && (parseInt(x[7]) || 0) === Math.floor(mIdx / 2));
+      if (next) { while (next.length < 16) next.push(""); resetSlot(next, mIdx % 2 === 0 ? 9 : 10, winner); }
+    }
+    if (rnum === numRounds - 1) {
+      const bronze = rows.find((x) => inTier(x) && String(x[5]) === "BRONZE");
+      if (bronze && loser) { while (bronze.length < 16) bronze.push(""); resetSlot(bronze, mIdx === 0 ? 9 : 10, loser); }
+    }
+  }
+  await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: rows } });
+  return respond(200, { success: true, status: row[14], winner });
+}
+// Pure view-builder: given mapped PLAYOFF matches + a name(entrantId) fn -> brackets array.
+function playoffBracketsView(all, nm) {
+  if (!all.length) return [];
+  const tiers = [...new Set(all.map((m) => m.bracket))];
+  return tiers.map((tier) => {
+    const tm = all.filter((m) => m.bracket === tier);
+    const numRounds = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
+    const nQual = tm.filter((m) => parseInt(m.round) === 1).reduce((n, m) => n + (m.entrantA ? 1 : 0) + (m.entrantB ? 1 : 0), 0);
+    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
+    const rounds = [];
+    for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
+    const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
+    const final = tm.find((m) => parseInt(m.round) === numRounds && m.slot === 0);
+    const loserOf = (m) => (m && m.winner ? (m.winner === m.entrantA ? m.entrantA : m.entrantB) : "");
+    let champion = "", runnerUp = "", third = "";
+    if (final && final.status === "DONE" && final.winner) { champion = nm(final.winner); runnerUp = nm(loserOf(final)); }
+    if (bronzeM && bronzeM.status === "DONE" && bronzeM.winner) third = nm(bronzeM.winner);
+    else if (!bronzeM) {
+      const sfReal = tm.filter((m) => parseInt(m.round) === numRounds - 1 && m.entrantA && m.entrantB && m.status === "DONE");
+      if (sfReal.length === 1) third = nm(loserOf(sfReal[0]));
+    }
+    return { tier, numRounds, nQual, rounds, bronze: bronzeM ? view(bronzeM) : null, podium: { champion, runnerUp, third } };
+  });
+}
+async function tGetPlayoff(id) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const grRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` });
+  const names = {};
+  for (const x of (grRes.data.values || [])) if (x[0] === id) names[x[3]] = `${x[4]} + ${x[5]}`;
+  const nm = (eid) => (eid ? (names[eid] || eid) : "");
+  const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const all = (mRes.data.values || []).filter((x) => x[0] === id && x[2] === "PLAYOFF").map(mapMatchRow);
+  return respond(200, { brackets: playoffBracketsView(all, nm) });
+}
+
+// ==============================================================
+// PUBLIC AGGREGATE (Phase 5: one call for mobile/TV, fixed 5 reads)
+// ==============================================================
+async function tPublicEvent(eventId) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const [evR, trR, grR, mR, plR] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` }),
+  ]);
+  const evRow = (evR.data.values || []).find((x) => x[0] === eventId);
+  if (!evRow) return respond(404, { error: "Event not found" });
+  const event = { eventId: evRow[0], name: evRow[1], venue: evRow[2], date: evRow[3], startTime: evRow[4], numCourts: parseInt(evRow[5]) || 1, matchMinutes: parseInt(evRow[6]) || 15 };
+
+  const players = {};
+  for (const r of (plR.data.values || [])) {
+    const name = r[0] || ""; if (!name) continue;
+    players[normName(name)] = { name, display: r[3] || name, photo: r[6] || "" };
+  }
+  const allGroups = grR.data.values || [];
+  const allMatches = (mR.data.values || []).map(mapMatchRow);
+  const tournaments = (trR.data.values || []).filter((x) => x[1] === eventId);
+
+  const categories = tournaments.map((t) => {
+    const tid = t[0];
+    const grRows = allGroups.filter((x) => x[0] === tid);
+    const entrants = {}, members = new Map();
+    for (const x of grRows) {
+      entrants[x[3]] = { player1: x[4] || "", player2: x[5] || "", seedElo: parseInt(x[6]) || 0 };
+      const l = x[2]; if (!members.has(l)) members.set(l, []); members.get(l).push(x[3]);
+    }
+    const nm = (eid) => { const e = entrants[eid]; return e ? `${e.player1} + ${e.player2}` : (eid || ""); };
+    const tMatches = allMatches.filter((m) => m.tournamentId === tid);
+    const groupMatches = tMatches.filter((m) => m.stage === "GROUP");
+    const groups = [...members.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([label, ids]) => ({
+      label,
+      standings: computeGroupStandings(groupMatches.filter((m) => m.groupLabel === label), ids)
+        .map((s) => ({ rank: s.rank, entrantId: s.entrantId, team: nm(s.entrantId), played: s.played, wins: s.wins, losses: s.losses, gd: s.gd, gf: s.gf })),
+    }));
+    const schedule = groupMatches.slice().sort((a, b) => a.slot - b.slot || a.court - b.court).map((m) => ({
+      matchId: m.matchId, court: m.court, slot: m.slot, time: m.time, groupLabel: m.groupLabel,
+      entrantA: m.entrantA, entrantB: m.entrantB, teamA: nm(m.entrantA), teamB: nm(m.entrantB),
+      scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status,
+    }));
+    const playoff = playoffBracketsView(tMatches.filter((m) => m.stage === "PLAYOFF"), nm);
+    return {
+      tournamentId: tid, category: t[2], level: t[3], format: t[4], status: t[7],
+      advancersPerGroup: parseInt(t[6]) || 2, entrants, groups, schedule, playoff,
+    };
+  });
+  return respond(200, { event, categories, players });
+}
+
+// ==============================================================
+// TOURNAMENT HANDLERS (Phase 6: end-of-tournament ELO replay)
+// ==============================================================
+// --- Ranked Match ELO engine, copied VERBATIM from index.html (do not modify) ---
+function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
+  const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
+  const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
+  const margin = 1 + Math.min(Math.abs(s1 - s2) * .04, .3);
+  const exp1 = 1 / (1 + Math.pow(10, (t2a - t1a) / 400)), exp2 = 1 - exp1;
+  const upd = (p, r, e) => {
+    const k = rmKFactor(p.matchCount || 0) * margin;
+    return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
+  };
+  return [upd(p1t1, t1r, exp1), upd(p2t1, t1r, exp1), upd(p1t2, t2r, exp2), upd(p2t2, t2r, exp2)];
+}
+async function tFinalizeElo(eventId, force) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const sessionId = "SES_TRN_" + eventId;
+  const [evR, trR, grR, mR, elR, seR] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A2:I` }),
+  ]);
+  const evRow = (evR.data.values || []).find((x) => x[0] === eventId);
+  if (!evRow) return respond(404, { error: "Event not found" });
+  const sessionRows = seR.data.values || [];
+  const already = sessionRows.some((r) => r[0] === sessionId);
+  if (already && !force) return respond(409, { error: "ELO event ini sudah dihitung. Kirim force=true untuk hitung ulang dari seed.", alreadyDone: true });
+
+  const tids = (trR.data.values || []).filter((x) => x[1] === eventId).map((x) => x[0]);
+  if (!tids.length) return respond(400, { error: "Belum ada kategori." });
+
+  // entrant -> [name1, name2]
+  const entMap = {};
+  for (const x of (grR.data.values || [])) if (tids.includes(x[0])) entMap[x[3]] = [x[4] || "", x[5] || ""];
+
+  // Seed player state from ELO_Log, EXCLUDING this tournament's own session (so re-runs start from true seeds).
+  const elRows = (elR.data.values || []).filter((r) => r[0] !== sessionId);
+  const st = {};
+  for (const r of elRows) {
+    if (!r[1]) continue;
+    const k = normName(r[1]);
+    if (!st[k]) st[k] = { name: r[1], elo: 1350, matchCount: 0, hist: 0 };
+    const elo = parseInt(r[2]) || 1350, w = parseInt(r[4]) || 0, l = parseInt(r[5]) || 0;
+    if (r[0] !== "INITIAL") { st[k].elo = elo; st[k].matchCount += w + l; st[k].hist++; }
+    else if (st[k].hist === 0) st[k].elo = elo;
+  }
+  const getP = (name) => { const k = normName(name); if (!st[k]) st[k] = { name, elo: 1350, matchCount: 0, hist: 0 }; return st[k]; };
+
+  // Collect DONE matches; group stage chronologically, then playoff by round.
+  const all = (mR.data.values || []).map(mapMatchRow).filter((m) =>
+    tids.includes(m.tournamentId) && (m.stage === "GROUP" || m.stage === "PLAYOFF") &&
+    m.status === "DONE" && m.entrantA && m.entrantB && m.scoreA !== "" && m.scoreB !== "");
+  const grp = all.filter((m) => m.stage === "GROUP").sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")) || a.slot - b.slot || a.court - b.court);
+  const ply = all.filter((m) => m.stage === "PLAYOFF").sort((a, b) => ((parseInt(a.round) || 99) - (parseInt(b.round) || 99)) || a.slot - b.slot);
+  const ordered = grp.concat(ply);
+  if (!ordered.length) return respond(400, { error: "Belum ada match selesai untuk dihitung." });
+
+  const now = new Date().toISOString();
+  const eloRows = [];
+  const changed = {};
+  const mark = (p) => { const k = normName(p.name); if (!(k in changed)) changed[k] = { name: p.name, oldElo: p.elo, newElo: p.elo, delta: 0 }; };
+  for (const m of ordered) {
+    const A = entMap[m.entrantA], B = entMap[m.entrantB];
+    if (!A || !B || !A[0] || !B[0]) continue;
+    const P = [getP(A[0]), getP(A[1]), getP(B[0]), getP(B[1])];
+    P.forEach(mark);
+    const res = rmCalcElo(
+      { name: P[0].name, elo: P[0].elo, matchCount: P[0].matchCount },
+      { name: P[1].name, elo: P[1].elo, matchCount: P[1].matchCount },
+      { name: P[2].name, elo: P[2].elo, matchCount: P[2].matchCount },
+      { name: P[3].name, elo: P[3].elo, matchCount: P[3].matchCount },
+      Number(m.scoreA), Number(m.scoreB));
+    res.forEach((r, i) => {
+      const p = P[i];
+      p.elo = r.newElo; p.matchCount += r.w + r.l;
+      eloRows.push([sessionId, p.name, r.newElo, r.delta, r.w, r.l, now]);
+      const c = changed[normName(p.name)]; c.newElo = r.newElo; c.delta = c.newElo - c.oldElo;
+    });
+  }
+  const playersUpdated = Object.keys(changed).length;
+  const sessionRow = [sessionId, (evRow[1] || "Turnamen") + " (Turnamen)", "", "Tournament", "N/A", evRow[2] || "", playersUpdated, ordered.length, now];
+
+  if (already) {
+    // Re-run: drop prior rows for this session, then rewrite.
+    const keepElo = (elR.data.values || []).filter((r) => r[0] !== sessionId);
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: keepElo.concat(eloRows) } });
+    const keepSes = sessionRows.filter((r) => r[0] !== sessionId);
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A2:I` });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: keepSes.concat([sessionRow]) } });
+  } else {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [sessionRow] } });
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: eloRows } });
+  }
+  const results = Object.values(changed).sort((a, b) => b.delta - a.delta);
+  return respond(200, { success: true, sessionId, matchesReplayed: ordered.length, playersUpdated, recomputed: !!already, results });
 }
