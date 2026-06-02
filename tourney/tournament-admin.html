@@ -246,7 +246,7 @@
       <div class="f"><label>Menit / match</label><input id="evMin" type="number" min="5" value="15" /></div>
     </div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="submitEvent()">Buat event</button>
+      <button type="button" class="btn btn-primary" onclick="submitEvent()">Buat event</button>
     </div>
     <div class="divider"></div>
     <div class="pick"><label>Pilih event yang sudah ada</label>
@@ -276,12 +276,12 @@
     </div>
     <div style="margin-top:14px" class="pick"><label>Format playoff</label>
       <div class="seg" id="tFormat">
-        <button class="active" data-v="SINGLE" onclick="pickFormat(this)">Single bracket</button>
-        <button data-v="SPLIT" onclick="pickFormat(this)">Split · Champion + Prospect</button>
+        <button type="button" class="active" data-v="SINGLE" onclick="pickFormat(this)">Single bracket</button>
+        <button type="button" data-v="SPLIT" onclick="pickFormat(this)">Split · Champion + Prospect</button>
       </div>
     </div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="createTournament()">Buat kategori</button>
+      <button type="button" class="btn btn-primary" onclick="createTournament()">Buat kategori</button>
     </div>
     <div class="divider"></div>
     <div class="pick"><label>Kategori di event ini</label>
@@ -294,7 +294,7 @@
     <div class="sec-head"><div class="num">3</div><h2>Import peserta</h2><span class="sub">dari tab Form_Responses</span></div>
     <p class="muted">Membaca baris di <code>Form_Responses</code> yang kategorinya cocok, mencocokkan ke database Trekkr (pakai ELO terakhir), dan otomatis membuat pemain baru pada ELO level kategori.</p>
     <div class="actions">
-      <button class="btn btn-primary" onclick="runImport()">Import dari Form</button>
+      <button type="button" class="btn btn-primary" onclick="runImport()">Import dari Form</button>
       <span class="muted" id="importHint"></span>
     </div>
     <div class="result" id="importResult">
@@ -310,7 +310,7 @@
   <!-- 4. PESERTA -->
   <section id="sec4" class="locked">
     <div class="sec-head"><div class="num">4</div><h2>Peserta</h2>
-      <span class="sub"><button class="btn btn-ghost btn-sm" onclick="loadEntrants()">↻ Muat ulang</button></span></div>
+      <span class="sub"><button type="button" class="btn btn-ghost btn-sm" onclick="loadEntrants()">↻ Muat ulang</button></span></div>
     <div id="entrantsWrap"><p class="empty">Belum ada peserta.</p></div>
   </section>
 
@@ -319,8 +319,8 @@
     <div class="sec-head"><div class="num">5</div><h2>Grup</h2><span class="sub">undian acak · geser manual di Google Sheet lalu sync</span></div>
     <p id="groupPreview">—</p>
     <div class="actions">
-      <button class="btn btn-primary" onclick="drawGroups()">Undi grup</button>
-      <button class="btn btn-ghost" onclick="loadGroups()">↻ Sync dari sheet</button>
+      <button type="button" class="btn btn-primary" onclick="drawGroups()">Undi grup</button>
+      <button type="button" class="btn btn-ghost" onclick="loadGroups()">↻ Sync dari sheet</button>
     </div>
     <div id="groupsWrap" style="margin-top:18px;"></div>
   </section>
@@ -330,8 +330,8 @@
     <div class="sec-head"><div class="num">6</div><h2>Jadwal &amp; Skor</h2>
       <span class="sub">generate menjadwalkan semua kategori di event ini sekaligus</span></div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="generateSchedule()">Generate jadwal</button>
-      <button class="btn btn-ghost" onclick="loadMatches()">↻ Muat match kategori ini</button>
+      <button type="button" class="btn btn-primary" onclick="generateSchedule()">Generate jadwal</button>
+      <button type="button" class="btn btn-ghost" onclick="loadMatches()">↻ Muat match kategori ini</button>
     </div>
     <div id="clashWrap"></div>
     <div id="matchesWrap" style="margin-top:16px;"><p class="empty">Belum ada jadwal. Klik “Generate jadwal”.</p></div>
@@ -340,7 +340,7 @@
   <!-- 7. STANDING -->
   <section id="sec7" class="locked">
     <div class="sec-head"><div class="num">7</div><h2>Standing</h2>
-      <span class="sub"><button class="btn btn-ghost btn-sm" onclick="loadStandings()">↻ Muat ulang</button></span></div>
+      <span class="sub"><button type="button" class="btn btn-ghost btn-sm" onclick="loadStandings()">↻ Muat ulang</button></span></div>
     <div id="standingsWrap"><p class="empty">Belum ada standing. Input skor dulu di langkah 6.</p></div>
   </section>
 
@@ -349,8 +349,8 @@
     <div class="sec-head"><div class="num">8</div><h2>Playoff</h2>
       <span class="sub">generate bracket dari standing kategori ini</span></div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="generatePlayoff()">Generate bracket</button>
-      <button class="btn btn-ghost" onclick="loadPlayoff()">↻ Muat ulang</button>
+      <button type="button" class="btn btn-primary" onclick="generatePlayoff()">Generate bracket</button>
+      <button type="button" class="btn btn-ghost" onclick="loadPlayoff()">↻ Muat ulang</button>
     </div>
     <div id="playoffWrap" style="margin-top:16px;"><p class="empty">Belum ada bracket. Selesaikan grup lalu klik “Generate bracket”.</p></div>
   </section>
@@ -361,7 +361,7 @@
       <span class="sub">hitung ELO untuk semua kategori event ini — jalankan sekali setelah turnamen benar-benar selesai</span></div>
     <div class="elo-warn">Replay seluruh match (grup + playoff) secara kronologis dari ELO seed, pakai rumus Ranked Match. Hasil ditulis ke ELO_Log sebagai satu sesi turnamen. ELO peserta baru ikut terbentuk dari sini.</div>
     <div class="actions" style="margin-top:12px;">
-      <button class="btn btn-primary" onclick="finalizeElo(false)">Hitung ELO akhir</button>
+      <button type="button" class="btn btn-primary" onclick="finalizeElo(false)">Hitung ELO akhir</button>
     </div>
     <div id="eloWrap" style="margin-top:16px;"></div>
   </section>
@@ -532,7 +532,7 @@ function rowHtml(e,i){
     <td class="seed">${i+1}</td>
     <td class="pair">${esc(e.player1Name)}${nb1}<span class="vs">+</span>${esc(e.player2Name)}${nb2}</td>
     <td class="seed">${e.seedElo}</td>
-    <td><button class="btn btn-ghost btn-sm" onclick='editRow(${JSON.stringify(e)})'>Edit</button></td>
+    <td><button type="button" class="btn btn-ghost btn-sm" onclick='editRow(${JSON.stringify(e)})'>Edit</button></td>
   </tr>`;
 }
 function editRow(e){
@@ -545,8 +545,8 @@ function editRow(e){
     </div></td>
     <td><input id="eds-${e.entrantId}" type="number" value="${e.seedElo}" style="width:74px" /></td>
     <td style="white-space:nowrap">
-      <button class="btn btn-primary btn-sm" onclick="saveRow('${e.entrantId}')">Simpan</button>
-      <button class="btn btn-ghost btn-sm" onclick="loadEntrants()">×</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="saveRow('${e.entrantId}')">Simpan</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="loadEntrants()">×</button>
     </td>`;
 }
 async function saveRow(id){
@@ -637,11 +637,14 @@ function renderClashes(clashes){
 async function loadMatches(){
   if(!state.tournament) return;
   const tid = state.tournament.tournamentId;
+  const snap = {};
+  document.querySelectorAll('#matchesWrap input').forEach(i=>{ if(i.id) snap[i.id]=i.value; });
   try{
     const { groups } = await api("tournament/"+encodeURIComponent(tid)+"/groups");
     buildNames(groups);
     const { matches } = await api("tournament/"+encodeURIComponent(tid)+"/matches");
     renderMatches(matches||[]);
+    Object.keys(snap).forEach(id=>{ const el=document.getElementById(id); if(el && el.value==="" && snap[id]!=="") el.value=snap[id]; });
   }catch(e){ toast(e.message, true); }
 }
 function renderMatches(matches){
@@ -669,7 +672,7 @@ function matchRow(m){
       <input id="sa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
       <span class="dash">–</span>
       <input id="sb-${m.matchId}" type="number" inputmode="numeric" value="${sb}" />
-      <button class="btn btn-primary btn-sm" onclick="saveScore('${m.matchId}')">✓</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="saveScore('${m.matchId}')">✓</button>
     </span>
   </div>`;
 }
@@ -723,18 +726,22 @@ async function generatePlayoff(){
   if(!confirm("Generate bracket akan menimpa bracket playoff kategori ini berdasarkan standing terkini. Lanjut?")) return;
   try{
     const r = await api("tournament/"+encodeURIComponent(state.tournament.tournamentId)+"/playoff", { method:"POST" });
-    const txt = (r.brackets||[]).map(b=>`${TIER_LABEL[b.tier]||b.tier}: ${b.entrants} tim`).join(" · ");
+    const methodLabel = m => m==="cross" ? "cross grup" : "seeding";
+    const txt = (r.brackets||[]).map(b=>`${TIER_LABEL[b.tier]||b.tier}: ${b.entrants} tim (${methodLabel(b.method)})`).join(" · ");
     toast("Bracket dibuat · "+txt);
     loadPlayoff();
   }catch(e){ toast(e.message, true); }
 }
 async function loadPlayoff(){
   if(!state.tournament) return;
+  const snap = {};
+  document.querySelectorAll('#playoffWrap input').forEach(i=>{ if(i.id) snap[i.id]=i.value; });
   try{
     const { groups } = await api("tournament/"+encodeURIComponent(state.tournament.tournamentId)+"/groups");
     buildNames(groups);
     const { brackets } = await api("tournament/"+encodeURIComponent(state.tournament.tournamentId)+"/playoff");
     renderPlayoff(brackets||[]);
+    Object.keys(snap).forEach(id=>{ const el=document.getElementById(id); if(el && el.value==="" && snap[id]!=="") el.value=snap[id]; });
   }catch(e){ toast(e.message, true); }
 }
 function podiumHtml(p){
@@ -767,7 +774,7 @@ function prow(m, numRounds){
       <input id="pa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
       <input id="pb-${m.matchId}" type="number" inputmode="numeric" value="${sb}" />
     </div>
-    <button class="btn btn-primary btn-sm psave" onclick="savePlayoffScore('${m.matchId}')">✓</button>
+    <button type="button" class="btn btn-primary btn-sm psave" onclick="savePlayoffScore('${m.matchId}')">✓</button>
   </div>`;
 }
 function renderPlayoff(brackets){
@@ -807,7 +814,7 @@ async function finalizeElo(force){
   }catch(e){
     if(e.status===409 || (e.data && e.data.alreadyDone)){
       wrap.innerHTML = `<div class="elo-note">ELO event ini sudah pernah dihitung. Menghitung ulang akan menghapus hasil sebelumnya lalu menghitung lagi dari ELO seed (aman, tidak dobel).
-        <br><button class="btn btn-primary btn-sm" onclick="finalizeElo(true)">Hitung ulang dari seed</button></div>`;
+        <br><button type="button" class="btn btn-primary btn-sm" onclick="finalizeElo(true)">Hitung ulang dari seed</button></div>`;
     } else {
       wrap.innerHTML = `<p class="empty">${esc(e.message)}</p>`;
     }
