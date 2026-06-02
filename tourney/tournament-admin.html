@@ -214,6 +214,19 @@
   .etable th.r, .etable td.r{text-align:right; font-family:'Space Mono',monospace;}
   .etable td{padding:8px 10px; border-bottom:1px solid var(--line);}
   .etable .up{color:var(--accent2);} .etable .down{color:var(--danger);}
+
+  /* revisi: standings champ/prosp, group label, playoff card */
+  .stable tr.champ td{background:rgba(200,242,78,.07);} .stable tr.champ .rk{color:var(--accent);}
+  .stable tr.prosp td{background:rgba(127,224,168,.06);} .stable tr.prosp .rk{color:var(--accent2);}
+  .mrow .time .gl{display:block; font-size:10px; color:var(--faint); font-family:'Space Mono',monospace; margin-top:2px;}
+  .po-date{font-family:'Space Mono',monospace; font-size:11px; color:var(--accent2); letter-spacing:.04em; margin-bottom:12px;}
+  .prow.card{display:block;}
+  .prow .pmeta{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--muted);}
+  .prow .ptime{color:var(--accent2);}
+  .prow .pcourt{display:flex; align-items:center; gap:6px;}
+  .prow .ctinp{width:46px; text-align:center; padding:4px; font-family:'Space Mono',monospace;}
+  .prow .prow-main{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;}
 </style>
 </head>
 <body>
@@ -347,12 +360,18 @@
   <!-- 8. PLAYOFF -->
   <section id="sec8" class="locked">
     <div class="sec-head"><div class="num">8</div><h2>Playoff</h2>
-      <span class="sub">generate bracket dari standing kategori ini</span></div>
+      <span class="sub">atur jadwal lalu generate bracket dari standing kategori ini</span></div>
+    <div class="grid">
+      <div class="f"><label>Tanggal playoff</label><input id="poDate" type="date" /></div>
+      <div class="f"><label>Jam mulai</label><input id="poStart" type="time" value="09:00" /></div>
+      <div class="f"><label>Jumlah court</label><input id="poCourts" type="number" min="1" value="2" /></div>
+      <div class="f"><label>Menit / match</label><input id="poMin" type="number" min="5" value="30" /></div>
+    </div>
     <div class="actions">
       <button type="button" class="btn btn-primary" onclick="generatePlayoff()">Generate bracket</button>
       <button type="button" class="btn btn-ghost" onclick="loadPlayoff()">↻ Muat ulang</button>
     </div>
-    <div id="playoffWrap" style="margin-top:16px;"><p class="empty">Belum ada bracket. Selesaikan grup lalu klik “Generate bracket”.</p></div>
+    <div id="playoffWrap" style="margin-top:16px;"><p class="empty">Belum ada bracket. Atur jadwal lalu klik “Generate bracket”.</p></div>
   </section>
 
   <!-- 9. SELESAI TURNAMEN -->
@@ -649,14 +668,10 @@ async function loadMatches(){
 }
 function renderMatches(matches){
   const wrap = document.getElementById("matchesWrap");
-  const group = matches.filter(m=>m.stage==="GROUP");
+  const group = matches.filter(m=>m.stage==="GROUP")
+    .sort((a,b)=> String(a.time||"").localeCompare(String(b.time||"")) || a.slot-b.slot || a.court-b.court);
   if(!group.length){ wrap.innerHTML = '<p class="empty">Belum ada jadwal untuk kategori ini. Klik “Generate jadwal”.</p>'; return; }
-  const byGroup = {};
-  group.forEach(m=>{ (byGroup[m.groupLabel]=byGroup[m.groupLabel]||[]).push(m); });
-  wrap.innerHTML = Object.keys(byGroup).sort().map(label=>{
-    const rows = byGroup[label].sort((a,b)=> a.slot-b.slot || a.court-b.court).map(matchRow).join("");
-    return `<div class="mgroup"><h3>Grup ${esc(label)}</h3>${rows}</div>`;
-  }).join("");
+  wrap.innerHTML = group.map(matchRow).join("");
 }
 function matchRow(m){
   const done = m.status==="DONE";
@@ -666,7 +681,7 @@ function matchRow(m){
   const sb = (m.scoreB!==""&&m.scoreB!=null) ? esc(String(m.scoreB)) : "";
   return `<div class="mrow ${done?'done':''}">
     <span class="court">LAP ${m.court||"?"}</span>
-    <span class="time">${esc(m.time||"")}</span>
+    <span class="time">${esc(m.time||"")}<span class="gl">Grup ${esc(m.groupLabel)}</span></span>
     <span class="teams"><span class="${aw?'win':''}">${esc(nameOf(m.entrantA))}</span><span class="vs">vs</span><span class="${bw?'win':''}">${esc(nameOf(m.entrantB))}</span></span>
     <span class="score">
       <input id="sa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
@@ -696,16 +711,22 @@ function renderStandings(groups){
   const wrap = document.getElementById("standingsWrap");
   const any = groups.some(g => g.standings && g.standings.some(s=>s.played>0));
   if(!any){ wrap.innerHTML = '<p class="empty">Belum ada skor. Input hasil match di langkah 6 dulu.</p>'; return; }
-  const adv = (state.tournament && state.tournament.advancersPerGroup) || 0;
+  const N = (state.tournament && state.tournament.advancersPerGroup) || 0;
+  const split = state.tournament && String(state.tournament.format).toUpperCase()==="SPLIT";
   wrap.innerHTML = groups.map(g=>{
-    const rows = (g.standings||[]).map(s=>`
-      <tr class="${adv && s.rank<=adv ? 'top':''}">
+    const rows = (g.standings||[]).map(s=>{
+      const cls = split ? (s.rank<=N ? 'champ' : 'prosp') : (N && s.rank<=N ? 'top' : '');
+      return `<tr class="${cls}">
         <td class="rk">${s.rank}</td><td>${esc(s.team)}</td>
         <td class="num-c">${s.played}</td><td class="num-c">${s.wins}</td><td class="num-c">${s.losses}</td>
-        <td class="num-c">${s.gd>0?'+':''}${s.gd}</td><td class="num-c">${s.gf}</td>
-      </tr>`).join("");
-    return `<table class="stable"><caption>Grup ${esc(g.label)}${adv?`<span>top ${adv} lolos</span>`:''}</caption>
-      <thead><tr><th>#</th><th>Pasangan</th><th class="num-c">M</th><th class="num-c">W</th><th class="num-c">K</th><th class="num-c">+/−</th><th class="num-c">GF</th></tr></thead>
+        <td class="num-c">${s.gd>0?'+':''}${s.gd}</td><td class="num-c">${s.gf}</td><td class="num-c">${s.ga}</td>
+      </tr>`;
+    }).join("");
+    const cap = split
+      ? `<span>Rank 1${N>1?`–${N}`:''} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket</span>`
+      : (N ? `<span>top ${N} lolos</span>` : "");
+    return `<table class="stable"><caption>Grup ${esc(g.label)}${cap}</caption>
+      <thead><tr><th>#</th><th>Pasangan</th><th class="num-c">Played</th><th class="num-c">Win</th><th class="num-c">Lose</th><th class="num-c">PD</th><th class="num-c">PF</th><th class="num-c">PA</th></tr></thead>
       <tbody>${rows}</tbody></table>`;
   }).join("");
 }
@@ -725,7 +746,9 @@ async function generatePlayoff(){
   if(!state.tournament) return;
   if(!confirm("Generate bracket akan menimpa bracket playoff kategori ini berdasarkan standing terkini. Lanjut?")) return;
   try{
-    const r = await api("tournament/"+encodeURIComponent(state.tournament.tournamentId)+"/playoff", { method:"POST" });
+    const r = await api("tournament/"+encodeURIComponent(state.tournament.tournamentId)+"/playoff", { method:"POST", body:{
+      date: val("poDate"), startTime: val("poStart"), numCourts: val("poCourts"), matchMinutes: val("poMin")
+    }});
     const methodLabel = m => m==="cross" ? "cross grup" : "seeding";
     const txt = (r.brackets||[]).map(b=>`${TIER_LABEL[b.tier]||b.tier}: ${b.entrants} tim (${methodLabel(b.method)})`).join(" · ");
     toast("Bracket dibuat · "+txt);
@@ -765,22 +788,32 @@ function prow(m, numRounds){
     <span class="ln ${bw?'win':''}">${m.teamB?esc(m.teamB):tB}</span></div>`;
   if(bye) return `<div class="prow bye">${teams}<span class="byebadge">BYE</span></div>`;
   const ready = m.entrantA && m.entrantB;
-  if(!ready) return `<div class="prow">${teams}<span class="byebadge">menunggu</span></div>`;
-  const sa = (m.scoreA!==""&&m.scoreA!=null)?esc(String(m.scoreA)):"";
-  const sb = (m.scoreB!==""&&m.scoreB!=null)?esc(String(m.scoreB)):"";
-  return `<div class="prow ${done?'done':''}">
-    ${teams}
-    <div class="pscore">
-      <input id="pa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
-      <input id="pb-${m.matchId}" type="number" inputmode="numeric" value="${sb}" />
-    </div>
-    <button type="button" class="btn btn-primary btn-sm psave" onclick="savePlayoffScore('${m.matchId}')">✓</button>
+  const meta = `<div class="pmeta">
+    <span class="ptime">${esc(m.time||"—")}</span>
+    <span class="pcourt">Lap <input id="ct-${m.matchId}" class="ctinp" type="number" min="1" value="${m.court||""}" />
+      <button type="button" class="btn btn-ghost btn-sm" onclick="saveCourt('${m.matchId}')">set</button></span>
   </div>`;
+  const main = ready ? `<div class="prow-main">${teams}
+    <div class="pscore">
+      <input id="pa-${m.matchId}" type="number" inputmode="numeric" value="${(m.scoreA!==""&&m.scoreA!=null)?esc(String(m.scoreA)):""}" />
+      <input id="pb-${m.matchId}" type="number" inputmode="numeric" value="${(m.scoreB!==""&&m.scoreB!=null)?esc(String(m.scoreB)):""}" />
+      <button type="button" class="btn btn-primary btn-sm psave" onclick="savePlayoffScore('${m.matchId}')">✓</button>
+    </div></div>`
+    : `<div class="prow-main">${teams}<span class="byebadge">menunggu</span></div>`;
+  return `<div class="prow card ${done?'done':''}">${meta}${main}</div>`;
+}
+async function saveCourt(matchId){
+  try{
+    await api("tournament/match/meta", { method:"PUT", body:{ matchId, court: val("ct-"+matchId) }});
+    toast("Court diperbarui");
+  }catch(e){ toast(e.message, true); }
 }
 function renderPlayoff(brackets){
   const wrap = document.getElementById("playoffWrap");
-  if(!brackets.length){ wrap.innerHTML = '<p class="empty">Belum ada bracket. Selesaikan grup lalu klik “Generate bracket”.</p>'; return; }
-  wrap.innerHTML = brackets.map(b=>{
+  if(!brackets.length){ wrap.innerHTML = '<p class="empty">Belum ada bracket. Atur jadwal lalu klik “Generate bracket”.</p>'; return; }
+  const dEl = document.getElementById("poDate");
+  const dateLabel = (dEl && dEl.value) ? `<div class="po-date">Jadwal playoff: ${esc(dEl.value)}</div>` : "";
+  wrap.innerHTML = dateLabel + brackets.map(b=>{
     const rounds = (b.rounds||[]).map(r=>`
       <div class="pround"><h4>${roundLabel(r.round, b.numRounds)}</h4>
         ${r.matches.map(m=>prow(m, b.numRounds)).join("")}</div>`).join("");

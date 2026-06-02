@@ -202,8 +202,9 @@ const netlifyHandler = async (event) => {
     if (path === "tournament/entrant" && method === "PUT") return await tUpdateEntrant(body);
     if (path === "tournament/match" && method === "PUT") return await tUpdateMatchScore(body);
     if (path === "tournament/playoff/match" && method === "PUT") return await tUpdatePlayoffScore(body);
+    if (path === "tournament/match/meta" && method === "PUT") return await tUpdateMatchMeta(body);
     if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
-      return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")));
+      return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")), body);
     }
     if (path.startsWith("tournament/") && path.endsWith("/import") && method === "POST") {
       return await tImport(decodeURIComponent(path.replace("tournament/", "").replace("/import", "")));
@@ -1398,8 +1399,9 @@ function computeGroupStandings(matches, entrantIds) {
     const subset = new Set(arr.filter((s) => s.wins === x.wins).map((s) => s.entrantId));
     const hx = h2hWins(x.entrantId, subset), hy = h2hWins(y.entrantId, subset);
     if (hy !== hx) return hy - hx;
-    if (y.gd !== x.gd) return y.gd - x.gd;
-    return y.gf - x.gf;
+    if (y.gd !== x.gd) return y.gd - x.gd;   // PD (points difference)
+    if (y.gf !== x.gf) return y.gf - x.gf;   // PF (points for)
+    return x.ga - y.ga;                       // PA (points against, lower is better)
   });
   arr.forEach((s, i) => { s.rank = i + 1; });
   return arr;
@@ -1553,7 +1555,7 @@ async function computeTournamentStandings(sheets, id) {
   return out;
 }
 const seedSort = (a, b) => a.rank - b.rank || b.wins - a.wins || b.gd - a.gd || b.gf - a.gf;
-async function tGeneratePlayoff(id) {
+async function tGeneratePlayoff(id, body) {
   const sheets = getSheets();
   await ensureTabs(sheets);
   const tRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
@@ -1563,13 +1565,21 @@ async function tGeneratePlayoff(id) {
   const groups = await computeTournamentStandings(sheets, id);
   if (!groups.length) return respond(400, { error: "Belum ada grup/standing. Undi grup & input skor dulu." });
 
+  const b0 = body || {};
+  const sched = {
+    startTime: b0.startTime || "09:00",
+    numCourts: parseInt(b0.numCourts) || 1,
+    matchMinutes: parseInt(b0.matchMinutes) || 15,
+    date: b0.date || "",
+  };
+
   const champCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank <= N).length, 0);
   const prospCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank > N).length, 0);
 
   const now = new Date().toISOString();
-  const newRows = [];
-  const toRow = (m) => [id, genId("MT"), "PLAYOFF", "", m.bracket, m.round, "", m.idx, "", m.a || "", m.b || "", "", "", m.winner || "", m.status, now];
+  const toRow = (m) => [id, genId("MT"), "PLAYOFF", "", m.bracket, m.round, m.court || "", m.idx, m.time || "", m.a || "", m.b || "", "", "", m.winner || "", m.status, now];
   const summary = [];
+  const built = [];
   const emitTier = (tier, predicate) => {
     const groupsQual = groups.map((g) => g.standings.filter(predicate).sort((a, b) => a.rank - b.rank).map((s) => s.entrantId));
     const cross = crossSeedRound1(groupsQual);
@@ -1582,7 +1592,7 @@ async function tGeneratePlayoff(id) {
       b = buildBracket(flat.map((s) => s.entrantId), tier);
       method = "seed";
     }
-    b.matches.forEach((m) => newRows.push(toRow(m)));
+    built.push({ tier, b });
     summary.push({ tier, method, entrants: b.nQual, rounds: b.numRounds, bronze: b.bronze, matches: b.matches.length });
   };
   if (format === "SPLIT") {
@@ -1593,13 +1603,59 @@ async function tGeneratePlayoff(id) {
     if (champCount < 2) return respond(400, { error: `Perlu minimal 2 tim lolos (top ${N}/grup).` });
     emitTier("MAIN", (s) => s.rank <= N);
   }
+
+  schedulePlayoff(built, sched);
+  const newRows = [];
+  built.forEach(({ b }) => b.matches.forEach((m) => newRows.push(toRow(m))));
+
   await rewritePlayoffMatches(sheets, id, newRows);
   await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }).then(async (r) => {
     const rows = r.data.values || [], i = rows.findIndex((x) => x[0] === id);
     if (i !== -1) { while (rows[i].length < 8) rows[i].push(""); rows[i][7] = "PLAYOFF";
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A${i + 2}:J${i + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rows[i]] } }); }
   });
-  return respond(200, { success: true, format, brackets: summary });
+  return respond(200, { success: true, format, brackets: summary, schedule: sched });
+}
+// Assign court + planned time to playoff matches, round-by-round across tiers (shared court pool).
+// BYE matches get no court/time. Each tier's bronze is scheduled at that tier's final round level.
+function schedulePlayoff(built, sched) {
+  const C = Math.max(1, sched.numCourts || 1);
+  const dur = sched.matchMinutes || 15;
+  const maxR = Math.max(0, ...built.map((t) => t.b.numRounds));
+  let wave = 0;
+  for (let L = 1; L <= maxR; L++) {
+    const real = [];
+    for (const t of built) {
+      t.b.matches.forEach((m) => { if (typeof m.round === "number" && m.round === L && m.status !== "BYE") real.push(m); });
+      if (L === t.b.numRounds) t.b.matches.forEach((m) => { if (String(m.round) === "BRONZE" && m.status !== "BYE") real.push(m); });
+    }
+    for (let j = 0; j < real.length; j++) {
+      real[j].court = (j % C) + 1;
+      real[j].time = addMinutesToTime(sched.startTime, (wave + Math.floor(j / C)) * dur);
+    }
+    if (real.length) wave += Math.ceil(real.length / C);
+  }
+}
+// Set court (and optionally planned time) on any match row.
+async function tUpdateMatchMeta(body) {
+  const { matchId, court, time } = body || {};
+  if (!matchId) return respond(400, { error: "matchId required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const idx = rows.findIndex((x) => x[1] === matchId);
+  if (idx === -1) return respond(404, { error: "Match not found" });
+  const row = rows[idx];
+  while (row.length < 16) row.push("");
+  if (court !== undefined && court !== null) row[6] = String(court);
+  if (time !== undefined && time !== null) row[8] = String(time);
+  row[15] = new Date().toISOString();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A${idx + 2}:P${idx + 2}`,
+    valueInputOption: "USER_ENTERED", requestBody: { values: [row] },
+  });
+  return respond(200, { success: true, court: row[6], time: row[8] });
 }
 async function tUpdatePlayoffScore(body) {
   const { matchId, scoreA, scoreB } = body;
@@ -1645,7 +1701,7 @@ function playoffBracketsView(all, nm) {
     const tm = all.filter((m) => m.bracket === tier);
     const numRounds = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
     const nQual = tm.filter((m) => parseInt(m.round) === 1).reduce((n, m) => n + (m.entrantA ? 1 : 0) + (m.entrantB ? 1 : 0), 0);
-    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
+    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
     const rounds = [];
     for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
     const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
