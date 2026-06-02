@@ -246,7 +246,7 @@
       <div class="f"><label>Menit / match</label><input id="evMin" type="number" min="5" value="15" /></div>
     </div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="createEvent()">Buat event</button>
+      <button class="btn btn-primary" onclick="submitEvent()">Buat event</button>
     </div>
     <div class="divider"></div>
     <div class="pick"><label>Pilih event yang sudah ada</label>
@@ -422,7 +422,7 @@ async function loadEvents(){
     if(state.event) sel.value = state.event.eventId;
   }catch(e){ toast(e.message, true); }
 }
-async function createEvent(){
+async function submitEvent(){
   if(!val("evName")) return toast("Nama event wajib diisi", true);
   try{
     const { eventId } = await api("tournament/event", { method:"POST", body:{
