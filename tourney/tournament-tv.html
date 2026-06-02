@@ -109,23 +109,23 @@ function buildPanels(){
 }
 
 function liveHtml(){
-  const d=state.data, now=nowMin(), mins=d.event.matchMinutes||15;
+  const d=state.data;
   const all=[]; d.categories.forEach(c=> c.schedule.forEach(m=> all.push({...m, cat:c.category, _c:c})));
   const courts=[];
   for(let ct=1; ct<=d.event.numCourts; ct++){
     const ms=all.filter(m=>String(m.court)===String(ct));
     if(!ms.length){ courts.push(`<div class="court"><div class="hd"><span class="cn">LAPANGAN ${ct}</span></div><div class="none">—</div></div>`); continue; }
     ms.sort((a,b)=>a.slot-b.slot);
-    let cur = ms.find(m=>{ const t=toMin(m.time); return m.status!=="DONE" && t!==null && now>=t && now<t+mins; });
-    let isNow = !!cur;
-    if(!cur) cur = ms.find(m=>m.status!=="DONE") || ms[ms.length-1];
-    const c=cur._c; const done=cur.status==="DONE";
+    const cur = ms.find(m=>m.status!=="DONE") || ms[ms.length-1];
+    const done = cur.status==="DONE";
+    const isNow = !done;
+    const c=cur._c;
     const tA = teamName(c,cur.entrantA), tB=teamName(c,cur.entrantB);
     const aw=done&&String(cur.winner)===String(cur.entrantA), bw=done&&String(cur.winner)===String(cur.entrantB);
     courts.push(`<div class="court ${isNow?'now':''}">
       <div class="hd"><span class="cn">LAPANGAN ${ct}</span>
-        <span class="st ${isNow?'now':''}">${isNow?'BERLANGSUNG':done?'SELESAI':'BERIKUTNYA · '+esc(cur.time||"")}</span></div>
-      <div class="cat">${esc(cur.cat)} · Grup ${esc(cur.groupLabel)}</div>
+        <span class="st ${isNow?'now':''}">${isNow?'BERLANGSUNG':'SELESAI'}</span></div>
+      <div class="cat">${esc(cur.cat)} · Grup ${esc(cur.groupLabel)}${cur.time?` · ${esc(cur.time)}`:''}</div>
       <div class="tm ${aw?'w':''}">${tA}<span class="sc">${done?esc(String(cur.scoreA)):''}</span></div>
       <div class="tm ${bw?'w':''}">${tB}<span class="sc">${done?esc(String(cur.scoreB)):''}</span></div>
     </div>`);

@@ -171,14 +171,14 @@ function renderJadwal(cat){
   if(!cat.schedule.length) return '<p class="empty">Jadwal babak grup belum dibuat.</p>';
   const courts = {};
   cat.schedule.forEach(m=>{ (courts[m.court]=courts[m.court]||[]).push(m); });
-  const now = nowMin();
   return Object.keys(courts).sort((a,b)=>a-b).map(ct=>{
-    const rows = courts[ct].sort((a,b)=>a.slot-b.slot).map(m=>{
+    const list = courts[ct].sort((a,b)=>a.slot-b.slot);
+    const playingId = (list.find(m=>m.status!=="DONE")||{}).matchId;
+    const rows = list.map(m=>{
       const done = m.status==="DONE";
       const aw = done && String(m.winner)===String(m.entrantA);
       const bw = done && String(m.winner)===String(m.entrantB);
-      const tmin = toMin(m.time);
-      const liveNow = !done && tmin!==null && now!==null && now>=tmin && now<tmin+ (state.data.event.matchMinutes||15);
+      const liveNow = m.matchId===playingId && !done;
       return `<div class="mrow ${done?'done':''} ${liveNow?'live-now':''}">
         <div class="top"><span class="time">${esc(m.time||"")}</span>
           ${liveNow?'<span class="badge-now">MAIN</span>':`<span class="gl">Grup ${esc(m.groupLabel)}</span>`}</div>

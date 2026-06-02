@@ -219,6 +219,8 @@
   .stable tr.champ td{background:rgba(200,242,78,.07);} .stable tr.champ .rk{color:var(--accent);}
   .stable tr.prosp td{background:rgba(127,224,168,.06);} .stable tr.prosp .rk{color:var(--accent2);}
   .mrow .time .gl{display:block; font-size:10px; color:var(--faint); font-family:'Space Mono',monospace; margin-top:2px;}
+  .mrow.playing{border-color:rgba(200,242,78,.5); background:rgba(200,242,78,.05);}
+  .mrow.playing .gl{color:var(--accent);}
   .po-date{font-family:'Space Mono',monospace; font-size:11px; color:var(--accent2); letter-spacing:.04em; margin-bottom:12px;}
   .prow.card{display:block;}
   .prow .pmeta{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
@@ -671,17 +673,21 @@ function renderMatches(matches){
   const group = matches.filter(m=>m.stage==="GROUP")
     .sort((a,b)=> String(a.time||"").localeCompare(String(b.time||"")) || a.slot-b.slot || a.court-b.court);
   if(!group.length){ wrap.innerHTML = '<p class="empty">Belum ada jadwal untuk kategori ini. Klik “Generate jadwal”.</p>'; return; }
-  wrap.innerHTML = group.map(matchRow).join("");
+  const firstByCourt = {};
+  group.forEach(m=>{ if(m.status!=="DONE" && firstByCourt[m.court]===undefined) firstByCourt[m.court]=m.matchId; });
+  const playing = new Set(Object.values(firstByCourt));
+  wrap.innerHTML = group.map(m=> matchRow(m, playing.has(m.matchId))).join("");
 }
-function matchRow(m){
+function matchRow(m, isPlaying){
   const done = m.status==="DONE";
+  const playing = isPlaying && !done;
   const aw = done && String(m.winner)===String(m.entrantA);
   const bw = done && String(m.winner)===String(m.entrantB);
   const sa = (m.scoreA!==""&&m.scoreA!=null) ? esc(String(m.scoreA)) : "";
   const sb = (m.scoreB!==""&&m.scoreB!=null) ? esc(String(m.scoreB)) : "";
-  return `<div class="mrow ${done?'done':''}">
+  return `<div class="mrow ${done?'done':''} ${playing?'playing':''}">
     <span class="court">LAP ${m.court||"?"}</span>
-    <span class="time">${esc(m.time||"")}<span class="gl">Grup ${esc(m.groupLabel)}</span></span>
+    <span class="time">${esc(m.time||"")}<span class="gl">${playing?'● MAIN · ':''}Grup ${esc(m.groupLabel)}</span></span>
     <span class="teams"><span class="${aw?'win':''}">${esc(nameOf(m.entrantA))}</span><span class="vs">vs</span><span class="${bw?'win':''}">${esc(nameOf(m.entrantB))}</span></span>
     <span class="score">
       <input id="sa-${m.matchId}" type="number" inputmode="numeric" value="${sa}" />
