@@ -9,47 +9,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#150d0a; --panel:#20140f; --panel2:#271812; --line:#3c2920;
+    --bg:#000000; --panel:#121110; --panel2:#171513; --line:#332a24;
     --text:#fdf4ee; --muted:#bfa091; --faint:#856a5d;
     --accent:#ff7a1a; --accent2:#ffab40; --hot:#ff3d2e; --danger:#ff5a4d;
     --grad:linear-gradient(115deg,#ff3d2e 0%,#ff7a18 55%,#ffb347 100%);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
-  body{background:radial-gradient(1200px 720px at 82% -12%, #2a160f 0%, var(--bg) 55%);
-    color:var(--text); font-family:'Hanken Grotesk',sans-serif; overflow:hidden;}
-  .screen{height:100vh; display:flex; flex-direction:column; padding:2.2vh 2.2vw;}
+  body{background:#000; color:var(--text); font-family:'Hanken Grotesk',sans-serif; overflow:hidden;}
+  .screen{height:100vh; display:flex; flex-direction:column; padding:2.2vh 2.4vw;}
   /* top bar */
-  .bar{display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; margin-bottom:1.8vh;}
-  .logo{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(24px,3vw,50px); letter-spacing:-.02em;
+  .bar{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; flex:0 0 auto; margin-bottom:2vh;}
+  .ev{grid-column:2; text-align:center;}
+  .ev .nm{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(30px,4.4vw,84px); line-height:1; letter-spacing:-.02em;
     background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;}
-  .ev{text-align:center;}
-  .ev .nm{font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(18px,2vw,32px);}
-  .ev .mt{font-family:'Space Mono',monospace; font-size:clamp(10px,.9vw,15px); color:var(--muted); margin-top:.3vh; letter-spacing:.06em;}
-  .clock{text-align:right; font-family:'Space Mono',monospace;}
-  .clock .t{font-size:clamp(20px,2.4vw,40px); font-weight:700;}
-  .clock .l{font-size:clamp(9px,.8vw,13px); color:var(--accent); letter-spacing:.12em;}
+  .ev .mt{font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,18px); color:var(--muted); margin-top:.8vh; letter-spacing:.08em;}
+  .clock{grid-column:3; justify-self:end; text-align:right; font-family:'Space Mono',monospace;}
+  .clock .t{font-size:clamp(20px,2.4vw,42px); font-weight:700;}
+  .clock .l{font-size:clamp(9px,.8vw,13px); color:var(--accent); letter-spacing:.12em; animation:liveblink 1.4s steps(1,end) infinite;}
   /* main split */
-  .main{flex:1 1 auto; min-height:0; display:flex; gap:1.6vw;}
+  .main{flex:1 1 auto; min-height:0; display:flex; gap:1.8vw;}
   .left{flex:0 0 38%; min-width:0; min-height:0; overflow:hidden;}
   .right{flex:1 1 auto; min-width:0; min-height:0; overflow:hidden;}
   .fitbox{height:100%; overflow:hidden;}
   .fit-inner{transform-origin:top center; width:100%;}
   .col-title{font-family:'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--accent2);
-    font-size:clamp(11px,1vw,17px); margin:0 0 1.1vh;}
-  .col-title.up{margin-top:1.6vh;}
+    font-size:clamp(12px,1.05vw,18px); margin:0 0 1.2vh;}
+  .col-title.up{margin-top:1.8vh;}
   .col-title.live{color:var(--accent); animation:liveblink 1.4s steps(1,end) infinite;}
   .col-title.live::before{content:"\25CF  ";}
   @keyframes liveblink{0%,62%{opacity:1} 63%,100%{opacity:.22}}
   /* avatars */
   .av{ --s:42px; position:relative; width:var(--s); height:var(--s); border-radius:50%; overflow:hidden;
     display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
-    background:linear-gradient(135deg,#3a241b,#27170f); border:1px solid var(--line);}
+    background:linear-gradient(135deg,#3a241b,#1c120c); border:1px solid var(--line);}
   .av img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .av i{ font-style:normal; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; color:var(--accent2); font-size:calc(var(--s)*.44); }
   /* now playing cards */
   #nowWrap{display:flex; flex-direction:column; gap:1.4vh;}
-  .np-card{border:1px solid rgba(255,122,26,.55); border-radius:16px; background:rgba(255,122,26,.06); padding:1.6vh 1.4vw;}
+  .np-card{border:1px solid rgba(255,122,26,.55); border-radius:16px; background:rgba(255,122,26,.05); padding:1.6vh 1.4vw;}
   .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1.2vh;}
   .np-court{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(13px,1.25vw,22px); letter-spacing:.03em;}
   .np-meta{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(10px,.85vw,14px);}
@@ -65,7 +63,7 @@
   /* upcoming rows */
   #nextWrap{display:flex; flex-direction:column; gap:1vh;}
   .up-row{display:flex; align-items:center; gap:.9vw; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:1vh 1vw;}
-  .up-when{display:flex; flex-direction:column; align-items:center; flex:0 0 auto; min-width:4.6vw;}
+  .up-when{display:flex; flex-direction:column; align-items:center; flex:0 0 auto; min-width:5vw;}
   .up-court{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(11px,.95vw,16px);}
   .up-time{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(11px,1vw,18px);}
   .up-mid{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:.7vw;}
@@ -73,35 +71,39 @@
   .up-side .av{--s:clamp(26px,1.9vw,40px);}
   .up-nm{font-weight:600; font-size:clamp(12px,1.05vw,19px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .up-x{font-family:'Space Mono',monospace; color:var(--faint); font-size:clamp(10px,.8vw,13px);}
-  .up-lb{flex:0 0 auto; max-width:9vw; text-align:right; font-family:'Space Mono',monospace; color:var(--faint);
-    font-size:clamp(9px,.75vw,12px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   /* standings */
-  #standWrap{display:flex; flex-direction:column; gap:1.6vh;}
-  .cat-block{display:flex; flex-direction:column; gap:1vh;}
-  .cat-head{font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(15px,1.5vw,26px); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap;}
-  .cat-cap{font-family:'Space Mono',monospace; font-weight:400; font-size:clamp(9px,.8vw,13px); color:var(--muted); letter-spacing:.02em;}
-  .grp-grid{display:grid; gap:1.2vh 1.2vw; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); align-content:start;}
-  .grp{border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:1.1vh 1vw; overflow:hidden;}
-  .grp-h{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(11px,1vw,17px); letter-spacing:.04em; margin-bottom:.7vh;}
-  table.st{width:100%; border-collapse:collapse;}
+  #standWrap{display:flex; flex-direction:column; gap:1.8vh;}
+  .cat-block{display:flex; flex-direction:column; gap:1.1vh;}
+  .cat-head{font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(16px,1.6vw,28px); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap;}
+  .cat-cap{font-family:'Space Mono',monospace; font-weight:400; font-size:clamp(9px,.82vw,14px); color:var(--muted); letter-spacing:.02em;}
+  .grp-grid{display:grid; gap:1.4vh 1.4vw; grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr)); align-content:start;}
+  .grp{border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:1.3vh 1.2vw; overflow:hidden;}
+  .grp-h{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(12px,1.05vw,18px); letter-spacing:.04em; margin-bottom:.9vh;}
+  table.st{width:100%; border-collapse:collapse; table-layout:auto;}
   table.st th{font-family:'Space Mono',monospace; font-weight:400; color:var(--faint); text-transform:uppercase; letter-spacing:.03em;
-    font-size:clamp(8px,.72vw,12px); text-align:center; padding:.3vh .25vw; border-bottom:1px solid var(--line);}
-  table.st th:nth-child(2){text-align:left;}
-  table.st td{font-size:clamp(11px,1.05vw,18px); padding:.55vh .25vw; text-align:center; border-bottom:1px solid rgba(60,41,32,.55);}
+    font-size:clamp(9px,.78vw,13px); text-align:center; padding:.4vh .4vw; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.st th.nm{text-align:left;}
+  table.st td{font-size:clamp(12px,1.1vw,20px); padding:.7vh .4vw; text-align:center; border-bottom:1px solid rgba(60,41,32,.55); white-space:nowrap;}
   table.st td.rk{font-family:'Space Mono',monospace; color:var(--accent2); width:1.8em;}
-  table.st td.nm{text-align:left; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:0; width:99%;}
+  table.st td.nm{text-align:left; white-space:normal; line-height:1.18; padding-right:1vw;}
+  table.st td.nm .p1{display:block; font-weight:700;}
+  table.st td.nm .p2{display:block; font-weight:500; color:var(--muted);}
   table.st tr:last-child td{border-bottom:none;}
   table.st tr.champ td{background:rgba(255,122,26,.12);} table.st tr.champ td.rk{color:var(--accent); font-weight:700;}
   table.st tr.prosp td{background:rgba(255,171,64,.08);} table.st tr.prosp td.rk{color:var(--accent2);}
   table.st tr.top td{background:rgba(255,122,26,.12);} table.st tr.top td.rk{color:var(--accent); font-weight:700;}
   .center{display:flex; align-items:center; justify-content:center; height:100%; color:var(--faint);
     font-family:'Space Mono',monospace; font-size:clamp(14px,1.4vw,22px); text-align:center; padding:2vh;}
+  /* footer */
+  .footer{flex:0 0 auto; display:flex; justify-content:flex-end; align-items:baseline; gap:.6vw; margin-top:1.4vh;}
+  .footer .pwr{font-family:'Space Mono',monospace; font-size:clamp(9px,.8vw,13px); color:var(--faint); letter-spacing:.1em; text-transform:uppercase;}
+  .footer .logo-sm{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(14px,1.4vw,24px); letter-spacing:-.01em;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;}
 </style>
 </head>
 <body>
 <div class="screen">
   <div class="bar">
-    <div class="logo">TREKKR</div>
     <div class="ev"><div class="nm" id="evnm">—</div><div class="mt" id="evmt"></div></div>
     <div class="clock"><div class="t" id="clock">--:--</div><div class="l" id="livedot">● LIVE</div></div>
   </div>
@@ -117,6 +119,7 @@
       <div id="standWrap"><div class="center">Loading tournament data…</div></div>
     </div></div></div>
   </div>
+  <div class="footer"><span class="pwr">powered by</span><span class="logo-sm">TREKKR</span></div>
 </div>
 
 <script>
@@ -159,7 +162,6 @@ function upRow(f){
   return `<div class="up-row">
     <div class="up-when"><span class="up-court">COURT ${esc(f.court||"?")}</span><span class="up-time">${f.time?fmtTime(f.time):"—"}</span></div>
     <div class="up-mid">${side(a1,a2)}<span class="up-x">vs</span>${side(b1,b2)}</div>
-    <div class="up-lb">${esc(f.label)}</div>
   </div>`;
 }
 
@@ -187,12 +189,14 @@ function standHtml(){
       const denom=Math.max(1,(g.standings.length||1)-1);
       const rows=g.standings.map(s=>{
         const cls= split?(s.rank<=N?"champ":"prosp"):(N&&s.rank<=N?"top":"");
-        return `<tr class="${cls}"><td class="rk">${s.rank}</td><td class="nm">${esc(s.team)}</td>
+        const [p1,p2]=pairPlayers(c,s.entrantId);
+        const pair = `<span class="p1">${esc(p1)||esc(s.team)}</span>${p2?`<span class="p2">${esc(p2)}</span>`:""}`;
+        return `<tr class="${cls}"><td class="rk">${s.rank}</td><td class="nm">${pair}</td>
           <td>${s.played}/${denom}</td><td>${s.wins}</td><td>${s.losses}</td>
           <td>${s.gd>0?"+":""}${s.gd}</td><td>${s.gf}</td><td>${s.ga!=null?s.ga:""}</td></tr>`;
       }).join("");
       return `<div class="grp"><div class="grp-h">Group ${esc(g.label)}</div>
-        <table class="st"><thead><tr><th>#</th><th>Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
+        <table class="st"><thead><tr><th>#</th><th class="nm">Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
         <tbody>${rows}</tbody></table></div>`;
     }).join("");
     return `<div class="cat-block"><div class="cat-head">${esc(c.category)}${cap?`<span class="cat-cap">${cap}</span>`:""}</div>
@@ -214,11 +218,12 @@ function fitAll(){ fitBox("leftFit"); fitBox("rightFit"); }
 function render(){
   if(!state.data) return;
   const feed=buildFeed();
-  const playSeen={};
-  feed.forEach(f=>{ if(f.status!=="DONE" && f.court && playSeen[f.court]===undefined) playSeen[f.court]=f; });
-  const playing=Object.keys(playSeen).sort((a,b)=>a-b).map(k=>playSeen[k]);
-  const playingIds=new Set(playing.map(f=>f.key));
-  const upcoming=feed.filter(f=> f.status!=="DONE" && !playingIds.has(f.key)).slice(0,2);
+  // group remaining (non-DONE) matches per court, in order
+  const perCourt={};
+  feed.forEach(f=>{ if(f.status!=="DONE" && f.court){ (perCourt[f.court]=perCourt[f.court]||[]).push(f); } });
+  const courts=Object.keys(perCourt).sort((a,b)=>a-b);
+  const playing=courts.map(ct=>perCourt[ct][0]).filter(Boolean);
+  const upcoming=courts.map(ct=>perCourt[ct][1]).filter(Boolean);  // next match per court
 
   const ac=playing.length||1;
   const sz = ac>=4 ? "clamp(28px,2.4vw,52px)" : ac===3 ? "clamp(34px,3vw,64px)" : ac===2 ? "clamp(42px,3.6vw,78px)" : "clamp(50px,4.8vw,104px)";
