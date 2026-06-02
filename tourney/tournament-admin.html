@@ -344,6 +344,12 @@
   <section id="sec6" class="locked">
     <div class="sec-head"><div class="num">6</div><h2>Jadwal &amp; Skor</h2>
       <span class="sub">generate menjadwalkan semua kategori di event ini sekaligus</span></div>
+    <div class="grid">
+      <div class="f"><label>Jam mulai</label><input id="schStart" type="time" /></div>
+      <div class="f"><label>Jumlah court</label><input id="schCourts" type="number" min="1" /></div>
+      <div class="f"><label>Menit / match</label><input id="schMin" type="number" min="5" /></div>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin:2px 0 0;">Diambil dari setelan event — ubah di sini bila perlu, lalu generate ulang (nilai baru ikut tersimpan ke event).</p>
     <div class="actions">
       <button type="button" class="btn btn-primary" onclick="generateSchedule()">Generate jadwal</button>
       <button type="button" class="btn btn-ghost" onclick="loadMatches()">↻ Muat match kategori ini</button>
@@ -440,7 +446,7 @@ async function loadEvents(){
     const sel = document.getElementById("eventSelect");
     sel.innerHTML = '<option value="">— pilih event —</option>' +
       state.events.map(e=>`<option value="${e.eventId}">${esc(e.name)}${e.date?" · "+esc(e.date):""}</option>`).join("");
-    if(state.event) sel.value = state.event.eventId;
+    if(state.event){ state.event = state.events.find(e=>e.eventId===state.event.eventId) || state.event; sel.value = state.event.eventId; fillScheduleParams(); }
   }catch(e){ toast(e.message, true); }
 }
 async function submitEvent(){
@@ -459,7 +465,7 @@ async function submitEvent(){
 function selectEvent(id){
   state.event = state.events.find(e=>e.eventId===id) || null;
   state.tournament = null;
-  renderContext(); setLocks();
+  renderContext(); setLocks(); fillScheduleParams();
   document.getElementById("tourSelect").innerHTML = '<option value="">—</option>';
   document.getElementById("entrantsWrap").innerHTML = '<p class="empty">Belum ada peserta.</p>';
   document.getElementById("importResult").classList.remove("show");
@@ -638,11 +644,27 @@ function buildNames(groups){
 }
 function nameOf(id){ return state.entrantNames[id] || id; }
 
+function fillScheduleParams(){
+  const e = state.event;
+  const s = document.getElementById("schStart"), c = document.getElementById("schCourts"), m = document.getElementById("schMin");
+  if(!s||!c||!m) return;
+  if(!e){ s.value=""; c.value=""; m.value=""; return; }
+  s.value = e.startTime || "09:00";
+  c.value = e.numCourts || 1;
+  m.value = e.matchMinutes || 15;
+}
 async function generateSchedule(){
   if(!state.event) return toast("Pilih event dulu", true);
   if(!confirm("Generate jadwal menimpa jadwal babak grup SEMUA kategori di event ini. Lanjut?")) return;
   try{
-    const r = await api("tournament/event/"+encodeURIComponent(state.event.eventId)+"/schedule", { method:"POST" });
+    const r = await api("tournament/event/"+encodeURIComponent(state.event.eventId)+"/schedule", { method:"POST", body:{
+      startTime: val("schStart"), numCourts: val("schCourts"), matchMinutes: val("schMin")
+    }});
+    // backend persists overrides — reflect them locally so labels/context stay in sync
+    state.event.startTime = val("schStart") || state.event.startTime;
+    state.event.numCourts = parseInt(val("schCourts")) || state.event.numCourts;
+    state.event.matchMinutes = parseInt(val("schMin")) || state.event.matchMinutes;
+    renderContext();
     toast(`Jadwal dibuat · ${r.scheduledMatches} match · ${r.numCourts} lapangan`);
     renderClashes(r.clashes||[]);
     loadMatches();

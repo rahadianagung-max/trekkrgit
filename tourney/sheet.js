@@ -186,7 +186,7 @@ const netlifyHandler = async (event) => {
     if (path === "tournament/event" && method === "POST") return await tCreateEvent(body);
     if (path === "tournament/events" && method === "GET") return await tListEvents();
     if (path.startsWith("tournament/event/") && path.endsWith("/schedule") && method === "POST") {
-      return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")));
+      return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")), body);
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/finalize-elo") && method === "POST") {
       return await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
@@ -1212,6 +1212,21 @@ function assignGroupsToCourts(groups, numCourts) {
   }
   return assign;
 }
+// Normalize a clock value that may come back from Sheets in odd formats
+// ("8:00", "08:00:00", "8.00", "8:00 AM") into a clean 24h "HH:MM".
+function normClock(v) {
+  let s = String(v == null ? "" : v).trim();
+  if (!s) return "";
+  const ap = /(am|pm)/i.exec(s);
+  s = s.replace(/\s*(am|pm)/i, "").trim();
+  const p = s.split(/[:.]/);
+  let h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  if (isNaN(h)) return "";
+  if (isNaN(m)) m = 0;
+  if (ap) { const pm = /pm/i.test(ap[0]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+  h = ((h % 24) + 24) % 24; m = ((m % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 function addMinutesToTime(hhmm, minutes) {
   const parts = String(hhmm || "09:00").split(":");
   let total = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0) + minutes;
@@ -1282,13 +1297,28 @@ async function rewriteEventGroupMatches(sheets, tids, newRows) {
   }
 }
 // Generate the full group-stage schedule for an event (all categories share the court pool).
-async function tScheduleEvent(eventId) {
+async function tScheduleEvent(eventId, body) {
   const sheets = getSheets();
   await ensureTabs(sheets);
   const evRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` });
-  const evRow = (evRes.data.values || []).find((x) => x[0] === eventId);
-  if (!evRow) return respond(404, { error: "Event not found" });
-  const numCourts = parseInt(evRow[5]) || 1, startTime = evRow[4] || "09:00", matchMinutes = parseInt(evRow[6]) || 15;
+  const evRows = evRes.data.values || [];
+  const evIdx = evRows.findIndex((x) => x[0] === eventId);
+  if (evIdx === -1) return respond(404, { error: "Event not found" });
+  const evRow = evRows[evIdx];
+  // Allow caller (step 6) to override the event's schedule params; persist the new values so the whole app stays consistent.
+  const b = body || {};
+  const startTime = normClock((b.startTime && String(b.startTime).trim()) || evRow[4]) || "09:00";
+  const numCourts = parseInt(b.numCourts) || parseInt(evRow[5]) || 1;
+  const matchMinutes = parseInt(b.matchMinutes) || parseInt(evRow[6]) || 15;
+  const overridden = (b.startTime != null && String(b.startTime).trim() !== "") || b.numCourts != null || b.matchMinutes != null;
+  if (overridden) {
+    while (evRow.length < 8) evRow.push("");
+    evRow[4] = startTime; evRow[5] = numCourts; evRow[6] = matchMinutes;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A${evIdx + 2}:H${evIdx + 2}`,
+      valueInputOption: "USER_ENTERED", requestBody: { values: [evRow] },
+    });
+  }
 
   const trRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
   const tournaments = (trRes.data.values || []).filter((x) => x[1] === eventId);
