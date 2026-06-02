@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trekkr · TV Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0c0f0d; --panel:#131815; --panel2:#171d1a; --line:#28312c;
+    --text:#e9f0ec; --muted:#8a968f; --faint:#5d655f;
+    --accent:#c8f24e; --accent2:#7fe0a8; --danger:#ff6f60; --warn:#ffd166;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{background:radial-gradient(1200px 700px at 80% -10%, #15201a 0%, var(--bg) 55%);
+    color:var(--text); font-family:'Hanken Grotesk',sans-serif; overflow:hidden;}
+  .screen{height:100vh; display:flex; flex-direction:column; padding:2.4vh 2.6vw;}
+  /* top bar */
+  .bar{display:flex; align-items:center; justify-content:space-between; flex:0 0 auto;}
+  .logo{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(26px,3.4vw,52px); letter-spacing:-.02em;}
+  .logo span{color:var(--accent);}
+  .ev{text-align:center;}
+  .ev .nm{font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(18px,2vw,32px);}
+  .ev .mt{font-family:'Space Mono',monospace; font-size:clamp(10px,.9vw,15px); color:var(--muted); margin-top:.3vh; letter-spacing:.06em;}
+  .clock{text-align:right; font-family:'Space Mono',monospace;}
+  .clock .t{font-size:clamp(20px,2.4vw,40px); font-weight:700;}
+  .clock .l{font-size:clamp(9px,.8vw,13px); color:var(--accent2); letter-spacing:.12em;}
+  /* panel title */
+  .ptitle{font-family:'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--accent);
+    font-size:clamp(12px,1.1vw,18px); margin:2.2vh 0 1.4vh; flex:0 0 auto;}
+  .stage{flex:1 1 auto; min-height:0; position:relative;}
+  .fade{position:absolute; inset:0; opacity:0; transition:opacity .5s ease; overflow:hidden;}
+  .fade.show{opacity:1;}
+  /* live courts grid */
+  .courts{display:grid; gap:1.6vh 1.6vw; height:100%;
+    grid-template-columns:repeat(auto-fit,minmax(min(46%,420px),1fr)); align-content:start;}
+  .court{border:1px solid var(--line); border-radius:16px; background:var(--panel); padding:1.8vh 1.6vw; display:flex; flex-direction:column;}
+  .court.now{border-color:rgba(200,242,78,.55); background:rgba(200,242,78,.05);}
+  .court .hd{display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2vh;}
+  .court .cn{font-family:'Space Mono',monospace; font-weight:700; font-size:clamp(13px,1.3vw,22px); color:var(--accent2); letter-spacing:.04em;}
+  .court .st{font-family:'Space Mono',monospace; font-size:clamp(10px,.85vw,14px); color:var(--muted);}
+  .court .st.now{color:var(--bg); background:var(--accent); padding:.3vh .7vw; border-radius:6px;}
+  .court .cat{font-family:'Space Mono',monospace; font-size:clamp(9px,.8vw,13px); color:var(--faint); margin-bottom:.8vh;}
+  .court .tm{display:flex; align-items:center; gap:1vw; font-size:clamp(16px,1.7vw,30px); font-weight:600; padding:.5vh 0;}
+  .court .tm.w{color:var(--accent);}
+  .court .tm .sc{margin-left:auto; font-family:'Space Mono',monospace; font-weight:700;}
+  .court .none{color:var(--faint); font-size:clamp(13px,1.2vw,20px); margin:auto 0;}
+  /* standings */
+  .sgrid{display:grid; gap:1.4vh 1.4vw; height:100%; align-content:start;
+    grid-template-columns:repeat(auto-fit,minmax(min(46%,440px),1fr));}
+  .sbox{border:1px solid var(--line); border-radius:16px; background:var(--panel); padding:1.4vh 1.3vw; overflow:hidden;}
+  .sbox h3{font-family:'Bricolage Grotesque',sans-serif; font-size:clamp(15px,1.5vw,26px); margin-bottom:1vh;}
+  .srow{display:grid; grid-template-columns:auto 1fr auto auto; gap:.8vw; align-items:center;
+    padding:.7vh 0; border-bottom:1px solid var(--line); font-size:clamp(13px,1.25vw,22px);}
+  .srow .rk{font-family:'Space Mono',monospace; color:var(--accent2); width:1.6em; text-align:center;}
+  .srow.top{color:var(--text);} .srow.top .rk{color:var(--accent); font-weight:700;}
+  .srow .w{font-family:'Space Mono',monospace; color:var(--muted); font-size:.8em;}
+  .srow .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* podium */
+  .pods{display:grid; gap:1.6vh 1.6vw; height:100%; align-content:center;
+    grid-template-columns:repeat(auto-fit,minmax(min(46%,460px),1fr));}
+  .pcard{border:1px solid var(--line); border-radius:18px; background:var(--panel); padding:2.2vh 1.8vw;}
+  .pcard h3{font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,16px); letter-spacing:.1em; text-transform:uppercase; color:var(--accent2); margin-bottom:1.4vh;}
+  .prow{display:flex; align-items:center; gap:1vw; padding:1vh 0; font-size:clamp(16px,1.7vw,30px);}
+  .prow .m{font-size:clamp(22px,2.4vw,42px);}
+  .prow.g{color:var(--accent); font-weight:700;}
+  .prow .who{font-weight:600;}
+  /* dots */
+  .dots{flex:0 0 auto; display:flex; gap:.6vw; justify-content:center; margin-top:1.6vh;}
+  .dot{width:.7vw; height:.7vw; min-width:7px; min-height:7px; border-radius:50%; background:var(--line);}
+  .dot.on{background:var(--accent);}
+  .center{display:flex; align-items:center; justify-content:center; height:100%; color:var(--faint);
+    font-family:'Space Mono',monospace; font-size:clamp(14px,1.4vw,22px);}
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="bar">
+    <div class="logo">Trekk<span>r</span></div>
+    <div class="ev"><div class="nm" id="evnm">—</div><div class="mt" id="evmt"></div></div>
+    <div class="clock"><div class="t" id="clock">--:--</div><div class="l" id="livedot">● LIVE</div></div>
+  </div>
+  <div class="ptitle" id="ptitle">MEMUAT</div>
+  <div class="stage" id="stage"><div class="center">Memuat data turnamen…</div></div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<script>
+const BASE = location.hostname === "trekkr.online" ? "/api" : "https://trekkr.online/api";
+const qs = new URLSearchParams(location.search);
+const EVENT_ID = qs.get("event");
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const state = { data:null, panels:[], idx:0 };
+const TIER = { MAIN:"Bracket Utama", CHAMPION:"Champion", PROSPECT:"Prospect" };
+
+async function api(p){ const r=await fetch(BASE+p); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+function toMin(t){ if(!t||t.indexOf(":")<0) return null; const [h,m]=t.split(":").map(Number); return h*60+m; }
+function nowMin(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+function tick(){ document.getElementById("clock").textContent = new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}); }
+
+function buildPanels(){
+  const d=state.data, panels=[{type:"live"}];
+  d.categories.forEach((c,i)=>{ if(c.groups.some(g=>g.standings.length)) panels.push({type:"standings",cat:i}); });
+  if(d.categories.some(c=>c.playoff.some(b=>b.podium.champion))) panels.push({type:"podium"});
+  return panels;
+}
+
+function liveHtml(){
+  const d=state.data, now=nowMin(), mins=d.event.matchMinutes||15;
+  const all=[]; d.categories.forEach(c=> c.schedule.forEach(m=> all.push({...m, cat:c.category, _c:c})));
+  const courts=[];
+  for(let ct=1; ct<=d.event.numCourts; ct++){
+    const ms=all.filter(m=>String(m.court)===String(ct));
+    if(!ms.length){ courts.push(`<div class="court"><div class="hd"><span class="cn">LAPANGAN ${ct}</span></div><div class="none">—</div></div>`); continue; }
+    ms.sort((a,b)=>a.slot-b.slot);
+    let cur = ms.find(m=>{ const t=toMin(m.time); return m.status!=="DONE" && t!==null && now>=t && now<t+mins; });
+    let isNow = !!cur;
+    if(!cur) cur = ms.find(m=>m.status!=="DONE") || ms[ms.length-1];
+    const c=cur._c; const done=cur.status==="DONE";
+    const tA = teamName(c,cur.entrantA), tB=teamName(c,cur.entrantB);
+    const aw=done&&String(cur.winner)===String(cur.entrantA), bw=done&&String(cur.winner)===String(cur.entrantB);
+    courts.push(`<div class="court ${isNow?'now':''}">
+      <div class="hd"><span class="cn">LAPANGAN ${ct}</span>
+        <span class="st ${isNow?'now':''}">${isNow?'BERLANGSUNG':done?'SELESAI':'BERIKUTNYA · '+esc(cur.time||"")}</span></div>
+      <div class="cat">${esc(cur.cat)} · Grup ${esc(cur.groupLabel)}</div>
+      <div class="tm ${aw?'w':''}">${tA}<span class="sc">${done?esc(String(cur.scoreA)):''}</span></div>
+      <div class="tm ${bw?'w':''}">${tB}<span class="sc">${done?esc(String(cur.scoreB)):''}</span></div>
+    </div>`);
+  }
+  return `<div class="courts">${courts.join("")}</div>`;
+}
+function teamName(cat,eid){ const e=cat.entrants[eid]; return e?esc(`${e.player1} + ${e.player2}`):(eid?esc(eid):'<span style="color:var(--faint)">TBD</span>'); }
+
+function standingsHtml(ci){
+  const c=state.data.categories[ci], adv=c.advancersPerGroup||0;
+  const boxes=c.groups.map(g=>{
+    const rows=g.standings.map(s=>`<div class="srow ${adv&&s.rank<=adv?'top':''}">
+      <span class="rk">${s.rank}</span><span class="nm">${teamName(c,s.entrantId)}</span>
+      <span class="w">${s.wins}W</span><span class="w">${s.gd>0?'+':''}${s.gd}</span></div>`).join("");
+    return `<div class="sbox"><h3>Grup ${esc(g.label)}</h3>${rows}</div>`;
+  }).join("");
+  return `<div class="sgrid">${boxes}</div>`;
+}
+
+function podiumHtml(){
+  const cards=[];
+  state.data.categories.forEach(c=> c.playoff.forEach(b=>{
+    if(!b.podium.champion) return;
+    cards.push(`<div class="pcard"><h3>${esc(c.category)} · ${TIER[b.tier]||b.tier}</h3>
+      <div class="prow g"><span class="m">🏆</span><span class="who">${esc(b.podium.champion)}</span></div>
+      <div class="prow"><span class="m">🥈</span><span class="who">${esc(b.podium.runnerUp)||"—"}</span></div>
+      <div class="prow"><span class="m">🥉</span><span class="who">${esc(b.podium.third)||"—"}</span></div></div>`);
+  }));
+  return `<div class="pods">${cards.join("")}</div>`;
+}
+
+const PT = { live:"Lapangan · Live & Berikutnya", standings:"Klasemen", podium:"Podium Juara" };
+function showPanel(){
+  const p=state.panels[state.idx]; if(!p) return;
+  let html="", title=PT[p.type]||"";
+  if(p.type==="live") html=liveHtml();
+  else if(p.type==="standings"){ html=standingsHtml(p.cat); title="Klasemen · "+esc(state.data.categories[p.cat].category); }
+  else if(p.type==="podium") html=podiumHtml();
+  document.getElementById("ptitle").textContent = title;
+  const stage=document.getElementById("stage");
+  const layer=document.createElement("div"); layer.className="fade"; layer.innerHTML=html;
+  stage.innerHTML=""; stage.appendChild(layer);
+  requestAnimationFrame(()=>layer.classList.add("show"));
+  document.getElementById("dots").innerHTML = state.panels.map((_,i)=>`<span class="dot ${i===state.idx?'on':''}"></span>`).join("");
+}
+function rotate(){ if(state.panels.length<=1) return; state.idx=(state.idx+1)%state.panels.length; showPanel(); }
+
+async function load(){
+  try{
+    const d=await api("/tournament/event/"+encodeURIComponent(EVENT_ID)+"/public");
+    state.data=d;
+    document.getElementById("evnm").textContent=d.event.name||"Turnamen";
+    document.getElementById("evmt").textContent=[d.event.venue,d.event.date].filter(Boolean).join("  ·  ");
+    state.panels=buildPanels();
+    if(state.idx>=state.panels.length) state.idx=0;
+    showPanel();
+  }catch(e){ document.getElementById("stage").innerHTML='<div class="center">Gagal memuat data.</div>'; }
+}
+
+tick(); setInterval(tick,1000);
+if(EVENT_ID){ load(); setInterval(load,20000); setInterval(rotate,12000); }
+else { document.getElementById("stage").innerHTML='<div class="center">Tambahkan ?event=EVENT_ID di URL untuk menampilkan board.</div>'; document.getElementById("ptitle").textContent="SETUP"; }
+</script>
+</body>
+</html>
