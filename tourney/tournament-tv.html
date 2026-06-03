@@ -27,6 +27,11 @@
   .clock{grid-column:3; justify-self:end; text-align:right; font-family:'Space Mono',monospace;}
   .clock .t{font-size:clamp(20px,2.4vw,42px); font-weight:700;}
   .clock .l{font-size:clamp(9px,.8vw,13px); color:var(--accent); letter-spacing:.12em; animation:liveblink 1.4s steps(1,end) infinite;}
+  .qr{grid-column:1; justify-self:start; display:flex; align-items:center; gap:.7vw;}
+  .qr .qrimg{background:#fff; padding:.5vw; border-radius:10px; line-height:0; box-shadow:0 0 0 1px var(--line);}
+  .qr .qrimg img{display:block; width:clamp(72px,6vw,120px); height:clamp(72px,6vw,120px);}
+  .qr .qrlabel{font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:.1em;
+    font-size:clamp(9px,.78vw,13px); color:var(--accent2); line-height:1.35;}
   /* main split */
   .main{flex:1 1 auto; min-height:0; display:flex; gap:1.6vw;}
   .left{flex:0 0 36%; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden;}
@@ -104,6 +109,10 @@
 <body>
 <div class="screen">
   <div class="bar">
+    <div class="qr" id="qrBox" style="display:none">
+      <div class="qrimg"><img id="qrImg" alt="QR" /></div>
+      <div class="qrlabel">Scan for<br>live mobile view</div>
+    </div>
     <div class="ev"><div class="nm" id="evnm">—</div><div class="mt" id="evmt"></div></div>
     <div class="clock"><div class="t" id="clock">--:--</div><div class="l" id="livedot">● LIVE</div></div>
   </div>
@@ -239,8 +248,23 @@ async function load(){
   }catch(e){ document.getElementById("standWrap").innerHTML='<div class="center">Failed to load data.</div>'; }
 }
 
+function mobileURL(){
+  let path = location.pathname;
+  if(/tournament-tv/i.test(path)) path = path.replace(/tournament-tv/i, "tournament-mobile");
+  else path = path.replace(/[^/]*$/, "tournament-mobile.html");
+  return location.origin + path + "?event=" + encodeURIComponent(EVENT_ID);
+}
+function setupQR(){
+  if(!EVENT_ID) return;
+  const url = mobileURL();
+  const img = document.getElementById("qrImg");
+  img.onerror = ()=>{ document.getElementById("qrBox").style.display="none"; };
+  img.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&qzone=1&data=" + encodeURIComponent(url);
+  document.getElementById("qrBox").style.display = "flex";
+}
+
 tick(); setInterval(tick,1000);
-if(EVENT_ID){ load(); setInterval(load,20000); }
+if(EVENT_ID){ setupQR(); load(); setInterval(load,20000); }
 else {
   document.getElementById("nowWrap").innerHTML='';
   document.getElementById("standWrap").innerHTML='<div class="center">Add ?event=EVENT_ID to the URL to display the board.</div>';
