@@ -276,10 +276,25 @@ function bcell(c,m){
     ${bteam(c,m.entrantA, done?m.scoreA:'', aw)}
     ${bteam(c,m.entrantB, bye?'':(done?m.scoreB:''), bw)}</div>`;
 }
+// Compute podium from bracket results (final + bronze). Backend podium field had a bug,
+// so we derive locally to stay correct regardless of backend version.
+function derivePodium(b){
+  const lr=(b.rounds||[])[(b.rounds||[]).length-1];
+  const fm=lr&&lr.matches&&lr.matches[0];
+  let champion="",runnerUp="",third="";
+  if(fm&&fm.status==="DONE"&&fm.winner){
+    if(String(fm.winner)===String(fm.entrantA)){ champion=fm.teamA; runnerUp=fm.teamB; }
+    else { champion=fm.teamB; runnerUp=fm.teamA; }
+  }
+  const bm=b.bronze;
+  if(bm&&bm.status==="DONE"&&bm.winner){ third = String(bm.winner)===String(bm.entrantA)?bm.teamA:bm.teamB; }
+  return {champion,runnerUp,third};
+}
 function oneBracket(c, b){
   const tierName = (TIER[b.tier]||b.tier);
-  const pod = b.podium && (b.podium.champion||b.podium.runnerUp||b.podium.third)
-    ? `<div class="bpodium">🏆 <b>${esc(b.podium.champion)||"—"}</b><span class="posub"> · RU ${esc(b.podium.runnerUp)||"—"} · 3rd ${esc(b.podium.third)||"—"}</span></div>` : "";
+  const p = derivePodium(b);
+  const pod = (p.champion||p.runnerUp||p.third)
+    ? `<div class="bpodium">🏆 <b>${esc(p.champion)||"—"}</b><span class="posub"> · RU ${esc(p.runnerUp)||"—"} · 3rd ${esc(p.third)||"—"}</span></div>` : "";
   const cols = (b.rounds||[]).map(r=>`<div class="bround">
     <div class="brh">${roundLabel(r.round,b.numRounds)}</div>
     <div class="brcol">${(r.matches||[]).map(m=>bcell(c,m)).join("")}</div></div>`).join("");
@@ -298,9 +313,11 @@ function finishedPodium(){
   let fb=null;
   for(const c of (state.data.categories||[])){
     for(const b of (c.playoff||[])){
-      if(b.podium && b.podium.champion){
-        if(b.tier!=="PROSPECT") return {c,b};
-        if(!fb) fb={c,b};
+      const pod=derivePodium(b);
+      if(pod.champion){
+        const entry={c,b,pod};
+        if(b.tier!=="PROSPECT") return entry;
+        if(!fb) fb=entry;
       }
     }
   }
@@ -316,7 +333,7 @@ function winnerRow(cls, label, teamStr, sz){
     <div class="wnames">${players.map(esc).join(" & ")}</div></div>`;
 }
 function winnersHtml(fin){
-  const p=fin.b.podium;
+  const p=fin.pod;
   const tierExtra = (fin.b.tier && fin.b.tier!=="MAIN") ? " · "+(TIER[fin.b.tier]||fin.b.tier) : "";
   return `<div class="winners">
     <div class="win-head">${esc(fin.c.category)}${esc(tierExtra)}</div>

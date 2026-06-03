@@ -222,13 +222,26 @@ function renderStandings(cat){
 }
 
 const TIER = { MAIN:"Main Bracket", CHAMPION:"Champion", PROSPECT:"Prospect" };
+function derivePodium(b){
+  const lr=(b.rounds||[])[(b.rounds||[]).length-1];
+  const fm=lr&&lr.matches&&lr.matches[0];
+  let champion="",runnerUp="",third="";
+  if(fm&&fm.status==="DONE"&&fm.winner){
+    if(String(fm.winner)===String(fm.entrantA)){ champion=fm.teamA; runnerUp=fm.teamB; }
+    else { champion=fm.teamB; runnerUp=fm.teamA; }
+  }
+  const bm=b.bronze;
+  if(bm&&bm.status==="DONE"&&bm.winner){ third = String(bm.winner)===String(bm.entrantA)?bm.teamA:bm.teamB; }
+  return {champion,runnerUp,third};
+}
 function renderBracket(cat){
   if(!cat.playoff.length) return '<p class="empty">Playoff bracket not available yet.</p>';
   return cat.playoff.map(b=>{
-    const pod = (b.podium.champion||b.podium.runnerUp||b.podium.third) ? `<div class="podium">
-      <div class="pod g"><div class="rk">🏆 Champion</div><div class="who">${esc(b.podium.champion)||"—"}</div></div>
-      <div class="pod s"><div class="rk">Runner-up</div><div class="who">${esc(b.podium.runnerUp)||"—"}</div></div>
-      <div class="pod b"><div class="rk">3rd Place</div><div class="who">${esc(b.podium.third)||"—"}</div></div></div>` : "";
+    const pd = derivePodium(b);
+    const pod = (pd.champion||pd.runnerUp||pd.third) ? `<div class="podium">
+      <div class="pod g"><div class="rk">🏆 Champion</div><div class="who">${esc(pd.champion)||"—"}</div></div>
+      <div class="pod s"><div class="rk">Runner-up</div><div class="who">${esc(pd.runnerUp)||"—"}</div></div>
+      <div class="pod b"><div class="rk">3rd Place</div><div class="who">${esc(pd.third)||"—"}</div></div></div>` : "";
     const rounds = b.rounds.map(r=>`<div class="pround"><h4>${roundLabel(r.round,b.numRounds)}</h4>${r.matches.map(m=>pmatch(cat,m)).join("")}</div>`).join("");
     const bronze = b.bronze ? `<div class="pround"><h4>${roundLabel("BRONZE",b.numRounds)}</h4>${pmatch(cat,b.bronze)}</div>`:"";
     return `<div class="tier"><h3><span class="tg">${TIER[b.tier]||b.tier}</span> ${b.nQual} teams</h3>${pod}${rounds}${bronze}</div>`;
