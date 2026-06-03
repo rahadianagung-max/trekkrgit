@@ -1462,7 +1462,7 @@ async function tScheduleEvent(eventId, body) {
 
   await rewriteEventGroupMatches(sheets, tids, newRows);
   return respond(200, {
-    success: true, scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
+    success: true, engine: "clustered-2to3", scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
     clashes, clashCount: clashes.length,
   });
 }
