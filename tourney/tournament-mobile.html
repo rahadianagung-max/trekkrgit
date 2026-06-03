@@ -199,6 +199,7 @@ function renderStandings(cat){
   if(!any) return '<p class="empty">No results yet.</p>';
   const N = cat.advancersPerGroup||0;
   const split = String(cat.format||"").toUpperCase()==="SPLIT";
+  const rankNote = "Ranked by: most wins → head-to-head → point difference → points for → points against";
   return cat.groups.map(g=>{
     const denom = Math.max(1,(g.standings.length||1)-1);
     const rows = g.standings.map(s=>{
@@ -210,9 +211,10 @@ function renderStandings(cat){
         <td class="num-c">${s.played}/${denom}</td><td class="num-c">${s.wins}</td><td class="num-c">${s.losses}</td>
         <td class="num-c">${s.gd>0?'+':''}${s.gd}</td><td class="num-c">${s.gf}</td><td class="num-c">${pa}</td></tr>`;
     }).join("");
-    const cap = split
-      ? `<span>Rank 1${N>1?`–${N}`:''} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket</span>`
-      : (N?`<span>Top ${N} advance</span>`:'');
+    const advText = split
+      ? `Rank 1${N>1?`–${N}`:''} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket`
+      : (N?`Top ${N} advance`:'');
+    const cap = `<span>${advText?advText+' · ':''}${rankNote}</span>`;
     return `<div class="tscroll"><table class="stable"><caption>Group ${esc(g.label)}${cap}</caption>
       <thead><tr><th>#</th><th class="l">Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
