@@ -1200,6 +1200,97 @@ function buildOrderings(rounds) {
   return out;
 }
 // Greedy LPT: assign each group to the court that frees earliest (creates waves when groups > courts).
+// ---- Player play-pattern rule: each pair should play in blocks of 2-3 consecutive
+//      matches, never more than 3, and avoid single-then-rest unless forced. ----
+function runLengths(order, ids) {
+  const slotsOf = {}; ids.forEach((id) => (slotsOf[id] = []));
+  order.forEach((m, idx) => { if (slotsOf[m.a]) slotsOf[m.a].push(idx); if (slotsOf[m.b]) slotsOf[m.b].push(idx); });
+  const runs = {};
+  for (const id of ids) {
+    const s = slotsOf[id], rr = []; let cur = 0;
+    for (let i = 0; i < s.length; i++) { if (i > 0 && s[i] === s[i - 1] + 1) cur++; else { if (cur > 0) rr.push(cur); cur = 1; } }
+    if (cur > 0) rr.push(cur);
+    runs[id] = rr;
+  }
+  return runs;
+}
+function patternPenalty(order, ids) {
+  const runs = runLengths(order, ids); let pen = 0;
+  for (const id of ids) for (const len of runs[id]) { if (len === 1) pen += 10; else if (len > 3) pen += (len - 3) * 8; }
+  return pen;
+}
+function otherEnd(e, t) { return e.a === t ? e.b : e.a; }
+// Greedy sequencer: keep carrying a team through consecutive matches until its run
+// reaches 2-3, then switch to fresh teams. Produces 2-3 blocks, minimal singles.
+function greedyCluster(edges, ids, startIdx) {
+  const M = edges.length; const used = new Array(M).fill(false);
+  const deg = {}; ids.forEach((id) => (deg[id] = 0)); edges.forEach((e) => { deg[e.a]++; deg[e.b]++; });
+  const order = []; const trail = {}; ids.forEach((id) => (trail[id] = 0));
+  const incident = (t) => { const res = []; for (let i = 0; i < M; i++) if (!used[i] && (edges[i].a === t || edges[i].b === t)) res.push(i); return res; };
+  const place = (i) => {
+    used[i] = true; const e = edges[i]; const prev = order.length >= 1 ? order[order.length - 1] : null;
+    order.push(e); deg[e.a]--; deg[e.b]--;
+    const inPrev = (t) => prev && (prev.a === t || prev.b === t);
+    const ta = inPrev(e.a) ? trail[e.a] + 1 : 1, tb = inPrev(e.b) ? trail[e.b] + 1 : 1;
+    for (const id of ids) trail[id] = 0; trail[e.a] = ta; trail[e.b] = tb;
+  };
+  place(startIdx);
+  while (order.length < M) {
+    const prev = order[order.length - 1], p = prev.a, q = prev.b, tp = trail[p], tq = trail[q];
+    const canCarry = (t, tr) => tr < 3 && incident(t).length > 0;
+    const cp = canCarry(p, tp), cq = canCarry(q, tq);
+    let carry = null;
+    if (tp >= 2 && tq >= 2) carry = null;
+    else if (cp && cq) {
+      if (tp === 1 && tq !== 1) carry = p;
+      else if (tq === 1 && tp !== 1) carry = q;
+      else if (tp === 1 && tq === 1) carry = (deg[p] >= deg[q] ? p : q);
+      else carry = (tp <= tq ? p : q);
+    } else if (cp) carry = p; else if (cq) carry = q; else carry = null;
+    let pick = -1;
+    if (carry != null) {
+      const inc = incident(carry);
+      inc.sort((i, j) => { const xi = otherEnd(edges[i], carry), xj = otherEnd(edges[j], carry); const ti = trail[xi] || 0, tj = trail[xj] || 0; if (ti !== tj) return ti - tj; return (deg[xj] || 0) - (deg[xi] || 0); });
+      pick = inc[0];
+    } else {
+      let cands = []; for (let i = 0; i < M; i++) if (!used[i]) { const e = edges[i]; if (e.a !== p && e.b !== p && e.a !== q && e.b !== q) cands.push(i); }
+      if (!cands.length) for (let i = 0; i < M; i++) if (!used[i]) cands.push(i);
+      cands.sort((i, j) => (deg[edges[j].a] + deg[edges[j].b]) - (deg[edges[i].a] + deg[edges[i].b]));
+      pick = cands[0];
+    }
+    if (pick < 0) for (let i = 0; i < M; i++) if (!used[i]) { pick = i; break; }
+    place(pick);
+  }
+  return order;
+}
+function buildClusteredOrderings(rounds, ids) {
+  const edges = []; rounds.forEach((r, ri) => r.forEach(([a, b]) => edges.push({ a, b, round: ri + 1 })));
+  if (edges.length <= 1) return [edges.slice()];
+  const out = [], seen = new Set();
+  for (let s = 0; s < edges.length; s++) {
+    const o = greedyCluster(edges, ids, s);
+    if (o && o.length === edges.length) { const sig = o.map((m) => m.a + "-" + m.b).join("|"); if (!seen.has(sig)) { seen.add(sig); out.push(o); } }
+  }
+  if (!out.length) out.push(edges.slice());
+  return out;
+}
+function patternTotal(groups) { let s = 0; for (const g of groups) s += patternPenalty(g.orderings[g.oi] || [], g.entrantIds); return s; }
+// Choose orderings to (1) avoid cross-court player clashes, then (2) keep good play patterns.
+function optimizeOrderings(groups, namesMap) {
+  const cost = () => totalClashes(groups, namesMap).clashes * 1000 + patternTotal(groups);
+  let best = cost();
+  for (let pass = 0; pass < 5; pass++) {
+    let improved = false;
+    for (const g of groups) {
+      const N = (g.orderings || []).length; if (N < 2) continue;
+      let bestOi = g.oi, bestC = best;
+      for (let o = 0; o < N; o++) { g.oi = o; const c = cost(); if (c < bestC) { bestC = c; bestOi = o; } }
+      g.oi = bestOi; if (bestC < best) { best = bestC; improved = true; }
+    }
+    if (!improved) break;
+  }
+  return best;
+}
 function assignGroupsToCourts(groups, numCourts) {
   const courts = Array.from({ length: Math.max(1, numCourts) }, () => 0);
   const sorted = groups.slice().sort((a, b) => b.length - a.length);
@@ -1338,12 +1429,19 @@ async function tScheduleEvent(eventId, body) {
     namesMap[x[3]] = [x[4] || "", x[5] || ""];
   }
   const groups = [...gmap.values()];
-  for (const g of groups) { g.rounds = roundRobinRounds(g.entrantIds); g.orderings = buildOrderings(g.rounds); g.oi = 0; g.length = (g.orderings[0] || []).length; }
+  for (const g of groups) {
+    g.rounds = roundRobinRounds(g.entrantIds);
+    g.orderings = buildClusteredOrderings(g.rounds, g.entrantIds);
+    let bo = 0, bp = Infinity;
+    g.orderings.forEach((o, i) => { const p = patternPenalty(o, g.entrantIds); if (p < bp) { bp = p; bo = i; } });
+    g.oi = bo;
+    g.length = (g.orderings[0] || []).length;
+  }
 
   const assign = assignGroupsToCourts(groups.map((g) => ({ key: g.key, length: g.length })), numCourts);
   for (const g of groups) { g.court = assign[g.key].court; g.startSlot = assign[g.key].startSlot; }
 
-  reduceClashes(groups, namesMap);
+  optimizeOrderings(groups, namesMap);
 
   const now = new Date().toISOString();
   const newRows = [];
