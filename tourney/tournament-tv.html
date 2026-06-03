@@ -195,7 +195,9 @@ function standHtml(){
   const out = state.data.categories.map(c=>{
     if(!c.groups || !c.groups.some(g=>g.standings.length)) return "";
     const N=c.advancersPerGroup||0, split=String(c.format||"").toUpperCase()==="SPLIT";
-    const cap = split ? `Rank 1${N>1?`–${N}`:""} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket` : (N?`Top ${N} advance`:"");
+    const rankNote = "Ranked by: most wins → head-to-head → point difference → points for → points against";
+    const advText = split ? `Rank 1${N>1?`–${N}`:""} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket` : (N?`Top ${N} advance`:"");
+    const cap = `${advText ? advText + " · " : ""}${rankNote}`;
     const cols = colsFor(c.groups.length);
     const grps=c.groups.map(g=>{
       const denom=Math.max(1,(g.standings.length||1)-1);
