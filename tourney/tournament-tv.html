@@ -381,7 +381,7 @@ function render(){
 
 async function load(){
   try{
-    const d=await api("/tournament/event/"+encodeURIComponent(EVENT_ID)+"/public");
+    const d=await api("/tournament/event/"+encodeURIComponent(EVENT_ID)+"/public?live=1&_="+Date.now());
     state.data=d;
     document.getElementById("evnm").textContent=d.event.name||"Tournament";
     document.getElementById("evmt").textContent=[d.event.venue,d.event.date].filter(Boolean).join("  ·  ");
