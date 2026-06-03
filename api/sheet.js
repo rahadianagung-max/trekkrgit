@@ -186,7 +186,7 @@ const netlifyHandler = async (event) => {
     if (path === "tournament/event" && method === "POST") return await tCreateEvent(body);
     if (path === "tournament/events" && method === "GET") return await tListEvents();
     if (path.startsWith("tournament/event/") && path.endsWith("/schedule") && method === "POST") {
-      return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")));
+      return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")), body);
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/finalize-elo") && method === "POST") {
       return await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
@@ -202,8 +202,9 @@ const netlifyHandler = async (event) => {
     if (path === "tournament/entrant" && method === "PUT") return await tUpdateEntrant(body);
     if (path === "tournament/match" && method === "PUT") return await tUpdateMatchScore(body);
     if (path === "tournament/playoff/match" && method === "PUT") return await tUpdatePlayoffScore(body);
+    if (path === "tournament/match/meta" && method === "PUT") return await tUpdateMatchMeta(body);
     if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
-      return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")));
+      return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")), body);
     }
     if (path.startsWith("tournament/") && path.endsWith("/import") && method === "POST") {
       return await tImport(decodeURIComponent(path.replace("tournament/", "").replace("/import", "")));
@@ -1199,6 +1200,97 @@ function buildOrderings(rounds) {
   return out;
 }
 // Greedy LPT: assign each group to the court that frees earliest (creates waves when groups > courts).
+// ---- Player play-pattern rule: each pair should play in blocks of 2-3 consecutive
+//      matches, never more than 3, and avoid single-then-rest unless forced. ----
+function runLengths(order, ids) {
+  const slotsOf = {}; ids.forEach((id) => (slotsOf[id] = []));
+  order.forEach((m, idx) => { if (slotsOf[m.a]) slotsOf[m.a].push(idx); if (slotsOf[m.b]) slotsOf[m.b].push(idx); });
+  const runs = {};
+  for (const id of ids) {
+    const s = slotsOf[id], rr = []; let cur = 0;
+    for (let i = 0; i < s.length; i++) { if (i > 0 && s[i] === s[i - 1] + 1) cur++; else { if (cur > 0) rr.push(cur); cur = 1; } }
+    if (cur > 0) rr.push(cur);
+    runs[id] = rr;
+  }
+  return runs;
+}
+function patternPenalty(order, ids) {
+  const runs = runLengths(order, ids); let pen = 0;
+  for (const id of ids) for (const len of runs[id]) { if (len === 1) pen += 10; else if (len > 3) pen += (len - 3) * 8; }
+  return pen;
+}
+function otherEnd(e, t) { return e.a === t ? e.b : e.a; }
+// Greedy sequencer: keep carrying a team through consecutive matches until its run
+// reaches 2-3, then switch to fresh teams. Produces 2-3 blocks, minimal singles.
+function greedyCluster(edges, ids, startIdx) {
+  const M = edges.length; const used = new Array(M).fill(false);
+  const deg = {}; ids.forEach((id) => (deg[id] = 0)); edges.forEach((e) => { deg[e.a]++; deg[e.b]++; });
+  const order = []; const trail = {}; ids.forEach((id) => (trail[id] = 0));
+  const incident = (t) => { const res = []; for (let i = 0; i < M; i++) if (!used[i] && (edges[i].a === t || edges[i].b === t)) res.push(i); return res; };
+  const place = (i) => {
+    used[i] = true; const e = edges[i]; const prev = order.length >= 1 ? order[order.length - 1] : null;
+    order.push(e); deg[e.a]--; deg[e.b]--;
+    const inPrev = (t) => prev && (prev.a === t || prev.b === t);
+    const ta = inPrev(e.a) ? trail[e.a] + 1 : 1, tb = inPrev(e.b) ? trail[e.b] + 1 : 1;
+    for (const id of ids) trail[id] = 0; trail[e.a] = ta; trail[e.b] = tb;
+  };
+  place(startIdx);
+  while (order.length < M) {
+    const prev = order[order.length - 1], p = prev.a, q = prev.b, tp = trail[p], tq = trail[q];
+    const canCarry = (t, tr) => tr < 3 && incident(t).length > 0;
+    const cp = canCarry(p, tp), cq = canCarry(q, tq);
+    let carry = null;
+    if (tp >= 2 && tq >= 2) carry = null;
+    else if (cp && cq) {
+      if (tp === 1 && tq !== 1) carry = p;
+      else if (tq === 1 && tp !== 1) carry = q;
+      else if (tp === 1 && tq === 1) carry = (deg[p] >= deg[q] ? p : q);
+      else carry = (tp <= tq ? p : q);
+    } else if (cp) carry = p; else if (cq) carry = q; else carry = null;
+    let pick = -1;
+    if (carry != null) {
+      const inc = incident(carry);
+      inc.sort((i, j) => { const xi = otherEnd(edges[i], carry), xj = otherEnd(edges[j], carry); const ti = trail[xi] || 0, tj = trail[xj] || 0; if (ti !== tj) return ti - tj; return (deg[xj] || 0) - (deg[xi] || 0); });
+      pick = inc[0];
+    } else {
+      let cands = []; for (let i = 0; i < M; i++) if (!used[i]) { const e = edges[i]; if (e.a !== p && e.b !== p && e.a !== q && e.b !== q) cands.push(i); }
+      if (!cands.length) for (let i = 0; i < M; i++) if (!used[i]) cands.push(i);
+      cands.sort((i, j) => (deg[edges[j].a] + deg[edges[j].b]) - (deg[edges[i].a] + deg[edges[i].b]));
+      pick = cands[0];
+    }
+    if (pick < 0) for (let i = 0; i < M; i++) if (!used[i]) { pick = i; break; }
+    place(pick);
+  }
+  return order;
+}
+function buildClusteredOrderings(rounds, ids) {
+  const edges = []; rounds.forEach((r, ri) => r.forEach(([a, b]) => edges.push({ a, b, round: ri + 1 })));
+  if (edges.length <= 1) return [edges.slice()];
+  const out = [], seen = new Set();
+  for (let s = 0; s < edges.length; s++) {
+    const o = greedyCluster(edges, ids, s);
+    if (o && o.length === edges.length) { const sig = o.map((m) => m.a + "-" + m.b).join("|"); if (!seen.has(sig)) { seen.add(sig); out.push(o); } }
+  }
+  if (!out.length) out.push(edges.slice());
+  return out;
+}
+function patternTotal(groups) { let s = 0; for (const g of groups) s += patternPenalty(g.orderings[g.oi] || [], g.entrantIds); return s; }
+// Choose orderings to (1) avoid cross-court player clashes, then (2) keep good play patterns.
+function optimizeOrderings(groups, namesMap) {
+  const cost = () => totalClashes(groups, namesMap).clashes * 1000 + patternTotal(groups);
+  let best = cost();
+  for (let pass = 0; pass < 5; pass++) {
+    let improved = false;
+    for (const g of groups) {
+      const N = (g.orderings || []).length; if (N < 2) continue;
+      let bestOi = g.oi, bestC = best;
+      for (let o = 0; o < N; o++) { g.oi = o; const c = cost(); if (c < bestC) { bestC = c; bestOi = o; } }
+      g.oi = bestOi; if (bestC < best) { best = bestC; improved = true; }
+    }
+    if (!improved) break;
+  }
+  return best;
+}
 function assignGroupsToCourts(groups, numCourts) {
   const courts = Array.from({ length: Math.max(1, numCourts) }, () => 0);
   const sorted = groups.slice().sort((a, b) => b.length - a.length);
@@ -1210,6 +1302,21 @@ function assignGroupsToCourts(groups, numCourts) {
     courts[ci] += g.length;
   }
   return assign;
+}
+// Normalize a clock value that may come back from Sheets in odd formats
+// ("8:00", "08:00:00", "8.00", "8:00 AM") into a clean 24h "HH:MM".
+function normClock(v) {
+  let s = String(v == null ? "" : v).trim();
+  if (!s) return "";
+  const ap = /(am|pm)/i.exec(s);
+  s = s.replace(/\s*(am|pm)/i, "").trim();
+  const p = s.split(/[:.]/);
+  let h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  if (isNaN(h)) return "";
+  if (isNaN(m)) m = 0;
+  if (ap) { const pm = /pm/i.test(ap[0]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+  h = ((h % 24) + 24) % 24; m = ((m % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 function addMinutesToTime(hhmm, minutes) {
   const parts = String(hhmm || "09:00").split(":");
@@ -1281,13 +1388,28 @@ async function rewriteEventGroupMatches(sheets, tids, newRows) {
   }
 }
 // Generate the full group-stage schedule for an event (all categories share the court pool).
-async function tScheduleEvent(eventId) {
+async function tScheduleEvent(eventId, body) {
   const sheets = getSheets();
   await ensureTabs(sheets);
   const evRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` });
-  const evRow = (evRes.data.values || []).find((x) => x[0] === eventId);
-  if (!evRow) return respond(404, { error: "Event not found" });
-  const numCourts = parseInt(evRow[5]) || 1, startTime = evRow[4] || "09:00", matchMinutes = parseInt(evRow[6]) || 15;
+  const evRows = evRes.data.values || [];
+  const evIdx = evRows.findIndex((x) => x[0] === eventId);
+  if (evIdx === -1) return respond(404, { error: "Event not found" });
+  const evRow = evRows[evIdx];
+  // Allow caller (step 6) to override the event's schedule params; persist the new values so the whole app stays consistent.
+  const b = body || {};
+  const startTime = normClock((b.startTime && String(b.startTime).trim()) || evRow[4]) || "09:00";
+  const numCourts = parseInt(b.numCourts) || parseInt(evRow[5]) || 1;
+  const matchMinutes = parseInt(b.matchMinutes) || parseInt(evRow[6]) || 15;
+  const overridden = (b.startTime != null && String(b.startTime).trim() !== "") || b.numCourts != null || b.matchMinutes != null;
+  if (overridden) {
+    while (evRow.length < 8) evRow.push("");
+    evRow[4] = startTime; evRow[5] = numCourts; evRow[6] = matchMinutes;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A${evIdx + 2}:H${evIdx + 2}`,
+      valueInputOption: "USER_ENTERED", requestBody: { values: [evRow] },
+    });
+  }
 
   const trRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
   const tournaments = (trRes.data.values || []).filter((x) => x[1] === eventId);
@@ -1307,12 +1429,19 @@ async function tScheduleEvent(eventId) {
     namesMap[x[3]] = [x[4] || "", x[5] || ""];
   }
   const groups = [...gmap.values()];
-  for (const g of groups) { g.rounds = roundRobinRounds(g.entrantIds); g.orderings = buildOrderings(g.rounds); g.oi = 0; g.length = (g.orderings[0] || []).length; }
+  for (const g of groups) {
+    g.rounds = roundRobinRounds(g.entrantIds);
+    g.orderings = buildClusteredOrderings(g.rounds, g.entrantIds);
+    let bo = 0, bp = Infinity;
+    g.orderings.forEach((o, i) => { const p = patternPenalty(o, g.entrantIds); if (p < bp) { bp = p; bo = i; } });
+    g.oi = bo;
+    g.length = (g.orderings[0] || []).length;
+  }
 
   const assign = assignGroupsToCourts(groups.map((g) => ({ key: g.key, length: g.length })), numCourts);
   for (const g of groups) { g.court = assign[g.key].court; g.startSlot = assign[g.key].startSlot; }
 
-  reduceClashes(groups, namesMap);
+  optimizeOrderings(groups, namesMap);
 
   const now = new Date().toISOString();
   const newRows = [];
@@ -1333,7 +1462,7 @@ async function tScheduleEvent(eventId) {
 
   await rewriteEventGroupMatches(sheets, tids, newRows);
   return respond(200, {
-    success: true, scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
+    success: true, engine: "clustered-2to3", scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
     clashes, clashCount: clashes.length,
   });
 }
@@ -1398,8 +1527,9 @@ function computeGroupStandings(matches, entrantIds) {
     const subset = new Set(arr.filter((s) => s.wins === x.wins).map((s) => s.entrantId));
     const hx = h2hWins(x.entrantId, subset), hy = h2hWins(y.entrantId, subset);
     if (hy !== hx) return hy - hx;
-    if (y.gd !== x.gd) return y.gd - x.gd;
-    return y.gf - x.gf;
+    if (y.gd !== x.gd) return y.gd - x.gd;   // PD (points difference)
+    if (y.gf !== x.gf) return y.gf - x.gf;   // PF (points for)
+    return x.ga - y.ga;                       // PA (points against, lower is better)
   });
   arr.forEach((s, i) => { s.rank = i + 1; });
   return arr;
@@ -1470,31 +1600,60 @@ function seedOrder(size) {
   }
   return pots;
 }
-// Build a single-elim bracket from seeded entrant ids (best first). Byes pre-resolved & pre-advanced.
-function buildBracket(seeded, tier) {
-  const nQual = seeded.length;
-  if (nQual < 2) return { matches: [], numRounds: 0, bronze: false, nQual, soleWinner: nQual === 1 ? seeded[0] : null };
-  const size = nextPow2(nQual), numRounds = Math.log2(size);
-  const order = seedOrder(size);
-  const pos = order.map((sn) => (sn <= nQual ? seeded[sn - 1] : null));
+// Build all rounds from an ordered list of round-1 pairings (each [a,b], a/b = entrantId or null=bye).
+// round1.length must be a power of 2. Byes pre-resolved & advanced.
+function bracketFromRound1(round1, tier) {
+  const m1 = round1.length;
+  if (m1 < 1) return { matches: [], numRounds: 0, bronze: false, nQual: 0 };
+  const numRounds = Math.log2(m1) + 1;
   const rounds = [];
   for (let r = 1; r <= numRounds; r++) {
-    const cnt = size / Math.pow(2, r), arr = [];
+    const cnt = m1 / Math.pow(2, r - 1), arr = [];
     for (let i = 0; i < cnt; i++) arr.push({ bracket: tier, round: r, idx: i, a: null, b: null, status: "SCHEDULED", winner: "" });
     rounds.push(arr);
   }
-  for (let i = 0; i < rounds[0].length; i++) { rounds[0][i].a = pos[2 * i] || null; rounds[0][i].b = pos[2 * i + 1] || null; }
-  const advance = (winner, r, i) => { if (r >= numRounds) return; const m = rounds[r][Math.floor(i / 2)]; if (i % 2 === 0) m.a = winner; else m.b = winner; };
-  for (let i = 0; i < rounds[0].length; i++) {
+  for (let i = 0; i < m1; i++) { rounds[0][i].a = round1[i][0] || null; rounds[0][i].b = round1[i][1] || null; }
+  const advance = (w, r, i) => { if (r >= numRounds) return; const m = rounds[r][Math.floor(i / 2)]; if (i % 2 === 0) m.a = w; else m.b = w; };
+  for (let i = 0; i < m1; i++) {
     const m = rounds[0][i];
     if (m.a && !m.b) { m.winner = m.a; m.status = "BYE"; advance(m.a, 1, i); }
     else if (!m.a && m.b) { m.winner = m.b; m.status = "BYE"; advance(m.b, 1, i); }
   }
+  const nQual = round1.reduce((n, p) => n + (p[0] ? 1 : 0) + (p[1] ? 1 : 0), 0);
   const bronze = nQual >= 4;
   const matches = [];
   for (const arr of rounds) for (const m of arr) matches.push(m);
   if (bronze) matches.push({ bracket: tier, round: "BRONZE", idx: 0, a: null, b: null, status: "SCHEDULED", winner: "" });
-  return { matches, numRounds, bronze, size, nQual };
+  return { matches, numRounds, bronze, size: 2 * m1, nQual };
+}
+// Performance seeding: place a flat seeded list (best first) into standard bracket slots.
+function buildBracket(seeded, tier) {
+  const nQual = seeded.length;
+  if (nQual < 2) return { matches: [], numRounds: 0, bronze: false, nQual, soleWinner: nQual === 1 ? seeded[0] : null };
+  const size = nextPow2(nQual);
+  const order = seedOrder(size);
+  const pos = order.map((sn) => (sn <= nQual ? seeded[sn - 1] : null));
+  const round1 = [];
+  for (let i = 0; i < size / 2; i++) round1.push([pos[2 * i] || null, pos[2 * i + 1] || null]);
+  return bracketFromRound1(round1, tier);
+}
+// World Cup style fixed cross by group position. groupsQual = per-group entrantIds in rank order.
+// Applies only when every group has exactly 2 qualifiers and group count is a power of 2 (2,4,8...).
+// Pairs group i with mirror group (g-1-i), crossing positions: 1(i) vs 2(mirror), 1(mirror) vs 2(i).
+// Guarantees two teams from the same group land in opposite halves (can only meet in the final).
+function crossSeedRound1(groupsQual) {
+  const g = groupsQual.length;
+  if (g < 2) return null;
+  if ((g & (g - 1)) !== 0) return null;           // group count must be a power of 2
+  if (!groupsQual.every((a) => a.length === 2)) return null; // exactly 2 per group
+  const W = groupsQual.map((a) => a[0]), R = groupsQual.map((a) => a[1]);
+  const top = [], bot = [];
+  for (let i = 0; i < g / 2; i++) {
+    const j = g - 1 - i;
+    top.push([W[i], R[j]]); // e.g. 1A vs 2H
+    bot.push([W[j], R[i]]); // e.g. 1H vs 2A
+  }
+  return top.concat(bot);
 }
 async function rewritePlayoffMatches(sheets, id, newRows) {
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
@@ -1524,7 +1683,7 @@ async function computeTournamentStandings(sheets, id) {
   return out;
 }
 const seedSort = (a, b) => a.rank - b.rank || b.wins - a.wins || b.gd - a.gd || b.gf - a.gf;
-async function tGeneratePlayoff(id) {
+async function tGeneratePlayoff(id, body) {
   const sheets = getSheets();
   await ensureTabs(sheets);
   const tRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
@@ -1534,34 +1693,97 @@ async function tGeneratePlayoff(id) {
   const groups = await computeTournamentStandings(sheets, id);
   if (!groups.length) return respond(400, { error: "Belum ada grup/standing. Undi grup & input skor dulu." });
 
-  const champ = [], prosp = [];
-  for (const g of groups) for (const s of g.standings) (s.rank <= N ? champ : prosp).push(s);
-  champ.sort(seedSort); prosp.sort(seedSort);
+  const b0 = body || {};
+  const sched = {
+    startTime: b0.startTime || "09:00",
+    numCourts: parseInt(b0.numCourts) || 1,
+    matchMinutes: parseInt(b0.matchMinutes) || 15,
+    date: b0.date || "",
+  };
+
+  const champCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank <= N).length, 0);
+  const prospCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank > N).length, 0);
 
   const now = new Date().toISOString();
-  const newRows = [];
-  const toRow = (m) => [id, genId("MT"), "PLAYOFF", "", m.bracket, m.round, "", m.idx, "", m.a || "", m.b || "", "", "", m.winner || "", m.status, now];
+  const toRow = (m) => [id, genId("MT"), "PLAYOFF", "", m.bracket, m.round, m.court || "", m.idx, m.time || "", m.a || "", m.b || "", "", "", m.winner || "", m.status, now];
   const summary = [];
-  const emit = (tier, list) => {
-    const b = buildBracket(list.map((s) => s.entrantId), tier);
-    b.matches.forEach((m) => newRows.push(toRow(m)));
-    summary.push({ tier, entrants: b.nQual, rounds: b.numRounds, bronze: b.bronze, matches: b.matches.length });
+  const built = [];
+  const emitTier = (tier, predicate) => {
+    const groupsQual = groups.map((g) => g.standings.filter(predicate).sort((a, b) => a.rank - b.rank).map((s) => s.entrantId));
+    const cross = crossSeedRound1(groupsQual);
+    let b, method;
+    if (cross) { b = bracketFromRound1(cross, tier); method = "cross"; }
+    else {
+      const flat = [];
+      groups.forEach((g) => g.standings.filter(predicate).forEach((s) => flat.push(s)));
+      flat.sort(seedSort);
+      b = buildBracket(flat.map((s) => s.entrantId), tier);
+      method = "seed";
+    }
+    built.push({ tier, b });
+    summary.push({ tier, method, entrants: b.nQual, rounds: b.numRounds, bronze: b.bronze, matches: b.matches.length });
   };
   if (format === "SPLIT") {
-    if (champ.length < 2) return respond(400, { error: "Champion tier perlu minimal 2 tim." });
-    emit("CHAMPION", champ);
-    if (prosp.length >= 2) emit("PROSPECT", prosp);
+    if (champCount < 2) return respond(400, { error: "Champion tier perlu minimal 2 tim." });
+    emitTier("CHAMPION", (s) => s.rank <= N);
+    if (prospCount >= 2) emitTier("PROSPECT", (s) => s.rank > N);
   } else {
-    if (champ.length < 2) return respond(400, { error: `Perlu minimal 2 tim lolos (top ${N}/grup).` });
-    emit("MAIN", champ);
+    if (champCount < 2) return respond(400, { error: `Perlu minimal 2 tim lolos (top ${N}/grup).` });
+    emitTier("MAIN", (s) => s.rank <= N);
   }
+
+  schedulePlayoff(built, sched);
+  const newRows = [];
+  built.forEach(({ b }) => b.matches.forEach((m) => newRows.push(toRow(m))));
+
   await rewritePlayoffMatches(sheets, id, newRows);
   await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }).then(async (r) => {
     const rows = r.data.values || [], i = rows.findIndex((x) => x[0] === id);
     if (i !== -1) { while (rows[i].length < 8) rows[i].push(""); rows[i][7] = "PLAYOFF";
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A${i + 2}:J${i + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rows[i]] } }); }
   });
-  return respond(200, { success: true, format, brackets: summary });
+  return respond(200, { success: true, format, brackets: summary, schedule: sched });
+}
+// Assign court + planned time to playoff matches, round-by-round across tiers (shared court pool).
+// BYE matches get no court/time. Each tier's bronze is scheduled at that tier's final round level.
+function schedulePlayoff(built, sched) {
+  const C = Math.max(1, sched.numCourts || 1);
+  const dur = sched.matchMinutes || 15;
+  const maxR = Math.max(0, ...built.map((t) => t.b.numRounds));
+  let wave = 0;
+  for (let L = 1; L <= maxR; L++) {
+    const real = [];
+    for (const t of built) {
+      t.b.matches.forEach((m) => { if (typeof m.round === "number" && m.round === L && m.status !== "BYE") real.push(m); });
+      if (L === t.b.numRounds) t.b.matches.forEach((m) => { if (String(m.round) === "BRONZE" && m.status !== "BYE") real.push(m); });
+    }
+    for (let j = 0; j < real.length; j++) {
+      real[j].court = (j % C) + 1;
+      real[j].time = addMinutesToTime(sched.startTime, (wave + Math.floor(j / C)) * dur);
+    }
+    if (real.length) wave += Math.ceil(real.length / C);
+  }
+}
+// Set court (and optionally planned time) on any match row.
+async function tUpdateMatchMeta(body) {
+  const { matchId, court, time } = body || {};
+  if (!matchId) return respond(400, { error: "matchId required" });
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const idx = rows.findIndex((x) => x[1] === matchId);
+  if (idx === -1) return respond(404, { error: "Match not found" });
+  const row = rows[idx];
+  while (row.length < 16) row.push("");
+  if (court !== undefined && court !== null) row[6] = String(court);
+  if (time !== undefined && time !== null) row[8] = String(time);
+  row[15] = new Date().toISOString();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A${idx + 2}:P${idx + 2}`,
+    valueInputOption: "USER_ENTERED", requestBody: { values: [row] },
+  });
+  return respond(200, { success: true, court: row[6], time: row[8] });
 }
 async function tUpdatePlayoffScore(body) {
   const { matchId, scoreA, scoreB } = body;
@@ -1607,7 +1829,7 @@ function playoffBracketsView(all, nm) {
     const tm = all.filter((m) => m.bracket === tier);
     const numRounds = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
     const nQual = tm.filter((m) => parseInt(m.round) === 1).reduce((n, m) => n + (m.entrantA ? 1 : 0) + (m.entrantB ? 1 : 0), 0);
-    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
+    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
     const rounds = [];
     for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
     const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
@@ -1675,7 +1897,7 @@ async function tPublicEvent(eventId) {
     const groups = [...members.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([label, ids]) => ({
       label,
       standings: computeGroupStandings(groupMatches.filter((m) => m.groupLabel === label), ids)
-        .map((s) => ({ rank: s.rank, entrantId: s.entrantId, team: nm(s.entrantId), played: s.played, wins: s.wins, losses: s.losses, gd: s.gd, gf: s.gf })),
+        .map((s) => ({ rank: s.rank, entrantId: s.entrantId, team: nm(s.entrantId), played: s.played, wins: s.wins, losses: s.losses, gd: s.gd, gf: s.gf, ga: s.ga })),
     }));
     const schedule = groupMatches.slice().sort((a, b) => a.slot - b.slot || a.court - b.court).map((m) => ({
       matchId: m.matchId, court: m.court, slot: m.slot, time: m.time, groupLabel: m.groupLabel,
@@ -1749,7 +1971,7 @@ async function tFinalizeElo(eventId, force) {
   const all = (mR.data.values || []).map(mapMatchRow).filter((m) =>
     tids.includes(m.tournamentId) && (m.stage === "GROUP" || m.stage === "PLAYOFF") &&
     m.status === "DONE" && m.entrantA && m.entrantB && m.scoreA !== "" && m.scoreB !== "");
-  const grp = all.filter((m) => m.stage === "GROUP").sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")) || a.slot - b.slot || a.court - b.court);
+  const grp = all.filter((m) => m.stage === "GROUP").sort((a, b) => a.slot - b.slot || a.court - b.court);
   const ply = all.filter((m) => m.stage === "PLAYOFF").sort((a, b) => ((parseInt(a.round) || 99) - (parseInt(b.round) || 99)) || a.slot - b.slot);
   const ordered = grp.concat(ply);
   if (!ordered.length) return respond(400, { error: "Belum ada match selesai untuk dihitung." });
