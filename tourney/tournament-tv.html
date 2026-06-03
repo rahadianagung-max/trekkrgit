@@ -104,6 +104,27 @@
   .footer .pwr{font-family:'Space Mono',monospace; font-size:clamp(9px,.8vw,13px); color:var(--faint); letter-spacing:.1em; text-transform:uppercase;}
   .footer .logo-sm{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(14px,1.4vw,24px); letter-spacing:-.01em;
     background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  /* playoff bracket */
+  .bracket-block{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
+  .bracket-block + .bracket-block{margin-top:1.4vh;}
+  .bt{flex:0 0 auto; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(15px,1.5vw,26px); margin-bottom:.6vh;}
+  .bpodium{flex:0 0 auto; font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,17px); color:var(--accent); margin-bottom:1vh;}
+  .bpodium .posub{color:var(--muted);}
+  .bracket{flex:1 1 auto; min-height:0; display:flex; gap:1vw; overflow:hidden;}
+  .bround{flex:1 1 0; min-width:0; display:flex; flex-direction:column;}
+  .bround.bronze{flex:0 0 auto; min-width:clamp(140px,12vw,240px);}
+  .brh{flex:0 0 auto; font-family:'Space Mono',monospace; font-size:clamp(9px,.78vw,13px); color:var(--faint);
+    text-transform:uppercase; letter-spacing:.06em; margin-bottom:.6vh; text-align:center;}
+  .brcol{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; justify-content:space-around; gap:.6vh;}
+  .bmatch{border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:.6vh .6vw; display:flex; flex-direction:column; gap:.3vh;}
+  .bmatch.bye{opacity:.45;}
+  .bteam{display:flex; align-items:center; gap:.4vw; min-width:0;}
+  .bteam.win{color:var(--accent); font-weight:700;}
+  .bteam.tbd{color:var(--faint); font-style:italic;}
+  .bteam .bavs{display:flex; flex:0 0 auto;}
+  .bteam .bavs .av{margin-left:-4px; box-shadow:0 0 0 2px var(--panel);} .bteam .bavs .av:first-child{margin-left:0;}
+  .bteam .bnm{flex:1 1 auto; min-width:0; font-size:clamp(11px,.95vw,17px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bteam .bsc{flex:0 0 auto; font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,18px); margin-left:auto; padding-left:.4vw;}
 </style>
 </head>
 <body>
@@ -124,7 +145,7 @@
       <div id="nextWrap"></div>
     </div>
     <div class="right">
-      <div class="col-title">Group Standings</div>
+      <div class="col-title" id="rightTitle">Group Standings</div>
       <div id="standWrap"><div class="center">Loading tournament data…</div></div>
     </div>
   </div>
@@ -220,6 +241,44 @@ function standHtml(){
   return out || '<div class="center">No standings yet — enter group scores first.</div>';
 }
 
+function roundLabel(round, numRounds){
+  if(String(round)==="BRONZE") return "3rd Place";
+  const r=parseInt(round), f=numRounds-r;
+  return f===0?"Final":f===1?"Semifinal":f===2?"Quarterfinal":f===3?"Round of 16":"Round "+r;
+}
+function bteam(c, eid, score, win){
+  if(!eid) return `<div class="bteam tbd"><span class="bnm">TBD</span></div>`;
+  const [p1,p2]=pairPlayers(c,eid);
+  return `<div class="bteam ${win?'win':''}">
+    <span class="bavs">${avatar(p1,"clamp(16px,1.3vw,26px)")}${p2?avatar(p2,"clamp(16px,1.3vw,26px)"):""}</span>
+    <span class="bnm">${esc(p1)}${p2?" & "+esc(p2):""}</span>
+    <span class="bsc">${(score!==''&&score!=null)?esc(String(score)):''}</span></div>`;
+}
+function bcell(c,m){
+  const done=m.status==="DONE", bye=m.status==="BYE";
+  const aw=done&&String(m.winner)===String(m.entrantA);
+  const bw=done&&String(m.winner)===String(m.entrantB);
+  return `<div class="bmatch ${bye?'bye':''} ${done?'done':''}">
+    ${bteam(c,m.entrantA, done?m.scoreA:'', aw)}
+    ${bteam(c,m.entrantB, bye?'':(done?m.scoreB:''), bw)}</div>`;
+}
+function oneBracket(c, b){
+  const tierName = (TIER[b.tier]||b.tier);
+  const pod = b.podium && (b.podium.champion||b.podium.runnerUp||b.podium.third)
+    ? `<div class="bpodium">🏆 <b>${esc(b.podium.champion)||"—"}</b><span class="posub"> · RU ${esc(b.podium.runnerUp)||"—"} · 3rd ${esc(b.podium.third)||"—"}</span></div>` : "";
+  const cols = (b.rounds||[]).map(r=>`<div class="bround">
+    <div class="brh">${roundLabel(r.round,b.numRounds)}</div>
+    <div class="brcol">${(r.matches||[]).map(m=>bcell(c,m)).join("")}</div></div>`).join("");
+  const bronze = b.bronze ? `<div class="bround bronze"><div class="brh">3rd Place</div><div class="brcol">${bcell(c,b.bronze)}</div></div>` : "";
+  return `<div class="bracket-block">
+    <div class="bt">${esc(c.category)} · ${esc(tierName)}</div>${pod}
+    <div class="bracket">${cols}${bronze}</div></div>`;
+}
+function bracketHtml(){
+  const cats = (state.data.categories||[]).filter(c => (c.playoff||[]).length);
+  if(!cats.length) return '<div class="center">Playoff bracket not available yet.</div>';
+  return cats.map(c => (c.playoff||[]).map(b => oneBracket(c,b)).join("")).join("");
+}
 function render(){
   if(!state.data) return;
   const feed=buildFeed();
@@ -238,7 +297,10 @@ function render(){
 
   document.getElementById("nowWrap").innerHTML = playing.length ? playing.map(f=>nowCard(f,sz,nmf)).join("") : '<div class="np-empty">No match in progress.</div>';
   document.getElementById("nextWrap").innerHTML = upcoming.length ? upcoming.map(upRow).join("") : '<div class="up-empty">No upcoming match.</div>';
-  document.getElementById("standWrap").innerHTML = standHtml();
+
+  const hasPlayoff = (state.data.categories||[]).some(c => (c.playoff||[]).length);
+  document.getElementById("rightTitle").textContent = hasPlayoff ? "Playoff Bracket" : "Group Standings";
+  document.getElementById("standWrap").innerHTML = hasPlayoff ? bracketHtml() : standHtml();
 }
 
 async function load(){
