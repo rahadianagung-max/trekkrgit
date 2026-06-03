@@ -42,10 +42,10 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-function respond(statusCode, data) {
+function respond(statusCode, data, extraHeaders) {
   return {
     statusCode,
-    headers,
+    headers: extraHeaders ? { ...headers, ...extraHeaders } : headers,
     body: JSON.stringify(data)
   };
 }
@@ -192,7 +192,8 @@ const netlifyHandler = async (event) => {
       return await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/public") && method === "GET") {
-      return await tPublicEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/public", "")));
+      const live = params.live === "1" || params.live === "true";
+      return await tPublicEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/public", "")), { live });
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/schedule") && method === "GET") {
       return await tGetEventSchedule(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")));
@@ -1860,28 +1861,40 @@ async function tGetPlayoff(id) {
 // ==============================================================
 // PUBLIC AGGREGATE (Phase 5: one call for mobile/TV, fixed 5 reads)
 // ==============================================================
-async function tPublicEvent(eventId) {
+async function tPublicEvent(eventId, opts) {
   const sheets = getSheets();
-  await ensureTabs(sheets);
-  const [evR, trR, grR, mR, plR] = await Promise.all([
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_groups}!A2:G` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` }),
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` }),
-  ]);
-  const evRow = (evR.data.values || []).find((x) => x[0] === eventId);
-  if (!evRow) return respond(404, { error: "Event not found" });
+  // Read-only path: skip ensureTabs (saves a metadata read; tabs already exist once an event is created).
+  // One batchGet instead of 5 separate reads = 1 API request against the Sheets quota.
+  const br = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SHEET_ID,
+    ranges: [
+      `${TABS.t_events}!A2:H`,
+      `${TABS.t_tournaments}!A2:J`,
+      `${TABS.t_groups}!A2:G`,
+      `${TABS.t_matches}!A2:P`,
+      `${TABS.players}!A2:J`,
+    ],
+  });
+  const vr = br.data.valueRanges || [];
+  const val = (i) => (vr[i] && vr[i].values) || [];
+  const evRows = val(0), trRows = val(1), allGroups = val(2), mRows = val(3), plRows = val(4);
+  // Spectator board is identical for everyone: cache mobile at the CDN (slight delay OK),
+  // keep TV always fresh (?live=1 -> no-store).
+  const cc = (opts && opts.live)
+    ? "no-store, max-age=0"
+    : "public, s-maxage=20, stale-while-revalidate=40";
+
+  const evRow = evRows.find((x) => x[0] === eventId);
+  if (!evRow) return respond(404, { error: "Event not found" }, { "Cache-Control": "no-store" });
   const event = { eventId: evRow[0], name: evRow[1], venue: evRow[2], date: evRow[3], startTime: evRow[4], numCourts: parseInt(evRow[5]) || 1, matchMinutes: parseInt(evRow[6]) || 15 };
 
   const players = {};
-  for (const r of (plR.data.values || [])) {
+  for (const r of plRows) {
     const name = r[0] || ""; if (!name) continue;
     players[normName(name)] = { name, display: r[3] || name, photo: r[6] || "" };
   }
-  const allGroups = grR.data.values || [];
-  const allMatches = (mR.data.values || []).map(mapMatchRow);
-  const tournaments = (trR.data.values || []).filter((x) => x[1] === eventId);
+  const allMatches = mRows.map(mapMatchRow);
+  const tournaments = trRows.filter((x) => x[1] === eventId);
 
   const categories = tournaments.map((t) => {
     const tid = t[0];
@@ -1910,7 +1923,7 @@ async function tPublicEvent(eventId) {
       advancersPerGroup: parseInt(t[6]) || 2, entrants, groups, schedule, playoff,
     };
   });
-  return respond(200, { event, categories, players });
+  return respond(200, { event, categories, players }, { "Cache-Control": cc });
 }
 
 // ==============================================================
