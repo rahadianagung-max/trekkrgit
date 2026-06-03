@@ -125,6 +125,20 @@
   .bteam .bavs .av{margin-left:-4px; box-shadow:0 0 0 2px var(--panel);} .bteam .bavs .av:first-child{margin-left:0;}
   .bteam .bnm{flex:1 1 auto; min-width:0; font-size:clamp(11px,.95vw,17px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .bteam .bsc{flex:0 0 auto; font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,18px); margin-left:auto; padding-left:.4vw;}
+  /* winners podium (left column when finished) */
+  .winners{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2.2vh;}
+  .winners .win-head{font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-size:clamp(11px,1vw,17px);}
+  .win-row{display:flex; flex-direction:column; align-items:center; gap:.8vh; text-align:center;}
+  .win-row .wlabel{font-family:'Space Mono',monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-size:clamp(10px,.9vw,15px);}
+  .win-row .wpair{display:flex; justify-content:center;}
+  .win-row .wpair .av{margin-left:-8px; box-shadow:0 0 0 3px #000;} .win-row .wpair .av:first-child{margin-left:0;}
+  .win-row .wnames{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; line-height:1.1;}
+  .win-row.champ .wlabel{color:var(--accent); font-size:clamp(14px,1.3vw,24px);}
+  .win-row.champ .wpair .av{box-shadow:0 0 0 3px #000, 0 0 26px rgba(255,122,26,.55);}
+  .win-row.champ .wnames{font-size:clamp(20px,2.1vw,44px); background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .win-row.ru .wlabel{color:var(--accent2);}
+  .win-row.ru .wnames{font-size:clamp(15px,1.5vw,30px);}
+  .win-row.third .wnames{font-size:clamp(13px,1.2vw,23px); color:var(--muted);}
 </style>
 </head>
 <body>
@@ -139,9 +153,9 @@
   </div>
   <div class="main">
     <div class="left">
-      <div class="col-title live">Now Playing</div>
+      <div class="col-title live" id="leftTitle">Now Playing</div>
       <div id="nowWrap"><div class="np-empty">Loading…</div></div>
-      <div class="col-title up">Upcoming</div>
+      <div class="col-title up" id="upTitle">Upcoming</div>
       <div id="nextWrap"></div>
     </div>
     <div class="right">
@@ -279,6 +293,38 @@ function bracketHtml(){
   if(!cats.length) return '<div class="center">Playoff bracket not available yet.</div>';
   return cats.map(c => (c.playoff||[]).map(b => oneBracket(c,b)).join("")).join("");
 }
+// Find a finished bracket (champion decided) to showcase; prefer non-Prospect tiers.
+function finishedPodium(){
+  let fb=null;
+  for(const c of (state.data.categories||[])){
+    for(const b of (c.playoff||[])){
+      if(b.podium && b.podium.champion){
+        if(b.tier!=="PROSPECT") return {c,b};
+        if(!fb) fb={c,b};
+      }
+    }
+  }
+  return fb;
+}
+function splitPair(s){ const p=String(s||"").split(" + ").map(x=>x.trim()).filter(Boolean); return p.length?p:[String(s||"")]; }
+function winnerRow(cls, label, teamStr, sz){
+  if(!teamStr) return "";
+  const players=splitPair(teamStr);
+  return `<div class="win-row ${cls}">
+    <div class="wlabel">${label}</div>
+    <div class="wpair">${players.map(n=>avatar(n,sz)).join("")}</div>
+    <div class="wnames">${players.map(esc).join(" & ")}</div></div>`;
+}
+function winnersHtml(fin){
+  const p=fin.b.podium;
+  const tierExtra = (fin.b.tier && fin.b.tier!=="MAIN") ? " · "+(TIER[fin.b.tier]||fin.b.tier) : "";
+  return `<div class="winners">
+    <div class="win-head">${esc(fin.c.category)}${esc(tierExtra)}</div>
+    ${winnerRow("champ","🏆 Champion", p.champion, "clamp(56px,5.2vw,128px)")}
+    ${winnerRow("ru","🥈 Runner-up", p.runnerUp, "clamp(42px,3.6vw,86px)")}
+    ${winnerRow("third","🥉 3rd Place", p.third, "clamp(34px,2.8vw,64px)")}
+  </div>`;
+}
 function render(){
   if(!state.data) return;
   const feed=buildFeed();
@@ -295,8 +341,21 @@ function render(){
   else if(ac===2){ sz="clamp(34px,2.7vw,58px)"; nmf="clamp(13px,1.3vw,24px)"; }
   else { sz="clamp(44px,3.8vw,88px)"; nmf="clamp(16px,1.7vw,31px)"; }
 
-  document.getElementById("nowWrap").innerHTML = playing.length ? playing.map(f=>nowCard(f,sz,nmf)).join("") : '<div class="np-empty">No match in progress.</div>';
-  document.getElementById("nextWrap").innerHTML = upcoming.length ? upcoming.map(upRow).join("") : '<div class="up-empty">No upcoming match.</div>';
+  const fin = finishedPodium();
+  const showWinners = fin && playing.length===0 && upcoming.length===0;
+  const leftTitle = document.getElementById("leftTitle");
+  if(showWinners){
+    leftTitle.textContent = "Winners"; leftTitle.classList.remove("live");
+    document.getElementById("nowWrap").innerHTML = winnersHtml(fin);
+    document.getElementById("upTitle").style.display = "none";
+    document.getElementById("nextWrap").style.display = "none";
+  } else {
+    leftTitle.textContent = "Now Playing"; leftTitle.classList.add("live");
+    document.getElementById("upTitle").style.display = "";
+    document.getElementById("nextWrap").style.display = "";
+    document.getElementById("nowWrap").innerHTML = playing.length ? playing.map(f=>nowCard(f,sz,nmf)).join("") : '<div class="np-empty">No match in progress.</div>';
+    document.getElementById("nextWrap").innerHTML = upcoming.length ? upcoming.map(upRow).join("") : '<div class="up-empty">No upcoming match.</div>';
+  }
 
   const hasPlayoff = (state.data.categories||[]).some(c => (c.playoff||[]).length);
   document.getElementById("rightTitle").textContent = hasPlayoff ? "Playoff Bracket" : "Group Standings";
