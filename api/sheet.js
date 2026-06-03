@@ -1834,7 +1834,7 @@ function playoffBracketsView(all, nm) {
     for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
     const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
     const final = tm.find((m) => parseInt(m.round) === numRounds && m.slot === 0);
-    const loserOf = (m) => (m && m.winner ? (m.winner === m.entrantA ? m.entrantA : m.entrantB) : "");
+    const loserOf = (m) => (m && m.winner ? (String(m.winner) === String(m.entrantA) ? m.entrantB : m.entrantA) : "");
     let champion = "", runnerUp = "", third = "";
     if (final && final.status === "DONE" && final.winner) { champion = nm(final.winner); runnerUp = nm(loserOf(final)); }
     if (bronzeM && bronzeM.status === "DONE" && bronzeM.winner) third = nm(bronzeM.winner);
