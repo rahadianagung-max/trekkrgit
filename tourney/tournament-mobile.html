@@ -203,11 +203,12 @@ function renderStandings(cat){
     const denom = Math.max(1,(g.standings.length||1)-1);
     const rows = g.standings.map(s=>{
       const cls = split ? (s.rank<=N?'champ':'prosp') : (N&&s.rank<=N?'top':'');
+      const pa = (s.ga!=null) ? s.ga : (Number(s.gf||0)-Number(s.gd||0));
       return `<tr class="${cls}">
         <td class="rk">${s.rank}</td>
         <td><span class="nmcell">${avatar((cat.entrants[s.entrantId]||{}).player1)}${teamNames(cat,s.entrantId,false)}</span></td>
         <td class="num-c">${s.played}/${denom}</td><td class="num-c">${s.wins}</td><td class="num-c">${s.losses}</td>
-        <td class="num-c">${s.gd>0?'+':''}${s.gd}</td><td class="num-c">${s.gf}</td><td class="num-c">${s.ga!=null?s.ga:''}</td></tr>`;
+        <td class="num-c">${s.gd>0?'+':''}${s.gd}</td><td class="num-c">${s.gf}</td><td class="num-c">${pa}</td></tr>`;
     }).join("");
     const cap = split
       ? `<span>Rank 1${N>1?`–${N}`:''} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket</span>`

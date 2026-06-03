@@ -201,11 +201,12 @@ function standHtml(){
       const denom=Math.max(1,(g.standings.length||1)-1);
       const rows=g.standings.map(s=>{
         const cls= split?(s.rank<=N?"champ":"prosp"):(N&&s.rank<=N?"top":"");
+        const pa = (s.ga!=null) ? s.ga : (Number(s.gf||0)-Number(s.gd||0));
         const [p1,p2]=pairPlayers(c,s.entrantId);
         const pair = `<span class="p1">${esc(p1)||esc(s.team)}</span>${p2?`<span class="p2">${esc(p2)}</span>`:""}`;
         return `<tr class="${cls}"><td class="rk">${s.rank}</td><td class="nm">${pair}</td>
           <td>${s.played}/${denom}</td><td>${s.wins}</td><td>${s.losses}</td>
-          <td>${s.gd>0?"+":""}${s.gd}</td><td>${s.gf}</td><td>${s.ga!=null?s.ga:""}</td></tr>`;
+          <td>${s.gd>0?"+":""}${s.gd}</td><td>${s.gf}</td><td>${pa}</td></tr>`;
       }).join("");
       return `<div class="grp"><div class="grp-h">Group ${esc(g.label)}</div>
         <table class="st"><thead><tr><th>#</th><th class="nm">Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
