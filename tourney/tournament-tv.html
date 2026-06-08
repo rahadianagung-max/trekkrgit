@@ -78,21 +78,23 @@
   .up-x{font-family:'Space Mono',monospace; color:var(--faint); font-size:clamp(10px,.8vw,13px);}
   /* standings — fill right column */
   #standWrap{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:1.4vh;}
-  .cat-block{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
-  .cat-head{flex:0 0 auto; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(16px,1.6vw,28px); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap; margin-bottom:1vh;}
-  .cat-cap{font-family:'Space Mono',monospace; font-weight:400; font-size:clamp(9px,.82vw,14px); color:var(--muted); letter-spacing:.02em;}
-  .grp-grid{flex:1 1 auto; min-height:0; display:grid; gap:1.2vh 1.2vw; grid-auto-rows:1fr;}
-  .grp{min-height:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--panel); padding:1.1vh 1.1vw; display:flex; flex-direction:column;}
-  .grp-h{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(12px,1.05vw,18px); letter-spacing:.04em; margin-bottom:.7vh;}
-  table.st{flex:1 1 auto; width:100%; height:100%; border-collapse:collapse; table-layout:auto;}
+  .fit{--sfz:18px; display:flex; flex-direction:column; gap:calc(var(--sfz)*.9); align-content:start;}
+  .cat-block{display:flex; flex-direction:column;}
+  .cat-block + .cat-block{margin-top:calc(var(--sfz)*.5);}
+  .cat-head{flex:0 0 auto; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:calc(var(--sfz)*1.5); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap; margin-bottom:calc(var(--sfz)*.5);}
+  .cat-cap{font-family:'Space Mono',monospace; font-weight:400; font-size:calc(var(--sfz)*.7); color:var(--muted); letter-spacing:.02em;}
+  .grp-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(calc(var(--sfz)*15.5),1fr)); gap:calc(var(--sfz)*.55) calc(var(--sfz)*.6); align-content:start;}
+  .grp{overflow:hidden; border:1px solid var(--line); border-radius:calc(var(--sfz)*.7); background:var(--panel); padding:calc(var(--sfz)*.5) calc(var(--sfz)*.6); display:flex; flex-direction:column;}
+  .grp-h{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:calc(var(--sfz)*.95); letter-spacing:.04em; margin-bottom:calc(var(--sfz)*.3);}
+  table.st{width:100%; border-collapse:collapse; table-layout:auto;}
   table.st th{font-family:'Space Mono',monospace; font-weight:400; color:var(--faint); text-transform:uppercase; letter-spacing:.03em;
-    font-size:clamp(9px,.78vw,13px); text-align:center; padding:.3vh .4vw; border-bottom:1px solid var(--line); white-space:nowrap;}
+    font-size:calc(var(--sfz)*.66); text-align:center; padding:calc(var(--sfz)*.18) calc(var(--sfz)*.3); border-bottom:1px solid var(--line); white-space:nowrap;}
   table.st th.nm{text-align:left;}
-  table.st td{font-size:clamp(12px,1.05vw,19px); padding:.4vh .4vw; text-align:center; border-bottom:1px solid rgba(60,41,32,.55); white-space:nowrap; vertical-align:middle;}
+  table.st td{font-size:var(--sfz); padding:calc(var(--sfz)*.16) calc(var(--sfz)*.32); text-align:center; border-bottom:1px solid rgba(60,41,32,.55); white-space:nowrap; vertical-align:middle;}
   table.st td.rk{font-family:'Space Mono',monospace; color:var(--accent2); width:1.8em;}
-  table.st td.nm{text-align:left; white-space:normal; line-height:1.16; padding-right:1vw;}
+  table.st td.nm{text-align:left; white-space:normal; line-height:1.07; padding-right:calc(var(--sfz)*.5);}
   table.st td.nm .p1{display:block; font-weight:700;}
-  table.st td.nm .p2{display:block; font-weight:500; color:var(--muted);}
+  table.st td.nm .p2{display:block; font-weight:500; color:var(--muted); font-size:calc(var(--sfz)*.9);}
   table.st tr:last-child td{border-bottom:none;}
   table.st tr.champ td{background:rgba(255,122,26,.12);} table.st tr.champ td.rk{color:var(--accent); font-weight:700;}
   table.st tr.prosp td{background:rgba(255,171,64,.08);} table.st tr.prosp td.rk{color:var(--accent2);}
@@ -167,7 +169,7 @@
 </div>
 
 <script>
-const BASE = location.hostname === "trekkr.online" ? "/api" : "https://trekkr.online/api";
+const BASE = location.protocol.startsWith("http") ? "/api" : "https://www.turnamenpadel.com/api";
 const qs = new URLSearchParams(location.search);
 const EVENT_ID = qs.get("event");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -342,6 +344,64 @@ function winnersHtml(fin){
     ${winnerRow("third","🥉 3rd Place", p.third, "clamp(34px,2.8vw,64px)")}
   </div>`;
 }
+function capFor(c){
+  const N=c.advancersPerGroup||0, split=String(c.format||"").toUpperCase()==="SPLIT";
+  const rankNote="Ranked by: most wins → head-to-head → point difference → points for → points against";
+  const advText = split ? `Rank 1${N>1?`–${N}`:""} → Championship Bracket · Rank ${N+1}+ → Prospect Bracket` : (N?`Top ${N} advance`:"");
+  return `${advText?advText+" · ":""}${rankNote}`;
+}
+function cardHtml(c, g){
+  const N=c.advancersPerGroup||0, split=String(c.format||"").toUpperCase()==="SPLIT";
+  const denom=Math.max(1,(g.standings.length||1)-1);
+  const rows=g.standings.map(s=>{
+    const cls= split?(s.rank<=N?"champ":"prosp"):(N&&s.rank<=N?"top":"");
+    const pa = (s.ga!=null) ? s.ga : (Number(s.gf||0)-Number(s.gd||0));
+    const [p1,p2]=pairPlayers(c,s.entrantId);
+    const pair = `<span class="p1">${esc(p1)||esc(s.team)}</span>${p2?`<span class="p2">${esc(p2)}</span>`:""}`;
+    return `<tr class="${cls}"><td class="rk">${s.rank}</td><td class="nm">${pair}</td>
+      <td>${s.played}/${denom}</td><td>${s.wins}</td><td>${s.losses}</td>
+      <td>${s.gd>0?"+":""}${s.gd}</td><td>${s.gf}</td><td>${pa}</td></tr>`;
+  }).join("");
+  return `<div class="grp"><div class="grp-h">Group ${esc(g.label)} · ${g.standings.length} teams</div>
+    <table class="st"><thead><tr><th>#</th><th class="nm">Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+// Shrink standings font (--sfz) until ALL groups fit the column height on one screen.
+function fitStandings(){
+  const wrap=document.getElementById("standWrap");
+  const fit=wrap && wrap.querySelector(".fit");
+  if(!fit) return;
+  const avail=wrap.clientHeight;
+  if(!avail) return;
+  let lo=8, hi=34, best=8;
+  for(let i=0;i<14;i++){
+    const mid=(lo+hi)/2;
+    fit.style.setProperty("--sfz", mid+"px");
+    if(fit.scrollHeight<=avail){ best=mid; lo=mid; } else { hi=mid; }
+  }
+  fit.style.setProperty("--sfz", best+"px");
+  // safety: nudge down if a column-count jump left a slight overflow
+  let g=best;
+  while(fit.scrollHeight>avail && g>8){ g-=0.5; fit.style.setProperty("--sfz", g+"px"); }
+}
+function renderRight(){
+  const hasPlayoff=(state.data.categories||[]).some(c=>(c.playoff||[]).length);
+  const titleEl=document.getElementById("rightTitle");
+  const wrap=document.getElementById("standWrap");
+  if(hasPlayoff){ titleEl.textContent="Playoff Bracket"; wrap.innerHTML=bracketHtml(); return; }
+  titleEl.textContent="Group Standings";
+  const cats=(state.data.categories||[]).filter(c=>c.groups && c.groups.some(g=>g.standings.length));
+  if(!cats.length){ wrap.innerHTML='<div class="center">No standings yet — enter group scores first.</div>'; return; }
+  const blocks=cats.map(c=>{
+    const cap=capFor(c);
+    const groups=c.groups.filter(g=>g.standings.length);
+    const cards=groups.map(g=>cardHtml(c,g)).join("");
+    return `<div class="cat-block"><div class="cat-head">${esc(c.category)}${cap?`<span class="cat-cap">${cap}</span>`:""}</div>
+      <div class="grp-grid">${cards}</div></div>`;
+  }).join("");
+  wrap.innerHTML=`<div class="fit">${blocks}</div>`;
+  fitStandings();
+}
 function render(){
   if(!state.data) return;
   const feed=buildFeed();
@@ -375,8 +435,7 @@ function render(){
   }
 
   const hasPlayoff = (state.data.categories||[]).some(c => (c.playoff||[]).length);
-  document.getElementById("rightTitle").textContent = hasPlayoff ? "Playoff Bracket" : "Group Standings";
-  document.getElementById("standWrap").innerHTML = hasPlayoff ? bracketHtml() : standHtml();
+  renderRight();
 }
 
 async function load(){
@@ -405,7 +464,10 @@ function setupQR(){
 }
 
 tick(); setInterval(tick,1000);
-if(EVENT_ID){ setupQR(); load(); setInterval(load,20000); }
+if(EVENT_ID){
+  setupQR(); load(); setInterval(load,20000);
+  let rzt; window.addEventListener("resize", ()=>{ clearTimeout(rzt); rzt=setTimeout(()=>{ if(state.data) renderRight(); }, 200); });
+}
 else {
   document.getElementById("nowWrap").innerHTML='';
   document.getElementById("standWrap").innerHTML='<div class="center">Add ?event=EVENT_ID to the URL to display the board.</div>';
