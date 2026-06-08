@@ -55,8 +55,8 @@
   .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1vh; flex:0 0 auto;}
   .np-court{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(13px,1.25vw,22px); letter-spacing:.03em;}
   .np-meta{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(10px,.85vw,14px);}
-  .np-badge{margin-left:auto; font-family:'Space Mono',monospace; font-size:clamp(10px,.8vw,13px); font-weight:700;
-    color:#1a0d06; background:var(--accent); padding:.4vh .8vw; border-radius:7px; letter-spacing:.05em;
+  .np-dot{margin-left:auto; flex:0 0 auto; width:clamp(9px,.85vw,15px); height:clamp(9px,.85vw,15px);
+    border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent);
     animation:liveblink 1.4s steps(1,end) infinite;}
   .np-teams{display:flex; align-items:center; gap:.6vw; flex:1 1 auto; min-height:0;}
   .tmblk{flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:.7vw;}
@@ -83,7 +83,7 @@
   .cat-block + .cat-block{margin-top:calc(var(--sfz)*.5);}
   .cat-head{flex:0 0 auto; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:calc(var(--sfz)*1.5); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap; margin-bottom:calc(var(--sfz)*.5);}
   .cat-cap{font-family:'Space Mono',monospace; font-weight:400; font-size:calc(var(--sfz)*.7); color:var(--muted); letter-spacing:.02em;}
-  .grp-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(calc(var(--sfz)*15.5),1fr)); gap:calc(var(--sfz)*.55) calc(var(--sfz)*.6); align-content:start;}
+  .grp-grid{display:grid; gap:calc(var(--sfz)*.55) calc(var(--sfz)*.6); align-content:start;}
   .grp{overflow:hidden; border:1px solid var(--line); border-radius:calc(var(--sfz)*.7); background:var(--panel); padding:calc(var(--sfz)*.5) calc(var(--sfz)*.6); display:flex; flex-direction:column;}
   .grp-h{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:calc(var(--sfz)*.95); letter-spacing:.04em; margin-bottom:calc(var(--sfz)*.3);}
   table.st{width:100%; border-collapse:collapse; table-layout:auto;}
@@ -195,7 +195,7 @@ function nowCard(f, sz, nmf){
   return `<div class="np-card" style="--nmf:${nmf}">
     <div class="np-head"><span class="np-court">COURT ${esc(f.court)}</span>
       <span class="np-meta">${esc(f.label)}${f.time?` · ${fmtTime(f.time)}`:""}</span>
-      <span class="np-badge">LIVE</span></div>
+      <span class="np-dot" aria-label="live"></span></div>
     <div class="np-teams">
       ${teamBlock(f.c,f.eA,sz)}
       <div class="np-vs">VS</div>
@@ -363,26 +363,32 @@ function cardHtml(c, g){
       <td>${s.gd>0?"+":""}${s.gd}</td><td>${s.gf}</td><td>${pa}</td></tr>`;
   }).join("");
   return `<div class="grp"><div class="grp-h">Group ${esc(g.label)} · ${g.standings.length} teams</div>
-    <table class="st"><thead><tr><th>#</th><th class="nm">Pair</th><th>Played</th><th>Win</th><th>Lose</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
+    <table class="st"><thead><tr><th>#</th><th class="nm">Pair</th><th>Pld</th><th>W</th><th>L</th><th>PD</th><th>PF</th><th>PA</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
-// Shrink standings font (--sfz) until ALL groups fit the column height on one screen.
+// Shrink standings font (--sfz) until ALL groups fit the column on one screen — both
+// height (no scroll) AND width (no stat-column cutoff).
 function fitStandings(){
   const wrap=document.getElementById("standWrap");
   const fit=wrap && wrap.querySelector(".fit");
   if(!fit) return;
   const avail=wrap.clientHeight;
   if(!avail) return;
+  const fits=()=>{
+    if(fit.scrollHeight>avail+1) return false;
+    const grps=fit.querySelectorAll(".grp");
+    for(const g of grps){ if(g.scrollWidth>g.clientWidth+1) return false; }
+    return true;
+  };
   let lo=8, hi=34, best=8;
-  for(let i=0;i<14;i++){
+  for(let i=0;i<16;i++){
     const mid=(lo+hi)/2;
     fit.style.setProperty("--sfz", mid+"px");
-    if(fit.scrollHeight<=avail){ best=mid; lo=mid; } else { hi=mid; }
+    if(fits()){ best=mid; lo=mid; } else { hi=mid; }
   }
   fit.style.setProperty("--sfz", best+"px");
-  // safety: nudge down if a column-count jump left a slight overflow
   let g=best;
-  while(fit.scrollHeight>avail && g>8){ g-=0.5; fit.style.setProperty("--sfz", g+"px"); }
+  while(!fits() && g>8){ g-=0.5; fit.style.setProperty("--sfz", g+"px"); }
 }
 function renderRight(){
   const hasPlayoff=(state.data.categories||[]).some(c=>(c.playoff||[]).length);
@@ -395,9 +401,12 @@ function renderRight(){
   const blocks=cats.map(c=>{
     const cap=capFor(c);
     const groups=c.groups.filter(g=>g.standings.length);
+    const maxTeams=Math.max(...groups.map(g=>g.standings.length));
+    const maxCols = maxTeams>=7 ? 4 : maxTeams>=5 ? 5 : 6;
+    const cols=Math.max(1, Math.min(groups.length, maxCols));
     const cards=groups.map(g=>cardHtml(c,g)).join("");
     return `<div class="cat-block"><div class="cat-head">${esc(c.category)}${cap?`<span class="cat-cap">${cap}</span>`:""}</div>
-      <div class="grp-grid">${cards}</div></div>`;
+      <div class="grp-grid" style="grid-template-columns:repeat(${cols},1fr)">${cards}</div></div>`;
   }).join("");
   wrap.innerHTML=`<div class="fit">${blocks}</div>`;
   fitStandings();
