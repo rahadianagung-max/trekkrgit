@@ -35,8 +35,8 @@
     font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap;}
   .tab.on{background:var(--accent); color:#1a0d06; border-color:var(--accent);}
   .subtabs{display:flex; gap:0; margin:14px 0 4px; border:1px solid var(--line); border-radius:999px; padding:3px; background:var(--panel);}
-  .subtab{flex:1; text-align:center; padding:8px 0; border-radius:999px; font-size:12.5px; font-weight:600;
-    color:var(--muted); cursor:pointer;}
+  .subtab{flex:1; text-align:center; padding:8px 4px; border-radius:999px; font-size:11.5px; font-weight:600;
+    color:var(--muted); cursor:pointer; white-space:nowrap;}
   .subtab.on{background:var(--panel2); color:var(--text); box-shadow:inset 0 0 0 1px var(--line);}
   /* avatars + names */
   .av{width:22px; height:22px; border-radius:50%; object-fit:cover; background:var(--panel2); flex:0 0 auto;
@@ -118,8 +118,8 @@
 <footer>POWERED BY <b>TREKKR</b></footer>
 
 <script>
-const BASE = location.hostname === "trekkr.online" ? "/api" : "https://trekkr.online/api";
-const PASSPORT = "https://trekkr.online/player/";
+const BASE = location.protocol.startsWith("http") ? "/api" : "https://www.turnamenpadel.com/api";
+const PASSPORT = (location.protocol.startsWith("http") ? location.origin : "https://www.turnamenpadel.com") + "/player/";
 const qs = new URLSearchParams(location.search);
 const EVENT_ID = qs.get("event");
 const norm = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");
@@ -153,7 +153,7 @@ function renderTabs(){
   const cats = state.data.categories;
   document.getElementById("cattabs").innerHTML = cats.map((c,i)=>
     `<div class="tab ${i===state.cat?'on':''}" onclick="setCat(${i})">${esc(c.category)}</div>`).join("");
-  const labels = { schedule:"Schedule", standings:"Standings", bracket:"Bracket" };
+  const labels = { schedule:"Schedule", standings:"Group / Standing", bracket:"Bracket" };
   document.getElementById("subtabs").innerHTML = `<div class="subtabs">
     ${["schedule","standings","bracket"].map(v=>`<div class="subtab ${v===state.view?'on':''}" onclick="setView('${v}')">${labels[v]}</div>`).join("")}
   </div>`;
@@ -195,8 +195,6 @@ function renderSchedule(cat){
 
 function renderStandings(cat){
   if(!cat.groups.length) return '<p class="empty">Groups not drawn yet.</p>';
-  const any = cat.groups.some(g=>g.standings.some(s=>s.played>0));
-  if(!any) return '<p class="empty">No results yet.</p>';
   const N = cat.advancersPerGroup||0;
   const split = String(cat.format||"").toUpperCase()==="SPLIT";
   const rankNote = "Ranked by: most wins → head-to-head → point difference → points for → points against";
