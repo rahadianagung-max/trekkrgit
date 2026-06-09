@@ -204,6 +204,9 @@ const netlifyHandler = async (event) => {
     if (path === "tournament/match" && method === "PUT") return await tUpdateMatchScore(body);
     if (path === "tournament/playoff/match" && method === "PUT") return await tUpdatePlayoffScore(body);
     if (path === "tournament/match/meta" && method === "PUT") return await tUpdateMatchMeta(body);
+    if (path.startsWith("tournament/event/") && path.endsWith("/remap-courts") && method === "POST") {
+      return await tRemapCourts(decodeURIComponent(path.replace("tournament/event/", "").replace("/remap-courts", "")), body);
+    }
     if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
       return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")), body);
     }
@@ -1292,6 +1295,16 @@ function optimizeOrderings(groups, namesMap) {
   }
   return best;
 }
+// Parse a list of court numbers ("3,4,5,6" or [3,4,5,6]). Falls back to 1..n when empty.
+function parseCourtNumbers(input, n) {
+  let arr = Array.isArray(input)
+    ? input.map((x) => parseInt(x))
+    : String(input == null ? "" : input).split(/[^0-9]+/).map((x) => parseInt(x));
+  arr = arr.filter((x) => !isNaN(x) && x > 0);
+  arr = arr.filter((v, i) => arr.indexOf(v) === i); // dedupe, keep order
+  if (!arr.length) arr = Array.from({ length: Math.max(1, n || 1) }, (_, i) => i + 1);
+  return arr;
+}
 function assignGroupsToCourts(groups, numCourts) {
   const courts = Array.from({ length: Math.max(1, numCourts) }, () => 0);
   const sorted = groups.slice().sort((a, b) => b.length - a.length);
@@ -1400,9 +1413,11 @@ async function tScheduleEvent(eventId, body) {
   // Allow caller (step 6) to override the event's schedule params; persist the new values so the whole app stays consistent.
   const b = body || {};
   const startTime = normClock((b.startTime && String(b.startTime).trim()) || evRow[4]) || "09:00";
-  const numCourts = parseInt(b.numCourts) || parseInt(evRow[5]) || 1;
+  const numCourtsRaw = parseInt(b.numCourts) || parseInt(evRow[5]) || 1;
+  const courtNums = parseCourtNumbers(b.courtNumbers, numCourtsRaw);
+  const numCourts = courtNums.length;
   const matchMinutes = parseInt(b.matchMinutes) || parseInt(evRow[6]) || 15;
-  const overridden = (b.startTime != null && String(b.startTime).trim() !== "") || b.numCourts != null || b.matchMinutes != null;
+  const overridden = (b.startTime != null && String(b.startTime).trim() !== "") || b.numCourts != null || b.matchMinutes != null || (b.courtNumbers != null && String(b.courtNumbers).trim() !== "");
   if (overridden) {
     while (evRow.length < 8) evRow.push("");
     evRow[4] = startTime; evRow[5] = numCourts; evRow[6] = matchMinutes;
@@ -1440,7 +1455,7 @@ async function tScheduleEvent(eventId, body) {
   }
 
   const assign = assignGroupsToCourts(groups.map((g) => ({ key: g.key, length: g.length })), numCourts);
-  for (const g of groups) { g.court = assign[g.key].court; g.startSlot = assign[g.key].startSlot; }
+  for (const g of groups) { g.court = courtNums[assign[g.key].court - 1]; g.startSlot = assign[g.key].startSlot; }
 
   optimizeOrderings(groups, namesMap);
 
@@ -1463,7 +1478,7 @@ async function tScheduleEvent(eventId, body) {
 
   await rewriteEventGroupMatches(sheets, tids, newRows);
   return respond(200, {
-    success: true, engine: "clustered-2to3", scheduledMatches: count, groups: groups.length, numCourts, startTime, matchMinutes,
+    success: true, engine: "clustered-2to3", scheduledMatches: count, groups: groups.length, numCourts, courts: courtNums, startTime, matchMinutes,
     clashes, clashCount: clashes.length,
   });
 }
@@ -1701,6 +1716,13 @@ async function tGeneratePlayoff(id, body) {
     matchMinutes: parseInt(b0.matchMinutes) || 15,
     date: b0.date || "",
   };
+  // Reuse the same court numbers the group stage used (so playoff plays on courts 3-6 too).
+  const mResP = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const courtPool = [...new Set((mResP.data.values || [])
+    .filter((x) => x[0] === id && x[2] === "GROUP" && x[6] !== "" && x[6] != null)
+    .map((x) => parseInt(x[6])).filter((x) => !isNaN(x)))].sort((a, b) => a - b);
+  sched.courtNums = courtPool.length ? courtPool : parseCourtNumbers(b0.courtNumbers, sched.numCourts);
+  sched.numCourts = sched.courtNums.length;
 
   const champCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank <= N).length, 0);
   const prospCount = groups.reduce((n, g) => n + g.standings.filter((s) => s.rank > N).length, 0);
@@ -1748,7 +1770,8 @@ async function tGeneratePlayoff(id, body) {
 // Assign court + planned time to playoff matches, round-by-round across tiers (shared court pool).
 // BYE matches get no court/time. Each tier's bronze is scheduled at that tier's final round level.
 function schedulePlayoff(built, sched) {
-  const C = Math.max(1, sched.numCourts || 1);
+  const courts = (sched.courtNums && sched.courtNums.length) ? sched.courtNums : Array.from({ length: Math.max(1, sched.numCourts || 1) }, (_, i) => i + 1);
+  const C = courts.length;
   const dur = sched.matchMinutes || 15;
   const maxR = Math.max(0, ...built.map((t) => t.b.numRounds));
   let wave = 0;
@@ -1759,15 +1782,51 @@ function schedulePlayoff(built, sched) {
       if (L === t.b.numRounds) t.b.matches.forEach((m) => { if (String(m.round) === "BRONZE" && m.status !== "BYE") real.push(m); });
     }
     for (let j = 0; j < real.length; j++) {
-      real[j].court = (j % C) + 1;
+      real[j].court = courts[j % C];
       real[j].time = addMinutesToTime(sched.startTime, (wave + Math.floor(j / C)) * dur);
     }
     if (real.length) wave += Math.ceil(real.length / C);
   }
 }
 // Set court (and optionally planned time) on any match row.
-async function tUpdateMatchMeta(body) {
-  const { matchId, court, time } = body || {};
+// Relabel court numbers on EXISTING matches (no reschedule): keeps slots, times, scores, status.
+async function tRemapCourts(eventId, body) {
+  const sheets = getSheets();
+  const b = body || {};
+  const rawNums = (s) => String(s == null ? "" : s).split(/[^0-9]+/).map((x) => parseInt(x)).filter((x) => !isNaN(x) && x > 0);
+  const m = {};
+  if (b.map && typeof b.map === "object" && !Array.isArray(b.map)) {
+    for (const k in b.map) { const a = parseInt(k), v = parseInt(b.map[k]); if (!isNaN(a) && !isNaN(v)) m[String(a)] = String(v); }
+  } else {
+    const from = rawNums(b.from), to = rawNums(b.to);
+    if (!from.length || from.length !== to.length) return respond(400, { error: "Daftar 'dari' dan 'ke' harus sama banyak dan tidak kosong." });
+    from.forEach((f, i) => { m[String(f)] = String(to[i]); });
+  }
+  if (!Object.keys(m).length) return respond(400, { error: "Pemetaan court kosong." });
+
+  const trRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` });
+  const tids = (trRes.data.values || []).filter((x) => x[1] === eventId).map((x) => x[0]);
+  if (!tids.length) return respond(404, { error: "Event tidak punya kategori." });
+
+  const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = mRes.data.values || [];
+  let changed = 0;
+  for (const r of rows) {
+    while (r.length < 16) r.push("");
+    if (tids.includes(r[0]) && String(r[6]).trim() !== "") {
+      const key = String(parseInt(r[6]));
+      if (m[key] !== undefined && m[key] !== String(r[6])) { r[6] = m[key]; changed++; }
+    }
+  }
+  if (changed) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P`,
+      valueInputOption: "USER_ENTERED", requestBody: { values: rows },
+    });
+  }
+  return respond(200, { success: true, changed, map: m });
+}
+async function tUpdateMatchMeta(body) {  const { matchId, court, time } = body || {};
   if (!matchId) return respond(400, { error: "matchId required" });
   const sheets = getSheets();
   await ensureTabs(sheets);
