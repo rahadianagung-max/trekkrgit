@@ -134,7 +134,7 @@ function avatar(name){
   if(pl && pl.photo) return `<span class="av"><img src="${esc(pl.photo)}" style="width:100%;height:100%;object-fit:cover" alt=""/></span>`;
   return `<span class="av">${esc(initials(name).toUpperCase())}</span>`;
 }
-function plink(name){ if(!name) return ""; return `<a class="pl" href="${PASSPORT}${encodeURIComponent(name)}">${esc(name)}</a>`; }
+function plink(name){ if(!name) return ""; return `<a class="pl" href="${PASSPORT}${encodeURIComponent(name)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a>`; }
 function teamNames(cat, entrantId, withAv){
   const e = cat.entrants[entrantId];
   if(!e) return entrantId ? esc(entrantId) : '<span class="tbd">TBD</span>';
