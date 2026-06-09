@@ -347,12 +347,21 @@
     <div class="grid">
       <div class="f"><label>Jam mulai</label><input id="schStart" type="time" /></div>
       <div class="f"><label>Jumlah court</label><input id="schCourts" type="number" min="1" /></div>
+      <div class="f"><label>Nomor court (opsional)</label><input id="schCourtNums" type="text" placeholder="mis. 3,4,5,6" /></div>
       <div class="f"><label>Menit / match</label><input id="schMin" type="number" min="5" /></div>
     </div>
-    <p style="font-size:12px; color:var(--muted); margin:2px 0 0;">Diambil dari setelan event — ubah di sini bila perlu, lalu generate ulang (nilai baru ikut tersimpan ke event).</p>
+    <p style="font-size:12px; color:var(--muted); margin:2px 0 0;">Diambil dari setelan event — ubah di sini bila perlu, lalu generate ulang (nilai baru ikut tersimpan ke event). <b>Nomor court</b> opsional: isi mis. <code>3,4,5,6</code> untuk memakai penomoran lapangan kustom; kosongkan untuk 1..N. Jumlah lapangan mengikuti banyaknya nomor yang diisi.</p>
     <div class="actions">
       <button type="button" class="btn btn-primary" onclick="generateSchedule()">Generate jadwal</button>
       <button type="button" class="btn btn-ghost" onclick="loadMatches()">↻ Muat match kategori ini</button>
+    </div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line);">
+      <div style="font-weight:600; font-size:13px; margin-bottom:6px;">Ubah nomor court saja <span style="color:var(--muted); font-weight:400;">(tanpa generate ulang — jadwal & skor tetap)</span></div>
+      <div class="grid">
+        <div class="f"><label>Dari (nomor sekarang)</label><input id="remapFrom" type="text" placeholder="1,2,3,4" /></div>
+        <div class="f"><label>Ke (nomor baru)</label><input id="remapTo" type="text" placeholder="3,4,5,6" /></div>
+      </div>
+      <div class="actions"><button type="button" class="btn btn-ghost" onclick="remapCourts()">Terapkan nomor court baru</button></div>
     </div>
     <div id="clashWrap"></div>
     <div id="matchesWrap" style="margin-top:16px;"><p class="empty">Belum ada jadwal. Klik “Generate jadwal”.</p></div>
@@ -397,7 +406,7 @@
 <div id="toast"></div>
 
 <script>
-const BASE = location.hostname === "trekkr.online" ? "/api" : "https://trekkr.online/api";
+const BASE = location.protocol.startsWith("http") ? "/api" : "https://www.turnamenpadel.com/api";
 const state = { event:null, tournament:null, format:"SINGLE", events:[], tournaments:[], entrantNames:{} };
 
 async function api(path, opts={}){
@@ -654,17 +663,34 @@ function fillScheduleParams(){
   s.value = e.startTime || "09:00";
   c.value = e.numCourts || 1;
   m.value = e.matchMinutes || 15;
+  const cn = document.getElementById("schCourtNums");
+  if(cn) cn.value = e.courtNumbers || "";
+}
+async function remapCourts(){
+  if(!state.event) return toast("Pilih event dulu", true);
+  const from=val("remapFrom"), to=val("remapTo");
+  if(!from || !to) return toast("Isi 'dari' dan 'ke'", true);
+  const nf=(from.match(/\d+/g)||[]).length, nt=(to.match(/\d+/g)||[]).length;
+  if(nf!==nt || !nf) return toast("Jumlah nomor 'dari' dan 'ke' harus sama dan tidak kosong.", true);
+  if(!confirm(`Ubah nomor court ${from} → ${to} untuk semua match event ini?\nJadwal, jam, dan skor TIDAK berubah.`)) return;
+  try{
+    const r=await api("tournament/event/"+encodeURIComponent(state.event.eventId)+"/remap-courts", { method:"POST", body:{ from, to }});
+    if(r.changed===undefined) return toast("Backend belum ter-redeploy (endpoint remap belum aktif).", true);
+    toast(`Nomor court diperbarui pada ${r.changed} match.`);
+    loadMatches();
+  }catch(e){ toast("Gagal mengubah court: "+e.message, true); }
 }
 async function generateSchedule(){
   if(!state.event) return toast("Pilih event dulu", true);
   if(!confirm("Generate jadwal menimpa jadwal babak grup SEMUA kategori di event ini. Lanjut?")) return;
   try{
     const r = await api("tournament/event/"+encodeURIComponent(state.event.eventId)+"/schedule", { method:"POST", body:{
-      startTime: val("schStart"), numCourts: val("schCourts"), matchMinutes: val("schMin")
+      startTime: val("schStart"), numCourts: val("schCourts"), matchMinutes: val("schMin"), courtNumbers: val("schCourtNums")
     }});
     // backend persists overrides — reflect them locally so labels/context stay in sync
     state.event.startTime = val("schStart") || state.event.startTime;
-    state.event.numCourts = parseInt(val("schCourts")) || state.event.numCourts;
+    state.event.courtNumbers = val("schCourtNums") || "";
+    state.event.numCourts = (r && r.numCourts) || parseInt(val("schCourts")) || state.event.numCourts;
     state.event.matchMinutes = parseInt(val("schMin")) || state.event.matchMinutes;
     renderContext();
     if(r.engine!=="clustered-2to3"){
