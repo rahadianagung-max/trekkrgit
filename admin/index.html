@@ -457,7 +457,6 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-card-label">Level Permainan</div>
               <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
               <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
-                <option value="beginner">Beginner</option>
                 <option value="upper_beginner">Upper Beginner</option>
                 <option value="lower_bronze" selected>Lower Bronze</option>
                 <option value="bronze">Bronze</option>
@@ -470,7 +469,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
                 Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
               </div>
-              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
+              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · 1200 ELO</p>
             </div>
 
             <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
@@ -671,7 +670,7 @@ const RM = { // shared state for ranked match
   token: '', venue: '', username: '',
   courts: 2, gender: 'M', format: 'individual',
   scoreFormat: 'race', scoreTarget: 4,
-  level: 'lower_bronze', startElo: 1350,
+  level: 'lower_bronze', startElo: 1200,
   allPlayers: [], selectedPlayers: [], partners: {},
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
@@ -902,23 +901,24 @@ function rmUpdateScoreHint() {
 function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
 
 /* Level → starting ELO for NEW / unrated players only.
-   Existing rated players keep their real ELO. Lower Bronze (1350) = default. */
+   Existing rated players keep their real ELO. Each level seeds at its FLOOR ELO,
+   so a player who keeps losing drops to the level below; one who wins holds/climbs. */
 const RM_LEVELS = {
-  beginner:       { label:'Beginner',       elo:750  },
-  upper_beginner: { label:'Upper Beginner', elo:1050 },
-  lower_bronze:   { label:'Lower Bronze',   elo:1350 },
-  bronze:         { label:'Bronze',         elo:1650 },
-  upper_bronze:   { label:'Upper Bronze',   elo:1950 },
-  silver:         { label:'Silver',         elo:2300 },
-  gold:           { label:'Gold',           elo:2750 },
-  platinum:       { label:'Platinum',       elo:3100 },
+  beginner:       { label:'Beginner',       elo:600  },
+  upper_beginner: { label:'Upper Beginner', elo:900  },
+  lower_bronze:   { label:'Lower Bronze',   elo:1200 },
+  bronze:         { label:'Bronze',         elo:1500 },
+  upper_bronze:   { label:'Upper Bronze',   elo:1800 },
+  silver:         { label:'Silver',         elo:2100 },
+  gold:           { label:'Gold',           elo:2500 },
+  platinum:       { label:'Platinum',       elo:3000 },
 };
 function rmSetLevel(lvl) {
   const m = RM_LEVELS[lvl] || RM_LEVELS.lower_bronze;
   RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
   RM.startElo = m.elo;
   const hint = document.getElementById('rm-level-hint');
-  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
+  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ${m.elo} ELO (batas bawah level)`;
   rmUpdateAddPreview();
 }
 
@@ -1340,7 +1340,7 @@ async function rmSubmitRound() {
     // payload only used at rmEndMatch for final ELO write
     try {
       rmSetStatus('sending','Menyimpan hasil ronde '+round.roundNum+'...');
-      await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:apiMatches})});
+      await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:apiMatches, startElo:RM.startElo, level:RM.level})});
       // ELO (saveSession) hanya ditulis SEKALI saat match diakhiri via rmEndMatch
       // Tidak ditulis per ronde — ini mencegah double counting di ELO_Log
       rmSetStatus('ok','Ronde '+round.roundNum+' tersimpan');
