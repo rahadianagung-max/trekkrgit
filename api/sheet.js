@@ -54,11 +54,11 @@ function respond(statusCode, data, extraHeaders) {
 // TOURNAMENT HELPERS (Phase 1)
 // ==============================================================
 const LEVEL_ELO = {
-  beginner: 750, upper_beginner: 1050, lower_bronze: 1350, bronze: 1650,
-  upper_bronze: 1950, silver: 2300, gold: 2750, platinum: 3100,
+  beginner: 600, upper_beginner: 900, lower_bronze: 1200, bronze: 1500,
+  upper_bronze: 1800, silver: 2100, gold: 2500, platinum: 3000,
 };
 function levelToElo(level) {
-  return LEVEL_ELO[String(level || "").toLowerCase().trim().replace(/\s+/g, "_")] || 1350;
+  return LEVEL_ELO[String(level || "").toLowerCase().trim().replace(/\s+/g, "_")] || 1200;
 }
 function normName(s) {
   return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -522,6 +522,7 @@ async function addVenueMatch(venueName, body) {
     const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
     const existingPlayers = (pRes.data.values || []).map((r) => (r[0] || "").toLowerCase());
     const isoNow = new Date().toISOString();
+    const seedElo = parseInt(body.startElo) || levelToElo(body.level) || 1200;
     
     for (const p of allPlayersNames) {
       if (!existingPlayers.includes(p.toLowerCase())) {
@@ -532,7 +533,7 @@ async function addVenueMatch(venueName, body) {
         });
         await sheets.spreadsheets.values.append({
           spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
-          requestBody: { values: [["INITIAL", p, 1350, 0, 0, 0, isoNow]] },
+          requestBody: { values: [["INITIAL", p, seedElo, 0, 0, 0, isoNow]] },
         });
         existingPlayers.push(p.toLowerCase());
       }
