@@ -663,15 +663,15 @@ canvas#shareCanvas{display:none}
       <div class="calib-step">
         <div class="calib-step-num">1</div>
         <div>
-          <div class="calib-step-title">Everyone starts at 1350</div>
-          <div class="calib-step-text">All new players begin at ELO 1350 — the entry point of <strong>Lower Bronze</strong>. This ensures every first match is fair, regardless of your actual skill level.</div>
+          <div class="calib-step-title">You start at the floor of your level</div>
+          <div class="calib-step-text">New players are entered at the <strong>lowest ELO of their starting level</strong> — e.g. Upper Beginner = 900, Lower Bronze = 1200, Bronze = 1500, and so on. You begin at the bottom of the level you were entered in, then prove you belong there.</div>
         </div>
       </div>
       <div class="calib-step">
         <div class="calib-step-num">2</div>
         <div>
-          <div class="calib-step-title">The engine watches your results</div>
-          <div class="calib-step-text">During calibration, your ELO moves faster (higher K-factor). Win consistently and you rise quickly. Lose often and you settle lower. The algorithm is actively finding your true level.</div>
+          <div class="calib-step-title">Win to stay, lose and you drop</div>
+          <div class="calib-step-text">Because you start at the floor, the level is a test you must pass. During calibration your ELO moves faster (higher K-factor): <strong>win</strong> and you hold your level and climb; <strong>lose consistently</strong> and your ELO falls below the floor, automatically dropping you to the level below — so you settle where you truly belong.</div>
         </div>
       </div>
       <div class="calib-step">
@@ -1334,9 +1334,11 @@ function computeBadges(playerD, allMatchesForPlayer, allMatchesAllPlayers, allVe
     isTideTurner, playerRank,
   };
 
+  const _calibrating = isCalibrating(s.totalMatches);
   return BADGE_DEFS.map(def => {
     let earned = false;
-    try { earned = !!def.compute(ctx); } catch(e) {}
+    // Achievements only count once the player is Rated (calibration complete).
+    if (!_calibrating) { try { earned = !!def.compute(ctx); } catch(e) {} }
     let prog = null;
     if (!earned && def.progress) {
       try { prog = def.progress(ctx); } catch(e) {}
