@@ -1306,15 +1306,17 @@ function parseCourtNumbers(input, n) {
   return arr;
 }
 function assignGroupsToCourts(groups, numCourts) {
-  const courts = Array.from({ length: Math.max(1, numCourts) }, () => 0);
-  const sorted = groups.slice().sort((a, b) => b.length - a.length);
+  const C = Math.max(1, numCourts);
+  const courts = Array.from({ length: C }, () => 0);
+  // Assign in group order (key = tid|label) so courts fill wave by wave:
+  // first C groups -> wave 1 (A,B,...), next C -> wave 2 (C,D,...), etc.
+  const sorted = groups.slice().sort((a, b) => String(a.key).localeCompare(String(b.key), undefined, { numeric: true }));
   const assign = {};
-  for (const g of sorted) {
-    let ci = 0;
-    for (let i = 1; i < courts.length; i++) if (courts[i] < courts[ci]) ci = i;
+  sorted.forEach((g, i) => {
+    const ci = i % C;
     assign[g.key] = { court: ci + 1, startSlot: courts[ci] };
     courts[ci] += g.length;
-  }
+  });
   return assign;
 }
 // Normalize a clock value that may come back from Sheets in odd formats
