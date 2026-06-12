@@ -63,6 +63,14 @@ function levelToElo(level) {
 function normName(s) {
   return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
+// Merge a club/venue name into an existing comma-separated clubs string.
+// Returns the new joined string, or null if the club was already present (no change).
+function mergeClub(existing, clubName) {
+  const list = String(existing || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (list.some((c) => c.toLowerCase() === String(clubName).toLowerCase())) return null;
+  list.push(clubName);
+  return list.join(", ");
+}
 let __idSeq = 0;
 function genId(prefix) {
   // Counter guarantees uniqueness within a single generation batch (one invocation),
@@ -155,6 +163,7 @@ const netlifyHandler = async (event) => {
     if (path === "players" && method === "POST") return await addPlayer(body);
     if (path === "players/update" && method === "PUT") return await updatePlayer(body);
     if (path === "players/claim" && method === "POST") return await claimProfile(body);
+    if (path === "players/sync-clubs" && method === "POST") return await syncPlayerClubs();
     if (path.startsWith("players/") && method === "GET") {
       const name = decodeURIComponent(path.replace("players/", ""));
       return await getPlayerDetail(name);
@@ -299,13 +308,13 @@ async function login({ username, password }) {
 // ── PLAYERS ──
 async function getPlayers(params) {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
   const rows = res.data.values || [];
   let players = rows.map((r) => ({
     name: r[0] || "", ig: r[1] || "", verified: r[2] === "TRUE",
     displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
     region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", createdAt: r[8] || "",
-    winnerAt: r[9] || "",
+    winnerAt: r[9] || "", tournaments: r[10] || "",
   }));
   if (params.gender) players = players.filter((p) => p.gender === params.gender.toUpperCase());
   if (params.region) players = players.filter((p) => p.region.toLowerCase().includes(params.region.toLowerCase()));
@@ -318,7 +327,7 @@ async function getPlayers(params) {
 
 async function getPlayerDetail(name) {
   const sheets = getSheets();
-  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
   const pRows = pRes.data.values || [];
   const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
   if (!pRow) return respond(404, { error: "Player not found" });
@@ -327,7 +336,7 @@ async function getPlayerDetail(name) {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
     displayName: pRow[3] || pRow[0], gender: (pRow[4] || "M").toUpperCase(),
     region: pRow[5] || "", photoUrl: pRow[6] || "", clubs: pRow[7] || "", createdAt: pRow[8] || "",
-    winnerAt: pRow[9] || "",
+    winnerAt: pRow[9] || "", tournaments: pRow[10] || "",
   };
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
@@ -522,17 +531,25 @@ async function addVenueMatch(venueName, body) {
     return respond(500, { error: `Failed to write to venue tab. Make sure tab ${tab} exists.` });
   }
 
-  // Create new players if they don't exist
+  // Create new players if they don't exist + keep every player's clubs list current
   const newPlayers = [];
+  let clubsUpdated = 0;
   try {
     const allPlayersNames = [...new Set(matches.flatMap((m) => [m.p1t1, m.p2t1, m.p1t2, m.p2t2]).filter(Boolean))];
-    const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
-    const existingPlayers = (pRes.data.values || []).map((r) => (r[0] || "").toLowerCase());
+    // Read name (col A) + clubs (col H) so we can append the venue to existing players.
+    const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:H` });
+    const pRows = pRes.data.values || [];
+    const idx = {}; // lowercaseName -> { row: sheetRowNumber|null, clubs: string }
+    pRows.forEach((r, i) => { idx[(r[0] || "").toLowerCase()] = { row: i + 2, clubs: r[7] || "" }; });
+
     const isoNow = new Date().toISOString();
     const seedElo = parseInt(body.startElo) || levelToElo(body.level) || 1200;
-    
+    const clubUpdates = []; // batched column-H writes for existing players
+
     for (const p of allPlayersNames) {
-      if (!existingPlayers.includes(p.toLowerCase())) {
+      const key = p.toLowerCase();
+      if (!idx[key]) {
+        // brand-new player — seed clubs with this venue
         newPlayers.push(p);
         await sheets.spreadsheets.values.append({
           spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
@@ -542,12 +559,138 @@ async function addVenueMatch(venueName, body) {
           spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
           requestBody: { values: [["INITIAL", p, seedElo, 0, 0, 0, isoNow]] },
         });
-        existingPlayers.push(p.toLowerCase());
+        idx[key] = { row: null, clubs: venueName }; // mark as seen this batch
+      } else {
+        // existing player — append this venue to clubs if not already there
+        const merged = mergeClub(idx[key].clubs, venueName);
+        if (merged !== null && idx[key].row) {
+          idx[key].clubs = merged;
+          clubUpdates.push({ range: `${TABS.players}!H${idx[key].row}`, values: [[merged]] });
+        }
       }
     }
-  } catch(e) { console.warn("Player auto-create error:", e) }
 
-  return respond(200, { success: true, added: rows.length, newPlayers });
+    if (clubUpdates.length) {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        requestBody: { valueInputOption: "USER_ENTERED", data: clubUpdates },
+      });
+      clubsUpdated = clubUpdates.length;
+    }
+  } catch(e) { console.warn("Player auto-create / clubs update error:", e) }
+
+  return respond(200, { success: true, added: rows.length, newPlayers, clubsUpdated });
+}
+
+// One-shot backfill. Two distinct sources, two distinct columns:
+//   - Column H (clubs)       <- venue/community a player has played venue matches at
+//   - Column K (tournaments) <- named tournament EVENTS a player has entered
+// Manually-entered values already in either cell are preserved (kept first).
+async function syncPlayerClubs() {
+  const sheets = getSheets();
+
+  // mergeSet: combine an existing comma cell with a Set of new labels, preserving order
+  // (existing manual entries first, then new ones), deduped case-insensitively.
+  const mergeSet = (cell, set) => {
+    const existing = String(cell || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const seen = new Set(existing.map((s) => s.toLowerCase()));
+    const out = [...existing];
+    set.forEach((v) => { if (!seen.has(String(v).toLowerCase())) { out.push(v); seen.add(String(v).toLowerCase()); } });
+    return out.join(", ");
+  };
+
+  // 1. Venue/community: scan each venue match tab (players in cols C/D/E/F = idx 2..5)
+  const vRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` });
+  const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean);
+  const venueByPlayer = {}; // lowercaseName -> Set(venueName)
+  for (const vName of venueNames) {
+    const tab = venueTabName(vName);
+    const r = await sheets.spreadsheets.values
+      .get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:F` })
+      .catch(() => ({ data: { values: [] } }));
+    for (const row of (r.data.values || [])) {
+      [row[2], row[3], row[4], row[5]].filter(Boolean).forEach((pname) => {
+        const key = String(pname).trim().toLowerCase();
+        if (!key) return;
+        (venueByPlayer[key] || (venueByPlayer[key] = new Set())).add(vName);
+      });
+    }
+  }
+
+  // 2. Tournaments: entrant players get the EVENT NAME of the tournament they entered.
+  //    Chain: Tournament_Entrants.Tournament_ID -> Tournaments.Event_ID -> Tournament_Events.Name
+  const tournByPlayer = {}; // lowercaseName -> Set(eventName)
+  let tournamentEntrants = 0;
+  try {
+    // Event_ID(0), Name(1) -> label = event Name only (venue is intentionally NOT recorded)
+    const evRes = await sheets.spreadsheets.values
+      .get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:B` })
+      .catch(() => ({ data: { values: [] } }));
+    const eventName = {}; // Event_ID -> tournament label
+    (evRes.data.values || []).forEach((r) => {
+      if (r[0]) eventName[r[0]] = (r[1] && String(r[1]).trim()) || "";
+    });
+
+    // Tournament_ID(0), Event_ID(1)
+    const tRes = await sheets.spreadsheets.values
+      .get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:B` })
+      .catch(() => ({ data: { values: [] } }));
+    const tourEvent = {}; // Tournament_ID -> Event_ID
+    (tRes.data.values || []).forEach((r) => { if (r[0]) tourEvent[r[0]] = r[1] || ""; });
+
+    // Tournament_ID(0), Entrant_ID(1), Player1_Name(2), _(3), Player2_Name(4)
+    const enRes = await sheets.spreadsheets.values
+      .get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:E` })
+      .catch(() => ({ data: { values: [] } }));
+    (enRes.data.values || []).forEach((r) => {
+      const label = eventName[tourEvent[r[0]]];
+      if (!label) return;
+      [r[2], r[4]].filter(Boolean).forEach((pname) => {
+        const key = String(pname).trim().toLowerCase();
+        if (!key) return;
+        (tournByPlayer[key] || (tournByPlayer[key] = new Set())).add(label);
+        tournamentEntrants++;
+      });
+    });
+  } catch (e) { console.warn("Tournament clubs scan error:", e); }
+
+  // 3. Read players A:K, write H (venue/community) and K (tournaments) separately.
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
+  const pRows = pRes.data.values || [];
+  const updates = [];
+  let clubsChanged = 0, tournChanged = 0;
+  pRows.forEach((row, i) => {
+    const key = (row[0] || "").trim().toLowerCase();
+    const rowNum = i + 2;
+
+    const vset = venueByPlayer[key];
+    if (vset && vset.size) {
+      const joined = mergeSet(row[7], vset);
+      if (joined !== String(row[7] || "")) { updates.push({ range: `${TABS.players}!H${rowNum}`, values: [[joined]] }); clubsChanged++; }
+    }
+
+    const tset = tournByPlayer[key];
+    if (tset && tset.size) {
+      const joined = mergeSet(row[10], tset);
+      if (joined !== String(row[10] || "")) { updates.push({ range: `${TABS.players}!K${rowNum}`, values: [[joined]] }); tournChanged++; }
+    }
+  });
+
+  if (updates.length) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: { valueInputOption: "USER_ENTERED", data: updates },
+    });
+  }
+
+  return respond(200, {
+    success: true,
+    engine: "clubs-sync-v3",
+    venuesScanned: venueNames.length,
+    tournamentEntrantsScanned: tournamentEntrants,
+    clubsUpdated: clubsChanged,
+    tournamentsUpdated: tournChanged,
+  });
 }
 
 async function getVenueWeeklyRanking(venueName, params) {
@@ -668,7 +811,7 @@ function getTierName(elo) {
 
 async function getNationalLeaderboard(params) {
   const sheets = getSheets();
-  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
   const pRows = pRes.data.values || [];
   const playersInfo = {};
   pRows.forEach((r) => {
@@ -676,7 +819,7 @@ async function getNationalLeaderboard(params) {
       playersInfo[r[0].toLowerCase()] = {
         name: r[0], ig: r[1] || "", verified: r[2] === "TRUE",
         displayName: r[3] || r[0], gender: (r[4] || "M").toUpperCase(),
-        region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", winnerAt: r[9] || "",
+        region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
       };
     }
   });
@@ -742,7 +885,7 @@ async function getNationalLeaderboard(params) {
   let leaderboard = Object.keys(playerStats).map((k) => {
     const ps  = playerStats[k];
     const elo = ps.elo;
-    const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "" };
+    const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "", tournaments: "" };
     return {
       ...info,
       elo,
