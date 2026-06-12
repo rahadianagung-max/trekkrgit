@@ -63,8 +63,14 @@ function levelToElo(level) {
 function normName(s) {
   return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
+let __idSeq = 0;
 function genId(prefix) {
-  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  // Counter guarantees uniqueness within a single generation batch (one invocation),
+  // even though Date.now() is identical for every match in that batch.
+  __idSeq = (__idSeq + 1) & 0x7fffffff;
+  const seq = __idSeq.toString(36);
+  const rnd = Math.floor(Math.random() * 46656).toString(36).padStart(3, "0"); // 3 base36 chars
+  return `${prefix}_${Date.now()}_${seq}${rnd}`;
 }
 // Balanced group sizes: target is a minimum-ish target (>=3), no max, no group below 3.
 function computeGroupSizes(n, target) {
@@ -207,6 +213,7 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("tournament/event/") && path.endsWith("/remap-courts") && method === "POST") {
       return await tRemapCourts(decodeURIComponent(path.replace("tournament/event/", "").replace("/remap-courts", "")), body);
     }
+    if (path === "tournament/repair-match-ids" && method === "POST") return await tRepairMatchIds(body);
     if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
       return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")), body);
     }
@@ -1391,6 +1398,26 @@ function mapMatchRow(x) {
     scoreA: x[11], scoreB: x[12], winner: x[13], status: x[14], updatedAt: x[15],
   };
 }
+// Duplicate Match_ID safety: served matchIds are tagged with their sheet row
+// ("rawId::<rowNumber>") so writes resolve to the exact row even if two rows share rawId.
+const MID_SEP = "::";
+function encMatchId(rawId, rowNum) { return rowNum ? `${rawId}${MID_SEP}${rowNum}` : rawId; }
+function decMatchId(s) {
+  s = String(s == null ? "" : s);
+  const i = s.indexOf(MID_SEP);
+  if (i === -1) return { rawId: s, row: 0 };
+  return { rawId: s.slice(0, i), row: parseInt(s.slice(i + MID_SEP.length)) || 0 };
+}
+// Resolve a (possibly row-tagged) matchId to the exact row index. Falls back to
+// first-match-by-rawId for legacy/untagged ids. tid (optional) further disambiguates.
+function resolveMatchIdx(rows, matchId, tid) {
+  const { rawId, row } = decMatchId(matchId);
+  if (row >= 2) {
+    const idx = row - 2;
+    if (idx >= 0 && idx < rows.length && rows[idx] && rows[idx][1] === rawId && (!tid || rows[idx][0] === tid)) return idx;
+  }
+  return rows.findIndex((x) => x && x[1] === rawId && (!tid || x[0] === tid));
+}
 async function rewriteEventGroupMatches(sheets, tids, newRows) {
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
   const rows = r.data.values || [];
@@ -1490,7 +1517,11 @@ async function tListMatches(id) {
   const sheets = getSheets();
   await ensureTabs(sheets);
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
-  const matches = (r.data.values || []).filter((x) => x[0] === id).map(mapMatchRow).sort((a, b) => a.slot - b.slot || a.court - b.court);
+  const matches = (r.data.values || [])
+    .map((x, i) => ({ ...mapMatchRow(x), _row: i + 2 }))
+    .filter((m) => m.tournamentId === id)
+    .sort((a, b) => a.slot - b.slot || a.court - b.court)
+    .map((m) => { const o = { ...m, matchId: encMatchId(m.matchId, m._row) }; delete o._row; return o; });
   return respond(200, { matches });
 }
 // Event-wide schedule with team names resolved (for mobile/TV later).
@@ -1583,7 +1614,8 @@ async function tUpdateMatchScore(body) {
   await ensureTabs(sheets);
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
   const rows = r.data.values || [];
-  const idx = rows.findIndex((x) => x[1] === matchId);
+  const _tid = body.tournamentId;
+  const idx = resolveMatchIdx(rows, matchId, _tid);
   if (idx === -1) return respond(404, { error: "Match not found" });
   const row = rows[idx];
   while (row.length < 16) row.push("");
@@ -1793,6 +1825,48 @@ function schedulePlayoff(built, sched) {
 }
 // Set court (and optionally planned time) on any match row.
 // Relabel court numbers on EXISTING matches (no reschedule): keeps slots, times, scores, status.
+// Repair duplicate Match_IDs in Tournament_Matches in place (via API).
+// Only the Match_ID cell (column B) of duplicate rows is rewritten; scores and
+// every other column are left untouched. The FIRST occurrence of each ID keeps it;
+// later duplicates get a fresh unique ID. Optional body.tournamentId limits the scope.
+async function tRepairMatchIds(body) {
+  const sheets = getSheets();
+  await ensureTabs(sheets);
+  const onlyTid = body && body.tournamentId ? String(body.tournamentId) : "";
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
+  const rows = r.data.values || [];
+  const seen = new Set();
+  const changes = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const id = row[1];
+    if (!id) continue;
+    if (seen.has(id)) {
+      // duplicate -> only repair if within requested scope (or no scope given)
+      if (onlyTid && String(row[0]) !== onlyTid) { continue; }
+      let nid;
+      do { nid = genId("MT"); } while (seen.has(nid));
+      seen.add(nid);
+      changes.push({
+        cell: `${TABS.t_matches}!B${i + 2}`, newId: nid, oldId: id,
+        tournamentId: row[0], group: row[3], slot: row[7], status: row[14],
+      });
+    } else {
+      seen.add(id);
+    }
+  }
+  if (changes.length) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        valueInputOption: "RAW",
+        data: changes.map((c) => ({ range: c.cell, values: [[c.newId]] })),
+      },
+    });
+  }
+  return respond(200, { success: true, repaired: changes.length, changes });
+}
+
 async function tRemapCourts(eventId, body) {
   const sheets = getSheets();
   const b = body || {};
@@ -1835,7 +1909,7 @@ async function tUpdateMatchMeta(body) {  const { matchId, court, time } = body |
   await ensureTabs(sheets);
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
   const rows = r.data.values || [];
-  const idx = rows.findIndex((x) => x[1] === matchId);
+  const idx = resolveMatchIdx(rows, matchId, body.tournamentId);
   if (idx === -1) return respond(404, { error: "Match not found" });
   const row = rows[idx];
   while (row.length < 16) row.push("");
@@ -1855,7 +1929,8 @@ async function tUpdatePlayoffScore(body) {
   await ensureTabs(sheets);
   const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
   const rows = r.data.values || [];
-  const row = rows.find((x) => x[1] === matchId);
+  const _pidx = resolveMatchIdx(rows, matchId, body.tournamentId);
+  const row = _pidx === -1 ? null : rows[_pidx];
   if (!row) return respond(404, { error: "Match not found" });
   if (row[2] !== "PLAYOFF") return respond(400, { error: "Bukan match playoff" });
   while (row.length < 16) row.push("");
@@ -1892,7 +1967,7 @@ function playoffBracketsView(all, nm) {
     const tm = all.filter((m) => m.bracket === tier);
     const numRounds = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
     const nQual = tm.filter((m) => parseInt(m.round) === 1).reduce((n, m) => n + (m.entrantA ? 1 : 0) + (m.entrantB ? 1 : 0), 0);
-    const view = (m) => ({ matchId: m.matchId, round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
+    const view = (m) => ({ matchId: encMatchId(m.matchId, m._row), round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
     const rounds = [];
     for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
     const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
@@ -1916,7 +1991,9 @@ async function tGetPlayoff(id) {
   for (const x of (grRes.data.values || [])) if (x[0] === id) names[x[3]] = `${x[4]} + ${x[5]}`;
   const nm = (eid) => (eid ? (names[eid] || eid) : "");
   const mRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` });
-  const all = (mRes.data.values || []).filter((x) => x[0] === id && x[2] === "PLAYOFF").map(mapMatchRow);
+  const all = (mRes.data.values || [])
+    .map((x, i) => ({ ...mapMatchRow(x), _row: i + 2 }))
+    .filter((m) => m.tournamentId === id && m.stage === "PLAYOFF");
   return respond(200, { brackets: playoffBracketsView(all, nm) });
 }
 
@@ -2004,6 +2081,54 @@ function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   };
   return [upd(p1t1, t1r, exp1), upd(p2t1, t1r, exp1), upd(p1t2, t2r, exp2), upd(p2t2, t2r, exp2)];
 }
+// Write a tournament's completed matches into its venue match-log tab so player
+// passports show match history + best-performing-partner (both derived from venue
+// matches). Registers the venue + creates the tab if missing. Idempotent: rows are
+// tagged by sourceTag, and a re-run replaces only this tournament's prior rows.
+async function writeTournamentVenueRows(sheets, venueName, rows, sourceTag) {
+  if (!venueName || !rows || !rows.length) return;
+  const now = new Date().toISOString();
+  // 1) register the venue if it isn't listed (so the passport iterates it)
+  try {
+    const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` });
+    const have = (vr.data.values || []).some((r) => (r[0] || "").trim().toLowerCase() === venueName.trim().toLowerCase());
+    if (!have) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[venueName, "Tournament", "", "", "", "", "", now, ""]] },
+      });
+    }
+  } catch (e) { console.error("venue register:", e); }
+  // 2) ensure the venue tab exists with the standard header
+  const tab = venueTabName(venueName);
+  try {
+    const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const exists = ss.data.sheets.some((s) => s.properties.title === tab);
+    if (!exists) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: tab } } }] },
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] },
+      });
+    }
+  } catch (e) { console.error("venue tab create:", e); }
+  // 3) replace only this tournament's prior rows (idempotent), keep everything else
+  try {
+    let existing = [];
+    try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:J` }); existing = er.data.values || []; } catch (e) {}
+    const kept = existing.filter((r) => (r[9] || "") !== sourceTag);
+    const final = kept.concat(rows);
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${tab}!A2:J` });
+    if (final.length) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID, range: `${tab}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: final },
+      });
+    }
+  } catch (e) { console.error("venue rows write:", e); }
+}
+
 async function tFinalizeElo(eventId, force) {
   const sheets = getSheets();
   await ensureTabs(sheets);
@@ -2088,6 +2213,26 @@ async function tFinalizeElo(eventId, force) {
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [sessionRow] } });
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: eloRows } });
   }
+  // Record tournament matches into the event's venue log (for passport history + best partner).
+  try {
+    const venueName = evRow[2] || "";
+    if (venueName) {
+      const vDate = evRow[3] || now.split("T")[0];
+      const vWeek = `W${getWeekNumber(new Date(vDate))}`;
+      const catByTid = {};
+      for (const t of (trR.data.values || [])) if (t[1] === eventId) catByTid[t[0]] = String(t[2] || "");
+      const genderOf = (tid) => ((catByTid[tid] || "").toUpperCase().startsWith("W") ? "F" : "M");
+      const srcTag = `Trekkr Tournament ${eventId}`;
+      const venueRows = [];
+      for (const m of ordered) {
+        const A = entMap[m.entrantA], B = entMap[m.entrantB];
+        if (!A || !B || !A[0] || !B[0]) continue;
+        venueRows.push([vWeek, vDate, A[0], A[1] || "", B[0], B[1] || "", Number(m.scoreA), Number(m.scoreB), genderOf(m.tournamentId), srcTag]);
+      }
+      await writeTournamentVenueRows(sheets, venueName, venueRows, srcTag);
+    }
+  } catch (e) { console.error("Tournament venue log error:", e); }
+
   const results = Object.values(changed).sort((a, b) => b.delta - a.delta);
   return respond(200, { success: true, sessionId, matchesReplayed: ordered.length, playersUpdated, recomputed: !!already, results });
 }
