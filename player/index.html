@@ -890,12 +890,24 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
     h += buildCalibBanner(s.totalMatches);
   }
 
+  // Passport identity rows: venue/community, tournaments, winner-at — all three always
+  // rendered so the venue/community vs tournament distinction stays visible. "N/A" shown
+  // when empty (treats a literal "N/A" cell value as empty too).
+  const ppList = (str) => String(str||'').split(',').map(x=>x.trim()).filter(x=>x && x.toUpperCase()!=='N/A');
+  const ppPills = (items, style, icon) => items.map(x=>`<span style="display:inline-flex;align-items:center;gap:4px;${style};padding:2px 10px;border-radius:99px;margin:2px 3px 2px 0;font-size:12px">${icon} ${x}</span>`).join('');
+  const ppNA = `<span style="color:var(--on-surface-variant);font-size:12px;font-weight:600">N/A</span>`;
+  const ppRow = (label, items, style, icon) => `<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">${label}</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${items.length?ppPills(items,style,icon):ppNA}</p></div>`;
+  const rowVenue  = ppRow('🏟 Venue / Community', (playedVenues||[]).slice(), 'background:var(--surface-container)', '🏟');
+  const rowTourn  = ppRow('🏆 Tournaments', ppList(p.tournaments), 'background:rgba(0,82,255,0.1);border:1px solid rgba(0,82,255,0.35);color:var(--primary)', '🏆');
+  const rowWinner = ppRow('🥇 Winner at', ppList(p.winnerAt), 'background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);color:#7a5800', '🥇');
+
   h+=`<div class="pp-dual"><div class="pp-card"><p class="pp-card-title">Level Progress</p><p class="pp-tier-name">${ti.current}</p>
     ${ti.next?`<p class="pp-tier-next">Next: ${ti.next.name} · ${ti.ptsAway} pts away</p>`:'<p class="pp-tier-next">Maximum tier reached!</p>'}
     <div class="pp-bar-bg"><div class="pp-bar-fill" style="width:${ti.progress}%"></div></div></div>
     <div class="pp-card"><p class="pp-card-title">Info</p><div class="pp-info-grid">
-    ${(playedVenues&&playedVenues.length)?`<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">Playing History</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${playedVenues.map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface-container);padding:2px 10px;border-radius:99px;margin:2px 3px 2px 0;font-size:12px">🏟 ${v}</span>`).join('')}</p></div>`:''}
-    ${p.winnerAt?`<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">🏆 Winner at</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${p.winnerAt.split(',').map(w=>w.trim()).filter(Boolean).map(w=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);padding:2px 10px;border-radius:99px;margin:2px 3px 2px 0;font-size:12px;color:#7a5800">🥇 ${w}</span>`).join('')}</p></div>`:''}
+    ${rowVenue}
+    ${rowTourn}
+    ${rowWinner}
     ${p.region?`<div class="pp-info-item"><p class="pp-info-label">Region</p><p class="pp-info-value">${p.region}</p></div>`:''}
     ${p.ig?`<div class="pp-info-item"><p class="pp-info-label">Instagram</p><p class="pp-info-value">${p.ig}</p></div>`:''}
     <div class="pp-info-item"><p class="pp-info-label">Gender</p><p class="pp-info-value">${p.gender==='F'?'Female':'Male'}</p></div>
