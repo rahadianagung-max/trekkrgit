@@ -50,7 +50,7 @@
   .av i{ font-style:normal; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; color:var(--accent2); font-size:calc(var(--s)*.44); }
   /* now playing cards — dominant, fill column height */
   #nowWrap{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:1vh;}
-  .np-card{flex:1 1 0; min-height:clamp(64px,8vh,150px); overflow:hidden; display:flex; flex-direction:column; justify-content:center;
+  .np-card{flex:1 1 0; min-height:clamp(50px,6vh,120px); overflow:hidden; display:flex; flex-direction:column; justify-content:center;
     border:1.5px solid rgba(255,122,26,.7); border-radius:16px;
     background:linear-gradient(180deg,rgba(255,122,26,.12),rgba(255,122,26,.04)); padding:1.2vh 1.4vw;}
   .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1vh; flex:0 0 auto;}
@@ -69,7 +69,7 @@
     font-size:clamp(12px,1.1vw,20px); letter-spacing:.12em;}
   .np-empty,.up-empty{color:var(--faint); font-family:'Space Mono',monospace; font-size:clamp(13px,1.1vw,18px); padding:2vh 0;}
   /* upcoming — compact single-line queue, ordered by time; capped so Now Playing stays bigger */
-  #nextWrap{flex:0 0 auto; max-height:30vh; overflow:hidden; display:flex; flex-direction:column; gap:.5vh;}
+  #nextWrap{flex:0 0 auto; display:flex; flex-direction:column; gap:.6vh;}
   .up-row{display:flex; align-items:center; gap:.8vw; border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:.5vh .9vw;}
   .up-time{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--text); font-size:clamp(11px,.95vw,17px); letter-spacing:.02em;}
   .up-court{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--accent2); font-size:clamp(9px,.78vw,13px); letter-spacing:.02em; min-width:2.4em;}
@@ -93,8 +93,8 @@
   table.st td{font-size:var(--sfz); padding:calc(var(--sfz)*.16) calc(var(--sfz)*.32); text-align:center; border-bottom:1px solid rgba(60,41,32,.55); white-space:nowrap; vertical-align:middle;}
   table.st td.rk{font-family:'Space Mono',monospace; color:var(--accent2); width:1.8em;}
   table.st td.nm{text-align:left; white-space:normal; line-height:1.07; padding-right:calc(var(--sfz)*.5);}
-  table.st td.nm .p1{display:block; font-weight:700;}
-  table.st td.nm .p2{display:block; font-weight:500; color:var(--muted); font-size:calc(var(--sfz)*.9);}
+  table.st td.nm .p1{display:block; font-weight:600; color:var(--text);}
+  table.st td.nm .p2{display:block; font-weight:600; color:var(--text);}
   table.st tr:last-child td{border-bottom:none;}
   table.st tr.champ td{background:rgba(255,122,26,.12);} table.st tr.champ td.rk{color:var(--accent); font-weight:700;}
   table.st tr.prosp td{background:rgba(255,171,64,.08);} table.st tr.prosp td.rk{color:var(--accent2);}
@@ -208,7 +208,7 @@ function upRow(f){
   const nm=(x,y)=> esc(firstName(x))+(y?" & "+esc(firstName(y)):"");
   return `<div class="up-row">
     <span class="up-time">${f.time?fmtTime(f.time):"—"}</span>
-    <span class="up-court">C${esc(f.court||"?")}</span>
+    <span class="up-court">Court ${esc(f.court||"?")}</span>
     <span class="up-teams"><b>${nm(a1,a2)}</b><span class="up-x">vs</span><b>${nm(b1,b2)}</b></span>
   </div>`;
 }
@@ -421,9 +421,9 @@ function render(){
   feed.forEach(f=>{ if(f.status!=="DONE" && f.court){ (perCourt[f.court]=perCourt[f.court]||[]).push(f); } });
   const courts=Object.keys(perCourt).sort((a,b)=>a-b);
   const playing=courts.map(ct=>perCourt[ct][0]).filter(Boolean);
-  // Upcoming: flat queue of all not-yet-playing matches, ordered by time, capped so
-  // Now Playing always stays the bigger, more prominent block.
-  const UP_MAX=6;
+  // Upcoming: flat queue ordered by time. Capped low so the rows always render fully
+  // (no half-cut rows) while Now Playing keeps the dominant space.
+  const UP_MAX=4;
   const playingKeys=new Set(playing.map(f=>f.key));
   const upcoming=feed.filter(f=> f.status!=="DONE" && f.court && !playingKeys.has(f.key))
     .sort((a,b)=>(a.sortKey-b.sortKey)||((a.court||0)-(b.court||0)))
