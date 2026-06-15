@@ -21,7 +21,7 @@
   /* top bar */
   .bar{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; flex:0 0 auto; margin-bottom:1.6vh;}
   .ev{grid-column:2; text-align:center;}
-  .ev .nm{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(30px,4.4vw,84px); line-height:1; letter-spacing:-.02em;
+  .ev .nm{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(26px,3.4vw,60px); line-height:1; letter-spacing:-.02em;
     background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;}
   .ev .mt{font-family:'Space Mono',monospace; font-size:clamp(11px,1vw,18px); color:var(--muted); margin-top:.8vh; letter-spacing:.08em;}
   .clock{grid-column:3; justify-self:end; text-align:right; font-family:'Space Mono',monospace;}
@@ -37,7 +37,7 @@
   .left{flex:0 0 36%; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden;}
   .right{flex:1 1 auto; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden;}
   .col-title{font-family:'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--accent2);
-    font-size:clamp(11px,1vw,17px); margin:0 0 1vh; flex:0 0 auto;}
+    font-size:clamp(10px,.85vw,15px); margin:0 0 1vh; flex:0 0 auto;}
   .col-title.up{margin-top:1.4vh;}
   .col-title.live{color:var(--accent); animation:liveblink 1.4s steps(1,end) infinite;}
   .col-title.live::before{content:"\25CF  ";}
@@ -53,7 +53,7 @@
   .np-card{flex:1 1 0; min-height:0; overflow:hidden; display:flex; flex-direction:column; justify-content:center;
     border:1px solid rgba(255,122,26,.55); border-radius:16px; background:rgba(255,122,26,.05); padding:1.3vh 1.3vw;}
   .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1vh; flex:0 0 auto;}
-  .np-court{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(13px,1.25vw,22px); letter-spacing:.03em;}
+  .np-court{font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); font-size:clamp(11px,1vw,18px); letter-spacing:.03em;}
   .np-meta{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(10px,.85vw,14px);}
   .np-dot{margin-left:auto; flex:0 0 auto; width:clamp(9px,.85vw,15px); height:clamp(9px,.85vw,15px);
     border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent);
@@ -74,11 +74,11 @@
   .up-mid{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:.7vw;}
   .up-side{display:flex; align-items:center; gap:.45vw; min-width:0; flex:1 1 50%;}
   .up-side .av{--s:clamp(22px,1.6vw,34px);}
-  .up-nm{font-weight:600; font-size:clamp(11px,1vw,17px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .up-nm{font-weight:600; font-size:clamp(10px,.8vw,15px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .up-x{font-family:'Space Mono',monospace; color:var(--faint); font-size:clamp(10px,.8vw,13px);}
   /* standings — fill right column */
   #standWrap{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:1.4vh;}
-  .fit{--sfz:18px; display:flex; flex-direction:column; gap:calc(var(--sfz)*.9); align-content:start;}
+  .fit{--sfz:15px; display:flex; flex-direction:column; gap:calc(var(--sfz)*.9); align-content:start;}
   .cat-block{display:flex; flex-direction:column;}
   .cat-block + .cat-block{margin-top:calc(var(--sfz)*.5);}
   .cat-head{flex:0 0 auto; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:calc(var(--sfz)*1.5); display:flex; align-items:baseline; gap:.9vw; flex-wrap:wrap; margin-bottom:calc(var(--sfz)*.5);}
@@ -154,7 +154,7 @@
     <div class="clock"><div class="t" id="clock">--:--</div><div class="l" id="livedot">● LIVE</div></div>
   </div>
   <div class="main">
-    <div class="left">
+    <div class="left" id="leftCol">
       <div class="col-title live" id="leftTitle">Now Playing</div>
       <div id="nowWrap"><div class="np-empty">Loading…</div></div>
       <div class="col-title up" id="upTitle">Upcoming</div>
@@ -179,6 +179,7 @@ const TIER = { MAIN:"Main Bracket", CHAMPION:"Champion", PROSPECT:"Prospect" };
 async function api(p){ const r=await fetch(BASE+p); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const pp=x.split(/[:.]/); let h=parseInt(pp[0],10), m=parseInt(pp[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
 function normName(s){ return String(s||"").trim().toLowerCase().replace(/\s+/g," "); }
+function firstName(s){ const t=String(s||"").trim(); return t? t.split(/\s+/)[0] : ""; }
 function tick(){ document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }
 
 function photoOf(name){ const p=state.data.players && state.data.players[normName(name)]; return (p&&p.photo)?p.photo:""; }
@@ -188,7 +189,7 @@ function pairPlayers(c, eid){ const e=c.entrants && c.entrants[eid]; if(!e) retu
 
 function teamBlock(c, eid, sz){
   const [p1,p2]=pairPlayers(c,eid);
-  const chip=(n)=>`<div class="pl">${avatar(n,sz)}<span class="plnm">${esc(n)||"TBD"}</span></div>`;
+  const chip=(n)=>`<div class="pl">${avatar(n,sz)}<span class="plnm">${esc(firstName(n))||"TBD"}</span></div>`;
   return `<div class="tmblk">${chip(p1)}${p2?chip(p2):""}</div>`;
 }
 function nowCard(f, sz, nmf){
@@ -204,7 +205,8 @@ function nowCard(f, sz, nmf){
 }
 function upRow(f){
   const [a1,a2]=pairPlayers(f.c,f.eA), [b1,b2]=pairPlayers(f.c,f.eB);
-  const side=(x,y)=>`<div class="up-side">${avatar(x,"clamp(24px,1.8vw,38px)")}${y?avatar(y,"clamp(24px,1.8vw,38px)"):""}<span class="up-nm">${esc(x)}${y?" & "+esc(y):""}</span></div>`;
+  const av="clamp(16px,1.2vw,26px)";
+  const side=(x,y)=>`<div class="up-side">${avatar(x,av)}${y?avatar(y,av):""}<span class="up-nm">${esc(firstName(x))}${y?" & "+esc(firstName(y)):""}</span></div>`;
   return `<div class="up-row">
     <div class="up-when"><span class="up-court">COURT ${esc(f.court||"?")}</span><span class="up-time">${f.time?fmtTime(f.time):"—"}</span></div>
     <div class="up-mid">${side(a1,a2)}<span class="up-x">vs</span>${side(b1,b2)}</div>
@@ -380,7 +382,7 @@ function fitStandings(){
     for(const g of grps){ if(g.scrollWidth>g.clientWidth+1) return false; }
     return true;
   };
-  let lo=8, hi=34, best=8;
+  let lo=8, hi=26, best=8;
   for(let i=0;i<16;i++){
     const mid=(lo+hi)/2;
     fit.style.setProperty("--sfz", mid+"px");
@@ -403,7 +405,8 @@ function renderRight(){
     const groups=c.groups.filter(g=>g.standings.length);
     const maxTeams=Math.max(...groups.map(g=>g.standings.length));
     const maxCols = maxTeams>=7 ? 4 : maxTeams>=5 ? 5 : 6;
-    const cols=Math.max(1, Math.min(groups.length, maxCols));
+    let cols=Math.max(1, Math.min(groups.length, maxCols));
+    if(groups.length===4) cols=2;   // 4 groups -> 2x2 (two on top, two below)
     const cards=groups.map(g=>cardHtml(c,g)).join("");
     return `<div class="cat-block"><div class="cat-head">${esc(c.category)}${cap?`<span class="cat-cap">${cap}</span>`:""}</div>
       <div class="grp-grid" style="grid-template-columns:repeat(${cols},1fr)">${cards}</div></div>`;
@@ -418,32 +421,49 @@ function render(){
   feed.forEach(f=>{ if(f.status!=="DONE" && f.court){ (perCourt[f.court]=perCourt[f.court]||[]).push(f); } });
   const courts=Object.keys(perCourt).sort((a,b)=>a-b);
   const playing=courts.map(ct=>perCourt[ct][0]).filter(Boolean);
-  const upcoming=courts.map(ct=>perCourt[ct][1]).filter(Boolean);  // next match per court
+  // Upcoming: next 2 matches per court, then ordered chronologically.
+  const UP_PER_COURT=2;
+  const upcoming=courts.flatMap(ct=>perCourt[ct].slice(1,1+UP_PER_COURT)).filter(Boolean)
+    .sort((a,b)=>(a.sortKey-b.sortKey)||((a.court||0)-(b.court||0)));
 
   const ac=playing.length||1;
   let sz,nmf;
-  if(ac>=4){ sz="clamp(20px,1.5vw,30px)"; nmf="clamp(11px,.95vw,17px)"; }
-  else if(ac===3){ sz="clamp(26px,2vw,42px)"; nmf="clamp(12px,1.1vw,20px)"; }
-  else if(ac===2){ sz="clamp(34px,2.7vw,58px)"; nmf="clamp(13px,1.3vw,24px)"; }
-  else { sz="clamp(44px,3.8vw,88px)"; nmf="clamp(16px,1.7vw,31px)"; }
-
-  const fin = finishedPodium();
-  const showWinners = fin && playing.length===0 && upcoming.length===0;
-  const leftTitle = document.getElementById("leftTitle");
-  if(showWinners){
-    leftTitle.textContent = "Winners"; leftTitle.classList.remove("live");
-    document.getElementById("nowWrap").innerHTML = winnersHtml(fin);
-    document.getElementById("upTitle").style.display = "none";
-    document.getElementById("nextWrap").style.display = "none";
-  } else {
-    leftTitle.textContent = "Now Playing"; leftTitle.classList.add("live");
-    document.getElementById("upTitle").style.display = "";
-    document.getElementById("nextWrap").style.display = "";
-    document.getElementById("nowWrap").innerHTML = playing.length ? playing.map(f=>nowCard(f,sz,nmf)).join("") : '<div class="np-empty">No match in progress.</div>';
-    document.getElementById("nextWrap").innerHTML = upcoming.length ? upcoming.map(upRow).join("") : '<div class="up-empty">No upcoming match.</div>';
-  }
+  if(ac>=4){ sz="clamp(16px,1.2vw,24px)"; nmf="clamp(9px,.75vw,14px)"; }
+  else if(ac===3){ sz="clamp(20px,1.5vw,30px)"; nmf="clamp(10px,.85vw,16px)"; }
+  else if(ac===2){ sz="clamp(26px,2vw,42px)"; nmf="clamp(11px,1vw,19px)"; }
+  else { sz="clamp(32px,2.7vw,60px)"; nmf="clamp(12px,1.25vw,24px)"; }
 
   const hasPlayoff = (state.data.categories||[]).some(c => (c.playoff||[]).length);
+  const fin = finishedPodium();
+  const allDone = playing.length===0 && upcoming.length===0;
+  const showWinners = !!fin && allDone;
+
+  const leftCol  = document.getElementById("leftCol");
+  const leftTitle= document.getElementById("leftTitle");
+  const upTitle  = document.getElementById("upTitle");
+  const nextWrap = document.getElementById("nextWrap");
+  const nowWrap  = document.getElementById("nowWrap");
+
+  if(hasPlayoff && !showWinners){
+    // PLAYOFF IN PROGRESS — bracket only, hide the whole left column.
+    leftCol.style.display = "none";
+  } else if(showWinners){
+    // FINAL DONE — show champions (1st–3rd) with photos on the left.
+    leftCol.style.display = "";
+    leftTitle.textContent = "Winners"; leftTitle.classList.remove("live");
+    nowWrap.innerHTML = winnersHtml(fin);
+    upTitle.style.display = "none";
+    nextWrap.style.display = "none";
+  } else {
+    // GROUP STAGE — now playing + upcoming.
+    leftCol.style.display = "";
+    leftTitle.textContent = "Now Playing"; leftTitle.classList.add("live");
+    upTitle.style.display = "";
+    nextWrap.style.display = "";
+    nowWrap.innerHTML = playing.length ? playing.map(f=>nowCard(f,sz,nmf)).join("") : '<div class="np-empty">No match in progress.</div>';
+    nextWrap.innerHTML = upcoming.length ? upcoming.map(upRow).join("") : '<div class="up-empty">No upcoming match.</div>';
+  }
+
   renderRight();
 }
 
