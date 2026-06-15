@@ -58,6 +58,22 @@
   .team .nm{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
   .team.w .nm{color:var(--accent); font-weight:700;}
   .team .sc{margin-left:auto; font-family:'Space Mono',monospace; font-size:15px;}
+  /* schedule: player picker + my next match */
+  .schedctl{display:flex; align-items:center; gap:8px; margin:14px 0 2px;}
+  .schedctl label{font-family:'Space Mono',monospace; font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; flex:0 0 auto;}
+  .schedctl select{flex:1 1 auto; min-width:0; background:var(--panel); color:var(--text); border:1px solid var(--line);
+    border-radius:999px; padding:9px 13px; font-size:13px; font-family:inherit; -webkit-appearance:none; appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--faint) 50%),linear-gradient(135deg,var(--faint) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 17px,calc(100% - 11px) 17px; background-size:5px 5px,5px 5px; background-repeat:no-repeat;}
+  .nextcard{border:1px solid rgba(255,122,26,.55); background:rgba(255,122,26,.08); border-radius:var(--r-sm); padding:11px 13px; margin:10px 0 4px;}
+  .nextcard .lab{font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:.06em; color:var(--accent2); text-transform:uppercase;}
+  .nextcard .big{display:flex; align-items:baseline; gap:9px; margin-top:4px; flex-wrap:wrap;}
+  .nextcard .big .t{font-family:'Space Mono',monospace; font-size:22px; font-weight:700; color:var(--text);}
+  .nextcard .big .c{font-family:'Space Mono',monospace; font-size:12px; color:var(--accent);}
+  .nextcard .opp{font-size:13px; color:var(--muted); margin-top:5px;}
+  .nextcard .opp b{color:var(--text);}
+  .mrow.mine{border-color:rgba(255,171,64,.5); background:rgba(255,171,64,.05);}
+  .schedempty{color:var(--faint); font-size:13px; padding:14px 2px;}
   /* standings */
   .tscroll{overflow-x:auto; scrollbar-width:none; margin:12px 0 18px;}
   .tscroll::-webkit-scrollbar{display:none;}
@@ -124,7 +140,8 @@ const qs = new URLSearchParams(location.search);
 const EVENT_ID = qs.get("event");
 const norm = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const state = { data:null, cat:0, view:"schedule" };
+const state = { data:null, cat:0, view:"schedule", player:"" };
+try{ state.player = localStorage.getItem("trekkr_player_"+EVENT_ID) || ""; }catch(e){}
 
 async function api(path){ const r = await fetch(BASE+path); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 
@@ -172,25 +189,54 @@ function renderBody(){
 
 function renderSchedule(cat){
   if(!cat.schedule.length) return '<p class="empty">Group stage schedule not available yet.</p>';
+  const pred = predictTimes();
+  const ptime = (m)=> esc(pred[m.slot||0] || fmtTime(m.time));
+
+  // Player picker — lets a player see only their own matches.
+  const players = playersInCat(cat);
+  const sel = (state.player && players.some(p=>norm(p)===norm(state.player))) ? state.player : "";
+  const ctl = `<div class="schedctl"><label>Player</label>
+    <select onchange="setPlayer(this.value)">
+      <option value="">All matches</option>
+      ${players.map(p=>`<option value="${esc(p)}" ${norm(p)===norm(sel)?'selected':''}>${esc(p)}</option>`).join("")}
+    </select></div>`;
+
   // currently playing = first non-DONE match per court
   const firstByCourt = {};
   cat.schedule.slice().sort((a,b)=>a.slot-b.slot).forEach(m=>{ if(m.status!=="DONE" && firstByCourt[m.court]===undefined) firstByCourt[m.court]=m.matchId; });
   const playing = new Set(Object.values(firstByCourt));
-  // ordered by play time (slot), not grouped by court
-  const list = cat.schedule.slice().sort((a,b)=> (a.slot-b.slot) || (a.court-b.court));
-  return list.map(m=>{
+
+  let list = cat.schedule.slice().sort((a,b)=> (a.slot-b.slot) || (a.court-b.court));
+  let nextCard = "";
+  if(sel){
+    list = list.filter(m=>matchHasPlayer(cat,m,sel));
+    if(!list.length) return ctl + `<div class="schedempty">No matches for ${esc(sel)} in this category.</div>`;
+    const next = list.find(m=>m.status!=="DONE");
+    if(next){
+      const oppId = entrantHasPlayer(cat,next.entrantA,sel) ? next.entrantB : next.entrantA;
+      const isLive = playing.has(next.matchId);
+      nextCard = `<div class="nextcard"><div class="lab">${isLive?"You're up now":"Your next match"}</div>
+        <div class="big"><span class="t">${isLive?"LIVE":ptime(next)}</span><span class="c">Court ${esc(next.court)} · Group ${esc(next.groupLabel)}</span></div>
+        <div class="opp">vs <b>${teamNames(cat,oppId,false)}</b></div></div>`;
+    }
+  }
+
+  const rows = list.map(m=>{
     const done = m.status==="DONE";
     const aw = done && String(m.winner)===String(m.entrantA);
     const bw = done && String(m.winner)===String(m.entrantB);
     const liveNow = playing.has(m.matchId) && !done;
-    return `<div class="mrow ${done?'done':''} ${liveNow?'live-now':''}">
+    const mine = sel && matchHasPlayer(cat,m,sel);
+    return `<div class="mrow ${done?'done':''} ${liveNow?'live-now':''} ${mine?'mine':''}">
       <div class="top">
-        <span class="when"><span class="time">${esc(fmtTime(m.time))}</span><span class="gl">Court ${esc(m.court)} · Group ${esc(m.groupLabel)}</span></span>
+        <span class="when"><span class="time">${ptime(m)}</span><span class="gl">Court ${esc(m.court)} · Group ${esc(m.groupLabel)}</span></span>
         ${liveNow?'<span class="badge-now">LIVE</span>':''}</div>
       <div class="team ${aw?'w':''}"><span class="nm">${teamNames(cat,m.entrantA,false)}</span><span class="sc">${done?esc(String(m.scoreA)):"–"}</span></div>
       <div class="team ${bw?'w':''}"><span class="nm">${teamNames(cat,m.entrantB,false)}</span><span class="sc">${done?esc(String(m.scoreB)):"–"}</span></div>
     </div>`;
   }).join("");
+
+  return ctl + nextCard + rows;
 }
 
 function renderStandings(cat){
@@ -258,6 +304,37 @@ function pmatch(cat,m){
 }
 
 function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const pp=x.split(/[:.]/); let h=parseInt(pp[0],10), m=parseInt(pp[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+
+// Live schedule prediction (same model as the TV board). Projects times from the admin
+// target match duration and re-anchors as matches get scored. activeSlot is computed
+// GLOBALLY across categories because all categories share the court pool / time waves.
+function timeToMin(t){ const s=fmtTime(t); if(!s) return null; const p=s.split(":"); return (parseInt(p[0])||0)*60+(parseInt(p[1])||0); }
+function minToTime(x){ x=((Math.round(x)%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0"); }
+function predictTimes(){
+  const ev=state.data.event||{};
+  const mm=parseInt(ev.matchMinutes)||15;
+  const startMin=timeToMin(ev.startTime);
+  const all=[]; (state.data.categories||[]).forEach(c=>(c.schedule||[]).forEach(m=>all.push(m)));
+  const pending=all.filter(m=>m.status!=="DONE");
+  if(!pending.length) return {};
+  const activeSlot=Math.min(...pending.map(m=>m.slot||0));
+  const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
+  const staticOf=(slot)=>{ if(startMin!=null) return startMin+slot*mm; const any=all.find(m=>(m.slot||0)===slot&&m.time); return any?timeToMin(any.time):null; };
+  const sa=staticOf(activeSlot);
+  const activeFinish=Math.max((sa!=null?sa:nowMin)+mm,nowMin);
+  const pred={};
+  all.forEach(m=>{ const s=m.slot||0; const st=staticOf(s); let val;
+    if(s<=activeSlot){ val=(st!=null)?st:nowMin; }
+    else { val=activeFinish+(s-activeSlot-1)*mm; if(st!=null) val=Math.max(val,st); }
+    pred[s]=minToTime(val); });
+  return pred;
+}
+
+// Player filter helpers
+function entrantHasPlayer(cat,eid,p){ const e=cat.entrants[eid]; return !!(e && (norm(e.player1)===norm(p)||norm(e.player2)===norm(p))); }
+function matchHasPlayer(cat,m,p){ return entrantHasPlayer(cat,m.entrantA,p)||entrantHasPlayer(cat,m.entrantB,p); }
+function playersInCat(cat){ const seen=new Map(); Object.values(cat.entrants||{}).forEach(e=>{ [e&&e.player1,e&&e.player2].forEach(p=>{ if(p&&!seen.has(norm(p))) seen.set(norm(p),p); }); }); return [...seen.values()].sort((a,b)=>a.localeCompare(b)); }
+function setPlayer(name){ state.player=name||""; try{ if(state.player) localStorage.setItem("trekkr_player_"+EVENT_ID,state.player); else localStorage.removeItem("trekkr_player_"+EVENT_ID); }catch(e){} renderBody(); }
 
 async function load(){
   try{
