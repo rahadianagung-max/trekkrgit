@@ -421,9 +421,9 @@ function render(){
   feed.forEach(f=>{ if(f.status!=="DONE" && f.court){ (perCourt[f.court]=perCourt[f.court]||[]).push(f); } });
   const courts=Object.keys(perCourt).sort((a,b)=>a-b);
   const playing=courts.map(ct=>perCourt[ct][0]).filter(Boolean);
-  // Upcoming: flat queue ordered by time. Capped low so the rows always render fully
-  // (no half-cut rows) while Now Playing keeps the dominant space.
-  const UP_MAX=4;
+  // Upcoming: flat queue ordered by time. Cap must exceed one slot's worth of matches
+  // (≈ number of courts) so the NEXT time slot shows too, not just the immediate one.
+  const UP_MAX=8;
   const playingKeys=new Set(playing.map(f=>f.key));
   const upcoming=feed.filter(f=> f.status!=="DONE" && f.court && !playingKeys.has(f.key))
     .sort((a,b)=>(a.sortKey-b.sortKey)||((a.court||0)-(b.court||0)))
