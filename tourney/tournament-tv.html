@@ -49,8 +49,8 @@
   .av img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .av i{ font-style:normal; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; color:var(--accent2); font-size:calc(var(--s)*.44); }
   /* now playing cards — dominant, fill column height */
-  #nowWrap{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:1vh;}
-  .np-card{flex:1 1 0; min-height:clamp(50px,6vh,120px); overflow:hidden; display:flex; flex-direction:column; justify-content:center;
+  #nowWrap{flex:1 1 auto; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:1vh;}
+  .np-card{flex:1 1 0; min-height:clamp(40px,4.5vh,90px); overflow:hidden; display:flex; flex-direction:column; justify-content:center;
     border:1.5px solid rgba(255,122,26,.7); border-radius:16px;
     background:linear-gradient(180deg,rgba(255,122,26,.12),rgba(255,122,26,.04)); padding:1.2vh 1.4vw;}
   .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1vh; flex:0 0 auto;}
@@ -69,7 +69,7 @@
     font-size:clamp(12px,1.1vw,20px); letter-spacing:.12em;}
   .np-empty,.up-empty{color:var(--faint); font-family:'Space Mono',monospace; font-size:clamp(13px,1.1vw,18px); padding:2vh 0;}
   /* upcoming — compact single-line queue, ordered by time; capped so Now Playing stays bigger */
-  #nextWrap{flex:0 0 auto; display:flex; flex-direction:column; gap:.6vh;}
+  #nextWrap{flex:0 0 auto; min-height:clamp(80px,11vh,170px); display:flex; flex-direction:column; gap:.6vh;}
   .up-row{display:flex; align-items:center; gap:.8vw; border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:.5vh .9vw;}
   .up-time{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--text); font-size:clamp(11px,.95vw,17px); letter-spacing:.02em;}
   .up-court{flex:0 0 auto; font-family:'Space Mono',monospace; font-weight:700; color:var(--accent2); font-size:clamp(9px,.78vw,13px); letter-spacing:.02em; min-width:2.4em;}
@@ -91,14 +91,14 @@
     font-size:calc(var(--sfz)*.66); text-align:center; padding:calc(var(--sfz)*.18) calc(var(--sfz)*.3); border-bottom:1px solid var(--line); white-space:nowrap;}
   table.st th.nm{text-align:left;}
   table.st td{font-size:var(--sfz); padding:calc(var(--sfz)*.16) calc(var(--sfz)*.32); text-align:center; border-bottom:1px solid rgba(60,41,32,.55); white-space:nowrap; vertical-align:middle;}
-  table.st td.rk{font-family:'Space Mono',monospace; color:var(--accent2); width:1.8em;}
+  table.st td.rk{font-family:'Space Mono',monospace; width:1.8em;}
   table.st td.nm{text-align:left; white-space:normal; line-height:1.07; padding-right:calc(var(--sfz)*.5);}
-  table.st td.nm .p1{display:block; font-weight:600; color:var(--text);}
-  table.st td.nm .p2{display:block; font-weight:600; color:var(--text);}
+  table.st td.nm .p1{display:block; font-weight:600; color:inherit;}
+  table.st td.nm .p2{display:block; font-weight:600; color:inherit;}
   table.st tr:last-child td{border-bottom:none;}
-  table.st tr.champ td{background:rgba(255,122,26,.12);} table.st tr.champ td.rk{color:var(--accent); font-weight:700;}
-  table.st tr.prosp td{background:rgba(255,171,64,.08);} table.st tr.prosp td.rk{color:var(--accent2);}
-  table.st tr.top td{background:rgba(255,122,26,.12);} table.st tr.top td.rk{color:var(--accent); font-weight:700;}
+  /* zebra by rank for readability: 1 white, 2 yellow, 3 white, 4 yellow … */
+  table.st tbody tr:nth-child(odd) td{color:var(--text);}
+  table.st tbody tr:nth-child(even) td{color:var(--accent2); background:rgba(255,171,64,.07);}
   .center{display:flex; align-items:center; justify-content:center; height:100%; color:var(--faint);
     font-family:'Space Mono',monospace; font-size:clamp(14px,1.4vw,22px); text-align:center; padding:2vh;}
   /* footer */
@@ -148,7 +148,7 @@
   <div class="bar">
     <div class="qr" id="qrBox" style="display:none">
       <div class="qrimg"><img id="qrImg" alt="QR" /></div>
-      <div class="qrlabel">Scan for<br>live mobile view</div>
+      <div class="qrlabel">Scan to stay updated<br>live on your phone</div>
     </div>
     <div class="ev"><div class="nm" id="evnm">—</div><div class="mt" id="evmt"></div></div>
     <div class="clock"><div class="t" id="clock">--:--</div><div class="l" id="livedot">● LIVE</div></div>
@@ -408,7 +408,7 @@ function renderRight(){
     let cols=Math.max(1, Math.min(groups.length, maxCols));
     if(groups.length===4) cols=2;   // 4 groups -> 2x2 (two on top, two below)
     const cards=groups.map(g=>cardHtml(c,g)).join("");
-    return `<div class="cat-block"><div class="cat-head">${esc(c.category)}${cap?`<span class="cat-cap">${cap}</span>`:""}</div>
+    return `<div class="cat-block">${cap?`<div class="cat-cap" style="margin-bottom:calc(var(--sfz)*.55)">${cap}</div>`:""}
       <div class="grp-grid" style="grid-template-columns:repeat(${cols},1fr)">${cards}</div></div>`;
   }).join("");
   wrap.innerHTML=`<div class="fit">${blocks}</div>`;
