@@ -141,9 +141,31 @@
   .win-row.ru .wlabel{color:var(--accent2);}
   .win-row.ru .wnames{font-size:clamp(15px,1.5vw,30px);}
   .win-row.third .wnames{font-size:clamp(13px,1.2vw,23px); color:var(--muted);}
+  /* sponsor reel overlay */
+  #sponsorOverlay{position:fixed; inset:0; z-index:9999; background:radial-gradient(circle at 50% 40%,#15110c,#000 70%);
+    display:none; flex-direction:column; align-items:center; justify-content:center; gap:3.2vh;}
+  #sponsorOverlay.show{display:flex; animation:spFade .5s ease;}
+  @keyframes spFade{from{opacity:0}to{opacity:1}}
+  .sp-label{font-family:'Space Mono',monospace; letter-spacing:.28em; text-transform:uppercase; color:var(--accent2); font-size:clamp(12px,1.2vw,20px);}
+  /* fixed symmetric stage: every logo (wide or tall) is centered & contained in the SAME frame */
+  .sp-stage{width:min(58vw,1040px); height:46vh; background:#fff; border-radius:28px;
+    display:flex; align-items:center; justify-content:center; padding:clamp(24px,4vh,64px) clamp(28px,4vw,72px);
+    box-shadow:0 24px 90px rgba(0,0,0,.55); overflow:hidden;}
+  .sp-stage img{max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block;}
+  .sp-dots{display:flex; gap:11px;}
+  .sp-dot{width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.22); transition:background .2s;}
+  .sp-dot.on{background:var(--accent); box-shadow:0 0 10px var(--accent);}
+  .sp-brand{position:fixed; bottom:4vh; left:0; right:0; text-align:center;
+    font-family:'Space Mono',monospace; color:var(--faint); font-size:clamp(10px,.9vw,14px); letter-spacing:.18em;}
 </style>
 </head>
 <body>
+<div id="sponsorOverlay">
+  <div class="sp-label">Our Partners</div>
+  <div class="sp-stage"><img id="spImg" alt="sponsor"></div>
+  <div class="sp-dots" id="spDots"></div>
+  <div class="sp-brand">powered by TREKKR</div>
+</div>
 <div class="screen">
   <div class="bar">
     <div class="qr" id="qrBox" style="display:none">
@@ -216,16 +238,58 @@ function upRow(f){
 function buildFeed(){
   const d=state.data, feed=[];
   d.categories.forEach(c=>{
-    (c.schedule||[]).forEach(m=> feed.push({ key:m.matchId, c, court:m.court, sortKey:(m.slot||0),
-      time:m.time, label:`${c.category} · Group ${m.groupLabel}`, eA:m.entrantA, eB:m.entrantB, status:m.status }));
+    (c.schedule||[]).forEach(m=> feed.push({ key:m.matchId, c, court:m.court, sortKey:(m.slot||0), stage:"GROUP", slot:(m.slot||0),
+      time:m.time, updatedAt:m.updatedAt||"", label:`${c.category} · Group ${m.groupLabel}`, eA:m.entrantA, eB:m.entrantB, status:m.status }));
     (c.playoff||[]).forEach(b=> (b.rounds||[]).forEach(r=> (r.matches||[]).forEach(m=>{
       if(m.status==="BYE" || !m.entrantA || !m.entrantB) return;
-      feed.push({ key:m.matchId, c, court:m.court, sortKey:100000+(parseInt(m.round)||0)*100+(m.idx||0),
+      feed.push({ key:m.matchId, c, court:m.court, sortKey:100000+(parseInt(m.round)||0)*100+(m.idx||0), stage:"PLAYOFF",
         time:m.time, label:`${c.category} · ${TIER[b.tier]||b.tier}`, eA:m.entrantA, eB:m.entrantB, status:m.status });
     })));
   });
   feed.sort((a,b)=> (a.sortKey-b.sortKey) || ((a.court||0)-(b.court||0)));
   return feed;
+}
+
+// Live schedule prediction from ACTUAL pace. Instead of the fixed admin target, the
+// effective match duration is learned from real completion timestamps (updatedAt), and
+// each court's upcoming times are anchored on when its last match actually finished.
+//   effDur = median of real gaps between consecutive completions per court (outliers
+//            filtered, falls back to event.matchMinutes until ≥2 samples)
+//   per court: current match started when the previous one finished; next = that finish
+//              + effDur, and so on. Re-projects on every score input (updatedAt changes).
+function timeToMin(t){ const s=fmtTime(t); if(!s) return null; const p=s.split(":"); return (parseInt(p[0])||0)*60+(parseInt(p[1])||0); }
+function minToTime(x){ x=((Math.round(x)%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0"); }
+function localMin(iso){ const d=new Date(iso); return d.getHours()*60+d.getMinutes(); }
+function predictGroupTimes(feed){
+  const ev=state.data.event||{};
+  const target=parseInt(ev.matchMinutes)||15;
+  const startMin=timeToMin(ev.startTime);
+  const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
+  const grp=feed.filter(f=>f.stage==="GROUP");
+  if(!grp.some(f=>f.status!=="DONE")) return {};
+  const byCourt={}; grp.forEach(f=>{ (byCourt[f.court]=byCourt[f.court]||[]).push(f); });
+  // 1) effective duration from real completion gaps (pooled, outlier-filtered, median)
+  const samples=[];
+  Object.values(byCourt).forEach(arr=>{
+    const done=arr.filter(f=>f.status==="DONE"&&f.updatedAt).sort((a,b)=>a.slot-b.slot);
+    for(let i=1;i<done.length;i++){ const d=(Date.parse(done[i].updatedAt)-Date.parse(done[i-1].updatedAt))/60000; if(d>0) samples.push(d); }
+  });
+  let eff=target;
+  const good=samples.filter(d=>d>=Math.max(3,target*0.3)&&d<=target*2.5);
+  if(good.length>=2){ const r=good.slice(-8).slice().sort((a,b)=>a-b); eff=r[Math.floor(r.length/2)]; }
+  eff=Math.max(4,Math.round(eff));
+  // 2) per-court anchoring on the last actual completion
+  const pred={};
+  Object.values(byCourt).forEach(arr=>{
+    const sorted=arr.slice().sort((a,b)=>a.slot-b.slot);
+    const done=sorted.filter(f=>f.status==="DONE"&&f.updatedAt);
+    let cursor = done.length ? localMin(done[done.length-1].updatedAt) : (startMin!=null?startMin:nowMin);
+    sorted.filter(f=>f.status!=="DONE").forEach((f,k)=>{
+      pred[f.key]=minToTime(cursor);
+      cursor = (k===0) ? Math.max(cursor+eff, nowMin) : cursor+eff;
+    });
+  });
+  return pred;
 }
 
 function colsFor(g){ if(g<=1) return 1; if(g<=3) return g; let c=Math.round(Math.sqrt(g*1.3)); return Math.max(2, Math.min(c, g>8?4:3)); }
@@ -417,6 +481,9 @@ function renderRight(){
 function render(){
   if(!state.data) return;
   const feed=buildFeed();
+  // Override stored times with the live predicted schedule for group matches.
+  const pred=predictGroupTimes(feed);
+  feed.forEach(f=>{ if(f.stage==="GROUP" && pred[f.key]) f.time=pred[f.key]; });
   const perCourt={};
   feed.forEach(f=>{ if(f.status!=="DONE" && f.court){ (perCourt[f.court]=perCourt[f.court]||[]).push(f); } });
   const courts=Object.keys(perCourt).sort((a,b)=>a-b);
@@ -474,6 +541,7 @@ async function load(){
   try{
     const d=await api("/tournament/event/"+encodeURIComponent(EVENT_ID)+"/public?live=1&_="+Date.now());
     state.data=d;
+    preloadSponsors(d.sponsors);
     document.getElementById("evnm").textContent=d.event.name||"Tournament";
     document.getElementById("evmt").textContent=[d.event.venue,d.event.date].filter(Boolean).join("  ·  ");
     render();
@@ -495,9 +563,33 @@ function setupQR(){
   document.getElementById("qrBox").style.display = "flex";
 }
 
+// ---- Sponsor reel: every 10 min, play each logo for 3s, then back to the board ----
+const SPONSOR_EVERY_MS = 10 * 60 * 1000;  // play the reel every 10 minutes
+const SPONSOR_SHOW_MS  = 3000;            // each logo on screen for 3 seconds
+let _spPlaying = false;
+function sponsorList(){ return (state.data && Array.isArray(state.data.sponsors)) ? state.data.sponsors : []; }
+function preloadSponsors(list){ (list||[]).forEach(u=>{ const im=new Image(); im.src=u; }); }
+async function playSponsors(){
+  if(_spPlaying) return;
+  const list = sponsorList();
+  if(!list.length) return;
+  _spPlaying = true;
+  const ov=document.getElementById("sponsorOverlay"), img=document.getElementById("spImg"), dots=document.getElementById("spDots");
+  dots.innerHTML = list.map((_,i)=>`<span class="sp-dot" id="spd${i}"></span>`).join("");
+  ov.classList.add("show");
+  for(let i=0;i<list.length;i++){
+    img.src = list[i];
+    list.forEach((_,k)=>{ const d=document.getElementById("spd"+k); if(d) d.classList.toggle("on", k===i); });
+    await new Promise(r=>setTimeout(r, SPONSOR_SHOW_MS));
+  }
+  ov.classList.remove("show");
+  _spPlaying = false;
+}
+function startSponsorCycle(){ setInterval(playSponsors, SPONSOR_EVERY_MS); }
+
 tick(); setInterval(tick,1000);
 if(EVENT_ID){
-  setupQR(); load(); setInterval(load,20000);
+  setupQR(); load(); setInterval(load,20000); startSponsorCycle();
   let rzt; window.addEventListener("resize", ()=>{ clearTimeout(rzt); rzt=setTimeout(()=>{ if(state.data) renderRight(); }, 200); });
 }
 else {

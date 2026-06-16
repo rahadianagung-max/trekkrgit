@@ -116,6 +116,13 @@
   .picker .pn{font-weight:700; font-size:15px;} .picker .pm{font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); margin-top:3px;}
   footer{text-align:center; font-family:'Space Mono',monospace; font-size:10px; color:var(--faint); margin-top:24px; letter-spacing:.06em;}
   footer b{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; font-family:'Bricolage Grotesque',sans-serif; font-weight:800;}
+  /* sponsor banner — single rotating box at the bottom of every tab */
+  .sp-cap{display:none; text-align:center; font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.2em; color:var(--faint); text-transform:uppercase; margin:22px 0 8px;}
+  #sponsorBanner{display:none; margin:0 16px; min-height:80px; background:#fff; border-radius:12px; align-items:center; justify-content:center; padding:10px 18px; box-shadow:0 4px 20px rgba(0,0,0,.32);}
+  #sponsorBanner.show{display:flex;} .sp-cap.show{display:block;}
+  #sponsorBanner img{max-width:100%; max-height:64px; width:auto; height:auto; object-fit:contain; display:block;}
+  /* schedule helper text */
+  .sched-hint{font-size:12.5px; color:var(--muted); line-height:1.45; margin:16px 2px 2px;}
 </style>
 </head>
 <body>
@@ -131,6 +138,8 @@
   <div id="subtabs"></div>
   <div id="body"><p class="empty">Loading…</p></div>
 </div>
+<div class="sp-cap" id="spCap">Our Partners</div>
+<div id="sponsorBanner"><img id="spbImg" alt="sponsor"></div>
 <footer>POWERED BY <b>TREKKR</b></footer>
 
 <script>
@@ -190,12 +199,13 @@ function renderBody(){
 function renderSchedule(cat){
   if(!cat.schedule.length) return '<p class="empty">Group stage schedule not available yet.</p>';
   const pred = predictTimes();
-  const ptime = (m)=> esc(pred[m.slot||0] || fmtTime(m.time));
+  const ptime = (m)=> esc(pred[m.matchId] || fmtTime(m.time));
 
   // Player picker — lets a player see only their own matches.
   const players = playersInCat(cat);
   const sel = (state.player && players.some(p=>norm(p)===norm(state.player))) ? state.player : "";
-  const ctl = `<div class="schedctl"><label>Player</label>
+  const ctl = `<p class="sched-hint">To see only your schedule, select your name in the dropdown below.</p>
+    <div class="schedctl"><label>Player</label>
     <select onchange="setPlayer(this.value)">
       <option value="">All matches</option>
       ${players.map(p=>`<option value="${esc(p)}" ${norm(p)===norm(sel)?'selected':''}>${esc(p)}</option>`).join("")}
@@ -305,28 +315,42 @@ function pmatch(cat,m){
 
 function fmtTime(t){ const s=String(t==null?"":t).trim(); if(!s) return ""; const ap=/(am|pm)/i.exec(s); const x=s.replace(/\s*(am|pm)/i,"").trim(); const pp=x.split(/[:.]/); let h=parseInt(pp[0],10), m=parseInt(pp[1],10); if(isNaN(h)) return s; if(isNaN(m)) m=0; if(ap){const pm=/pm/i.test(ap[0]); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0;} h=((h%24)+24)%24; m=((m%60)+60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
 
-// Live schedule prediction (same model as the TV board). Projects times from the admin
-// target match duration and re-anchors as matches get scored. activeSlot is computed
-// GLOBALLY across categories because all categories share the court pool / time waves.
+// Live schedule prediction from ACTUAL pace (same model as the TV board). The effective
+// match duration is learned from real completion timestamps (updatedAt); each court's
+// upcoming times are anchored on when its last match actually finished. Computed across
+// ALL categories (shared court pool). Re-projects on every score input.
 function timeToMin(t){ const s=fmtTime(t); if(!s) return null; const p=s.split(":"); return (parseInt(p[0])||0)*60+(parseInt(p[1])||0); }
 function minToTime(x){ x=((Math.round(x)%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0"); }
+function localMin(iso){ const d=new Date(iso); return d.getHours()*60+d.getMinutes(); }
 function predictTimes(){
   const ev=state.data.event||{};
-  const mm=parseInt(ev.matchMinutes)||15;
+  const target=parseInt(ev.matchMinutes)||15;
   const startMin=timeToMin(ev.startTime);
-  const all=[]; (state.data.categories||[]).forEach(c=>(c.schedule||[]).forEach(m=>all.push(m)));
-  const pending=all.filter(m=>m.status!=="DONE");
-  if(!pending.length) return {};
-  const activeSlot=Math.min(...pending.map(m=>m.slot||0));
   const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
-  const staticOf=(slot)=>{ if(startMin!=null) return startMin+slot*mm; const any=all.find(m=>(m.slot||0)===slot&&m.time); return any?timeToMin(any.time):null; };
-  const sa=staticOf(activeSlot);
-  const activeFinish=Math.max((sa!=null?sa:nowMin)+mm,nowMin);
+  const all=[]; (state.data.categories||[]).forEach(c=>(c.schedule||[]).forEach(m=>all.push(m)));
+  if(!all.some(m=>m.status!=="DONE")) return {};
+  const byCourt={}; all.forEach(m=>{ (byCourt[m.court]=byCourt[m.court]||[]).push(m); });
+  // 1) effective duration from real completion gaps (pooled, outlier-filtered, median)
+  const samples=[];
+  Object.values(byCourt).forEach(arr=>{
+    const done=arr.filter(m=>m.status==="DONE"&&m.updatedAt).sort((a,b)=>(a.slot||0)-(b.slot||0));
+    for(let i=1;i<done.length;i++){ const d=(Date.parse(done[i].updatedAt)-Date.parse(done[i-1].updatedAt))/60000; if(d>0) samples.push(d); }
+  });
+  let eff=target;
+  const good=samples.filter(d=>d>=Math.max(3,target*0.3)&&d<=target*2.5);
+  if(good.length>=2){ const r=good.slice(-8).slice().sort((a,b)=>a-b); eff=r[Math.floor(r.length/2)]; }
+  eff=Math.max(4,Math.round(eff));
+  // 2) per-court anchoring on the last actual completion
   const pred={};
-  all.forEach(m=>{ const s=m.slot||0; const st=staticOf(s); let val;
-    if(s<=activeSlot){ val=(st!=null)?st:nowMin; }
-    else { val=activeFinish+(s-activeSlot-1)*mm; if(st!=null) val=Math.max(val,st); }
-    pred[s]=minToTime(val); });
+  Object.values(byCourt).forEach(arr=>{
+    const sorted=arr.slice().sort((a,b)=>(a.slot||0)-(b.slot||0));
+    const done=sorted.filter(m=>m.status==="DONE"&&m.updatedAt);
+    let cursor = done.length ? localMin(done[done.length-1].updatedAt) : (startMin!=null?startMin:nowMin);
+    sorted.filter(m=>m.status!=="DONE").forEach((m,k)=>{
+      pred[m.matchId]=minToTime(cursor);
+      cursor = (k===0) ? Math.max(cursor+eff, nowMin) : cursor+eff;
+    });
+  });
   return pred;
 }
 
@@ -335,6 +359,20 @@ function entrantHasPlayer(cat,eid,p){ const e=cat.entrants[eid]; return !!(e && 
 function matchHasPlayer(cat,m,p){ return entrantHasPlayer(cat,m.entrantA,p)||entrantHasPlayer(cat,m.entrantB,p); }
 function playersInCat(cat){ const seen=new Map(); Object.values(cat.entrants||{}).forEach(e=>{ [e&&e.player1,e&&e.player2].forEach(p=>{ if(p&&!seen.has(norm(p))) seen.set(norm(p),p); }); }); return [...seen.values()].sort((a,b)=>a.localeCompare(b)); }
 function setPlayer(name){ state.player=name||""; try{ if(state.player) localStorage.setItem("trekkr_player_"+EVENT_ID,state.player); else localStorage.removeItem("trekkr_player_"+EVENT_ID); }catch(e){} renderBody(); }
+
+// Sponsor banner: one static box at the bottom of every tab, showing a single image from
+// the "Sponsors" tab column B (separate from the TV reel). Set up once, no rotation.
+let _spReady=false;
+function setupSponsorBanner(){
+  if(_spReady) return;
+  const url = (state.data && state.data.mobileBanner) ? String(state.data.mobileBanner) : "";
+  if(!url) return;
+  _spReady=true;
+  const box=document.getElementById("sponsorBanner"), cap=document.getElementById("spCap"), img=document.getElementById("spbImg");
+  img.onerror=()=>{ box.classList.remove("show"); cap.classList.remove("show"); };
+  img.src=url;
+  box.classList.add("show"); cap.classList.add("show");
+}
 
 async function load(){
   try{
@@ -345,7 +383,7 @@ async function load(){
        <div class="evmeta">${esc([d.event.venue,d.event.date].filter(Boolean).join(" · "))}</div>`;
     document.getElementById("live").innerHTML = `<b>● LIVE</b><br>updated ${new Date().toLocaleTimeString("en-GB")}`;
     if(state.cat >= d.categories.length) state.cat = 0;
-    renderTabs(); renderBody();
+    renderTabs(); renderBody(); setupSponsorBanner();
   }catch(e){ document.getElementById("body").innerHTML = '<p class="empty">Failed to load data.</p>'; }
 }
 
