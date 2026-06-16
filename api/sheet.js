@@ -1430,9 +1430,59 @@ function buildClusteredOrderings(rounds, ids) {
   return out;
 }
 function patternTotal(groups) { let s = 0; for (const g of groups) s += patternPenalty(g.orderings[g.oi] || [], g.entrantIds); return s; }
+// ---- Even-spread ordering (player-comfort objective) ----
+// Replaces the old "block 2-3" objective. Within a single group on its own court, order the
+// matches to: (1) never have a pair play >3 in a row [hard], (2) minimize "play-1-then-break"
+// singles down to the unavoidable floor, then (3) minimize each pair's longest idle gap, then
+// (4) shrink time-at-venue. Cuts the worst wait from ~105 min to ~75 min for a 6-team group.
+function spreadStats(order, ids) {
+  const slotsOf = {}; ids.forEach((id) => (slotsOf[id] = []));
+  order.forEach((m, idx) => { if (slotsOf[m.a]) slotsOf[m.a].push(idx); if (slotsOf[m.b]) slotsOf[m.b].push(idx); });
+  let maxGap = 0, singles = 0, over3 = 0, worstStay = 0;
+  for (const id of ids) {
+    const s = slotsOf[id]; let cur = 1; const runs = [];
+    for (let i = 1; i < s.length; i++) { if (s[i] === s[i - 1] + 1) cur++; else { runs.push(cur); cur = 1; } }
+    if (s.length) runs.push(cur);
+    for (const L of runs) { if (L === 1) singles++; if (L > 3) over3 += (L - 3); }
+    for (let i = 1; i < s.length; i++) { const g = s[i] - s[i - 1] - 1; if (g > maxGap) maxGap = g; }
+    if (s.length) { const st = s[s.length - 1] - s[0] + 1; if (st > worstStay) worstStay = st; }
+  }
+  return { maxGap, singles, over3, worstStay };
+}
+function spreadCost(order, ids) {
+  const f = spreadStats(order, ids);
+  return f.over3 * 1e9 + f.singles * 1e5 + f.maxGap * 1e3 + f.worstStay;
+}
+function spreadTotal(groups) { let s = 0; for (const g of groups) s += spreadCost(g.orderings[g.oi] || [], g.entrantIds); return s; }
+// Local search (simulated annealing, swap + insertion moves) over the match order.
+function evenSpreadOrderings(rounds, ids) {
+  const edges = []; rounds.forEach((r, ri) => r.forEach(([a, b]) => edges.push({ a, b, round: ri + 1 })));
+  const M = edges.length; if (M <= 1) return [edges.slice()];
+  const idxOf = (e) => { for (let i = 0; i < M; i++) { const x = edges[i]; if ((x.a === e.a && x.b === e.b) || (x.a === e.b && x.b === e.a)) return i; } return 0; };
+  const evalPerm = (perm) => spreadCost(perm.map((i) => edges[i]), ids);
+  const iters = Math.min(38000, M * M * 220);
+  const anneal = (start) => {
+    let cur = start.slice(), cc = evalPerm(cur), best = cur.slice(), bc = cc, T = 5;
+    for (let it = 0; it < iters; it++) {
+      T *= 0.99993; const c = cur.slice();
+      if (Math.random() < 0.5) { const i = Math.floor(Math.random() * M); let j = Math.floor(Math.random() * M); if (i === j) continue; const t = c[i]; c[i] = c[j]; c[j] = t; }
+      else { const i = Math.floor(Math.random() * M); const x = c.splice(i, 1)[0]; const j = Math.floor(Math.random() * M); c.splice(j, 0, x); }
+      const k = evalPerm(c);
+      if (k < cc || Math.random() < Math.exp((cc - k) / (T * 900))) { cur = c; cc = k; if (k < bc) { bc = k; best = c.slice(); } }
+    }
+    return best;
+  };
+  const starts = [];
+  buildClusteredOrderings(rounds, ids).slice(0, 3).forEach((o) => starts.push(o.map(idxOf)));
+  for (let r = 0; r < 6; r++) { const p = [...Array(M).keys()]; for (let i = M - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[p[i], p[j]] = [p[j], p[i]]; } starts.push(p); }
+  const seen = new Set(), cands = [];
+  for (const s of starts) { const best = anneal(s); const order = best.map((i) => edges[i]); const sig = order.map((m) => m.a + "-" + m.b).join("|"); if (!seen.has(sig)) { seen.add(sig); cands.push(order); } }
+  cands.sort((a, b) => spreadCost(a, ids) - spreadCost(b, ids));
+  return cands.length ? cands : [edges.slice()];
+}
 // Choose orderings to (1) avoid cross-court player clashes, then (2) keep good play patterns.
 function optimizeOrderings(groups, namesMap) {
-  const cost = () => totalClashes(groups, namesMap).clashes * 1000 + patternTotal(groups);
+  const cost = () => totalClashes(groups, namesMap).clashes * 1e12 + spreadTotal(groups);
   let best = cost();
   for (let pass = 0; pass < 5; pass++) {
     let improved = false;
@@ -1620,9 +1670,9 @@ async function tScheduleEvent(eventId, body) {
   const groups = [...gmap.values()];
   for (const g of groups) {
     g.rounds = roundRobinRounds(g.entrantIds);
-    g.orderings = buildClusteredOrderings(g.rounds, g.entrantIds);
+    g.orderings = evenSpreadOrderings(g.rounds, g.entrantIds);
     let bo = 0, bp = Infinity;
-    g.orderings.forEach((o, i) => { const p = patternPenalty(o, g.entrantIds); if (p < bp) { bp = p; bo = i; } });
+    g.orderings.forEach((o, i) => { const p = spreadCost(o, g.entrantIds); if (p < bp) { bp = p; bo = i; } });
     g.oi = bo;
     g.length = (g.orderings[0] || []).length;
   }
@@ -1651,7 +1701,7 @@ async function tScheduleEvent(eventId, body) {
 
   await rewriteEventGroupMatches(sheets, tids, newRows);
   return respond(200, {
-    success: true, engine: "clustered-2to3", scheduledMatches: count, groups: groups.length, numCourts, courts: courtNums, startTime, matchMinutes,
+    success: true, engine: "even-spread-v1", scheduledMatches: count, groups: groups.length, numCourts, courts: courtNums, startTime, matchMinutes,
     clashes, clashCount: clashes.length,
   });
 }
@@ -2110,7 +2160,7 @@ function playoffBracketsView(all, nm) {
     const tm = all.filter((m) => m.bracket === tier);
     const numRounds = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
     const nQual = tm.filter((m) => parseInt(m.round) === 1).reduce((n, m) => n + (m.entrantA ? 1 : 0) + (m.entrantB ? 1 : 0), 0);
-    const view = (m) => ({ matchId: encMatchId(m.matchId, m._row), round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status });
+    const view = (m) => ({ matchId: encMatchId(m.matchId, m._row), round: m.round, idx: m.slot, court: m.court, time: m.time, teamA: nm(m.entrantA), teamB: nm(m.entrantB), entrantA: m.entrantA, entrantB: m.entrantB, scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status, updatedAt: m.updatedAt || "" });
     const rounds = [];
     for (let rr = 1; rr <= numRounds; rr++) rounds.push({ round: rr, matches: tm.filter((m) => parseInt(m.round) === rr).sort((a, b) => a.slot - b.slot).map(view) });
     const bronzeM = tm.find((m) => String(m.round) === "BRONZE");
@@ -2197,7 +2247,7 @@ async function tPublicEvent(eventId, opts) {
     const schedule = groupMatches.slice().sort((a, b) => a.slot - b.slot || a.court - b.court).map((m) => ({
       matchId: m.matchId, court: m.court, slot: m.slot, time: m.time, groupLabel: m.groupLabel,
       entrantA: m.entrantA, entrantB: m.entrantB, teamA: nm(m.entrantA), teamB: nm(m.entrantB),
-      scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status,
+      scoreA: m.scoreA, scoreB: m.scoreB, winner: m.winner, status: m.status, updatedAt: m.updatedAt || "",
     }));
     const playoff = playoffBracketsView(tMatches.filter((m) => m.stage === "PLAYOFF"), nm);
     return {
@@ -2205,7 +2255,19 @@ async function tPublicEvent(eventId, opts) {
       advancersPerGroup: parseInt(t[6]) || 2, entrants, groups, schedule, playoff,
     };
   });
-  return respond(200, { event, categories, players }, { "Cache-Control": cc });
+  // Sponsor logos. "Sponsors" tab:
+  //   column A = TV reel logos (multiple, one per row)
+  //   column B (first non-empty) = single static mobile banner (different image)
+  // Separate read wrapped in try/catch so a missing tab never breaks the board.
+  let sponsors = [], mobileBanner = "";
+  try {
+    const sp = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Sponsors!A2:B" });
+    const rows = sp.data.values || [];
+    sponsors = rows.map((r) => String(r[0] || "").trim()).filter((u) => /^https?:\/\//i.test(u));
+    mobileBanner = rows.map((r) => String(r[1] || "").trim()).find((u) => /^https?:\/\//i.test(u)) || "";
+  } catch (e) { /* no Sponsors tab */ }
+
+  return respond(200, { event, categories, players, sponsors, mobileBanner }, { "Cache-Control": cc });
 }
 
 // ==============================================================
