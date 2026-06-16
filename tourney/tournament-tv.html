@@ -53,10 +53,10 @@
   .np-card{flex:1 1 0; min-height:clamp(40px,4.5vh,90px); overflow:hidden; display:flex; flex-direction:column; justify-content:center;
     border:1.5px solid rgba(255,122,26,.7); border-radius:16px;
     background:linear-gradient(180deg,rgba(255,122,26,.12),rgba(255,122,26,.04)); padding:1.2vh 1.4vw;}
-  .np-head{display:flex; align-items:center; gap:.8vw; margin-bottom:1vh; flex:0 0 auto;}
+  .np-head{display:flex; align-items:center; gap:.7vw; margin-bottom:.7vh; flex:0 0 auto;}
   .np-court{font-family:'Space Mono',monospace; font-weight:700; color:#000; background:var(--accent);
-    border-radius:6px; padding:.3vh .7vw; font-size:clamp(12px,1.1vw,20px); letter-spacing:.03em;}
-  .np-meta{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(10px,.9vw,15px);}
+    border-radius:5px; padding:.2vh .55vw; font-size:clamp(9px,.78vw,14px); letter-spacing:.03em;}
+  .np-meta{font-family:'Space Mono',monospace; color:var(--muted); font-size:clamp(9px,.8vw,13px);}
   .np-dot{margin-left:auto; flex:0 0 auto; width:clamp(10px,.9vw,16px); height:clamp(10px,.9vw,16px);
     border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent);
     animation:liveblink 1.4s steps(1,end) infinite;}
@@ -564,8 +564,8 @@ function setupQR(){
 }
 
 // ---- Sponsor reel: every 10 min, play each logo for 3s, then back to the board ----
-const SPONSOR_EVERY_MS = 10 * 60 * 1000;  // play the reel every 10 minutes
-const SPONSOR_SHOW_MS  = 3000;            // each logo on screen for 3 seconds
+const SPONSOR_EVERY_MS = 5 * 60 * 1000;   // play the reel every 5 minutes
+const SPONSOR_SHOW_MS  = 15000;           // each logo on screen for 15 seconds
 let _spPlaying = false;
 function sponsorList(){ return (state.data && Array.isArray(state.data.sponsors)) ? state.data.sponsors : []; }
 function preloadSponsors(list){ (list||[]).forEach(u=>{ const im=new Image(); im.src=u; }); }
