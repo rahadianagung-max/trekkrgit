@@ -374,8 +374,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-rule">
                 <div class="rm-rule-icon" style="background:#DCFCE7">♂♀</div>
                 <div class="rm-rule-body">
-                  <div class="rm-rule-title">Hanya Men atau Women — tidak ada ganda campuran</div>
-                  <div class="rm-rule-desc">Ranked Match tidak diperuntukkan untuk mixed doubles atau fixed mixed. Setiap sesi harus satu kategori: Men saja atau Women saja. Ini menjaga fairness ranking ELO antar pemain.</div>
+                  <div class="rm-rule-title">Putra, Putri, atau Mixed — semua didukung</div>
+                  <div class="rm-rule-desc">Pilih kategori sesi: Putra, Putri, atau Mixed (campuran). Setiap match dicatat otomatis sesuai komposisi pemainnya (M / F / MIXED) di Google Sheet. ELO tetap satu per pemain.</div>
                 </div>
               </div>
               <div class="rm-rule">
@@ -388,8 +388,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-rule">
                 <div class="rm-rule-icon" style="background:#F0F5FF">🔀</div>
                 <div class="rm-rule-body">
-                  <div class="rm-rule-title">Matchup otomatis berdasarkan ranking berjalan</div>
-                  <div class="rm-rule-desc">Setiap ronde, sistem secara otomatis memasangkan pemain berdasarkan posisi leaderboard saat itu — yang selevel bertemu, sehingga setiap match kompetitif dan bermakna untuk ELO.</div>
+                  <div class="rm-rule-title">Sistem Mexicano — matchup berdasarkan ranking berjalan</div>
+                  <div class="rm-rule-desc">Setiap ronde, pemain (atau tim) diurutkan dari leaderboard saat itu lalu dikelompokkan per court: yang selevel saling bertemu (1+4 vs 2+3). Pemain telat bisa ditambahkan dan yang batal bisa di-drop kapan saja tanpa merusak keadilan.</div>
                 </div>
               </div>
             </div>
@@ -414,17 +414,22 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
             </div>
 
             <div class="rm-card">
-              <div class="rm-card-label">Kategori Pemain</div>
-              <div class="rm-gender-grid">
+              <div class="rm-card-label">Kategori Sesi</div>
+              <div class="rm-gender-grid" style="grid-template-columns:repeat(3,1fr)">
                 <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
                   <div class="rm-gender-card-icon">♂</div>
-                  <div class="rm-gender-card-label">Men</div>
+                  <div class="rm-gender-card-label">Putra</div>
                 </div>
                 <div class="rm-gender-card" id="rm-gender-F" onclick="rmSetGender('F')">
                   <div class="rm-gender-card-icon">♀</div>
-                  <div class="rm-gender-card-label">Women</div>
+                  <div class="rm-gender-card-label">Putri</div>
+                </div>
+                <div class="rm-gender-card" id="rm-gender-MIXED" onclick="rmSetGender('MIXED')">
+                  <div class="rm-gender-card-icon">♂♀</div>
+                  <div class="rm-gender-card-label">Mixed</div>
                 </div>
               </div>
+              <p class="rm-hint" id="rm-gender-hint">Putra/Putri menyaring daftar pemain. Mixed mengizinkan campuran; tiap match dicatat M/F/MIXED otomatis.</p>
             </div>
 
             <div class="rm-card">
@@ -457,6 +462,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-card-label">Level Permainan</div>
               <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
               <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
+                <option value="beginner">Beginner</option>
                 <option value="upper_beginner">Upper Beginner</option>
                 <option value="lower_bronze" selected>Lower Bronze</option>
                 <option value="bronze">Bronze</option>
@@ -469,7 +475,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
                 Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
               </div>
-              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · 1200 ELO</p>
+              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
             </div>
 
             <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
@@ -510,6 +516,24 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 
             <div class="rm-bottom-bar">
               <button class="rm-btn-full rm-btn-primary" id="rm-start-btn" onclick="rmStartMatch()" disabled>Pilih pemain dahulu</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: TEAMS (manual fixed-partner pairing) ── -->
+        <div class="rm-screen" id="rm-teams">
+          <div class="rm-players">
+            <button class="rm-back" onclick="rmGo('players')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Pemain</button>
+            <p style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pasangkan Tim</p>
+            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Ketuk dua pemain untuk membentuk satu tim. Pasangan ini tetap sepanjang sesi (Mexicano antar-tim).</p>
+            <div class="rm-alert rm-alert-red hidden" id="rm-teams-error"></div>
+            <div id="rm-teams-formed"></div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:16px 0 8px">Belum dipasangkan</div>
+            <div id="rm-teams-pool" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <button class="rm-btn-full rm-btn-ghost" style="margin-top:16px" onclick="rmAutoPairRest()">🎲 Pasangkan sisa otomatis (seimbang by ELO)</button>
+            <div style="height:90px"></div>
+            <div class="rm-bottom-bar">
+              <button class="rm-btn-full rm-btn-primary" id="rm-teams-start" onclick="rmConfirmTeams()" disabled>Pasangkan semua dahulu</button>
             </div>
           </div>
         </div>
@@ -670,8 +694,9 @@ const RM = { // shared state for ranked match
   token: '', venue: '', username: '',
   courts: 2, gender: 'M', format: 'individual',
   scoreFormat: 'race', scoreTarget: 4,
-  level: 'lower_bronze', startElo: 1200,
+  level: 'lower_bronze', startElo: 1350,
   allPlayers: [], selectedPlayers: [], partners: {},
+  teams: [], _teamPick: null, _manageBuf: [],
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
   _inited: false, _savedToRestore: null,
@@ -872,14 +897,22 @@ function rmChangeCourts(d) {
 }
 function rmSetGender(g) {
   RM.gender = g;
-  ['M','F'].forEach(x => document.getElementById('rm-gender-'+x).classList.toggle('active', x===g));
+  ['M','F','MIXED'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
+  if (document.getElementById('rm-player-list')) rmRenderPlayers();
+}
+// Per-match gender tag from the actual 4 players: all-male=M, all-female=F, else MIXED.
+function rmMatchGender(players){
+  const gs = players.map(p => (p.gender||'M').toUpperCase());
+  if (gs.every(x=>x==='M')) return 'M';
+  if (gs.every(x=>x==='F')) return 'F';
+  return 'MIXED';
 }
 function rmSetFormat(f) {
   RM.format = f;
   ['individual','fixed'].forEach(x => document.getElementById('rm-fmt-'+x).classList.toggle('active', x===f));
   document.getElementById('rm-fmt-hint').textContent = f==='individual'
-    ? 'Partner berubah setiap ronde berdasarkan ranking'
-    : 'Partner dipilih manual dan tetap sepanjang turnamen';
+    ? 'Mexicano: partner & lawan ditentukan ranking tiap ronde (1+4 vs 2+3)'
+    : 'Tim tetap (dipasangkan manual). Mexicano antar-tim: tim selevel saling bertemu';
 }
 function rmSetScoreFormat(sf) {
   RM.scoreFormat = sf;
@@ -901,24 +934,23 @@ function rmUpdateScoreHint() {
 function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
 
 /* Level → starting ELO for NEW / unrated players only.
-   Existing rated players keep their real ELO. Each level seeds at its FLOOR ELO,
-   so a player who keeps losing drops to the level below; one who wins holds/climbs. */
+   Existing rated players keep their real ELO. Lower Bronze (1350) = default. */
 const RM_LEVELS = {
-  beginner:       { label:'Beginner',       elo:600  },
-  upper_beginner: { label:'Upper Beginner', elo:900  },
-  lower_bronze:   { label:'Lower Bronze',   elo:1200 },
-  bronze:         { label:'Bronze',         elo:1500 },
-  upper_bronze:   { label:'Upper Bronze',   elo:1800 },
-  silver:         { label:'Silver',         elo:2100 },
-  gold:           { label:'Gold',           elo:2500 },
-  platinum:       { label:'Platinum',       elo:3000 },
+  beginner:       { label:'Beginner',       elo:750  },
+  upper_beginner: { label:'Upper Beginner', elo:1050 },
+  lower_bronze:   { label:'Lower Bronze',   elo:1350 },
+  bronze:         { label:'Bronze',         elo:1650 },
+  upper_bronze:   { label:'Upper Bronze',   elo:1950 },
+  silver:         { label:'Silver',         elo:2300 },
+  gold:           { label:'Gold',           elo:2750 },
+  platinum:       { label:'Platinum',       elo:3100 },
 };
 function rmSetLevel(lvl) {
   const m = RM_LEVELS[lvl] || RM_LEVELS.lower_bronze;
   RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
   RM.startElo = m.elo;
   const hint = document.getElementById('rm-level-hint');
-  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ${m.elo} ELO (batas bawah level)`;
+  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
   rmUpdateAddPreview();
 }
 
@@ -949,7 +981,8 @@ function rmRenderPlayers() {
   const q = document.getElementById('rm-search').value.toLowerCase().trim();
   document.getElementById('rm-search-clear').style.display = q ? 'flex' : 'none';
   const filtered = RM.allPlayers.filter(p =>
-    !q || p.name.toLowerCase().includes(q) || (p.displayName||'').toLowerCase().includes(q)
+    (RM.gender==='MIXED' || (p.gender||'M').toUpperCase()===RM.gender) &&
+    (!q || p.name.toLowerCase().includes(q) || (p.displayName||'').toLowerCase().includes(q))
   );
   const listEl = document.getElementById('rm-player-list');
 
@@ -1110,36 +1143,64 @@ function rmBuildHistory() {
 }
 
 function rmGenerateRound(isFirst=false) {
-  const players=[...RM.selectedPlayers].map(p=>({...p,...(RM.playerStats[p.name]||{})}));
-  const n=players.length, courts=RM.courts, active=courts*4;
+  if (RM.format === 'fixed') return rmGenerateTeamRound(isFirst);
+  // INDIVIDUAL — canonical Mexicano: sort by standings, group per court by rank, pair 1+4 vs 2+3.
+  const courts=RM.courts, maxPlay=courts*4;
+  const players=[...RM.selectedPlayers]
+    .map(p=>({...p,...(RM.playerStats[p.name]||{})}))
+    .filter(p=> RM.playerStats[p.name] ? RM.playerStats[p.name].active!==false : true);
   const sorted = isFirst
     ? players.sort((a,b)=>b.elo-a.elo)
-    : players.sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
-  const {byeCount} = rmBuildHistory();
-  let byePlayers=[];
-  let activePlayers=sorted;
-  if(n>active){
-    const extra=n-active;
-    // rotate byes fairly
+    : players.sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.pointDiff||0)-(a.pointDiff||0)||b.elo-a.elo);
+  const {byeCount}=rmBuildHistory();
+  const n=sorted.length;
+  const playCount=Math.min(maxPlay, Math.floor(n/4)*4);   // only full courts of 4 play
+  const extra=n-playCount;
+  let byePlayers=[], activePlayers=sorted;
+  if(extra>0){
     const byeSorted=[...sorted].sort((a,b)=>(byeCount[a.name]||0)-(byeCount[b.name]||0)||(b.wins||0)-(a.wins||0));
     byePlayers=byeSorted.slice(0,extra).map(p=>p.name);
     activePlayers=sorted.filter(p=>!byePlayers.includes(p.name));
   }
+  const ap=[...activePlayers];
   const matches=[];
-  if(RM.format==='individual'){
-    // pair 1st+last, 2nd+2nd-last per court
-    const ap=[...activePlayers];
-    for(let c=0;c<courts;c++){
-      const i=c*2;
-      matches.push({court:c+1,team1:[ap[i],ap[ap.length-1-i]],team2:[ap[i+1],ap[ap.length-2-i]],score1:null,score2:null});
-    }
-  } else {
-    // fixed partner — pair by rank order
-    const ap=[...activePlayers];
-    for(let c=0;c<courts;c++){
-      const i=c*4;
-      matches.push({court:c+1,team1:[ap[i],ap[i+1]],team2:[ap[i+2],ap[i+3]],score1:null,score2:null});
-    }
+  for(let c=0;c<ap.length/4;c++){
+    const i=c*4;  // ranks i..i+3 within this court -> 1+4 vs 2+3
+    matches.push({court:c+1, team1:[ap[i],ap[i+3]], team2:[ap[i+1],ap[i+2]], score1:null, score2:null});
+  }
+  return {matches,byePlayers};
+}
+
+// TEAM (Fixed Partner) Mexicano: rank fixed teams by combined standings, adjacent teams meet (1v2, 3v4...).
+function rmGenerateTeamRound(isFirst=false) {
+  const courts=RM.courts, maxTeams=courts*2;
+  const pobj=(name)=>({...(RM.selectedPlayers.find(p=>p.name===name)||{name}), ...(RM.playerStats[name]||{})});
+  const teams=(RM.teams||[]).filter(t=>t.active!==false).map(t=>{
+    const a=pobj(t.players[0]), b=pobj(t.players[1]);
+    return {...t, elo:(a.elo||RM.startElo)+(b.elo||RM.startElo), wins:(a.wins||0)+(b.wins||0), pd:(a.pointDiff||0)+(b.pointDiff||0)};
+  });
+  const sorted = isFirst
+    ? teams.sort((x,y)=>y.elo-x.elo)
+    : teams.sort((x,y)=>y.wins-x.wins||y.pd-x.pd||y.elo-x.elo);
+  const {byeCount}=rmBuildHistory();
+  const n=sorted.length;
+  const playTeams=Math.min(maxTeams, Math.floor(n/2)*2);
+  const extra=n-playTeams;
+  let byeTeams=[], activeTeams=sorted;
+  if(extra>0){
+    const teamBye=(t)=>((byeCount[t.players[0]]||0)+(byeCount[t.players[1]]||0));
+    const byeSorted=[...sorted].sort((p,q)=>teamBye(p)-teamBye(q)||q.wins-p.wins);
+    byeTeams=byeSorted.slice(0,extra);
+    const byeSet=new Set(byeTeams.map(t=>t.id));
+    activeTeams=sorted.filter(t=>!byeSet.has(t.id));
+  }
+  const byePlayers=byeTeams.flatMap(t=>t.players);
+  const matches=[];
+  for(let c=0;c<activeTeams.length/2;c++){
+    const tA=activeTeams[2*c], tB=activeTeams[2*c+1];
+    matches.push({court:c+1, teamIdA:tA.id, teamIdB:tB.id,
+      team1:[pobj(tA.players[0]),pobj(tA.players[1])],
+      team2:[pobj(tB.players[0]),pobj(tB.players[1])], score1:null, score2:null});
   }
   return {matches,byePlayers};
 }
@@ -1148,8 +1209,16 @@ function rmStartMatch() {
   const min=RM.courts*4;
   if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`Minimal ${min} pemain untuk ${RM.courts} court`);return;}
   rmHideErr('rm-players-error');
+  if(RM.format==='fixed'){
+    if(RM.selectedPlayers.length%2!==0){rmShowErr('rm-players-error','Format Team butuh jumlah pemain genap untuk dipasangkan.');return;}
+    rmGo('teams'); rmRenderTeamSetup(); return;
+  }
+  RM.teams=[];
+  rmBeginSession();
+}
+function rmBeginSession() {
   RM.playerStats={};
-  RM.selectedPlayers.forEach(p=>{RM.playerStats[p.name]={...p,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0};});
+  RM.selectedPlayers.forEach(p=>{RM.playerStats[p.name]={...p,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0,active:true};});
   RM.matchId='rm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const {matches,byePlayers}=rmGenerateRound(true);
   RM.rounds=[{roundNum:1,matches,byePlayers,submitted:false,startedAt:Date.now()}];
@@ -1319,7 +1388,7 @@ async function rmSubmitRound() {
       p1t1:m.team1[0].name, p2t1:m.team1[1].name,
       p1t2:m.team2[0].name, p2t2:m.team2[1].name,
       scoreT1:Number(m.score1), scoreT2:Number(m.score2),
-      gender:RM.gender,
+      gender:rmMatchGender([...m.team1,...m.team2]),
       sourceUrl:'Trekkr Ranked Match',
     }));
     const roundPlayers=[...new Set(round.matches.flatMap(m=>[...m.team1,...m.team2].map(p=>p.name)))];
@@ -1340,7 +1409,7 @@ async function rmSubmitRound() {
     // payload only used at rmEndMatch for final ELO write
     try {
       rmSetStatus('sending','Menyimpan hasil ronde '+round.roundNum+'...');
-      await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:apiMatches, startElo:RM.startElo, level:RM.level})});
+      await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:apiMatches})});
       // ELO (saveSession) hanya ditulis SEKALI saat match diakhiri via rmEndMatch
       // Tidak ditulis per ronde — ini mencegah double counting di ELO_Log
       rmSetStatus('ok','Ronde '+round.roundNum+' tersimpan');
