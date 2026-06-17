@@ -1362,13 +1362,14 @@ function rmRenderManage(){
   body.innerHTML=html;
 }
 function rmRenderManageSearch(q){
-  q=(q==null?document.getElementById('rm-manage-search').value:q).toLowerCase().trim();
+  const raw=(q==null?document.getElementById('rm-manage-search').value:q).trim();
+  const ql=raw.toLowerCase();
   const res=document.getElementById('rm-manage-results');
-  if(!q){res.innerHTML='';return;}
+  if(!ql){res.innerHTML='';return;}
   const inSession=new Set(RM.selectedPlayers.map(p=>p.name));
   const matchCat=p=>RM.gender==='MIXED'||(p.gender||'M').toUpperCase()===RM.gender;
-  const hits=RM.allPlayers.filter(p=>matchCat(p)&&(p.name.toLowerCase().includes(q)||(p.displayName||'').toLowerCase().includes(q))).slice(0,8);
-  res.innerHTML=hits.length?hits.map(p=>{
+  const hits=RM.allPlayers.filter(p=>matchCat(p)&&(p.name.toLowerCase().includes(ql)||(p.displayName||'').toLowerCase().includes(ql))).slice(0,8);
+  let html=hits.map(p=>{
     const active=rmActiveName(p.name);
     return `<button class="rm-player-item" style="width:100%" onclick="rmManagePick('${p.name.replace(/'/g,"\\'")}')">
       ${rmAva(p.name,30,11)}
@@ -1376,7 +1377,45 @@ function rmRenderManageSearch(q){
         <div style="font-size:11px;color:var(--txt3)">${p.elo||RM.startElo} ELO${inSession.has(p.name)?(active?' · sudah di sesi':' · sedang keluar'):''}</div></div>
       <span style="font-size:18px;color:var(--blue)">＋</span>
     </button>`;
-  }).join(''):`<div style="font-size:12px;color:var(--txt3);padding:6px 0">Tidak ada "${q}" di kategori ini.</div>`;
+  }).join('');
+  // register a brand-new player as substitute/addition
+  const exact=RM.allPlayers.find(p=>p.name.toLowerCase()===ql);
+  const words=raw.split(/\s+/);
+  if(!exact){
+    if(words.length>=2){
+      const cap=w=>w?w[0].toUpperCase()+w.slice(1).toLowerCase():'';
+      const full=words.map(cap).join(' '), fe=full.replace(/'/g,"\\'");
+      if(RM.gender==='MIXED'){
+        html+=`<div style="padding:10px 4px;border-top:1px solid var(--sur-hi);margin-top:6px">
+          <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">Daftar pemain baru "<strong style="color:var(--on)">${full}</strong>" · ELO awal ${RM.startElo}</div>
+          <div style="display:flex;gap:8px">
+            <button class="rm-btn-full rm-btn-ghost" onclick="rmManageAddNew('${fe}','M')">♂ Tambah (Putra)</button>
+            <button class="rm-btn-full rm-btn-ghost" onclick="rmManageAddNew('${fe}','F')">♀ Tambah (Putri)</button>
+          </div></div>`;
+      } else {
+        html+=`<button class="rm-player-item" style="width:100%;border-top:1px solid var(--sur-hi);margin-top:6px" onclick="rmManageAddNew('${fe}','${RM.gender}')">
+          ${rmAva(full,30,11)}
+          <div style="flex:1;min-width:0;text-align:left"><div class="rm-player-name" style="color:var(--blue)">Tambah "${full}" — pemain baru</div>
+            <div style="font-size:11px;color:var(--txt3)">Daftar baru · ELO awal ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
+          <span style="font-size:18px;color:var(--blue)">＋</span></button>`;
+      }
+    } else if(!hits.length){
+      html+=`<div style="font-size:12px;color:var(--gold);padding:8px 10px;background:var(--gold-lt);border-radius:8px">💡 Ketik nama depan & belakang untuk mendaftar pemain baru.</div>`;
+    }
+  }
+  res.innerHTML=html||`<div style="font-size:12px;color:var(--txt3);padding:6px 0">Tidak ada "${raw}".</div>`;
+}
+async function rmManageAddNew(name, gender){
+  const res=document.getElementById('rm-manage-results');
+  const exists=RM.allPlayers.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(!exists){
+    res.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;font-size:13px;color:var(--txt2)"><div class="rm-spinner" style="width:16px;height:16px"></div> Mendaftarkan ${name}...</div>`;
+    try{
+      await rmApi('players',{method:'POST',body:JSON.stringify({name,gender,elo:RM.startElo,level:RM.level})});
+      RM.allPlayers.push({name,displayName:name,gender,elo:RM.startElo,matchCount:0});
+    }catch(e){ res.innerHTML=`<div class="rm-alert rm-alert-red">Gagal daftar: ${e.message}</div>`; return; }
+  }
+  rmManagePick(name); // applies the pending action (add / replace / addTeam) with the new player
 }
 function rmManagePick(name){
   const a=RM._manageAction||{type:'add'};
