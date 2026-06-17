@@ -1892,10 +1892,12 @@ function crossSeedRound1(groupsQual) {
   if (!groupsQual.every((a) => a.length === 2)) return null; // exactly 2 per group
   const W = groupsQual.map((a) => a[0]), R = groupsQual.map((a) => a[1]);
   const top = [], bot = [];
+  // Pair group i with group i + g/2 (4 groups → A↔C, B↔D), rank1 of one vs rank2 of the other.
+  // Same-group teams land in opposite bracket halves, so #1 and #2 of a group can only meet in the final.
   for (let i = 0; i < g / 2; i++) {
-    const j = g - 1 - i;
-    top.push([W[i], R[j]]); // e.g. 1A vs 2H
-    bot.push([W[j], R[i]]); // e.g. 1H vs 2A
+    const j = i + g / 2;
+    top.push([W[i], R[j]]); // e.g. 1A vs 2C
+    bot.push([W[j], R[i]]); // e.g. 1C vs 2A
   }
   return top.concat(bot);
 }
