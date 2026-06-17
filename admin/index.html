@@ -143,6 +143,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-chip-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--on-v);margin-bottom:6px}
 .rm-chips{display:flex;flex-wrap:wrap;gap:6px}
 .rm-chip{display:inline-flex;align-items:center;gap:5px;background:var(--sur-ct);padding:5px 10px;border-radius:99px;font-size:12px;font-weight:600;color:var(--pr)}
+.rm-mini{border:1px solid var(--blue-mid);background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;cursor:pointer;margin-left:4px}
+.rm-manage-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:4px 0 8px}
 .rm-chip button{background:none;border:none;cursor:pointer;color:var(--pr);padding:0;font-size:14px;line-height:1}
 .rm-player-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;background:var(--sur-0)}
 .rm-player-item:hover{border-color:var(--blue-mid);background:var(--blue-lt)}
@@ -554,7 +556,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                   <div class="rm-round-pill" id="rm-round-pill">Ronde 1</div>
                   <div style="font-size:13px;color:var(--txt2);margin-top:4px" id="rm-score-format-label">Race to 4</div>
                 </div>
-                <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Kelola Pemain</button>
+                  <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+                </div>
               </div>
               <div class="rm-submit-status" id="rm-submit-status"></div>
               <div class="rm-fair-bar" id="rm-fair-bar"></div>
@@ -650,6 +655,24 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <div style="margin-top:16px" class="rm-grid2">
       <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Batal</button>
       <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANAGE PLAYERS (add / drop / swap during match) -->
+<div class="rm-modal-overlay hidden" id="rm-modal-manage" onclick="rmCloseManage()">
+  <div class="rm-modal" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">Kelola Pemain</div>
+    <div style="font-size:12.5px;color:var(--blue);margin:-4px 0 10px" id="rm-manage-hint">Cari nama untuk menambah pemain telat</div>
+    <div class="rm-search-wrap" style="margin-bottom:6px">
+      <span class="rm-search-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg></span>
+      <input class="rm-search" id="rm-manage-search" placeholder="Cari pemain di database..." oninput="rmRenderManageSearch()" autocomplete="off"/>
+    </div>
+    <div id="rm-manage-results" style="margin-bottom:8px"></div>
+    <div id="rm-manage-body"></div>
+    <div style="margin-top:14px">
+      <button class="rm-btn-full rm-btn-primary" onclick="rmCloseManage()">Selesai</button>
     </div>
   </div>
 </div>
@@ -1229,6 +1252,163 @@ function rmBeginSession() {
   rmRenderMatchScreen();
 }
 
+/* ── TEAM SETUP (manual fixed-partner pairing) ── */
+function rmRenderTeamSetup(){
+  if(!RM.teams) RM.teams=[];
+  const names=new Set(RM.selectedPlayers.map(p=>p.name));
+  RM.teams=RM.teams.filter(t=>t.players.every(n=>names.has(n)));
+  RM._teamPick=null;
+  rmDrawTeams();
+}
+function rmPairedSet(){const s=new Set();(RM.teams||[]).forEach(t=>t.players.forEach(n=>s.add(n)));return s;}
+function rmTeamId(){return 'tm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function rmDrawTeams(){
+  const paired=rmPairedSet();
+  document.getElementById('rm-teams-formed').innerHTML=(RM.teams||[]).length?RM.teams.map((t,i)=>`
+    <div class="rm-court-card" style="display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:8px">
+      <span class="rm-court-badge" style="background:var(--blue);color:#fff">Tim ${i+1}</span>
+      <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${rmAva(t.players[0],24,9)}<span style="font-size:13px;font-weight:600">${t.players[0].split(' ')[0]}</span>
+        <span style="color:var(--txt3)">＋</span>
+        ${rmAva(t.players[1],24,9)}<span style="font-size:13px;font-weight:600">${t.players[1].split(' ')[0]}</span>
+      </div>
+      <button class="rm-chip" style="background:var(--red-lt);color:var(--red)" onclick="rmRemoveTeam('${t.id}')">Bongkar</button>
+    </div>`).join(''):'<div class="rm-empty" style="padding:14px">Belum ada tim. Ketuk dua pemain di bawah untuk membentuk tim.</div>';
+  const pool=RM.selectedPlayers.filter(p=>!paired.has(p.name));
+  document.getElementById('rm-teams-pool').innerHTML=pool.length?pool.map(p=>{
+    const picked=RM._teamPick===p.name;
+    return `<button class="rm-chip" style="display:inline-flex;align-items:center;gap:6px;${picked?'background:var(--blue);color:#fff':''}" onclick="rmTeamPick('${p.name.replace(/'/g,"\\'")}')">${rmAva(p.name,20,8)}${p.name.split(' ')[0]}</button>`;
+  }).join(''):'<div style="font-size:13px;color:var(--green);font-weight:600">✓ Semua pemain sudah dipasangkan</div>';
+  const start=document.getElementById('rm-teams-start');
+  const enough=(RM.teams||[]).length>=RM.courts*2;
+  if(pool.length===0 && enough){ start.disabled=false; start.textContent=`Mulai Match (${RM.teams.length} tim) →`; }
+  else { start.disabled=true; start.textContent=pool.length?`Sisa ${pool.length} pemain belum dipasangkan`:`Minimal ${RM.courts*2} tim untuk ${RM.courts} court`; }
+}
+function rmTeamPick(name){
+  if(RM._teamPick===name){RM._teamPick=null;return rmDrawTeams();}
+  if(!RM._teamPick){RM._teamPick=name;return rmDrawTeams();}
+  RM.teams.push({id:rmTeamId(),players:[RM._teamPick,name],active:true});
+  RM._teamPick=null; rmDrawTeams();
+}
+function rmRemoveTeam(id){RM.teams=RM.teams.filter(t=>t.id!==id);rmDrawTeams();}
+function rmAutoPairRest(){
+  const paired=rmPairedSet();
+  let pool=RM.selectedPlayers.filter(p=>!paired.has(p.name)).map(p=>({...p}));
+  pool.sort((a,b)=>(b.elo||RM.startElo)-(a.elo||RM.startElo)); // balance: strongest with weakest
+  while(pool.length>=2){const a=pool.shift(),b=pool.pop();RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
+  RM._teamPick=null; rmDrawTeams();
+}
+function rmConfirmTeams(){
+  const paired=rmPairedSet();
+  if(RM.selectedPlayers.some(p=>!paired.has(p.name))){rmShowErr('rm-teams-error','Masih ada pemain belum dipasangkan.');return;}
+  if(RM.teams.length<RM.courts*2){rmShowErr('rm-teams-error',`Minimal ${RM.courts*2} tim untuk ${RM.courts} court.`);return;}
+  rmHideErr('rm-teams-error'); rmBeginSession();
+}
+
+/* ── MANAGE PLAYERS DURING MATCH (add / drop / swap) ── */
+function rmActiveName(n){ return RM.playerStats[n] ? RM.playerStats[n].active!==false : false; }
+function rmEnsurePlayer(name){
+  if(!RM.selectedPlayers.some(p=>p.name===name)){
+    const src=RM.allPlayers.find(p=>p.name===name)||{name,gender:'M',elo:RM.startElo};
+    RM.selectedPlayers.push({...src});
+    RM.playerStats[name]={...src,elo:src.elo||RM.startElo,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0,matchCount:src.matchCount||0,active:true};
+  } else if(RM.playerStats[name]) RM.playerStats[name].active=true;
+  return RM.playerStats[name];
+}
+function rmOpenManage(){ RM._manageAction={type:'add'}; RM._manageBuf=[]; document.getElementById('rm-modal-manage').classList.remove('hidden'); rmRenderManage(); rmRenderManageSearch(''); }
+function rmCloseManage(){ document.getElementById('rm-modal-manage').classList.add('hidden'); rmRenderMatchScreen(); }
+function rmManageHint(){
+  const a=RM._manageAction||{type:'add'};
+  if(a.type==='replacePlayer') return `Pilih pengganti untuk <strong>${a.name.split(' ')[0]}</strong>`;
+  if(a.type==='replaceTeamMember'){const t=RM.teams.find(x=>x.id===a.teamId);return `Pilih pengganti untuk <strong>${(t?t.players[a.idx]:'').split(' ')[0]}</strong>`;}
+  if(a.type==='addTeam') return `Pilih 2 pemain untuk tim baru (${(RM._manageBuf||[]).length}/2)`;
+  return 'Cari nama untuk menambah pemain telat';
+}
+function rmRenderManage(){
+  document.getElementById('rm-manage-hint').innerHTML=rmManageHint();
+  const body=document.getElementById('rm-manage-body');
+  const round=RM.rounds[RM.currentRound];
+  const canRegen=round && !round.submitted;
+  let html='';
+  if(RM.format==='fixed'){
+    html+=`<div class="rm-manage-sub">Tim</div>`;
+    html+=(RM.teams||[]).map((t,i)=>{
+      const off=t.active===false;
+      return `<div class="rm-court-card" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;${off?'opacity:.5':''}">
+        <span class="rm-court-badge" style="background:var(--blue);color:#fff">Tim ${i+1}</span>
+        <div style="flex:1;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+          ${t.players.map((n,idx)=>`<span style="white-space:nowrap">${n.split(' ')[0]}<button class="rm-mini" onclick="rmSwapTeamMember('${t.id}',${idx})">ganti</button></span>${idx===0?'<span style="color:var(--txt3)">+</span>':''}`).join('')}
+        </div>
+        <button class="rm-chip" style="background:${off?'var(--green-lt);color:var(--green)':'var(--red-lt);color:var(--red)'}" onclick="${off?`rmRestoreTeam('${t.id}')`:`rmDropTeam('${t.id}')`}">${off?'Aktifkan':'Drop'}</button>
+      </div>`;
+    }).join('');
+    html+=`<button class="rm-btn-full rm-btn-ghost" style="margin-top:4px" onclick="rmAddTeamPrompt()">＋ Tambah tim (telat)</button>`;
+  } else {
+    html+=`<div class="rm-manage-sub">Pemain</div>`;
+    const list=RM.selectedPlayers.slice().sort((a,b)=>(rmActiveName(b.name)?1:0)-(rmActiveName(a.name)?1:0));
+    html+=list.map(p=>{
+      const off=!rmActiveName(p.name); const st=RM.playerStats[p.name]||{};
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--sur-hi);${off?'opacity:.55':''}">
+        ${rmAva(p.name,28,10)}
+        <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${p.name.split(' ')[0]} ${off?'<span style="font-size:10px;color:var(--red)">· keluar</span>':''}</div>
+          <div style="font-size:11px;color:var(--txt3)">${st.elo||p.elo||RM.startElo} ELO · ${st.wins||0}W ${st.losses||0}L</div></div>
+        <button class="rm-mini" onclick="rmSwapPlayer('${p.name.replace(/'/g,"\\'")}')">Ganti</button>
+        <button class="rm-chip" style="background:${off?'var(--green-lt);color:var(--green)':'var(--red-lt);color:var(--red)'}" onclick="${off?`rmRestorePlayer('${p.name.replace(/'/g,"\\'")}')`:`rmDropPlayer('${p.name.replace(/'/g,"\\'")}')`}">${off?'Aktifkan':'Drop'}</button>
+      </div>`;
+    }).join('');
+  }
+  html+=`<div style="margin-top:14px;padding:10px 12px;background:var(--blue-lt);border-radius:8px;font-size:12px;color:var(--txt)">Perubahan berlaku otomatis mulai <strong>ronde berikutnya</strong>.${canRegen?' Untuk ronde yang sedang tampil (belum disubmit), tekan tombol di bawah.':''}</div>`;
+  if(canRegen) html+=`<button class="rm-btn-full rm-btn-ghost" style="margin-top:10px" onclick="rmRegenCurrentRound()">↻ Regenerate ronde ini sekarang</button>`;
+  body.innerHTML=html;
+}
+function rmRenderManageSearch(q){
+  q=(q==null?document.getElementById('rm-manage-search').value:q).toLowerCase().trim();
+  const res=document.getElementById('rm-manage-results');
+  if(!q){res.innerHTML='';return;}
+  const inSession=new Set(RM.selectedPlayers.map(p=>p.name));
+  const matchCat=p=>RM.gender==='MIXED'||(p.gender||'M').toUpperCase()===RM.gender;
+  const hits=RM.allPlayers.filter(p=>matchCat(p)&&(p.name.toLowerCase().includes(q)||(p.displayName||'').toLowerCase().includes(q))).slice(0,8);
+  res.innerHTML=hits.length?hits.map(p=>{
+    const active=rmActiveName(p.name);
+    return `<button class="rm-player-item" style="width:100%" onclick="rmManagePick('${p.name.replace(/'/g,"\\'")}')">
+      ${rmAva(p.name,30,11)}
+      <div style="flex:1;min-width:0;text-align:left"><div class="rm-player-name">${p.displayName||p.name}</div>
+        <div style="font-size:11px;color:var(--txt3)">${p.elo||RM.startElo} ELO${inSession.has(p.name)?(active?' · sudah di sesi':' · sedang keluar'):''}</div></div>
+      <span style="font-size:18px;color:var(--blue)">＋</span>
+    </button>`;
+  }).join(''):`<div style="font-size:12px;color:var(--txt3);padding:6px 0">Tidak ada "${q}" di kategori ini.</div>`;
+}
+function rmManagePick(name){
+  const a=RM._manageAction||{type:'add'};
+  if(a.type==='add'){ rmEnsurePlayer(name); }
+  else if(a.type==='replacePlayer'){ if(RM.playerStats[a.name])RM.playerStats[a.name].active=false; rmEnsurePlayer(name); RM._manageAction={type:'add'}; }
+  else if(a.type==='replaceTeamMember'){
+    const t=RM.teams.find(x=>x.id===a.teamId);
+    if(t){ const old=t.players[a.idx]; rmEnsurePlayer(name); t.players[a.idx]=name;
+      const stillUsed=RM.teams.some(x=>x.players.includes(old)); if(!stillUsed&&RM.playerStats[old])RM.playerStats[old].active=false; }
+    RM._manageAction={type:'add'};
+  } else if(a.type==='addTeam'){
+    RM._manageBuf.push(name);
+    if(RM._manageBuf.length>=2){ const [x,y]=RM._manageBuf; rmEnsurePlayer(x); rmEnsurePlayer(y); RM.teams.push({id:rmTeamId(),players:[x,y],active:true}); RM._manageAction={type:'add'}; RM._manageBuf=[]; }
+  }
+  document.getElementById('rm-manage-search').value=''; rmRenderManageSearch('');
+  rmSaveState('match'); rmRenderManage();
+}
+function rmSwapPlayer(name){ RM._manageAction={type:'replacePlayer',name}; rmRenderManage(); document.getElementById('rm-manage-search').focus(); }
+function rmSwapTeamMember(teamId,idx){ RM._manageAction={type:'replaceTeamMember',teamId,idx}; rmRenderManage(); document.getElementById('rm-manage-search').focus(); }
+function rmAddTeamPrompt(){ RM._manageAction={type:'addTeam'}; RM._manageBuf=[]; rmRenderManage(); document.getElementById('rm-manage-search').focus(); }
+function rmDropPlayer(name){ if(RM.playerStats[name])RM.playerStats[name].active=false; rmSaveState('match'); rmRenderManage(); }
+function rmRestorePlayer(name){ if(RM.playerStats[name])RM.playerStats[name].active=true; rmSaveState('match'); rmRenderManage(); }
+function rmDropTeam(id){ const t=RM.teams.find(x=>x.id===id); if(t)t.active=false; rmSaveState('match'); rmRenderManage(); }
+function rmRestoreTeam(id){ const t=RM.teams.find(x=>x.id===id); if(t)t.active=true; rmSaveState('match'); rmRenderManage(); }
+function rmRegenCurrentRound(){
+  const round=RM.rounds[RM.currentRound]; if(!round||round.submitted) return;
+  const isFirst=RM.rounds.filter(r=>r.submitted).length===0;
+  const {matches,byePlayers}=rmGenerateRound(isFirst);
+  round.matches=matches; round.byePlayers=byePlayers;
+  rmSaveState('match'); rmCloseManage();
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    RANKED MATCH — MATCH SCREEN
    ══════════════════════════════════════════════════════════════════════ */
@@ -1314,11 +1494,12 @@ function rmUpdateFairBar() {
   const submitted=RM.rounds.filter(r=>r.submitted).length;
   if(submitted===0){bar.className='rm-fair-bar';return;}
   const counts={};
-  Object.keys(RM.playerStats).forEach(p=>{counts[p]=0;});
+  Object.keys(RM.playerStats).filter(p=>RM.playerStats[p].active!==false).forEach(p=>{counts[p]=0;});
   RM.rounds.filter(r=>r.submitted).forEach(r=>{
-    r.matches.forEach(m=>{[...m.team1,...m.team2].forEach(p=>{counts[p.name]=(counts[p.name]||0)+1;});});
+    r.matches.forEach(m=>{[...m.team1,...m.team2].forEach(p=>{if(counts[p.name]!==undefined)counts[p.name]=(counts[p.name]||0)+1;});});
   });
   const vals=Object.values(counts);
+  if(!vals.length){bar.className='rm-fair-bar';return;}
   const min=Math.min(...vals),max=Math.max(...vals);
   if(max-min===0){
     bar.className='rm-fair-bar ok';
@@ -1442,11 +1623,12 @@ function rmRenderLeaderboard(){
   el.innerHTML=sorted.map((p,i)=>{
     const diff=p.pointDiff||0;
     const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
-    return `<div class="rm-lb-row ${rankClass}">
+    const out=p.active===false?' <span style="font-size:10px;color:var(--red);font-weight:700">· keluar</span>':'';
+    return `<div class="rm-lb-row ${rankClass}" style="${p.active===false?'opacity:.6':''}">
       <div class="rm-lb-rank">${medals[i]||i+1}</div>
       ${rmAva(p.name,38,13)}
       <div style="flex:1;min-width:0">
-        <div class="rm-lb-name">${p.name}</div>
+        <div class="rm-lb-name">${p.name}${out}</div>
         <div class="rm-lb-elo">${p.elo} ELO · ${rmTier(p.elo)}</div>
       </div>
       <div style="text-align:right">
@@ -1578,7 +1760,7 @@ async function rmShare(){
 
 function rmNewMatch(){
   rmClearStorage();
-  RM.selectedPlayers=[]; RM.partners={}; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
+  RM.selectedPlayers=[]; RM.partners={}; RM.teams=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
   rmGo('intro');
 }
 
@@ -1593,7 +1775,7 @@ function rmSaveState(screen){
       screen,matchId:RM.matchId,rounds:RM.rounds,currentRound:RM.currentRound,
       playerStats:RM.playerStats,selectedPlayers:RM.selectedPlayers,
       courts:RM.courts,format:RM.format,scoreFormat:RM.scoreFormat,
-      scoreTarget:RM.scoreTarget,partners:RM.partners,
+      scoreTarget:RM.scoreTarget,partners:RM.partners,teams:RM.teams,
       level:RM.level,startElo:RM.startElo,
       token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
     }));
@@ -1629,7 +1811,7 @@ function rmDoRestore(){
     matchId:saved.matchId, rounds:saved.rounds, currentRound:saved.currentRound,
     playerStats:saved.playerStats, selectedPlayers:saved.selectedPlayers,
     courts:saved.courts, format:saved.format, scoreFormat:saved.scoreFormat,
-    scoreTarget:saved.scoreTarget, partners:saved.partners||{},
+    scoreTarget:saved.scoreTarget, partners:saved.partners||{}, teams:saved.teams||[],
     level:saved.level||'lower_bronze', startElo:saved.startElo||1350,
     gender:saved.gender||'M',
   });
