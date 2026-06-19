@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pendaftaran | Trekkr</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{--or:#E85D26;--or-d:#c94a18;--bg:#0d0d0f;--card:#17171b;--line:#2a2a31;--txt:#f4f4f5;--txt2:#a1a1aa;--txt3:#71717a;--ok:#22c55e;--err:#ef4444}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:0 0 60px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 18px}
+  .banner{width:100%;max-width:560px;margin:0 auto;display:block;border-radius:0 0 16px 16px;object-fit:cover}
+  .head{text-align:center;padding:30px 0 8px}
+  .logo{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--or)}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:26px;margin:14px 0 6px;line-height:1.15}
+  .sub{color:var(--txt2);font-size:15px}
+  .desc{color:var(--txt2);font-size:14px;line-height:1.6;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0;white-space:pre-wrap}
+  .field{margin:16px 0}
+  label.flabel{display:block;font-weight:600;font-size:14px;margin-bottom:7px}
+  label.flabel .req{color:var(--or);margin-left:3px}
+  .help{font-size:12.5px;color:var(--txt3);margin-top:5px;line-height:1.4}
+  input[type=text],input[type=number],input[type=email],input[type=tel],input[type=date],textarea,select{
+    width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:10px;color:var(--txt);
+    font-family:inherit;font-size:15px;padding:12px 14px;outline:none;transition:border .15s}
+  input:focus,textarea:focus,select:focus{border-color:var(--or)}
+  textarea{resize:vertical;min-height:84px}
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23a1a1aa' stroke-width='1.5' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+  .opts{display:flex;flex-direction:column;gap:8px}
+  .opt{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;cursor:pointer;font-size:14.5px}
+  .opt input{accent-color:var(--or);width:18px;height:18px}
+  .opt.sel{border-color:var(--or);background:rgba(232,93,38,.08)}
+  .heading{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:17px;margin:26px 0 2px;padding-top:8px;border-top:1px solid var(--line)}
+  .info{font-size:14px;color:var(--txt2);line-height:1.55;white-space:pre-wrap}
+  .upbox{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--card);transition:border .15s}
+  .upbox:hover{border-color:var(--or)}
+  .upbox .ico{font-size:30px}
+  .upbox .t{font-weight:600;font-size:14px;margin-top:6px}
+  .upbox .s{font-size:12px;color:var(--txt3);margin-top:2px}
+  .pv-photo{width:120px;height:120px;border-radius:50%;object-fit:cover;margin:0 auto 4px;display:block;border:3px solid var(--or)}
+  .pv-doc{max-width:100%;max-height:240px;border-radius:10px;margin:0 auto;display:block}
+  .pay{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:18px 0}
+  .pay h3{font-family:'Space Grotesk',sans-serif;font-size:15px;margin-bottom:8px;color:var(--or)}
+  .pay .ins{font-size:14px;color:var(--txt2);white-space:pre-wrap;line-height:1.6}
+  .pay img{max-width:200px;display:block;margin:12px auto 0;border-radius:10px;background:#fff;padding:6px}
+  .btn{width:100%;background:var(--or);color:#fff;border:none;border-radius:12px;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;padding:16px;cursor:pointer;margin-top:24px;transition:background .15s}
+  .btn:hover{background:var(--or-d)} .btn:disabled{opacity:.55;cursor:default}
+  .err{background:rgba(239,68,68,.1);border:1px solid var(--err);color:#fca5a5;border-radius:10px;padding:11px 14px;font-size:13.5px;margin:14px 0;display:none}
+  .center{text-align:center;padding:70px 20px;color:var(--txt2)}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 16px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .ok-ico{width:74px;height:74px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 18px}
+  .foot{text-align:center;font-size:11px;color:var(--txt3);letter-spacing:1px;margin-top:30px}
+  .foot b{color:var(--or)}
+</style>
+</head>
+<body>
+<div id="banner-slot"></div>
+<div class="wrap">
+  <div id="app">
+    <div class="center"><div class="spin"></div>Memuat formulir…</div>
+  </div>
+  <div class="foot">POWERED BY <b>TREKKR</b></div>
+</div>
+<script>
+const API_BASE='https://trekkr.online/api';
+const FORM_ID=new URLSearchParams(location.search).get('form')||'';
+let CONFIG=null, STATUS='active';
+const uploads={}; // key -> {dataUrl} for photo/payment_proof fields
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function load(){
+  if(!FORM_ID){ return fail('Link pendaftaran tidak valid (form tidak ditemukan).'); }
+  try{
+    const r=await fetch(`${API_BASE}/reg/form/${encodeURIComponent(FORM_ID)}`);
+    if(!r.ok) throw new Error('not found');
+    const d=await r.json();
+    CONFIG=d.config||{}; STATUS=d.status||'active'; CONFIG._name=d.name;
+    render();
+  }catch(e){ fail('Formulir pendaftaran tidak ditemukan atau sudah dihapus.'); }
+}
+function fail(msg){ document.getElementById('app').innerHTML=`<div class="center"><div style="font-size:40px;margin-bottom:10px">🔌</div>${esc(msg)}</div>`; }
+
+function render(){
+  const c=CONFIG;
+  if(c.bannerUrl) document.getElementById('banner-slot').innerHTML=`<img class="banner" src="${esc(c.bannerUrl)}" alt="" onerror="this.style.display='none'"/>`;
+  if(STATUS!=='active'){
+    document.getElementById('app').innerHTML=`<div class="head"><div class="logo">Trekkr</div><h1>${esc(c.title||c._name||'Pendaftaran')}</h1></div>
+      <div class="center"><div style="font-size:40px;margin-bottom:10px">🔒</div>Pendaftaran sudah ditutup.</div>`;
+    return;
+  }
+  let h=`<div class="head"><div class="logo">Trekkr</div><h1>${esc(c.title||c._name||'Pendaftaran Peserta')}</h1>`;
+  if(c.subtitle) h+=`<div class="sub">${esc(c.subtitle)}</div>`;
+  h+=`</div>`;
+  if(c.description) h+=`<div class="desc">${esc(c.description)}</div>`;
+  h+=`<div class="err" id="err"></div>`;
+  (c.fields||[]).forEach((f,i)=>{ h+=renderField(f,i); });
+  if(c.payment&&c.payment.show){
+    h+=`<div class="pay"><h3>💳 Informasi Pembayaran</h3>`;
+    if(c.payment.instructions) h+=`<div class="ins">${esc(c.payment.instructions)}</div>`;
+    if(c.payment.qrUrl) h+=`<img src="${esc(c.payment.qrUrl)}" alt="QR" onerror="this.style.display='none'"/>`;
+    h+=`</div>`;
+  }
+  h+=`<button class="btn" id="submitBtn" onclick="submitForm()">${esc(c.submitLabel||'Daftar Sekarang')}</button>`;
+  document.getElementById('app').innerHTML=h;
+}
+
+function renderField(f,i){
+  const id='f_'+i, req=f.required?'<span class="req">*</span>':'';
+  const lbl=`<label class="flabel" for="${id}">${esc(f.label||f.key||'')}${req}</label>`;
+  const help=f.help?`<div class="help">${esc(f.help)}</div>`:'';
+  const t=f.type;
+  if(t==='heading') return `<div class="heading">${esc(f.label||'')}</div>`;
+  if(t==='info') return `<div class="field"><div class="info">${esc(f.label||'')}</div></div>`;
+  if(t==='textarea') return `<div class="field">${lbl}<textarea id="${id}" data-key="${esc(f.key)}" placeholder="${esc(f.placeholder||'')}"></textarea>${help}</div>`;
+  if(t==='select'){
+    const opts=(f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    return `<div class="field">${lbl}<select id="${id}" data-key="${esc(f.key)}"><option value="">— pilih —</option>${opts}</select>${help}</div>`;
+  }
+  if(t==='radio'){
+    const opts=(f.options||[]).map((o,k)=>`<label class="opt" onclick="selOpt(this)"><input type="radio" name="${id}" value="${esc(o)}" data-key="${esc(f.key)}"/> ${esc(o)}</label>`).join('');
+    return `<div class="field">${lbl}<div class="opts" id="${id}">${opts}</div>${help}</div>`;
+  }
+  if(t==='checkbox'){
+    const opts=(f.options||[]).map((o,k)=>`<label class="opt" onclick="selOpt(this)"><input type="checkbox" value="${esc(o)}" data-key="${esc(f.key)}"/> ${esc(o)}</label>`).join('');
+    return `<div class="field">${lbl}<div class="opts" id="${id}">${opts}</div>${help}</div>`;
+  }
+  if(t==='photo'||t==='payment_proof'){
+    const round=t==='photo';
+    return `<div class="field">${lbl}
+      <div class="upbox" id="${id}_box" onclick="document.getElementById('${id}').click()">
+        <div class="ico">${round?'📷':'🧾'}</div>
+        <div class="t">Ketuk untuk ${round?'unggah foto':'unggah bukti'}</div>
+        <div class="s">JPG/PNG · maks ~8MB</div>
+      </div>
+      <input type="file" id="${id}" accept="image/*" style="display:none" onchange="onFile(this,'${f.key}','${t}','${id}')"/>${help}</div>`;
+  }
+  const itype=t==='number'?'number':t==='email'?'email':t==='phone'?'tel':t==='date'?'date':'text';
+  return `<div class="field">${lbl}<input type="${itype}" id="${id}" data-key="${esc(f.key)}" placeholder="${esc(f.placeholder||'')}"/>${help}</div>`;
+}
+
+function selOpt(el){
+  const grp=el.parentElement, inp=el.querySelector('input');
+  if(inp.type==='radio'){ grp.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel'); inp.checked=true; }
+  else { el.classList.toggle('sel'); inp.checked=!inp.checked; }
+}
+
+function onFile(input,key,type,id){
+  const file=input.files[0]; if(!file) return;
+  compress(file, type==='photo'?900:1400, type==='photo'?0.85:0.8).then(dataUrl=>{
+    uploads[key]={type,dataUrl};
+    const box=document.getElementById(id+'_box');
+    box.innerHTML = type==='photo'
+      ? `<img class="pv-photo" src="${dataUrl}"/><div class="s">Ketuk untuk ganti</div>`
+      : `<img class="pv-doc" src="${dataUrl}"/><div class="s" style="margin-top:8px">Ketuk untuk ganti</div>`;
+  }).catch(()=>{ alert('Gagal memproses gambar.'); });
+}
+function compress(file, maxDim, quality){
+  return new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let{width:w,height:h}=img;
+      if(w>maxDim||h>maxDim){ if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;} }
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res(cv.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej();};
+    img.src=url;
+  });
+}
+
+function collect(){
+  const c=CONFIG, values={}; let photo=null, paymentProof=null, missing=null;
+  for(const f of (c.fields||[])){
+    if(f.type==='heading'||f.type==='info') continue;
+    if(f.type==='photo'||f.type==='payment_proof'){
+      const u=uploads[f.key];
+      if(f.type==='photo') photo=u?u.dataUrl:null; else paymentProof=u?u.dataUrl:null;
+      if(f.required && !u && !missing) missing=f.label||f.key;
+      continue;
+    }
+    let val='';
+    if(f.type==='radio'){ const ch=document.querySelector(`#f_${c.fields.indexOf(f)} input:checked`); val=ch?ch.value:''; }
+    else if(f.type==='checkbox'){ val=[...document.querySelectorAll(`#f_${c.fields.indexOf(f)} input:checked`)].map(x=>x.value).join(', '); }
+    else { const el=document.querySelector(`[data-key="${cssEsc(f.key)}"]`); val=el?el.value.trim():''; }
+    if(f.required && !val && !missing) missing=f.label||f.key;
+    values[f.key]=val;
+  }
+  return {values,photo,paymentProof,missing};
+}
+function cssEsc(s){return String(s).replace(/["\\]/g,'\\$&');}
+
+async function submitForm(){
+  const {values,photo,paymentProof,missing}=collect();
+  const errEl=document.getElementById('err');
+  if(!values.name || !String(values.name).trim()){ return showErr('Nama wajib diisi.'); }
+  if(missing){ return showErr(`"${missing}" wajib diisi.`); }
+  errEl.style.display='none';
+  const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Mengirim…';
+  try{
+    const r=await fetch(`${API_BASE}/reg/submit/${encodeURIComponent(FORM_ID)}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({values,photo,paymentProof})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Gagal mengirim');
+    success();
+  }catch(e){ btn.disabled=false; btn.textContent=CONFIG.submitLabel||'Daftar Sekarang'; showErr(e.message||'Gagal mengirim. Coba lagi.'); }
+}
+function showErr(m){ const e=document.getElementById('err'); e.textContent=m; e.style.display='block'; e.scrollIntoView({behavior:'smooth',block:'center'}); }
+function success(){
+  const msg=CONFIG.successMessage||'Pendaftaran kamu berhasil dikirim. Sampai jumpa di lapangan! 🎾';
+  document.getElementById('banner-slot').innerHTML='';
+  document.getElementById('app').innerHTML=`<div class="center"><div class="ok-ico">✓</div>
+    <h1 style="font-size:22px">Berhasil Terdaftar!</h1>
+    <p style="margin-top:10px;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.6">${esc(msg)}</p></div>`;
+  window.scrollTo(0,0);
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Registrasi | Trekkr</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{--or:#E85D26;--or-d:#c94a18;--bg:#0d0d0f;--card:#17171b;--card2:#1f1f25;--line:#2a2a31;--txt:#f4f4f5;--txt2:#a1a1aa;--txt3:#71717a;--ok:#22c55e;--err:#ef4444;--blue:#3b82f6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+  .wrap{max-width:900px;margin:0 auto;padding:20px 18px 80px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:6px 0 20px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .logo{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px}.logo .o{color:var(--or)}
+  h2{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px}
+  h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin:22px 0 10px;color:var(--or);text-transform:uppercase;letter-spacing:.5px;font-size:12px}
+  .btn{background:var(--or);color:#fff;border:none;border-radius:9px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;padding:11px 16px;cursor:pointer}
+  .btn:hover{background:var(--or-d)} .btn.sm{padding:7px 12px;font-size:13px}
+  .btn.gh{background:var(--card2);color:var(--txt)} .btn.gh:hover{background:var(--line)}
+  .btn.dg{background:rgba(239,68,68,.12);color:#fca5a5}
+  .btn:disabled{opacity:.5;cursor:default}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+  .frow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ftitle{font-weight:700;font-size:15px}.fmeta{font-size:12.5px;color:var(--txt3);margin-top:3px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase}
+  .badge.active{background:rgba(34,197,94,.15);color:#86efac}.badge.closed,.badge.archived{background:rgba(239,68,68,.12);color:#fca5a5}
+  label.l{display:block;font-size:12.5px;font-weight:600;color:var(--txt2);margin:12px 0 5px}
+  input,textarea,select{width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:8px;color:var(--txt);font-family:inherit;font-size:14px;padding:10px 12px;outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--or)}
+  textarea{resize:vertical;min-height:60px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fld{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .fld-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .fld-h .ty{font-size:11px;font-weight:700;color:var(--or);text-transform:uppercase;background:rgba(232,93,38,.1);padding:3px 8px;border-radius:6px}
+  .fld-h .sp{flex:1}
+  .ic{background:none;border:1px solid var(--line);color:var(--txt2);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px}
+  .ic:hover{border-color:var(--or);color:var(--or)}
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--txt2);cursor:pointer;margin-top:8px}
+  .chk input{width:auto}
+  .addbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .add-t{background:var(--card2);border:1px dashed var(--line);color:var(--txt2);border-radius:8px;padding:8px 11px;font-size:12.5px;cursor:pointer}
+  .add-t:hover{border-color:var(--or);color:var(--or)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#06281a;font-weight:700;padding:11px 20px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+  .toast.show{opacity:1} .toast.err{background:var(--err);color:#fff}
+  .center{text-align:center;padding:60px 20px;color:var(--txt2)}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:11px;text-transform:uppercase;color:var(--txt3);letter-spacing:.5px}
+  td a{color:var(--blue);text-decoration:none} .thumb{width:38px;height:38px;border-radius:50%;object-fit:cover}
+  .muted{color:var(--txt3);font-size:13px} .link{color:var(--or);cursor:pointer;font-size:13px;font-weight:600}
+  .hint{font-size:12px;color:var(--txt3);margin-top:4px;line-height:1.4}
+  .scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="logo">Trekkr <span class="o">Registrasi</span></div><div id="topbtn"></div></div>
+  <div id="app"><div class="center"><div class="spin"></div>Memuat…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API_BASE='https://trekkr.online/api';
+let FORMS=[], FE=null, TOURNS=[], VIEW='list';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toast(m,err){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2200);}
+async function api(path,opts){const r=await fetch(`${API_BASE}/${path}`,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');return d;}
+
+const FIELD_TYPES=[['text','Teks'],['textarea','Paragraf'],['number','Angka'],['email','Email'],['phone','No. HP'],['date','Tanggal'],['select','Dropdown'],['radio','Pilihan'],['checkbox','Checkbox'],['photo','Upload Foto'],['payment_proof','Bukti Bayar'],['heading','Judul Section'],['info','Teks Info']];
+function tyLabel(t){const f=FIELD_TYPES.find(x=>x[0]===t);return f?f[1]:t;}
+
+function defaultConfig(){
+  return {title:'Pendaftaran Turnamen',subtitle:'',description:'',bannerUrl:'',submitLabel:'Daftar Sekarang',successMessage:'Pendaftaran kamu berhasil dikirim. Sampai jumpa di lapangan! 🎾',driveFolderId:'',
+    payment:{show:true,instructions:'Transfer biaya pendaftaran ke:\nBCA 1234567890 a.n. Nama\nNominal: Rp 150.000',qrUrl:''},
+    fields:[
+      {type:'text',key:'name',label:'Nama Lengkap',required:true,placeholder:'Nama sesuai identitas'},
+      {type:'radio',key:'gender',label:'Kategori',required:true,options:['Putra','Putri']},
+      {type:'phone',key:'phone',label:'No. WhatsApp',required:true,placeholder:'08xxxxxxxxxx'},
+      {type:'photo',key:'photo',label:'Foto Pemain',required:false,help:'Foto wajah yang jelas untuk profil & leaderboard'},
+      {type:'payment_proof',key:'paymentProof',label:'Bukti Pembayaran',required:true,help:'Screenshot/foto bukti transfer'},
+    ]};
+}
+
+async function init(){
+  try{
+    const [d,t]=await Promise.all([api('reg/forms'),api('tournament/events').catch(()=>({events:[]}))]);
+    FORMS=d.forms||[]; TOURNS=(t.events||t.tournaments||[]);
+  }catch(e){ FORMS=[]; }
+  renderList();
+}
+
+function renderList(){
+  VIEW='list';
+  document.getElementById('topbtn').innerHTML=`<button class="btn" onclick="newForm()">+ Form Baru</button>`;
+  const live=FORMS.filter(f=>f.status!=='archived');
+  let h=`<h2>Formulir Pendaftaran</h2><p class="hint" style="margin:6px 0 18px">Buat satu form per turnamen. Field & teks bisa dikustom. Link publik bisa dibagikan via WhatsApp.</p>`;
+  if(!live.length) h+=`<div class="center">Belum ada formulir. Klik "+ Form Baru".</div>`;
+  h+=live.map(f=>`<div class="card"><div class="frow">
+      <div style="min-width:0">
+        <div class="ftitle">${esc(f.title||f.name)} <span class="badge ${f.status}">${f.status==='active'?'Aktif':'Ditutup'}</span></div>
+        <div class="fmeta">${f.fieldCount} field${f.linkedTournament?' · 🔗 tertaut turnamen':''} · diperbarui ${fmtDate(f.updatedAt)}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn gh sm" onclick="copyLink('${f.formId}')">🔗 Link</button>
+        <button class="btn gh sm" onclick="viewRegs('${f.formId}','${esc(f.title||f.name).replace(/'/g,"")}')">👥 Pendaftar</button>
+        <button class="btn sm" onclick="editForm('${f.formId}')">Edit</button>
+      </div></div></div>`).join('');
+  document.getElementById('app').innerHTML=h;
+}
+function fmtDate(s){if(!s)return'';try{return new Date(s).toLocaleDateString('id-ID',{day:'numeric',month:'short'});}catch(e){return'';}}
+function copyLink(id){const url=`${location.origin}/register.html?form=${id}`;navigator.clipboard.writeText(url).then(()=>toast('Link disalin: '+url)).catch(()=>prompt('Salin link:',url));}
+
+function newForm(){ FE={formId:'',name:'Turnamen Baru',status:'active',linkedTournament:'',config:defaultConfig()}; renderEditor(); }
+async function editForm(id){
+  document.getElementById('app').innerHTML='<div class="center"><div class="spin"></div>Memuat form…</div>';
+  try{const d=await api('reg/form/'+encodeURIComponent(id)); FE={formId:d.formId,name:d.name,status:d.status,linkedTournament:d.linkedTournament||'',config:Object.assign(defaultConfig(),d.config||{})}; if(!FE.config.payment)FE.config.payment={show:false,instructions:'',qrUrl:''}; if(!FE.config.fields)FE.config.fields=[]; renderEditor();}
+  catch(e){toast('Gagal memuat',1);renderList();}
+}
+
+function renderEditor(){
+  VIEW='edit';
+  document.getElementById('topbtn').innerHTML=`<button class="btn gh" onclick="renderList()">← Kembali</button>`;
+  const c=FE.config;
+  const tourOpts=`<option value="">— tidak ditautkan —</option>`+TOURNS.map(t=>`<option value="${esc(t.eventId||t.id||t.tournamentId||'')}" ${FE.linkedTournament===(t.eventId||t.id||t.tournamentId)?'selected':''}>${esc(t.name||t.eventName||t.title||t.eventId)}</option>`).join('');
+  let h=`<h2>${FE.formId?'Edit':'Buat'} Formulir</h2>
+  <h3>Pengaturan</h3>
+  <div class="card">
+    <div class="row2">
+      <div><label class="l">Nama internal (admin)</label><input id="m_name" value="${esc(FE.name)}" oninput="FE.name=this.value"/></div>
+      <div><label class="l">Status</label><select id="m_status" onchange="FE.status=this.value">
+        <option value="active" ${FE.status==='active'?'selected':''}>Aktif (pendaftaran dibuka)</option>
+        <option value="closed" ${FE.status==='closed'?'selected':''}>Ditutup</option></select></div>
+    </div>
+    <label class="l">Judul (tampil di halaman)</label><input value="${esc(c.title)}" oninput="FE.config.title=this.value"/>
+    <label class="l">Subjudul</label><input value="${esc(c.subtitle||'')}" oninput="FE.config.subtitle=this.value"/>
+    <label class="l">Deskripsi / pengantar</label><textarea oninput="FE.config.description=this.value">${esc(c.description||'')}</textarea>
+    <label class="l">URL Banner (opsional)</label><input value="${esc(c.bannerUrl||'')}" oninput="FE.config.bannerUrl=this.value" placeholder="https://...jpg"/>
+    <label class="l">Tautkan ke turnamen (opsional)</label><select onchange="FE.linkedTournament=this.value">${tourOpts}</select>
+    <div class="hint">Jika ditautkan, pendaftar ditandai untuk turnamen tsb. Dikosongkan = berdiri sendiri (tetap masuk ke Players).</div>
+    <label class="l">ID Folder Google Drive (untuk simpan foto & bukti bayar)</label><input value="${esc(c.driveFolderId||'')}" oninput="FE.config.driveFolderId=this.value" placeholder="Kosongkan untuk pakai folder default server"/>
+  </div>
+
+  <h3>Field Formulir</h3>
+  <div id="fields">${c.fields.map((f,i)=>renderFieldEditor(f,i)).join('')}</div>
+  <div class="addbar">${FIELD_TYPES.map(t=>`<button class="add-t" onclick="addField('${t[0]}')">+ ${t[1]}</button>`).join('')}</div>
+  <div class="hint" id="namewarn"></div>
+
+  <h3>Pembayaran</h3>
+  <div class="card">
+    <label class="chk"><input type="checkbox" ${c.payment&&c.payment.show?'checked':''} onchange="FE.config.payment.show=this.checked"/> Tampilkan info pembayaran di form</label>
+    <label class="l">Instruksi pembayaran (rekening/nominal)</label><textarea oninput="FE.config.payment.instructions=this.value">${esc((c.payment&&c.payment.instructions)||'')}</textarea>
+    <label class="l">URL gambar QRIS (opsional)</label><input value="${esc((c.payment&&c.payment.qrUrl)||'')}" oninput="FE.config.payment.qrUrl=this.value" placeholder="https://...png"/>
+  </div>
+
+  <h3>Teks Tombol & Sukses</h3>
+  <div class="card">
+    <div class="row2">
+      <div><label class="l">Label tombol kirim</label><input value="${esc(c.submitLabel||'')}" oninput="FE.config.submitLabel=this.value"/></div>
+    </div>
+    <label class="l">Pesan setelah berhasil daftar</label><textarea oninput="FE.config.successMessage=this.value">${esc(c.successMessage||'')}</textarea>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:22px">
+    <button class="btn" style="flex:1" onclick="saveForm()">💾 Simpan Formulir</button>
+    ${FE.formId?`<button class="btn gh" onclick="copyLink('${FE.formId}')">🔗 Link Publik</button>`:''}
+    ${FE.formId?`<button class="btn dg" onclick="archiveForm()">Arsipkan</button>`:''}
+  </div>`;
+  document.getElementById('app').innerHTML=h;
+  checkNameField();
+}
+function renderFieldEditor(f,i){
+  const isStruct=f.type==='heading'||f.type==='info';
+  const isOpt=f.type==='select'||f.type==='radio'||f.type==='checkbox';
+  const isInput=!isStruct&&!(f.type==='photo'||f.type==='payment_proof');
+  let h=`<div class="fld"><div class="fld-h">
+    <span class="ty">${tyLabel(f.type)}</span><span class="sp"></span>
+    <button class="ic" onclick="moveField(${i},-1)" title="Naik">↑</button>
+    <button class="ic" onclick="moveField(${i},1)" title="Turun">↓</button>
+    <button class="ic" onclick="delField(${i})" title="Hapus">✕</button></div>`;
+  h+=`<label class="l">${isStruct?'Teks':'Label'}</label><input value="${esc(f.label||'')}" oninput="setF(${i},'label',this.value)"/>`;
+  if(!isStruct){
+    h+=`<div class="row2"><div><label class="l">Key (nama data)</label><input value="${esc(f.key||'')}" oninput="setF(${i},'key',this.value)"/></div>`;
+    if(isInput) h+=`<div><label class="l">Placeholder</label><input value="${esc(f.placeholder||'')}" oninput="setF(${i},'placeholder',this.value)"/></div>`;
+    else h+='<div></div>';
+    h+=`</div>`;
+    if(isOpt) h+=`<label class="l">Opsi (satu per baris)</label><textarea oninput="setOpts(${i},this.value)">${esc((f.options||[]).join('\n'))}</textarea>`;
+    h+=`<label class="l">Teks bantuan (opsional)</label><input value="${esc(f.help||'')}" oninput="setF(${i},'help',this.value)"/>`;
+    h+=`<label class="chk"><input type="checkbox" ${f.required?'checked':''} onchange="setF(${i},'required',this.checked)"/> Wajib diisi</label>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+function setF(i,k,v){FE.config.fields[i][k]=v; if(k==='key')checkNameField();}
+function setOpts(i,v){FE.config.fields[i].options=v.split('\n').map(s=>s.trim()).filter(Boolean);}
+function addField(type){
+  const base={type,label:tyLabel(type),required:false};
+  if(type==='heading'||type==='info'){base.label=type==='heading'?'Judul Bagian':'Teks informasi di sini';}
+  else{ base.key=suggestKey(type); }
+  if(type==='select'||type==='radio'||type==='checkbox')base.options=['Opsi 1','Opsi 2'];
+  FE.config.fields.push(base); renderEditor(); window.scrollTo(0,document.body.scrollHeight);
+}
+function suggestKey(type){
+  const used=new Set(FE.config.fields.map(f=>f.key));
+  let base=type==='photo'?'photo':type==='payment_proof'?'paymentProof':'field';
+  if(!used.has(base))return base; let n=2; while(used.has(base+n))n++; return base+n;
+}
+function moveField(i,d){const a=FE.config.fields;const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];renderEditor();}
+function delField(i){FE.config.fields.splice(i,1);renderEditor();}
+function checkNameField(){
+  const w=document.getElementById('namewarn'); if(!w)return;
+  const hasName=FE.config.fields.some(f=>f.key==='name');
+  w.innerHTML=hasName?'':'⚠️ Wajib ada field dengan key <b>name</b> (nama peserta). Tambahkan field Teks lalu set key = name.';
+  w.style.color=hasName?'':'#fca5a5';
+}
+async function saveForm(){
+  if(!FE.config.fields.some(f=>f.key==='name'))return toast('Wajib ada field dengan key "name"',1);
+  try{
+    const d=await api('reg/form',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(FE)});
+    FE.formId=d.formId; toast('Formulir tersimpan ✓');
+    const i=FORMS.findIndex(f=>f.formId===d.formId);
+    const summary={formId:d.formId,name:FE.name,status:FE.status,linkedTournament:FE.linkedTournament,title:FE.config.title,fieldCount:FE.config.fields.length,updatedAt:new Date().toISOString()};
+    if(i>=0)FORMS[i]=summary;else FORMS.push(summary);
+    renderEditor();
+  }catch(e){toast(e.message||'Gagal simpan',1);}
+}
+async function archiveForm(){
+  if(!confirm('Arsipkan formulir ini? Link publik tidak bisa dipakai lagi.'))return;
+  try{await api('reg/form/'+encodeURIComponent(FE.formId)+'/delete',{method:'POST'});FORMS=FORMS.filter(f=>f.formId!==FE.formId);toast('Diarsipkan');renderList();}catch(e){toast('Gagal',1);}
+}
+
+let REGS=[],REG_TITLE='';
+async function viewRegs(id,title){
+  REG_TITLE=title||'';VIEW='regs';
+  document.getElementById('topbtn').innerHTML=`<button class="btn gh" onclick="renderList()">← Kembali</button>`;
+  document.getElementById('app').innerHTML='<div class="center"><div class="spin"></div>Memuat pendaftar…</div>';
+  try{const d=await api('reg/registrations/'+encodeURIComponent(id));REGS=d.registrations||[];renderRegs(id);}catch(e){toast('Gagal memuat',1);renderList();}
+}
+function renderRegs(id){
+  const dataKeys=[...new Set(REGS.flatMap(r=>Object.keys(r.data||{})))].filter(k=>!['name','gender','phone'].includes(k));
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><h2>Pendaftar — ${esc(REG_TITLE)}</h2>
+    <div style="display:flex;gap:8px"><span class="badge active" style="align-self:center">${REGS.length} orang</span>
+    <button class="btn gh sm" onclick="exportCsv()">⬇ Export CSV</button></div></div>`;
+  if(!REGS.length){h+=`<div class="center">Belum ada pendaftar.</div>`;document.getElementById('app').innerHTML=h;return;}
+  h+=`<div class="scroll" style="margin-top:14px"><table><thead><tr><th>#</th><th>Foto</th><th>Nama</th><th>Kat.</th><th>HP</th>${dataKeys.map(k=>`<th>${esc(k)}</th>`).join('')}<th>Bukti</th><th>Waktu</th></tr></thead><tbody>`;
+  REGS.forEach((r,i)=>{
+    h+=`<tr><td>${i+1}</td>
+      <td>${r.photoUrl?`<a href="${esc(r.photoUrl)}" target="_blank"><img class="thumb" src="${esc(r.photoUrl)}" onerror="this.style.display='none'"/></a>`:'<span class="muted">—</span>'}</td>
+      <td><b>${esc(r.name)}</b></td><td>${esc(r.gender)}</td><td>${esc(r.phone||'')}</td>
+      ${dataKeys.map(k=>`<td>${esc((r.data||{})[k]||'')}</td>`).join('')}
+      <td>${r.paymentProofUrl?`<a href="${esc(r.paymentProofUrl)}" target="_blank">lihat</a>`:'<span class="muted">—</span>'}</td>
+      <td class="muted">${fmtDateTime(r.timestamp)}</td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  document.getElementById('app').innerHTML=h;
+}
+function fmtDateTime(s){if(!s)return'';try{return new Date(s).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
+function exportCsv(){
+  const dataKeys=[...new Set(REGS.flatMap(r=>Object.keys(r.data||{})))].filter(k=>!['name','gender','phone'].includes(k));
+  const head=['Nama','Kategori','HP',...dataKeys,'Foto','BuktiBayar','Waktu'];
+  const rows=REGS.map(r=>[r.name,r.gender,r.phone||'',...dataKeys.map(k=>(r.data||{})[k]||''),r.photoUrl||'',r.paymentProofUrl||'',r.timestamp||'']);
+  const csv=[head,...rows].map(row=>row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeff'+csv);a.download='pendaftar_'+(REG_TITLE||'trekkr').replace(/\s+/g,'_')+'.csv';a.click();
+}
+init();
+</script>
+</body>
+</html>
