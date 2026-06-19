@@ -18,6 +18,34 @@ function getSheets() {
   return google.sheets({ version: "v4", auth: getAuth() });
 }
 
+// Drive auth (adds drive scope) + image upload for registration photos / payment proofs.
+function getDriveAuth() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  let key = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/^"|"$/g, "").replace(/\\n/g, "\n");
+  return new google.auth.JWT(email, null, key, [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+  ]);
+}
+function getDrive() { return google.drive({ version: "v3", auth: getDriveAuth() }); }
+async function driveUploadImage(dataUrl, filename, folderId) {
+  if (!dataUrl) return "";
+  const m = /^data:(image\/[\w.+-]+);base64,([\s\S]+)$/.exec(String(dataUrl));
+  if (!m) return "";
+  const { Readable } = require("stream");
+  const mime = m[1], buf = Buffer.from(m[2], "base64");
+  const drive = getDrive();
+  const res = await drive.files.create({
+    requestBody: { name: filename, ...(folderId ? { parents: [folderId] } : {}) },
+    media: { mimeType: mime, body: Readable.from(buf) },
+    fields: "id",
+    supportsAllDrives: true,
+  });
+  const id = res.data.id;
+  try { await drive.permissions.create({ fileId: id, requestBody: { role: "reader", type: "anyone" }, supportsAllDrives: true }); } catch (e) {}
+  return `https://drive.google.com/uc?export=view&id=${id}`;
+}
+
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
 const TABS = {
@@ -33,6 +61,8 @@ const TABS = {
   t_groups: "Tournament_Groups",
   t_matches: "Tournament_Matches",
   t_form: "Form_Responses",
+  reg_forms: "RegForms",
+  registrations: "Registrations",
 };
 
 const headers = {
@@ -250,6 +280,18 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("tournament/") && method === "GET") {
       return await tGetTournament(decodeURIComponent(path.replace("tournament/", "")));
     }
+
+    // --- REGISTRATION (configurable multi-tournament forms) ---
+    if (path === "reg/forms" && method === "GET") return await regListForms();
+    if (path === "reg/form" && method === "POST") return await regSaveForm(body);
+    if (path.startsWith("reg/form/") && path.endsWith("/delete") && method === "POST")
+      return await regDeleteForm(decodeURIComponent(path.replace("reg/form/", "").replace("/delete", "")));
+    if (path.startsWith("reg/form/") && method === "GET")
+      return await regGetForm(decodeURIComponent(path.replace("reg/form/", "")));
+    if (path.startsWith("reg/submit/") && method === "POST")
+      return await regSubmit(decodeURIComponent(path.replace("reg/submit/", "")), body);
+    if (path.startsWith("reg/registrations/") && method === "GET")
+      return await regListRegistrations(decodeURIComponent(path.replace("reg/registrations/", "")));
 
     return respond(404, { error: "Route not found", route: path });
   } catch (err) {
@@ -2442,4 +2484,122 @@ async function tFinalizeElo(eventId, force) {
 
   const results = Object.values(changed).sort((a, b) => b.delta - a.delta);
   return respond(200, { success: true, sessionId, matchesReplayed: ordered.length, playersUpdated, recomputed: !!already, results });
+}
+
+// ==============================================================
+// REGISTRATION SYSTEM (configurable forms, Drive uploads)
+// ==============================================================
+function regGenId(p) { return p + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+async function ensureRegTabs(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const titles = (meta.data.sheets || []).map((s) => s.properties.title);
+  const need = [
+    [TABS.reg_forms, ["formId", "name", "status", "linkedTournament", "configJSON", "createdAt", "updatedAt"]],
+    [TABS.registrations, ["regId", "formId", "timestamp", "name", "gender", "phone", "photoUrl", "paymentProofUrl", "dataJSON", "linkedTournament", "status"]],
+  ];
+  for (const [title, hdr] of need) {
+    if (!titles.includes(title)) {
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title } } }] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${title}!A1`, valueInputOption: "RAW", requestBody: { values: [hdr] } });
+    }
+  }
+}
+async function regListForms() {
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A2:G` });
+  const rows = res.data.values || [];
+  const forms = rows.filter((r) => r[0]).map((r) => {
+    let cfg = {}; try { cfg = JSON.parse(r[4] || "{}"); } catch (e) {}
+    return { formId: r[0], name: r[1], status: r[2] || "active", linkedTournament: r[3] || "", title: cfg.title || r[1], fieldCount: (cfg.fields || []).length, createdAt: r[5], updatedAt: r[6] };
+  });
+  return respond(200, { forms });
+}
+async function regGetForm(id) {
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A2:G` });
+  const r = (res.data.values || []).find((x) => x[0] === id);
+  if (!r) return respond(404, { error: "Form not found" });
+  let config = {}; try { config = JSON.parse(r[4] || "{}"); } catch (e) {}
+  return respond(200, { formId: r[0], name: r[1], status: r[2] || "active", linkedTournament: r[3] || "", config });
+}
+async function regSaveForm(body) {
+  const { formId, name, status, linkedTournament, config } = body;
+  if (!name) return respond(400, { error: "name required" });
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const now = new Date().toISOString();
+  const cfgStr = JSON.stringify(config || {});
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A2:G` });
+  const rows = res.data.values || [];
+  if (formId) {
+    const ri = rows.findIndex((x) => x[0] === formId);
+    if (ri >= 0) {
+      const sr = ri + 2, c = rows[ri];
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A${sr}:G${sr}`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[formId, name, status || c[2] || "active", linkedTournament || "", cfgStr, c[5] || now, now]] } });
+      return respond(200, { success: true, formId });
+    }
+  }
+  const id = formId || regGenId("form");
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A:G`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[id, name, status || "active", linkedTournament || "", cfgStr, now, now]] } });
+  return respond(200, { success: true, formId: id });
+}
+async function regDeleteForm(id) {
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A2:G` });
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((x) => x[0] === id);
+  if (ri < 0) return respond(404, { error: "Form not found" });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!C${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["archived"]] } });
+  return respond(200, { success: true });
+}
+async function regUpsertPlayer(sheets, name, gender, photoUrl) {
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((r) => (r[0] || "").toLowerCase() === name.toLowerCase());
+  const now = new Date().toISOString();
+  if (ri < 0) {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[name, "", "FALSE", name, gender, "", photoUrl || "", "", now]] } });
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [["INITIAL", name, 1350, 0, 0, 0, now]] } });
+  } else if (photoUrl && !((rows[ri][6] || "").trim())) {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!G${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[photoUrl]] } });
+  }
+}
+async function regSubmit(formId, body) {
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const fres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.reg_forms}!A2:G` });
+  const frow = (fres.data.values || []).find((x) => x[0] === formId);
+  if (!frow) return respond(404, { error: "Form not found" });
+  if ((frow[2] || "active") !== "active") return respond(403, { error: "Pendaftaran sudah ditutup" });
+  let config = {}; try { config = JSON.parse(frow[4] || "{}"); } catch (e) {}
+  const linked = frow[3] || "";
+  const values = body.values || {};
+  const name = String(values.name || body.name || "").trim();
+  if (!name) return respond(400, { error: "Nama wajib diisi" });
+  const gender = String(values.gender || body.gender || "M").toUpperCase().startsWith("F") ? "F" : "M";
+  const phone = values.phone || body.phone || "";
+  const folderId = config.driveFolderId || process.env.REG_DRIVE_FOLDER_ID || "";
+  const safe = name.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_").slice(0, 40) || "player";
+  const ts = Date.now();
+  let photoUrl = "", payUrl = "";
+  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `photo_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("photo upload:", e.message); }
+  try { if (body.paymentProof) payUrl = await driveUploadImage(body.paymentProof, `pay_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("pay upload:", e.message); }
+  const regId = regGenId("reg");
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A:K`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[regId, formId, now, name, gender, phone, photoUrl, payUrl, JSON.stringify(values), linked, "received"]] } });
+  try { await regUpsertPlayer(sheets, name, gender, photoUrl); } catch (e) { console.error("upsert player:", e.message); }
+  return respond(200, { success: true, regId, photoUrl, paymentProofUrl: payUrl });
+}
+async function regListRegistrations(formId) {
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+  const rows = res.data.values || [];
+  const list = rows.filter((r) => r[1] === formId).map((r) => {
+    let data = {}; try { data = JSON.parse(r[8] || "{}"); } catch (e) {}
+    return { regId: r[0], timestamp: r[2], name: r[3], gender: r[4], phone: r[5], photoUrl: r[6], paymentProofUrl: r[7], data, status: r[10] || "received" };
+  });
+  return respond(200, { registrations: list, count: list.length });
 }
