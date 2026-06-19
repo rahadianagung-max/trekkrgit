@@ -40,6 +40,7 @@
   .addbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
   .add-t{background:var(--card2);border:1px dashed var(--line);color:var(--txt2);border-radius:8px;padding:8px 11px;font-size:12.5px;cursor:pointer}
   .add-t:hover{border-color:var(--or);color:var(--or)}
+  .tysel{width:auto;min-width:128px;font-size:11px;font-weight:700;color:var(--or);background:rgba(232,93,38,.08);border:1px solid var(--line);border-radius:6px;padding:5px 8px;text-transform:none}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#06281a;font-weight:700;padding:11px 20px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
   .toast.show{opacity:1} .toast.err{background:var(--err);color:#fff}
   .center{text-align:center;padding:60px 20px;color:var(--txt2)}
@@ -144,6 +145,8 @@ function renderEditor(){
 
   <h3>Field Formulir</h3>
   <div id="fields">${c.fields.map((f,i)=>renderFieldEditor(f,i)).join('')}</div>
+  <button class="btn" style="margin-top:4px" onclick="addField('text')">+ Tambah Field</button>
+  <div class="hint" style="margin:12px 0 6px">Atau tambah cepat berdasarkan tipe (bisa diubah lagi nanti):</div>
   <div class="addbar">${FIELD_TYPES.map(t=>`<button class="add-t" onclick="addField('${t[0]}')">+ ${t[1]}</button>`).join('')}</div>
   <div class="hint" id="namewarn"></div>
 
@@ -175,7 +178,7 @@ function renderFieldEditor(f,i){
   const isOpt=f.type==='select'||f.type==='radio'||f.type==='checkbox';
   const isInput=!isStruct&&!(f.type==='photo'||f.type==='payment_proof');
   let h=`<div class="fld"><div class="fld-h">
-    <span class="ty">${tyLabel(f.type)}</span><span class="sp"></span>
+    <select class="tysel" onchange="feType(${i},this.value)" title="Tipe field">${FIELD_TYPES.map(t=>`<option value="${t[0]}" ${f.type===t[0]?'selected':''}>${t[1]}</option>`).join('')}</select><span class="sp"></span>
     <button class="ic" onclick="moveField(${i},-1)" title="Naik">↑</button>
     <button class="ic" onclick="moveField(${i},1)" title="Turun">↓</button>
     <button class="ic" onclick="delField(${i})" title="Hapus">✕</button></div>`;
@@ -193,6 +196,13 @@ function renderFieldEditor(f,i){
   return h;
 }
 function setF(i,k,v){FE.config.fields[i][k]=v; if(k==='key')checkNameField();}
+function feType(i,type){
+  const f=FE.config.fields[i];
+  f.type=type;
+  if((type==='select'||type==='radio'||type==='checkbox')&&(!f.options||!f.options.length)) f.options=['Opsi 1','Opsi 2'];
+  if(type!=='heading'&&type!=='info'&&!f.key) f.key=suggestKey(type);
+  renderEditor();
+}
 function setOpts(i,v){FE.config.fields[i].options=v.split('\n').map(s=>s.trim()).filter(Boolean);}
 function addField(type){
   const base={type,label:tyLabel(type),required:false};
