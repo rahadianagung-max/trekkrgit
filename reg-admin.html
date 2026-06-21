@@ -64,6 +64,7 @@
 <script>
 const API_BASE='https://trekkr.online/api';
 let FORMS=[], FE=null, TOURNS=[], VIEW='list';
+let CL=[], SEEDS=[], SEED_FORM='', SEED_TITLE='';
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toast(m,err){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2200);}
@@ -94,7 +95,7 @@ async function init(){
 
 function renderList(){
   VIEW='list';
-  document.getElementById('topbtn').innerHTML=`<button class="btn" onclick="newForm()">+ Form Baru</button>`;
+  document.getElementById('topbtn').innerHTML=`<button class="btn gh" onclick="openDedup()">🧹 Dedup Pemain</button> <button class="btn" onclick="newForm()">+ Form Baru</button>`;
   const live=FORMS.filter(f=>f.status!=='archived');
   let h=`<h2>Formulir Pendaftaran</h2><p class="hint" style="margin:6px 0 18px">Buat satu form per turnamen. Field & teks bisa dikustom. Link publik bisa dibagikan via WhatsApp.</p>`;
   if(!live.length) h+=`<div class="center">Belum ada formulir. Klik "+ Form Baru".</div>`;
@@ -251,6 +252,7 @@ function renderRegs(id){
   const dataKeys=[...new Set(REGS.flatMap(r=>Object.keys(r.data||{})))].filter(k=>!['name','gender','phone'].includes(k));
   let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><h2>Pendaftar — ${esc(REG_TITLE)}</h2>
     <div style="display:flex;gap:8px"><span class="badge active" style="align-self:center">${REGS.length} orang</span>
+    <button class="btn gh sm" onclick="checkSeed('${id}')">🔎 Cek &amp; Seed</button>
     <button class="btn gh sm" onclick="exportCsv()">⬇ Export CSV</button></div></div>`;
   if(!REGS.length){h+=`<div class="center">Belum ada pendaftar.</div>`;document.getElementById('app').innerHTML=h;return;}
   h+=`<div class="scroll" style="margin-top:14px"><table><thead><tr><th>#</th><th>Foto</th><th>Nama</th><th>Kat.</th><th>HP</th>${dataKeys.map(k=>`<th>${esc(k)}</th>`).join('')}<th>Bukti</th><th>Waktu</th></tr></thead><tbody>`;
@@ -272,6 +274,82 @@ function exportCsv(){
   const rows=REGS.map(r=>[r.name,r.gender,r.phone||'',...dataKeys.map(k=>(r.data||{})[k]||''),r.photoUrl||'',r.paymentProofUrl||'',r.timestamp||'']);
   const csv=[head,...rows].map(row=>row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeff'+csv);a.download='pendaftar_'+(REG_TITLE||'trekkr').replace(/\s+/g,'_')+'.csv';a.click();
+}
+// ── DEDUP PEMAIN ──
+async function openDedup(){
+  VIEW='dedup';
+  document.getElementById('topbtn').innerHTML=`<button class="btn gh" onclick="renderList()">← Kembali</button>`;
+  document.getElementById('app').innerHTML='<div class="center"><div class="spin"></div>Memindai duplikat…</div>';
+  try{const d=await api('dedup/players-scan');CL=d.clusters||[];renderDedup(d.totalPlayers);}catch(e){toast('Gagal: '+e.message,1);renderList();}
+}
+function renderDedup(total){
+  let h=`<h2>Dedup Pemain</h2><p class="hint" style="margin:6px 0 14px">${CL.length} grup duplikat dari ${total||'?'} pemain. Pilih satu <b>Kanonik</b> (dipertahankan), centang nama yang digabung ke situ.</p>`;
+  if(!CL.length){h+=`<div class="center">Tidak ada duplikat terdeteksi. 🎉</div>`;document.getElementById('app').innerHTML=h;return;}
+  h+=CL.map((c,ci)=>{
+    const rows=c.members.map((m,mi)=>`<tr>
+      <td style="text-align:center"><input type="radio" name="canon${ci}" value="${mi}" ${mi===0?'checked':''}/></td>
+      <td style="text-align:center"><input type="checkbox" class="al${ci}" data-name="${esc(m.name)}" ${mi===0?'':'checked'}/></td>
+      <td><b>${esc(m.name)}</b>${m.verified?' <span style="color:#16804a">✓</span>':''}</td>
+      <td>${m.elo}</td><td>${m.matches}</td><td class="muted">${esc(m.region||'—')}</td>
+      <td class="muted">${m.lastSeen?fmtDate(m.lastSeen):'—'}</td></tr>`).join('');
+    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+      <b>Grup ${ci+1} · ${c.members.length} nama mirip</b>
+      <button class="btn sm" onclick="doMerge(${ci})">Gabungkan</button></div>
+      <div class="scroll" style="margin-top:8px"><table><thead><tr><th>Kanonik</th><th>Gabung</th><th>Nama</th><th>ELO</th><th>Match</th><th>Region</th><th>Terakhir</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  document.getElementById('app').innerHTML=h;
+}
+async function doMerge(ci){
+  const c=CL[ci];
+  const sel=document.querySelector(`input[name="canon${ci}"]:checked`);
+  const canonical=c.members[sel?+sel.value:0].name;
+  const aliases=[...document.querySelectorAll(`.al${ci}:checked`)].map(b=>b.dataset.name).filter(n=>n.toLowerCase()!==canonical.toLowerCase());
+  if(!aliases.length){toast('Centang minimal 1 nama untuk digabung',1);return;}
+  if(!confirm(`Gabungkan ${aliases.length} nama ke "${canonical}"?\n\nRiwayat ELO & match dipindah ke kanonik, baris alias dihapus dari Players. Tindakan ini permanen.`))return;
+  try{const d=await api('dedup/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({canonical,aliases})});
+    toast(`✓ ${d.eloRebind} baris ELO → ${canonical}, ${d.playersRemoved} pemain dihapus`);
+    CL.splice(ci,1);renderDedup();
+  }catch(e){toast('Gagal: '+e.message,1);}
+}
+// ── CEK & SEED PENDAFTAR ──
+async function checkSeed(id){
+  SEED_FORM=id;SEED_TITLE=REG_TITLE;VIEW='seed';
+  document.getElementById('topbtn').innerHTML=`<button class="btn gh" onclick="viewRegs('${id}','${esc(SEED_TITLE).replace(/'/g,'')}')">← Pendaftar</button>`;
+  document.getElementById('app').innerHTML='<div class="center"><div class="spin"></div>Mencocokkan ke pemain lama…</div>';
+  try{const d=await api('dedup/match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({formId:id,defaultSeed:1350})});
+    SEEDS=d.results||[];renderSeed(d.aiUsed);
+  }catch(e){toast('Gagal: '+e.message,1);viewRegs(id,SEED_TITLE);}
+}
+function renderSeed(aiUsed){
+  let h=`<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center"><h2>Cek &amp; Seed — ${esc(SEED_TITLE)}</h2>
+    <span class="badge ${aiUsed?'active':''}" style="align-self:center">AI ${aiUsed?'aktif':'nonaktif'}</span></div>
+    <p class="hint" style="margin:6px 0 14px"><b style="color:#16804a">COCOK</b> = pemain lama (pakai ELO asli) · <b style="color:#a16207">CEK</b> = perlu konfirmasi · <b style="color:#555">BARU</b> = seed default.</p>`;
+  if(!SEEDS.length){h+=`<div class="center">Belum ada pendaftar.</div>`;document.getElementById('app').innerHTML=h;return;}
+  SEEDS.forEach((s,i)=>{
+    const best=s.candidates[0];
+    const col=s.status==='match'?'#16804a':s.status==='review'?'#a16207':'#555';
+    const lbl=s.status==='match'?'COCOK':s.status==='review'?'CEK':'BARU';
+    h+=`<div class="card" id="seedrow${i}"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="min-width:0"><b>${esc(s.input)}</b> <span style="font-size:11px;font-weight:700;color:#fff;background:${col};padding:2px 7px;border-radius:6px">${lbl}</span>
+        ${best?`<div class="fmeta">↔ ${esc(best.name)} · ELO ${best.elo} · mirip ${Math.round(best.score*100)}%${best.matches?` · ${best.matches} match`:''}</div>`:`<div class="fmeta">tidak ada kecocokan di database</div>`}
+        ${s.ai?`<div class="hint" style="margin-top:3px">🤖 ${s.ai.verdict==='same'?'AI: orang yang sama':'AI: orang berbeda'} (${Math.round((s.ai.confidence||0)*100)}%)${s.ai.reason?` — ${esc(s.ai.reason)}`:''}</div>`:''}</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <span class="muted" style="font-size:12px">Seed</span>
+        <input id="seed${i}" type="number" value="${s.suggestedSeed}" style="width:76px"/>
+        ${best?`<button class="btn sm" onclick="applySeed(${i},'link')">Tautkan</button>`:''}
+        <button class="btn gh sm" onclick="applySeed(${i},'new')">Pemain Baru</button>
+      </div></div></div>`;
+  });
+  document.getElementById('app').innerHTML=h;
+}
+async function applySeed(i,action){
+  const s=SEEDS[i],best=s.candidates[0];
+  const seed=parseInt(document.getElementById('seed'+i).value)||1350;
+  const resolvedName=action==='link'&&best?best.name:s.input;
+  try{await api('dedup/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId:s.regId,resolvedName,seed,action})});
+    const el=document.getElementById('seedrow'+i);if(el){el.style.opacity='.5';el.querySelectorAll('button,input').forEach(b=>b.disabled=true);}
+    toast(action==='link'?`✓ Ditautkan ke ${resolvedName} (ELO ${best?best.elo:seed})`:`✓ Pemain baru: ${resolvedName} (seed ${seed})`);
+  }catch(e){toast('Gagal: '+e.message,1);}
 }
 init();
 </script>
