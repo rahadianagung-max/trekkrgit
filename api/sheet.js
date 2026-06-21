@@ -3138,8 +3138,8 @@ async function recapBuild(tournamentId) {
 // ==============================================================
 const RE = { events: "RE_Events", players: "RE_Players", waves: "RE_Waves", matches: "RE_Matches" };
 const RE_HEADERS = {
-  RE_Events: ["Event_ID", "Name", "Venue", "Date", "Start_Time", "Status", "Phase", "Courts", "Match_Minutes", "P1_Waves", "P2_Waves", "Current_Wave", "Created_At"],
-  RE_Players: ["Event_ID", "Player_ID", "Name", "Canonical", "Start_Elo", "Tier", "Claimed_At", "Status", "Level"],
+  RE_Events: ["Event_ID", "Name", "Venue", "Date", "Start_Time", "Status", "Phase", "Courts", "Match_Minutes", "P1_Waves", "P2_Waves", "Current_Wave", "Created_At", "Category"],
+  RE_Players: ["Event_ID", "Player_ID", "Name", "Canonical", "Start_Elo", "Tier", "Claimed_At", "Status", "Level", "Gender"],
   RE_Waves: ["Event_ID", "Wave", "Phase", "Start_Time", "Status", "Rest_IDs"],
   RE_Matches: ["Event_ID", "Match_ID", "Wave", "Phase", "Tier", "Court", "A1", "A2", "B1", "B2", "Score_A", "Score_B", "Status", "Scorer", "Updated_At"],
 };
@@ -3176,10 +3176,10 @@ async function reBatchGet(sheets, ranges, qu, fresh) {
   return out.map((a) => a.map((r) => (Array.isArray(r) ? r.slice() : r)));
 }
 function reEventObj(row) {
-  return { id: row[0], name: row[1], venue: row[2], date: row[3], startTime: row[4], status: row[5] || "phase1", phase: parseInt(row[6]) || 1, courts: parseInt(row[7]) || 6, matchMinutes: parseInt(row[8]) || 15, p1Waves: parseInt(row[9]) || 5, p2Waves: parseInt(row[10]) || 6, currentWave: parseInt(row[11]) || 0, createdAt: row[12] || "" };
+  return { id: row[0], name: row[1], venue: row[2], date: row[3], startTime: row[4], status: row[5] || "phase1", phase: parseInt(row[6]) || 1, courts: parseInt(row[7]) || 6, matchMinutes: parseInt(row[8]) || 15, p1Waves: parseInt(row[9]) || 5, p2Waves: parseInt(row[10]) || 6, currentWave: parseInt(row[11]) || 0, createdAt: row[12] || "", category: row[13] || "open" };
 }
 function rePlayerObj(row) {
-  return { eventId: row[0], id: row[1], name: row[2], canonical: row[3] || row[2], startElo: parseInt(row[4]) || 1350, tier: row[5] || "", claimedAt: row[6] || "", status: row[7] || "active", level: row[8] || "" };
+  return { eventId: row[0], id: row[1], name: row[2], canonical: row[3] || row[2], startElo: parseInt(row[4]) || 1350, tier: row[5] || "", claimedAt: row[6] || "", status: row[7] || "active", level: row[8] || "", gender: (row[9] || "M").toUpperCase() };
 }
 function reMatchObj(row) {
   const sa = (row[10] === "" || row[10] == null) ? null : Number(row[10]);
@@ -3284,17 +3284,26 @@ function reEloByIdMap(players, eloState) {
 
 async function reListEvents() {
   const sheets = getSheets(); await reEnsureTabs(sheets);
-  const [evRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`]);
+  const [evRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`]);
   return respond(200, { events: evRows.map(reEventObj) }, { "Cache-Control": "no-store" });
 }
 
 async function reCreateEvent(body) {
   const sheets = getSheets(); await reEnsureTabs(sheets); reCacheClear();
   const defaultLevel = String(body.defaultLevel || "lower_bronze");
+  const category = String(body.category || "open").toLowerCase(); // open|men|women|mixed
+  const catGender = category === "men" ? "M" : (category === "women" ? "F" : "");
+  const normGender = (g) => {
+    const u = String(g || "").trim().toUpperCase();
+    if (!u) return "";
+    if (u === "F" || u[0] === "W" || u.startsWith("PUTRI") || u.startsWith("PEREMPUAN") || u.startsWith("CEW")) return "F";
+    if (u === "M" || u[0] === "L" || u[0] === "M" || u.startsWith("PUTRA") || u.startsWith("PRIA") || u.startsWith("COW")) return "M";
+    return "";
+  };
   const roster = (body.players || []).map((p) => {
-    if (p && typeof p === "object") return { name: String(p.name || "").trim(), level: String(p.level || "").trim() };
+    if (p && typeof p === "object") return { name: String(p.name || "").trim(), level: String(p.level || "").trim(), gender: normGender(p.gender) };
     const parts = String(p || "").split("|");
-    return { name: String(parts[0] || "").trim(), level: String(parts[1] || "").trim() };
+    return { name: String(parts[0] || "").trim(), level: String(parts[1] || "").trim(), gender: normGender(parts[2]) };
   }).filter((x) => x.name);
   const N = roster.length;
   if (N < 24 || N % 12 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${N}). Ideal 36.` });
@@ -3312,20 +3321,40 @@ async function reCreateEvent(body) {
     const k = normName(p.name);
     const lvl = p.level || defaultLevel;
     const elo = eloState[k] ? eloState[k].elo : levelToElo(lvl);
-    return [eventId, genId("REP"), p.name, p.name, elo, "", "", "active", lvl];
+    const g = p.gender || catGender || "M";
+    return [eventId, genId("REP"), p.name, p.name, elo, "", "", "active", lvl, g];
   });
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.events}!A:M`, valueInputOption: "USER_ENTERED", requestBody: { values: [[eventId, body.name || "Ranked Event", body.venue || "", body.date || "", startTime, "phase1", 1, courts, matchMinutes, p1Waves, p2Waves, 0, now]] } });
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: playerRows } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.events}!A:N`, valueInputOption: "USER_ENTERED", requestBody: { values: [[eventId, body.name || "Ranked Event", body.venue || "", body.date || "", startTime, "phase1", 1, courts, matchMinutes, p1Waves, p2Waves, 0, now, category]] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: playerRows } });
+  await reRegisterGlobals(sheets, playerRows.map((r) => ({ name: r[2], gender: r[9] }))).catch((e) => console.error("re globals:", e));
   const waveRows = [];
   for (let w = 0; w < p1Waves; w++) waveRows.push([eventId, w + 1, 1, addMinutesToTime(startTime, w * interval), "pending", ""]);
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.waves}!A:F`, valueInputOption: "USER_ENTERED", requestBody: { values: waveRows } });
-  return respond(200, { eventId, name: body.name || "Ranked Event", courts, matchMinutes, p1Waves, p2Waves, totalWaves: p1Waves + p2Waves, players: playerRows.map(rePlayerObj) });
+  return respond(200, { eventId, name: body.name || "Ranked Event", category, courts, matchMinutes, p1Waves, p2Waves, totalWaves: p1Waves + p2Waves, players: playerRows.map(rePlayerObj) });
+}
+
+// Register event participants into the global Players tab if they're not there
+// yet, so their results show a real profile (gender) on trekkr.online.
+async function reRegisterGlobals(sheets, people) {
+  if (!people || !people.length) return;
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` }).catch(() => ({ data: { values: [] } }));
+  const have = new Set((pRes.data.values || []).map((r) => normName(r[0])));
+  const now = new Date().toISOString();
+  const seen = new Set();
+  const rows = [];
+  for (const p of people) {
+    const k = normName(p.name);
+    if (!k || have.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    rows.push([p.name, "", "FALSE", p.name, (p.gender || "M").toUpperCase(), "", "", "", now]);
+  }
+  if (rows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: rows } });
 }
 
 async function reGenerateWave(eventId, body) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:gen:" + eventId;
   const [evRows, allPRows, wRowsAll, mRowsAll, eloRows] = await reBatchGet(sheets,
-    [`${RE.events}!A2:M`, `${RE.players}!A2:I`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`], null, true);
+    [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`], null, true);
   const ei = evRows.findIndex((r) => r[0] === eventId);
   if (ei < 0) return respond(404, { error: "Event not found" });
   const ev = reEventObj(evRows[ei]);
@@ -3362,8 +3391,8 @@ async function reGenerateWave(eventId, body) {
     const st1 = reStandings(matches, act.map((p) => p.id), eloById, 1);
     const tierSize = Math.floor(act.length / 3);
     st1.ordered.forEach((id, i) => { tierOf[id] = i < tierSize ? "Emas" : (i < 2 * tierSize ? "Perak" : "Perunggu"); });
-    const outP = allPRows.map((r) => { const c = r.slice(); while (c.length < 9) c.push(""); if (r[0] === eventId && tierOf[r[1]]) c[5] = tierOf[r[1]]; return c.slice(0, 9); });
-    if (outP.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A2:I${outP.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: outP } });
+    const outP = allPRows.map((r) => { const c = r.slice(); while (c.length < 10) c.push(""); if (r[0] === eventId && tierOf[r[1]]) c[5] = tierOf[r[1]]; return c.slice(0, 10); });
+    if (outP.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A2:J${outP.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: outP } });
     const interval = ev.matchMinutes + 3;
     const lastP1Wave = waves.find((w) => w.wave === ev.p1Waves);
     const baseTime = lastP1Wave ? addMinutesToTime(lastP1Wave.startTime, interval) : addMinutesToTime(ev.startTime, ev.p1Waves * interval);
@@ -3406,9 +3435,9 @@ async function reGenerateWave(eventId, body) {
   }
   if (!matchRows.length) return respond(400, { error: "Tidak ada pemain aktif yang cukup untuk membentuk court di gelombang ini." });
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.matches}!A:O`, valueInputOption: "USER_ENTERED", requestBody: { values: matchRows } });
-  const erow = evRows[ei].slice(); while (erow.length < 13) erow.push("");
+  const erow = evRows[ei].slice(); while (erow.length < 14) erow.push("");
   erow[5] = phase === 2 ? "phase2" : "phase1"; erow[6] = phase; erow[11] = nextWaveNum;
-  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:M${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [erow.slice(0, 13)] } });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:N${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [erow.slice(0, 14)] } });
   const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
   reCacheClear();
   return respond(200, { wave: nextWaveNum, phase, cut: cutJustHappened, startTime: wave.startTime, matches: matchRows.map((r) => reMatchView(reMatchObj(r), nameById)) });
@@ -3417,11 +3446,11 @@ async function reGenerateWave(eventId, body) {
 async function reRoster(eventId, body) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:roster:" + eventId;
   const action = String(body.action || "");
-  const pRows = await reGet(sheets, RE.players, "A2:I");
+  const pRows = await reGet(sheets, RE.players, "A2:J");
   if (action === "add") {
     const name = String(body.name || "").trim();
     if (!name) return respond(400, { error: "Nama wajib." });
-    const evRows = await reGet(sheets, RE.events, "A2:M");
+    const evRows = await reGet(sheets, RE.events, "A2:N");
     const evRow = evRows.find((r) => r[0] === eventId);
     if (!evRow) return respond(404, { error: "Event not found" });
     const ev = reEventObj(evRow);
@@ -3429,21 +3458,24 @@ async function reRoster(eventId, body) {
     const eloState = reEloStateFromRows(eloRows);
     const level = String(body.level || "lower_bronze");
     const elo = eloState[normName(name)] ? eloState[normName(name)].elo : levelToElo(level);
+    const gender = (String(body.gender || (ev.category === "men" ? "M" : ev.category === "women" ? "F" : "M")).toUpperCase()[0] === "F") ? "F" : "M";
     let tier = "";
     if (ev.phase >= 2) tier = body.tier || "Perunggu"; // late arrival in phase 2 joins a tier
-    const row = [eventId, genId("REP"), name, name, elo, tier, "", "active", level];
-    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [row] } });
+    const row = [eventId, genId("REP"), name, name, elo, tier, "", "active", level, gender];
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: [row] } });
+    await reRegisterGlobals(sheets, [{ name, gender }]).catch((e) => console.error("re globals:", e));
     reCacheClear();
     return respond(200, { ok: true, player: rePlayerObj(row) });
   }
   const abs = pRows.findIndex((r) => r[0] === eventId && r[1] === body.playerId);
   if (abs < 0) return respond(404, { error: "Pemain tidak ditemukan" });
-  const row = pRows[abs].slice(); while (row.length < 9) row.push("");
+  const row = pRows[abs].slice(); while (row.length < 10) row.push("");
   if (action === "withdraw") row[7] = "withdrawn";
   else if (action === "reactivate") row[7] = "active";
   else if (action === "setlevel") { row[8] = String(body.level || row[8]); row[4] = levelToElo(row[8]); }
-  else return respond(400, { error: "action tidak dikenal (add/withdraw/reactivate/setlevel)" });
-  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:I${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 9)] } });
+  else if (action === "setgender") { row[9] = (String(body.gender || "").toUpperCase()[0] === "F") ? "F" : "M"; }
+  else return respond(400, { error: "action tidak dikenal (add/withdraw/reactivate/setlevel/setgender)" });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:J${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 10)] } });
   reCacheClear();
   return respond(200, { ok: true, player: rePlayerObj(row) });
 }
@@ -3455,7 +3487,7 @@ async function reSubmitScore(eventId, body) {
   const scoreB = Math.max(0, Math.round(Number(body.scoreB)));
   if (!matchId || isNaN(scoreA) || isNaN(scoreB)) return respond(400, { error: "matchId, scoreA, scoreB wajib." });
   const [mRows, pRows, eloRows] = await reBatchGet(sheets,
-    [`${RE.matches}!A2:O`, `${RE.players}!A2:I`, `${TABS.elo_log}!A2:G`], null, true);
+    [`${RE.matches}!A2:O`, `${RE.players}!A2:J`, `${TABS.elo_log}!A2:G`], null, true);
   const idx = mRows.findIndex((r) => r[0] === eventId && r[1] === matchId);
   if (idx < 0) return respond(404, { error: "Match not found" });
   const m = reMatchObj(mRows[idx]);
@@ -3480,14 +3512,23 @@ async function reSubmitScore(eventId, body) {
   const waveComplete = remaining === 0;
   let eventDone = false;
   if (waveComplete) {
-    const evRows = await reGet(sheets, RE.events, "A2:M");
+    const evRows = await reGet(sheets, RE.events, "A2:N");
     const ei = evRows.findIndex((r) => r[0] === eventId);
     if (ei >= 0) {
       const ev = reEventObj(evRows[ei]);
       if (ev.currentWave >= ev.p1Waves + ev.p2Waves) {
-        const row = evRows[ei].slice(); while (row.length < 13) row.push(""); row[5] = "done";
-        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:M${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 13)] } });
+        const row = evRows[ei].slice(); while (row.length < 14) row.push(""); row[5] = "done";
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:N${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 14)] } });
         eventDone = true;
+      }
+      // Sync this event's finished matches into the venue weekly log (idempotent).
+      if (ev.venue) {
+        try {
+          const allDone = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
+          allDone.push({ ...m, scoreA, scoreB, status: "done" }); // include the just-saved one
+          const vrows = reVenueRows(ev, players, allDone);
+          if (vrows.length) await writeTournamentVenueRows(sheets, ev.venue, vrows, "RE_" + eventId);
+        } catch (e) { console.error("re venue sync:", e); }
       }
     }
   }
@@ -3495,9 +3536,28 @@ async function reSubmitScore(eventId, body) {
   return respond(200, { ok: true, matchId, scoreA, scoreB, waveComplete, eventDone });
 }
 
+// Build venue weekly-log rows from finished event matches.
+// Columns: [Week, Date, P1_T1, P2_T1, P1_T2, P2_T2, Score_T1, Score_T2, Gender, Source_URL]
+function reVenueRows(event, players, matches) {
+  const nameById = {}, genderById = {};
+  players.forEach((p) => { nameById[p.id] = p.name; genderById[p.id] = p.gender || "M"; });
+  const wk = `W${getWeekNumber(new Date())}`;
+  const date = event.date || new Date().toISOString().split("T")[0];
+  const seen = new Set();
+  const out = [];
+  matches.forEach((m) => {
+    if (m.status !== "done" || m.scoreA == null || m.scoreB == null) return;
+    if (seen.has(m.matchId)) return; seen.add(m.matchId);
+    const gs = [...m.a, ...m.b].map((id) => genderById[id] || "M");
+    const g = gs.every((x) => x === gs[0]) ? gs[0] : "X";
+    out.push([wk, date, nameById[m.a[0]] || "", nameById[m.a[1]] || "", nameById[m.b[0]] || "", nameById[m.b[1]] || "", m.scoreA, m.scoreB, g, "RE_" + event.id]);
+  });
+  return out;
+}
+
 async function reScorerView(eventId, set) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:scorer:" + String(set || "A").toUpperCase() + ":" + eventId;
-  const [evRows, pRows, mRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:I`, `${RE.matches}!A2:O`]);
+  const [evRows, pRows, mRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.matches}!A2:O`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3520,7 +3580,7 @@ async function reScorerView(eventId, set) {
 
 async function rePlayerView(eventId, playerId) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:p:" + playerId;
-  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:I`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
+  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3572,7 +3632,7 @@ async function rePlayerView(eventId, playerId) {
 
 async function reRanking(eventId) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:rank:" + eventId;
-  const [evRows, pRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:I`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
+  const [evRows, pRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3602,18 +3662,18 @@ async function reRanking(eventId) {
 
 async function reClaim(eventId, body) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:claim:" + eventId;
-  const pRows = await reGet(sheets, RE.players, "A2:I");
+  const pRows = await reGet(sheets, RE.players, "A2:J");
   const abs = pRows.findIndex((r) => r[0] === eventId && (r[1] === body.playerId || normName(r[2]) === normName(body.name || "")));
   if (abs < 0) return respond(404, { error: "Pemain tidak ditemukan" });
-  const row = pRows[abs].slice(); while (row.length < 9) row.push(""); row[6] = new Date().toISOString();
-  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:I${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 9)] } });
+  const row = pRows[abs].slice(); while (row.length < 10) row.push(""); row[6] = new Date().toISOString();
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:J${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 10)] } });
   reCacheClear();
   return respond(200, { ok: true, playerId: row[1], name: row[2] });
 }
 
 async function reGetEvent(eventId) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:ev:" + eventId;
-  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:I`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
+  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3627,7 +3687,7 @@ async function reGetEvent(eventId) {
   const doneCur = cur.filter((m) => m.status === "done").length;
   const half = Math.floor(event.courts / 2);
   return respond(200, {
-    event, players: players.map((p) => ({ id: p.id, name: p.name, tier: p.tier, elo: eloById[p.id], claimed: !!p.claimedAt, status: p.status, level: p.level, levelLabel: getTierName(eloById[p.id]) })),
+    event, players: players.map((p) => ({ id: p.id, name: p.name, tier: p.tier, elo: eloById[p.id], claimed: !!p.claimedAt, status: p.status, level: p.level, gender: p.gender, levelLabel: getTierName(eloById[p.id]) })),
     activeCount: players.filter((p) => p.status !== "withdrawn").length,
     waves, matches,
     scorers: { A: `court 1-${half}`, B: `court ${half + 1}-${event.courts}` },
