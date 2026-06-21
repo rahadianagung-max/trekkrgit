@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trekkr · Recap Turnamen</title>
+<style>
+  :root{--or:#E85D26;--bg:#0B0B0C;--card:#161618;--line:#262629;--mut:#8A8A8E}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .logo{font-weight:800;font-size:19px;letter-spacing:.5px}.logo .o{color:var(--or)}
+  .wrap{max-width:760px;margin:0 auto;padding:18px}
+  h2{font-size:19px;margin:6px 0 14px}
+  .hint{color:var(--mut);font-size:13px}
+  .btn{background:var(--or);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer}
+  .btn.gh{background:transparent;border:1px solid var(--line);color:#fff}
+  .btn.sm{padding:8px 12px;font-size:13px}
+  .btn:disabled{opacity:.5}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .frow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#2a2a2e;color:#bbb}
+  .badge.fin{background:rgba(34,197,94,.16);color:#46d180}
+  .center{text-align:center;color:var(--mut);padding:40px 0}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  #cv{width:100%;max-width:380px;border-radius:14px;display:block;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+  textarea{width:100%;min-height:130px;background:var(--card);border:1px solid var(--line);color:#fff;border-radius:10px;padding:11px;font-size:13px;font-family:inherit;resize:vertical}
+  .ai{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#2a2a2e;color:#888}
+  .ai.on{background:rgba(232,93,38,.16);color:var(--or)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#fff;color:#111;padding:11px 18px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transition:.25s;z-index:9}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="top"><div class="logo">Trekkr <span class="o">Recap</span></div><div id="topbtn"></div></div>
+<div class="wrap"><div id="app"><div class="center"><div class="spin"></div>Memuat…</div></div></div>
+<div class="toast" id="toast"></div>
+<canvas id="buf" width="1080" height="1350" style="display:none"></canvas>
+<script>
+const API='https://trekkr.online/api';
+let DATA=null;
+function $(id){return document.getElementById(id);}
+function toast(m,e){const t=$('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',2200);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function api(p){const r=await fetch(`${API}/${p}`);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');return d;}
+
+function qparam(k){return new URLSearchParams(location.search).get(k);}
+
+async function init(){
+  const t=qparam('t');
+  if(t){loadRecap(t);} else {loadPicker();}
+}
+
+async function loadPicker(){
+  $('topbtn').innerHTML='';
+  $('app').innerHTML='<div class="center"><div class="spin"></div>Memuat turnamen…</div>';
+  try{
+    const d=await api('recap/list');
+    const list=d.tournaments||[];
+    let h=`<h2>Pilih Turnamen</h2><p class="hint" style="margin:-6px 0 16px">Buat kartu recap untuk dibagikan ke IG / WhatsApp.</p>`;
+    if(!list.length){h+=`<div class="center">Belum ada turnamen.</div>`;}
+    h+=list.map(t=>{
+      const fin=t.status==='PLAYOFF';
+      return `<div class="card"><div class="frow">
+        <div style="min-width:0"><div style="font-weight:700">${esc(t.eventName||'Turnamen')} <span class="badge ${fin?'fin':''}">${fin?'Selesai':esc(t.status||'—')}</span></div>
+        <div class="hint">${esc(t.categoryName||t.category||'')}${t.venue?' · '+esc(t.venue):''}${t.date?' · '+esc(t.date):''}</div></div>
+        <button class="btn sm" onclick="loadRecap('${t.tournamentId}')">Buat Recap →</button></div></div>`;
+    }).join('');
+    $('app').innerHTML=h;
+  }catch(e){$('app').innerHTML=`<div class="center">Gagal memuat: ${esc(e.message)}</div>`;}
+}
+
+async function loadRecap(id){
+  $('topbtn').innerHTML=`<button class="btn gh sm" onclick="loadPicker()">← Daftar</button>`;
+  $('app').innerHTML='<div class="center"><div class="spin"></div>Menyusun recap…</div>';
+  try{
+    const d=await api('recap/'+encodeURIComponent(id));
+    DATA=d.recap;
+    if(!DATA.finished){
+      $('app').innerHTML=`<div class="card"><b>${esc(DATA.event.name)}</b><p class="hint" style="margin-top:8px">Turnamen ini belum punya juara (babak playoff belum selesai), jadi kartu recap belum bisa dibuat. Selesaikan final dulu di admin.</p></div>`;
+      return;
+    }
+    renderRecap();
+  }catch(e){$('app').innerHTML=`<div class="center">Gagal: ${esc(e.message)}</div>`;}
+}
+
+function renderRecap(){
+  const d=DATA;
+  let h=`<h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Recap ${esc(d.event.name)} <span class="ai ${d.aiUsed?'on':''}">AI ${d.aiUsed?'aktif':'nonaktif'}</span></h2>
+    <canvas id="cv"></canvas>
+    <div class="actions">
+      <button class="btn" onclick="download()">⬇ Download PNG</button>
+      <button class="btn gh" id="sharebtn" onclick="shareCard()">📤 Bagikan</button>
+      <button class="btn gh" onclick="copyCap()">📋 Salin Caption</button>
+    </div>
+    <textarea id="cap">${esc(d.caption)}</textarea>
+    <p class="hint" style="margin-top:8px">Kartu 1080×1350 (4:5) — pas untuk feed Instagram & WhatsApp. Caption bisa kamu edit sebelum disalin.</p>`;
+  $('app').innerHTML=h;
+  if(!navigator.canShare){const sb=$('sharebtn'); if(sb) sb.style.display='none';}
+  drawCard();
+}
+
+// ---------- CANVAS CARD ----------
+const C={W:1080,H:1350,or:'#E85D26',bg:'#0B0B0C',card:'#161618',white:'#fff',mut:'#8E8E93',M:84};
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function wrap(ctx,text,maxW){const words=String(text||'').split(/\s+/);const lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width<=maxW||!cur)cur=t;else{lines.push(cur);cur=w;}}if(cur)lines.push(cur);return lines;}
+function fitWrap(ctx,text,maxW,maxS,minS,maxLines,weight){for(let s=maxS;s>=minS;s-=2){ctx.font=`${weight} ${s}px Arial`;const l=wrap(ctx,text,maxW);if(l.length<=maxLines)return{size:s,lines:l};}ctx.font=`${minS}px Arial`;return{size:minS,lines:wrap(ctx,text,maxW).slice(0,maxLines)};}
+function ctext(ctx,t,cx,y,font,color,ls){ctx.save();ctx.font=font;ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='alphabetic';if(ls){try{ctx.letterSpacing=ls+'px';}catch(e){}}ctx.fillText(t,cx,y);ctx.restore();}
+
+function drawCard(){
+  const cv=$('buf'),ctx=cv.getContext('2d');
+  const d=DATA,W=C.W,cx=W/2,iw=W-2*C.M;
+  ctx.clearRect(0,0,W,C.H);
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,C.H);
+  // top accent
+  ctx.fillStyle=C.or;ctx.fillRect(0,0,W,16);
+  // header
+  let y=104;
+  ctx.save();ctx.font='800 44px Arial';ctx.fillStyle='#fff';ctx.textAlign='left';try{ctx.letterSpacing='1px';}catch(e){}
+  ctx.fillText('TREKKR',C.M,y);ctx.restore();
+  // category pill (right)
+  const cat=(d.event.categoryName||d.event.category||'').toUpperCase();
+  if(cat){ctx.font='800 24px Arial';const pw=ctx.measureText(cat).width+36;ctx.fillStyle=C.or;rr(ctx,W-C.M-pw,y-32,pw,42,21);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(cat,W-C.M-pw/2,y-2);}
+  y+=20;
+  // event name
+  const en=fitWrap(ctx,d.event.name,iw,62,34,2,'800');
+  en.lines.forEach(l=>{y+=en.size+6;ctext(ctx,l,cx,y,`800 ${en.size}px Arial`,'#fff');});
+  // venue · date
+  const sub=[d.event.venue,d.event.date].filter(Boolean).join('  ·  ');
+  if(sub){y+=42;ctext(ctx,sub,cx,y,'500 27px Arial',C.mut);}
+  // divider
+  y+=44;ctx.strokeStyle='#2a2a2e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(C.M,y);ctx.lineTo(W-C.M,y);ctx.stroke();
+  // trophy + JUARA
+  y+=86;ctext(ctx,'🏆',cx,y,'80px Arial','#fff');
+  y+=46;ctext(ctx,'J U A R A',cx,y,'800 30px Arial',C.or,4);
+  // champion names
+  const ch=fitWrap(ctx,d.champion,iw,78,40,2,'800');
+  ch.lines.forEach(l=>{y+=ch.size+4;ctext(ctx,l,cx,y,`800 ${ch.size}px Arial`,'#fff');});
+  if(d.finalScore){y+=40;ctext(ctx,'Final '+d.finalScore,cx,y,'600 26px Arial',C.mut);}
+  // podium
+  if(d.runnerUp){y+=58;ctext(ctx,'🥈  '+d.runnerUp,cx,y,'700 34px Arial','#e8e8ea');}
+  if(d.bronze){y+=50;ctext(ctx,'🥉  '+d.bronze,cx,y,'700 34px Arial','#e8e8ea');}
+  // stat boxes
+  y+=70;const bw=(iw-32)/3,bh=120;const items=[[d.stats.matches,'MATCH'],[d.stats.teams,'TIM'],[d.stats.games,'GAMES']];
+  items.forEach((it,i)=>{const bx=C.M+i*(bw+16);ctx.fillStyle=C.card;rr(ctx,bx,y,bw,bh,16);ctx.fill();
+    ctext(ctx,String(it[0]),bx+bw/2,y+58,'800 44px Arial',C.or);
+    ctext(ctx,it[1],bx+bw/2,y+92,'700 20px Arial',C.mut,1);});
+  y+=bh;
+  // MVP strip
+  if(d.mvp){y+=26;const mh=84;ctx.fillStyle=C.card;rr(ctx,C.M,y,iw,mh,16);ctx.fill();
+    ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.font='800 22px Arial';ctx.fillStyle=C.or;ctx.fillText('🔥 MVP',C.M+24,y+mh/2);
+    const lblX=C.M+150;ctx.font='800 30px Arial';ctx.fillStyle='#fff';
+    const mvpTxt=d.mvp.name,maxMvpW=iw-180-150;let fs=30;ctx.font=`800 ${fs}px Arial`;while(ctx.measureText(mvpTxt).width>maxMvpW&&fs>18){fs-=2;ctx.font=`800 ${fs}px Arial`;}
+    ctx.fillText(mvpTxt,lblX,y+mh/2);
+    ctx.textAlign='right';ctx.font='800 26px Arial';ctx.fillStyle=C.or;ctx.fillText((d.mvp.gain>=0?'+':'')+d.mvp.gain+' ELO',W-C.M-24,y+mh/2);
+    ctx.restore();y+=mh;}
+  // upset
+  if(d.upset){y+=44;const ut=`⚡ ${d.upset.winner} kalahkan ${d.upset.loser} (${d.upset.score})`;
+    const uf=fitWrap(ctx,ut,iw,28,18,2,'600');uf.lines.forEach((l,i)=>{ctext(ctx,l,cx,y+i*(uf.size+4),`600 ${uf.size}px Arial`,'#bdbdc2');});y+=uf.lines.length*(uf.size+4);}
+  // footer
+  ctext(ctx,'Rate. Compete. Rise.',cx,C.H-78,'800 32px Arial','#fff');
+  ctext(ctx,'trekkr.online',cx,C.H-40,'800 26px Arial',C.or,1);
+  // show
+  const out=$('cv');out.width=W;out.height=C.H;out.getContext('2d').drawImage(cv,0,0);
+}
+
+function slug(){return (DATA.event.name||'trekkr').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');}
+function download(){$('buf').toBlob(b=>{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='recap_'+slug()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);},'image/png');}
+async function shareCard(){
+  $('buf').toBlob(async b=>{
+    const file=new File([b],'recap_'+slug()+'.png',{type:'image/png'});
+    const cap=$('cap').value;
+    try{
+      if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:cap});}
+      else{download();toast('Perangkat tak mendukung share — file diunduh');}
+    }catch(e){}
+  },'image/png');
+}
+function copyCap(){const t=$('cap');t.select();navigator.clipboard.writeText(t.value).then(()=>toast('Caption disalin')).catch(()=>toast('Salin manual',1));}
+init();
+</script>
+</body>
+</html>
