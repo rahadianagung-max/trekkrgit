@@ -82,7 +82,7 @@ a.btn{display:inline-block;text-decoration:none}
     </div>
     <label>Daftar pemain — satu nama per baris (kelipatan 12, ideal 36)</label>
     <textarea id="f_players" placeholder="Reza A.&#10;Andi P.&#10;Budi S.&#10;..."></textarea>
-    <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="createEvent()">Buat event</button></div>
+    <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="submitNewEvent()">Buat event</button></div>
   </div>
 </div>
 
@@ -148,7 +148,7 @@ async function loadEvents(){
     }).join('');
   }catch(e){err(e.message);}
 }
-async function createEvent(){
+async function submitNewEvent(){
   const players=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
     courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,players};
