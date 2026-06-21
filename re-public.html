@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trekkr · Event</title>
+<style>
+:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+.top{background:var(--o);color:#fff;padding:16px 18px}
+.top b{font-size:20px;letter-spacing:.04em}
+.top .sub{color:#FFE3D6;font-size:13px;margin-top:4px}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px;font-weight:700}
+.champ{background:linear-gradient(135deg,#E85D26,#c64a1c);color:#fff;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
+.champ .t{font-size:12px;color:#FFE3D6;text-transform:uppercase;letter-spacing:.08em}
+.champ .n{font-size:24px;font-weight:700;margin:6px 0}
+.courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ct{border:1px solid var(--bd);border-radius:10px;padding:11px}
+.ct .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FAEEDA;color:#854F0B}
+.team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
+.gh{font-size:11px;font-weight:700;color:#854F0B;background:#FAEEDA;padding:5px 12px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;margin:10px 0 4px;display:inline-block}
+.lb{display:flex;justify-content:space-between;font-size:15px;padding:9px 10px;border-bottom:1px solid #f1ede7}
+.lb:last-child{border-bottom:none}
+.lb .rk{color:var(--mut);margin-right:12px;display:inline-block;min-width:26px;text-align:right;font-weight:600}
+.lb.top1{background:#FFF7E6}.lb.top1 .rk{color:#B8860B}
+.muted{color:var(--mut);font-size:13px}
+.err{background:#fdecea;color:#a3271a;padding:10px 14px;border-radius:10px;margin:12px 0}
+.foot{text-align:center;color:var(--mut);font-size:12px;padding:10px 0 24px}
+</style>
+</head>
+<body>
+<div class="top"><b>trekkr</b><div class="sub" id="sub">loading…</div></div>
+<div class="wrap" id="wrap"><div class="muted">Loading event…</div></div>
+<div class="foot">Rate. Compete. Rise. · trekkr.online</div>
+<script>
+const API='https://trekkr.online/api';
+const $=s=>document.querySelector(s);
+let EV=null,POLL=null;
+const TIER_EN={Emas:'Gold',Perak:'Silver',Perunggu:'Bronze'};
+const CAT={open:'Open',men:'Men',women:'Women',mixed:'Mixed'};
+function tierEN(t){return TIER_EN[t]||t;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function api(p){const r=await fetch(API+'/'+p);const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
+function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
+
+async function boot(){
+  EV=gp().e;
+  if(!EV){$('#wrap').innerHTML='<div class="err">Missing event link (needs ?e=eventId).</div>';return;}
+  load();POLL=setInterval(()=>{if(!document.hidden)load();},20000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});
+}
+async function load(){
+  try{
+    const [d,rk]=await Promise.all([api('re/event/'+EV),api('re/event/'+EV+'/ranking')]);
+    const e=d.event;
+    const phase=e.status==='done'?'Finished':(e.phase>=2?'Phase 2 · tiers':'Phase 1 · seeding');
+    $('#sub').textContent=`${esc(e.name)} · ${e.venue?esc(e.venue)+' · ':''}${CAT[e.category]||'Open'} · ${phase} · round ${e.currentWave}/${e.p1Waves+e.p2Waves}`;
+    let html='';
+    // champion when finished
+    if(rk.final && rk.ranking.length){
+      const c=rk.ranking[0];
+      html+=`<div class="champ"><div class="t">🏆 Champion</div><div class="n">${esc(c.name)}</div><div style="color:#FFE3D6;font-size:13px">${c.tier?tierEN(c.tier)+' · ':''}point diff ${c.diff>0?'+':''}${c.diff}</div></div>`;
+    }
+    // live board
+    const cw=e.currentWave;
+    const ms=d.matches.filter(m=>m.wave===cw).sort((a,b)=>a.court-b.court);
+    if(ms.length){
+      html+=`<div class="card"><h3>${e.status==='done'?'Final round':'Round '+cw+(ms.every(m=>m.status==='done')?' · complete':' · live')}</h3><div class="courts">`;
+      ms.forEach(m=>{const done=m.status==='done';const aw=done&&m.scoreA>m.scoreB,bw=done&&m.scoreB>m.scoreA;
+        html+=`<div class="ct"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${tierEN(m.tier)}</span>`:''}</div>
+        <div class="team"><span>${esc(m.teamA.join(' / '))}</span><span class="sc ${aw?'win':''}">${done?m.scoreA:'–'}</span></div>
+        <div class="team"><span>${esc(m.teamB.join(' / '))}</span><span class="sc ${bw?'win':''}">${done?m.scoreB:'–'}</span></div></div>`;});
+      html+='</div></div>';
+    }
+    // standings
+    html+=`<div class="card"><h3>${rk.final?'Final ranking':'Live standings'}</h3>`;
+    let last='';
+    rk.ranking.forEach(r=>{
+      if(r.tier&&r.tier!==last){last=r.tier;html+=`<div><span class="gh">${tierEN(r.tier)}</span></div>`;}
+      html+=`<div class="lb ${r.rank===1?'top1':''}" ${r.withdrawn?'style="opacity:.5"':''}><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.withdrawn?' <span class="muted">· out</span>':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff} · ${r.elo}</span></div>`;
+    });
+    html+='</div>';
+    $('#wrap').innerHTML=html;
+  }catch(e){$('#wrap').innerHTML='<div class="err">'+esc(e.message)+'</div>';}
+}
+boot();
+</script>
+</body>
+</html>

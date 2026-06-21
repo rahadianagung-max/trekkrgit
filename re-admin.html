@@ -80,10 +80,11 @@ a.btn{display:inline-block;text-decoration:none}
       <div><label>Gelombang Fase 1 (seeding)</label><input id="f_p1" type="number" value="5"></div>
       <div><label>Gelombang Fase 2 (tier)</label><input id="f_p2" type="number" value="6"></div>
     </div>
-    <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div>
+    <div class="grid g2"><div><label>Kategori</label><select id="f_cat"><option value="open">Open (campur, gender disimpan per pemain)</option><option value="men">Putra</option><option value="women">Putri</option><option value="mixed">Mixed</option></select></div>
+    <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div></div>
     <label>Daftar pemain — satu nama per baris (kelipatan 12, ideal 36)</label>
-    <textarea id="f_players" placeholder="Reza A.&#10;Andi P. | gold&#10;Budi S. | silver&#10;..."></textarea>
-    <div class="muted" style="margin-top:4px">Tip: set level per orang dengan format <b>Nama | level</b> (mis. "Budi | gold"). Tanpa level → pakai level default. Pemain yang sudah punya ELO global pakai ELO-nya.</div>
+    <textarea id="f_players" placeholder="Reza A.&#10;Andi P. | gold | M&#10;Sari W. | silver | F&#10;..."></textarea>
+    <div class="muted" style="margin-top:4px">Tip: set per orang dengan format <b>Nama | level | gender</b> (mis. "Sari | silver | F"). Tanpa level → level default; tanpa gender → ikut kategori (Putra=M, Putri=F, Open/Mixed=M). Pemain yang sudah punya ELO global pakai ELO-nya.</div>
     <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="submitNewEvent()">Buat event</button></div>
   </div>
 </div>
@@ -156,7 +157,7 @@ async function loadEvents(){
 async function submitNewEvent(){
   const players=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
-    courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,defaultLevel:$('#f_level').value,players};
+    courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,defaultLevel:$('#f_level').value,category:$('#f_cat').value,players};
   $('#createBtn').disabled=true;
   try{
     const r=await api('re/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -171,7 +172,8 @@ async function loadPanel(){
     const d=await api('re/event/'+CUR); DATA=d;
     const e=d.event;
     $('#p_name').textContent=e.name;
-    $('#p_meta').textContent=`${e.venue||''} · ${e.courts} court · ${e.matchMinutes} mnt/match · ${d.activeCount} aktif / ${d.players.length} pemain`;
+    const catLbl={open:'Open',men:'Putra',women:'Putri',mixed:'Mixed'}[e.category]||'Open';
+    $('#p_meta').textContent=`${e.venue||''} · ${catLbl} · ${e.courts} court · ${e.matchMinutes} mnt/match · ${d.activeCount} aktif / ${d.players.length} pemain`;
     const st=e.status==='done'?'selesai':(e.phase>=2?'Fase 2 · tier':'Fase 1 · seeding');
     $('#p_status').textContent=st;$('#p_status').className='pill '+(e.status==='done'?'done':'live');
     $('#p_wave').textContent=`Gelombang ${e.currentWave} / ${e.p1Waves+e.p2Waves}`;
@@ -223,7 +225,7 @@ function renderPeople(){
    <div class="row" style="align-items:flex-start"><img src="${qr}" alt="QR" style="border:1px solid var(--bd);border-radius:10px" onerror="this.style.display='none'">
    <div style="flex:1;min-width:200px"><div class="linkbox">${claim}</div><div class="muted" style="margin-top:6px">Pemain scan → pilih namanya → layar pribadinya muncul.</div></div></div>
    <h3 style="margin-top:16px">Roster — ${active} aktif / ${DATA.players.length} total</h3>
-   <div class="row" style="margin-bottom:10px;gap:6px"><input id="addName" placeholder="Nama pemain telat / tambahan..." style="flex:1;min-width:140px"><select id="addLevel" style="max-width:160px">${levelOpts('lower_bronze')}</select><button class="pri" onclick="rosterAdd()">+ Tambah</button></div>
+   <div class="row" style="margin-bottom:10px;gap:6px"><input id="addName" placeholder="Nama pemain telat / tambahan..." style="flex:1;min-width:120px"><select id="addLevel" style="max-width:140px">${levelOpts('lower_bronze')}</select><select id="addGender" style="max-width:90px"><option value="M">Putra</option><option value="F">Putri</option></select><button class="pri" onclick="rosterAdd()">+ Tambah</button></div>
    <div style="display:grid;gap:6px">${DATA.players.map(p=>playerRow(p,base)).join('')}</div>
    <div class="muted" style="margin-top:8px">Telat/tidak datang/berhenti → <b>Withdraw</b> (dikeluarkan dari pairing gelombang berikutnya, skor yang sudah ada tetap dihitung). Datang lagi → <b>Aktifkan</b>.</div>`;
 }
@@ -233,6 +235,7 @@ function playerRow(p,base){
   return `<div class="lb" style="border:1px solid var(--bd);border-radius:8px;${wd?'opacity:.6':''}">
     <span style="flex:1;display:flex;align-items:center;gap:6px"><a href="${base}?e=${CUR}&p=${p.id}" target="_blank" style="color:inherit;text-decoration:none">${esc(p.name)}</a>${p.claimed?' ✓':''} ${badge}</span>
     <span style="display:flex;align-items:center;gap:6px">
+      <select onchange="rosterGender('${p.id}',this.value)" title="gender" style="font-size:12px;padding:4px"><option value="M"${p.gender!=='F'?' selected':''}>Putra</option><option value="F"${p.gender==='F'?' selected':''}>Putri</option></select>
       <select onchange="rosterLevel('${p.id}',this.value)" title="ganti level" style="font-size:12px;padding:4px">${levelOpts(p.level)}</select>
       <span class="muted" style="font-size:12px;min-width:34px;text-align:right">${p.elo}</span>
       <button onclick="rosterAct('${p.id}','${wd?'reactivate':'withdraw'}')" style="font-size:12px;padding:5px 9px;${wd?'':'color:#a3271a'}">${wd?'Aktifkan':'Withdraw'}</button>
@@ -240,7 +243,11 @@ function playerRow(p,base){
 }
 async function rosterAdd(){
   const name=($('#addName').value||'').trim(); if(!name){err('Nama kosong');return;}
-  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name,level:$('#addLevel').value})}); await loadPanel(); }
+  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name,level:$('#addLevel').value,gender:$('#addGender').value})}); await loadPanel(); }
+  catch(e){err(e.message);}
+}
+async function rosterGender(pid,gender){
+  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'setgender',playerId:pid,gender})}); await loadPanel(); }
   catch(e){err(e.message);}
 }
 async function rosterAct(pid,action){
@@ -254,10 +261,15 @@ async function rosterLevel(pid,level){
 }
 function renderLinks(){
   const sc=location.origin+location.pathname.replace('re-admin.html','re-scorer.html');
+  const pub=location.origin+location.pathname.replace('re-admin.html','re-public.html')+'?e='+CUR;
   $('#t_links').innerHTML=`<h3>Scorer (${DATA.scorers.A} / ${DATA.scorers.B})</h3>
    <div class="row"><a class="btn" href="${sc}?e=${CUR}&set=A" target="_blank"><button class="pri">Buka Scorer A · ${DATA.scorers.A}</button></a>
    <a class="btn" href="${sc}?e=${CUR}&set=B" target="_blank"><button class="pri">Buka Scorer B · ${DATA.scorers.B}</button></a></div>
-   <div class="muted" style="margin-top:8px">Bagikan link Scorer A ke 1 petugas dan Scorer B ke petugas lain. Mereka hanya bisa input court bagiannya.</div>`;
+   <div class="muted" style="margin-top:8px">Bagikan link Scorer A ke 1 petugas dan Scorer B ke petugas lain. Mereka hanya bisa input court bagiannya.</div>
+   <h3 style="margin-top:18px">Halaman publik (read-only, untuk dibagikan / layar TV)</h3>
+   <div class="row"><a class="btn" href="${pub}" target="_blank"><button class="pri">Buka halaman publik</button></a></div>
+   <div class="linkbox" style="margin-top:8px">${pub}</div>
+   <div class="muted" style="margin-top:6px">Menampilkan papan court berjalan + klasemen lengkap + juara saat selesai. Tanpa login.</div>`;
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
