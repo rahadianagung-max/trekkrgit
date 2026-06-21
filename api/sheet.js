@@ -3141,19 +3141,37 @@ const RE_HEADERS = {
   RE_Waves: ["Event_ID", "Wave", "Phase", "Start_Time", "Status", "Rest_IDs"],
   RE_Matches: ["Event_ID", "Match_ID", "Wave", "Phase", "Tier", "Court", "A1", "A2", "B1", "B2", "Score_A", "Score_B", "Status", "Scorer", "Updated_At"],
 };
+let RE_READY = false;
+let RE_QU = "";
 async function reEnsureTabs(sheets) {
+  if (RE_READY) return;
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
   const existing = (meta.data.sheets || []).map((s) => s.properties.title);
   const toCreate = Object.keys(RE_HEADERS).filter((t) => !existing.includes(t));
-  if (!toCreate.length) return;
+  if (!toCreate.length) { RE_READY = true; return; }
   await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: toCreate.map((title) => ({ addSheet: { properties: { title } } })) } });
   for (const title of toCreate) {
     await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${title}!A1`, valueInputOption: "RAW", requestBody: { values: [RE_HEADERS[title]] } });
   }
+  RE_READY = true;
 }
-async function reGet(sheets, tab, range) {
-  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${range}` }).catch(() => ({ data: { values: [] } }));
+async function reGet(sheets, tab, range, qu) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${range}`, quotaUser: (qu || RE_QU) || undefined }).catch(() => ({ data: { values: [] } }));
   return r.data.values || [];
+}
+// One API read for many ranges + a 5s TTL cache: collapses per-request reads
+// (5 tabs -> 1 call) and lets concurrent pollers within a 5s window share it.
+// Quota: "read requests/min/user" counts the single service account, so this is
+// the main lever against sheets.googleapis.com rate-limit errors.
+let __reCache = {};
+function reCacheClear() { __reCache = {}; }
+async function reBatchGet(sheets, ranges, qu, fresh) {
+  const key = ranges.join("|"), now = Date.now(), hit = __reCache[key];
+  if (!fresh && hit && (now - hit.t) < 5000) return hit.data.map((a) => a.map((r) => (Array.isArray(r) ? r.slice() : r)));
+  const res = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges, quotaUser: (qu || RE_QU) || undefined }).catch(() => ({ data: { valueRanges: [] } }));
+  const out = ranges.map((_, i) => ((res.data.valueRanges && res.data.valueRanges[i] && res.data.valueRanges[i].values) || []));
+  __reCache[key] = { t: now, data: out };
+  return out.map((a) => a.map((r) => (Array.isArray(r) ? r.slice() : r)));
 }
 function reEventObj(row) {
   return { id: row[0], name: row[1], venue: row[2], date: row[3], startTime: row[4], status: row[5] || "phase1", phase: parseInt(row[6]) || 1, courts: parseInt(row[7]) || 6, matchMinutes: parseInt(row[8]) || 15, p1Waves: parseInt(row[9]) || 5, p2Waves: parseInt(row[10]) || 6, currentWave: parseInt(row[11]) || 0, createdAt: row[12] || "" };
@@ -3250,12 +3268,12 @@ function reEloByIdMap(players, eloState) {
 
 async function reListEvents() {
   const sheets = getSheets(); await reEnsureTabs(sheets);
-  const evRows = await reGet(sheets, RE.events, "A2:M");
+  const [evRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`]);
   return respond(200, { events: evRows.map(reEventObj) }, { "Cache-Control": "no-store" });
 }
 
 async function reCreateEvent(body) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const sheets = getSheets(); await reEnsureTabs(sheets); reCacheClear();
   const names = (body.players || []).map((s) => String(s || "").trim()).filter(Boolean);
   const N = names.length;
   if (N < 24 || N % 12 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${N}). Ideal 36.` });
@@ -3287,16 +3305,13 @@ async function reCreateEvent(body) {
 }
 
 async function reGenerateWave(eventId, body) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
-  const evRows = await reGet(sheets, RE.events, "A2:M");
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:gen:" + eventId;
+  const [evRows, allPRows, wRowsAll, mRowsAll, eloRows] = await reBatchGet(sheets,
+    [`${RE.events}!A2:M`, `${RE.players}!A2:G`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`], null, true);
   const ei = evRows.findIndex((r) => r[0] === eventId);
   if (ei < 0) return respond(404, { error: "Event not found" });
   const ev = reEventObj(evRows[ei]);
   if (ev.status === "done") return respond(400, { error: "Event sudah selesai." });
-  const [allPRows, wRowsAll, mRowsAll, eloRows] = await Promise.all([
-    reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"),
-    reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G"),
-  ]);
   const players = allPRows.filter((r) => r[0] === eventId).map(rePlayerObj);
   const matches = mRowsAll.filter((r) => r[0] === eventId).map(reMatchObj);
   let waves = wRowsAll.filter((r) => r[0] === eventId).map(reWaveObj);
@@ -3364,20 +3379,21 @@ async function reGenerateWave(eventId, body) {
   erow[5] = phase === 2 ? "phase2" : "phase1"; erow[6] = phase; erow[11] = nextWaveNum;
   await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:M${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [erow.slice(0, 13)] } });
   const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  reCacheClear();
   return respond(200, { wave: nextWaveNum, phase, cut: cutJustHappened, startTime: wave.startTime, matches: matchRows.map((r) => reMatchView(reMatchObj(r), nameById)) });
 }
 
 async function reSubmitScore(eventId, body) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:score:" + eventId;
   const matchId = body.matchId;
   const scoreA = Math.max(0, Math.round(Number(body.scoreA)));
   const scoreB = Math.max(0, Math.round(Number(body.scoreB)));
   if (!matchId || isNaN(scoreA) || isNaN(scoreB)) return respond(400, { error: "matchId, scoreA, scoreB wajib." });
-  const mRows = await reGet(sheets, RE.matches, "A2:O");
+  const [mRows, pRows, eloRows] = await reBatchGet(sheets,
+    [`${RE.matches}!A2:O`, `${RE.players}!A2:G`, `${TABS.elo_log}!A2:G`], null, true);
   const idx = mRows.findIndex((r) => r[0] === eventId && r[1] === matchId);
   if (idx < 0) return respond(404, { error: "Match not found" });
   const m = reMatchObj(mRows[idx]);
-  const [pRows, eloRows] = await Promise.all([reGet(sheets, RE.players, "A2:G"), reGet(sheets, TABS.elo_log, "A2:G")]);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
   const nameById = {}; players.forEach((p) => (nameById[p.id] = p.canonical || p.name));
   const eloState = reEloStateFromRows(eloRows);
@@ -3410,12 +3426,13 @@ async function reSubmitScore(eventId, body) {
       }
     }
   }
+  reCacheClear();
   return respond(200, { ok: true, matchId, scoreA, scoreB, waveComplete, eventDone });
 }
 
 async function reScorerView(eventId, set) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
-  const [evRows, pRows, mRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.matches, "A2:O")]);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:scorer:" + String(set || "A").toUpperCase() + ":" + eventId;
+  const [evRows, pRows, mRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:G`, `${RE.matches}!A2:O`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3437,8 +3454,8 @@ async function reScorerView(eventId, set) {
 }
 
 async function rePlayerView(eventId, playerId) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
-  const [evRows, pRows, wRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:p:" + playerId;
+  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:G`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3467,16 +3484,20 @@ async function rePlayerView(eventId, playerId) {
   if (event.phase >= 2 && me.tier) scope = players.filter((p) => p.tier === me.tier).map((p) => p.id);
   const st = reStandings(matches, scope, eloById, phaseFilter, tieMatches);
   const myRank = st.ordered.indexOf(playerId) + 1;
+  const full = st.ordered.map((id, i) => ({ rank: i + 1, playerId: id, name: nameById[id], diff: st.diff[id] || 0, me: id === playerId }));
+  const mi = full.findIndex((r) => r.me);
+  const from = Math.max(0, mi - 2);
+  const board = full.slice(from, from + 5);
   return respond(200, {
     event: { id: event.id, name: event.name, status: event.status, phase: event.phase, startTime: event.startTime },
     me: { id: me.id, name: me.name, tier: me.tier, elo: eloById[me.id], diff: st.diff[playerId] || 0, played: st.played[playerId] || 0, rank: myRank, scopeSize: scope.length },
-    next: next || null, schedule: sched,
+    next: next || null, schedule: sched, board,
   }, { "Cache-Control": "no-store" });
 }
 
 async function reRanking(eventId) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
-  const [evRows, pRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:rank:" + eventId;
+  const [evRows, pRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:G`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
@@ -3502,18 +3523,19 @@ async function reRanking(eventId) {
 }
 
 async function reClaim(eventId, body) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:claim:" + eventId;
   const pRows = await reGet(sheets, RE.players, "A2:G");
   const abs = pRows.findIndex((r) => r[0] === eventId && (r[1] === body.playerId || normName(r[2]) === normName(body.name || "")));
   if (abs < 0) return respond(404, { error: "Pemain tidak ditemukan" });
   const row = pRows[abs].slice(); while (row.length < 7) row.push(""); row[6] = new Date().toISOString();
   await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:G${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 7)] } });
+  reCacheClear();
   return respond(200, { ok: true, playerId: row[1], name: row[2] });
 }
 
 async function reGetEvent(eventId) {
-  const sheets = getSheets(); await reEnsureTabs(sheets);
-  const [evRows, pRows, wRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:ev:" + eventId;
+  const [evRows, pRows, wRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.events}!A2:M`, `${RE.players}!A2:G`, `${RE.waves}!A2:F`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`]);
   const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
   const event = reEventObj(ev);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
