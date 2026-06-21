@@ -253,6 +253,7 @@ const netlifyHandler = async (event) => {
       return await tRemapCourts(decodeURIComponent(path.replace("tournament/event/", "").replace("/remap-courts", "")), body);
     }
     if (path === "tournament/repair-match-ids" && method === "POST") return await tRepairMatchIds(body);
+    if (path === "tournament/recap" && method === "POST") return await tRecap(body);
     if (path.startsWith("tournament/") && path.endsWith("/playoff") && method === "POST") {
       return await tGeneratePlayoff(decodeURIComponent(path.replace("tournament/", "").replace("/playoff", "")), body);
     }
@@ -298,6 +299,11 @@ const netlifyHandler = async (event) => {
     if (path === "dedup/match" && method === "POST") return await ddMatch(body);
     if (path === "dedup/apply" && method === "POST") return await ddApply(body);
     if (path === "dedup/merge" && method === "POST") return await ddMerge(body);
+
+    // --- RECAP TURNAMEN OTOMATIS ---
+    if (path === "recap/list" && method === "GET") return await recapList();
+    if (path.startsWith("recap/") && method === "GET")
+      return await recapBuild(decodeURIComponent(path.replace("recap/", "")));
 
     return respond(404, { error: "Route not found", route: path });
   } catch (err) {
@@ -2818,4 +2824,283 @@ async function ddMerge(body) {
     }
   } catch (e) { console.error("merge players:", e.message); }
   return respond(200, { success: true, canonical, merged: [...alset], eloRebind: rebind, playersRemoved: removed });
+}
+
+// ==============================================================
+// RECAP TURNAMEN OTOMATIS  (fakta dihitung di kode, AI menulis caption)
+// ==============================================================
+function rcTeam(ent, id) { return (ent[id] && ent[id].team) || id || "?"; }
+function rcAggregate(ms, has) {
+  const agg = {};
+  ms.filter((m) => has(m.scoreA) && has(m.scoreB)).forEach((m) => {
+    const a = m.entrantA, b = m.entrantB, sa = Number(m.scoreA), sb = Number(m.scoreB);
+    [a, b].forEach((e) => { if (!agg[e]) agg[e] = { id: e, w: 0, l: 0, gf: 0, ga: 0 }; });
+    agg[a].gf += sa; agg[a].ga += sb; agg[b].gf += sb; agg[b].ga += sa;
+    if (sa > sb) { agg[a].w++; agg[b].l++; } else if (sb > sa) { agg[b].w++; agg[a].l++; }
+  });
+  Object.values(agg).forEach((x) => { x.pd = x.gf - x.ga; });
+  return agg;
+}
+async function tRecapData(sheets, id) {
+  const [trRes, evRes, enRes, mRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` }),
+  ]);
+  const trow = (trRes.data.values || []).find((x) => x[0] === id);
+  if (!trow) return null;
+  const ev = (evRes.data.values || []).find((x) => x[0] === trow[1]) || [];
+  const catName = { WD: "Women's Doubles", MD: "Men's Doubles", XD: "Mixed Doubles" }[trow[2]] || trow[2] || "";
+  const event = { name: ev[1] || "", venue: ev[2] || "", date: ev[3] || "", courts: parseInt(ev[5]) || 0 };
+  const tournament = { category: catName, level: trow[3] || "", status: trow[7] || "" };
+  const ent = {};
+  (enRes.data.values || []).filter((x) => x[0] === id).forEach((x) => {
+    ent[x[1]] = { id: x[1], team: `${x[2] || ""}${x[4] ? " & " + x[4] : ""}`, p1: x[2] || "", p2: x[4] || "", seed: parseInt(x[6]) || 0 };
+  });
+  const ms = (mRes.data.values || []).map(mapMatchRow).filter((m) => m.tournamentId === id);
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+  const done = ms.filter((m) => has(m.scoreA) && has(m.scoreB));
+  if (!done.length) return { ready: false, tournament, event, totals: { entrants: Object.keys(ent).length, matchesDone: 0, matchesTotal: ms.length } };
+
+  let points = 0; done.forEach((m) => { points += Number(m.scoreA) + Number(m.scoreB); });
+  const agg = rcAggregate(done, has);
+  const aggArr = Object.values(agg).sort((x, y) => y.pd - x.pd || y.w - x.w);
+  const dominant = aggArr[0] ? { team: rcTeam(ent, aggArr[0].id), w: aggArr[0].w, l: aggArr[0].l, pd: aggArr[0].pd } : null;
+
+  // Champion / runner-up: playoff bracket utama (round numerik tertinggi). Juara 3: round "BRONZE".
+  const playoff = done.filter((m) => m.stage === "PLAYOFF");
+  const mainPo = playoff.filter((m) => !/bronze/i.test(String(m.round)) && !isNaN(Number(m.round)));
+  let champion = null, runnerUp = null, finalScore = "";
+  if (mainPo.length) {
+    const maxR = Math.max(...mainPo.map((m) => Number(m.round)));
+    const fin = mainPo.filter((m) => Number(m.round) === maxR).slice(-1)[0];
+    if (fin && fin.winner) {
+      const loser = fin.entrantA === fin.winner ? fin.entrantB : fin.entrantA;
+      champion = { team: rcTeam(ent, fin.winner), seed: (ent[fin.winner] || {}).seed || 0 };
+      runnerUp = { team: rcTeam(ent, loser), seed: (ent[loser] || {}).seed || 0 };
+      const wsA = fin.entrantA === fin.winner;
+      finalScore = wsA ? `${fin.scoreA}-${fin.scoreB}` : `${fin.scoreB}-${fin.scoreA}`;
+    }
+  }
+  const bronzeM = playoff.find((m) => /bronze/i.test(String(m.round)) && m.winner);
+  const bronze = bronzeM ? { team: rcTeam(ent, bronzeM.winner) } : null;
+
+  // Upset terbesar (seed pemenang < seed lawan, gap terbesar)
+  let biggestUpset = null;
+  done.forEach((m) => {
+    if (!m.winner) return;
+    const loser = m.entrantA === m.winner ? m.entrantB : m.entrantA;
+    const ws = (ent[m.winner] || {}).seed || 0, ls = (ent[loser] || {}).seed || 0;
+    if (ws && ls && ws < ls) {
+      const gap = ls - ws;
+      if (!biggestUpset || gap > biggestUpset.gap) {
+        const wsA = m.entrantA === m.winner;
+        biggestUpset = { winner: rcTeam(ent, m.winner), winnerSeed: ws, loser: rcTeam(ent, loser), loserSeed: ls, gap,
+          score: wsA ? `${m.scoreA}-${m.scoreB}` : `${m.scoreB}-${m.scoreA}`, stage: m.stage === "PLAYOFF" ? "playoff" : "grup" };
+      }
+    }
+  });
+
+  // Blowout terbesar & playoff terketat
+  let blowout = null, closest = null;
+  done.forEach((m) => {
+    const diff = Math.abs(Number(m.scoreA) - Number(m.scoreB));
+    if (!blowout || diff > blowout.margin) blowout = { winner: rcTeam(ent, m.winner), score: `${m.scoreA}-${m.scoreB}`, margin: diff };
+    if (m.stage === "PLAYOFF" && (!closest || diff < closest.margin)) closest = { a: rcTeam(ent, m.entrantA), b: rcTeam(ent, m.entrantB), score: `${m.scoreA}-${m.scoreB}`, margin: diff };
+  });
+
+  // Cinderella: seed terendah yang menembus playoff
+  const poEntrants = new Set(); playoff.forEach((m) => { poEntrants.add(m.entrantA); poEntrants.add(m.entrantB); });
+  let cinderella = null;
+  poEntrants.forEach((eid) => {
+    const s = (ent[eid] || {}).seed || 0; if (!s) return;
+    if (!cinderella || s < cinderella.seed) cinderella = { team: rcTeam(ent, eid), seed: s };
+  });
+
+  // Juara grup
+  const groups = {};
+  done.filter((m) => m.stage === "GROUP").forEach((m) => { (groups[m.groupLabel] = groups[m.groupLabel] || []).push(m); });
+  const groupWinners = Object.keys(groups).sort().map((g) => {
+    const a = rcAggregate(groups[g], has);
+    const top = Object.values(a).sort((x, y) => y.w - x.w || y.pd - x.pd)[0];
+    return top ? { group: g, team: rcTeam(ent, top.id), w: top.w, pd: top.pd } : null;
+  }).filter(Boolean);
+
+  return { ready: true, tournament, event,
+    totals: { entrants: Object.keys(ent).length, matchesDone: done.length, matchesTotal: ms.length, points },
+    champion, runnerUp, finalScore, bronze, dominant, biggestUpset, blowout, closest, cinderella, groupWinners };
+}
+function rcFallback(f) {
+  const L = [];
+  L.push(`🏆 ${f.event.name || f.tournament.category} — Recap`);
+  if (f.champion) L.push(`Juara: ${f.champion.team}${f.finalScore ? ` (final ${f.finalScore}${f.runnerUp ? " vs " + f.runnerUp.team : ""})` : ""}`);
+  if (f.bronze) L.push(`Juara 3: ${f.bronze.team}`);
+  if (f.biggestUpset) L.push(`Kejutan terbesar: ${f.biggestUpset.winner} menumbangkan ${f.biggestUpset.loser} (${f.biggestUpset.score})`);
+  if (f.dominant) L.push(`Tim paling dominan: ${f.dominant.team} (${f.dominant.w}-${f.dominant.l}, selisih +${f.dominant.pd})`);
+  if (f.cinderella && (!f.champion || f.cinderella.team !== f.champion.team)) L.push(`Cinderella: ${f.cinderella.team} tembus playoff dari seed terendah`);
+  L.push(`${f.totals.matchesDone} match dimainkan, ${f.totals.points || 0} poin tercipta.`);
+  const ig = L.join("\n") + "\n\n#padel #trekkr #turnamenpadel";
+  return { ig, story: L.join("\n"), highlights: L.slice(1, 6), fallback: true };
+}
+async function rcAiWrite(facts, tone) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const prompt = `Kamu copywriter media sosial untuk platform padel Trekkr. Tulis recap turnamen dari FAKTA berikut.\nWAJIB: hanya gunakan nama, tim, skor, dan angka yang ADA di fakta. JANGAN mengarang nama/skor/statistik apa pun.\nBahasa Indonesia, gaya ${tone || "energik"}. Sebut juara, runner-up, juara 3, kejutan/upset, dan tim dominan bila ada.\nBalas HANYA JSON valid tanpa teks lain:\n{"ig":"caption Instagram maks 90 kata, ada emoji secukupnya dan 4-6 hashtag relevan diakhir","story":"recap naratif 2-3 paragraf untuk caption panjang / broadcast WhatsApp","highlights":["3-5 highlight singkat satu baris"]}\n\nFAKTA:\n${JSON.stringify(facts)}`;
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: process.env.ANTHROPIC_RECAP_MODEL || "claude-sonnet-4-6", max_tokens: 1400, messages: [{ role: "user", content: prompt }] }),
+    });
+    const j = await r.json();
+    let txt = (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim();
+    txt = txt.replace(/```json|```/g, "").trim();
+    const o = JSON.parse(txt);
+    if (!o.ig) return null;
+    return { ig: o.ig, story: o.story || o.ig, highlights: Array.isArray(o.highlights) ? o.highlights : [], fallback: false };
+  } catch (e) { console.error("rcAi:", e.message); return null; }
+}
+async function tRecap(body) {
+  const id = body.tournamentId;
+  if (!id) return respond(400, { error: "tournamentId wajib" });
+  const sheets = getSheets(); await ensureTabs(sheets);
+  const facts = await tRecapData(sheets, id);
+  if (!facts) return respond(404, { error: "Turnamen tidak ditemukan" });
+  if (!facts.ready) return respond(200, { ready: false, facts, message: "Belum ada match selesai untuk turnamen ini." });
+  let recap = await rcAiWrite(facts, body.tone);
+  const aiUsed = !!recap;
+  if (!recap) recap = rcFallback(facts);
+  return respond(200, { ready: true, facts, recap, aiUsed });
+}
+
+// ==============================================================
+// RECAP TURNAMEN OTOMATIS  (template sekarang, AI headline opsional)
+// ==============================================================
+function recapCatName(c) {
+  const map = { WD: "Women's Doubles", MD: "Men's Doubles", XD: "Mixed Doubles", WS: "Women's", MS: "Men's" };
+  return map[String(c || "").toUpperCase()] || c || "";
+}
+async function recapList() {
+  const sheets = getSheets();
+  const [tRes, eRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
+  ]);
+  const evMap = {};
+  (eRes.data.values || []).forEach((r) => { evMap[r[0]] = { name: r[1] || "", venue: r[2] || "", date: r[3] || "" }; });
+  const list = (tRes.data.values || []).map((x) => {
+    const ev = evMap[x[1]] || {};
+    return { tournamentId: x[0], eventId: x[1], category: x[2] || "", categoryName: recapCatName(x[2]),
+      level: x[3] || "", status: x[7] || "", eventName: ev.name, venue: ev.venue, date: ev.date, createdAt: x[9] || "" };
+  }).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  return respond(200, { tournaments: list });
+}
+async function recapAiHeadline(facts) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const prompt = `Kamu copywriter media sosial untuk platform padel "Trekkr". Dari fakta turnamen ini, buat 1 headline pendek (maksimal 6 kata, penuh energi) + 1 caption Instagram 2-3 baris (bahasa Indonesia santai, boleh emoji). Akhiri caption dengan "Rate. Compete. Rise. · trekkr.online".\nBalas HANYA JSON: {"headline":"...","caption":"..."}\n\nFAKTA:\n${JSON.stringify(facts)}`;
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001", max_tokens: 700, messages: [{ role: "user", content: prompt }] }),
+    });
+    const j = await r.json();
+    let txt = (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim().replace(/```json|```/g, "").trim();
+    return JSON.parse(txt);
+  } catch (e) { console.error("recapAi:", e.message); return null; }
+}
+async function recapBuild(tournamentId) {
+  const sheets = getSheets();
+  const [tRes, eRes, enRes, mRes, elRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_tournaments}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_events}!A2:H` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_entrants}!A2:J` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.t_matches}!A2:P` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }),
+  ]);
+  const trow = (tRes.data.values || []).find((x) => x[0] === tournamentId);
+  if (!trow) return respond(404, { error: "Tournament not found" });
+  const eventId = trow[1], category = trow[2] || "", level = trow[3] || "";
+  const ev = (eRes.data.values || []).find((x) => x[0] === eventId) || [];
+  const event = { name: ev[1] || "Turnamen", venue: ev[2] || "", date: ev[3] || "", category, categoryName: recapCatName(category), level };
+
+  // entrant map
+  const emap = {};
+  (enRes.data.values || []).filter((r) => r[0] === tournamentId).forEach((r) => {
+    const p1 = r[2] || "", p2 = r[4] || "";
+    emap[r[1]] = { label: p2 ? `${p1} / ${p2}` : p1, players: [p1, p2].filter(Boolean), seed: parseInt(r[6]) || 0 };
+  });
+  const lbl = (id) => (emap[id] ? emap[id].label : id || "—");
+
+  const matches = (mRes.data.values || []).filter((r) => r[0] === tournamentId);
+  const done = matches.filter((r) => r[14] === "DONE" && r[13]);
+
+  // champion via playoff final (MAIN, round tertinggi)
+  let champion = null, runnerUp = null, finalScore = null;
+  const main = matches.filter((r) => r[2] === "PLAYOFF" && (r[4] || "") === "MAIN" && r[14] === "DONE" && r[13]);
+  if (main.length) {
+    const maxRound = Math.max(...main.map((r) => parseInt(r[5]) || 0));
+    const fin = main.find((r) => (parseInt(r[5]) || 0) === maxRound);
+    if (fin) { champion = fin[13]; runnerUp = fin[13] === fin[9] ? fin[10] : fin[9]; finalScore = fin[13] === fin[9] ? `${fin[11]}-${fin[12]}` : `${fin[12]}-${fin[11]}`; }
+  }
+  const bronzeM = matches.find((r) => r[2] === "PLAYOFF" && (r[4] || "") === "BRONZE" && r[14] === "DONE" && r[13]);
+  const bronze = bronzeM ? bronzeM[13] : null;
+
+  // MVP: kenaikan ELO terbesar di sesi event
+  const sessionId = "SES_TRN_" + eventId;
+  const gain = {};
+  (elRes.data.values || []).forEach((r) => {
+    if (r[0] === sessionId && r[1]) { gain[r[1]] = (gain[r[1]] || 0) + (parseInt(r[3]) || 0); }
+  });
+  let mvp = null;
+  Object.keys(gain).forEach((nm) => { if (!mvp || gain[nm] > mvp.gain) mvp = { name: nm, gain: gain[nm] }; });
+
+  // Upset terbesar: pemenang seed lebih rendah, gap terbesar
+  let upset = null;
+  done.forEach((r) => {
+    const w = r[13], a = r[9], b = r[10], loser = w === a ? b : a;
+    const sw = (emap[w] || {}).seed || 0, sl = (emap[loser] || {}).seed || 0;
+    if (sw && sl && sw < sl) {
+      const gapv = sl - sw, margin = Math.abs((parseInt(r[11]) || 0) - (parseInt(r[12]) || 0));
+      if (!upset || gapv > upset.gap || (gapv === upset.gap && margin > upset.margin))
+        upset = { winner: lbl(w), loser: lbl(loser), score: `${r[11]}-${r[12]}`, gap: gapv, margin };
+    }
+  });
+
+  const teams = Object.keys(emap).length;
+  const stats = {
+    matches: done.length, teams,
+    players: (enRes.data.values || []).filter((r) => r[0] === tournamentId).reduce((s, r) => s + [r[2], r[4]].filter(Boolean).length, 0),
+    games: done.reduce((s, r) => s + (parseInt(r[11]) || 0) + (parseInt(r[12]) || 0), 0),
+  };
+
+  const recap = {
+    event, finished: !!champion,
+    champion: champion ? lbl(champion) : null, finalScore,
+    runnerUp: runnerUp ? lbl(runnerUp) : null,
+    bronze: bronze ? lbl(bronze) : null,
+    mvp, upset: upset ? { winner: upset.winner, loser: upset.loser, score: upset.score } : null, stats,
+  };
+
+  // caption template baku
+  const champLine = recap.champion ? `🏆 ${recap.champion} — JUARA ${event.categoryName || ""} ${event.name}!`.trim() : `📋 Recap ${event.name}`;
+  let cap = champLine + "\n";
+  if (recap.runnerUp) cap += `🥈 ${recap.runnerUp}\n`;
+  if (recap.bronze) cap += `🥉 ${recap.bronze}\n`;
+  cap += "\n";
+  if (mvp) cap += `🔥 MVP: ${mvp.name} (${mvp.gain >= 0 ? "+" : ""}${mvp.gain} ELO)\n`;
+  if (recap.upset) cap += `⚡ Upset: ${recap.upset.winner} kalahkan ${recap.upset.loser} ${recap.upset.score}\n`;
+  cap += `\n${stats.teams} tim · ${stats.matches} match${event.venue ? " · " + event.venue : ""}\n\nRate. Compete. Rise. · trekkr.online`;
+  recap.headline = recap.champion ? `${recap.champion} Juara!` : event.name;
+  recap.caption = cap;
+
+  // lapisan AI opsional
+  const ai = await recapAiHeadline({ event: event.name, venue: event.venue, category: event.categoryName, champion: recap.champion, runnerUp: recap.runnerUp, bronze: recap.bronze, mvp, upset: recap.upset, stats });
+  if (ai && ai.headline) recap.headline = ai.headline;
+  if (ai && ai.caption) recap.caption = ai.caption;
+  recap.aiUsed = !!ai;
+
+  return respond(200, { recap });
 }
