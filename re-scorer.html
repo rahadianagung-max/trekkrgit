@@ -68,7 +68,7 @@ async function boot(){
   try{const {events}=await api('re/events');$('#evsel').innerHTML=events.slice().reverse().map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');}catch(e){err(e.message);}
 }
 function startPick(){EV=$('#evsel').value;SET=$('#setsel').value;location.search='?e='+EV+'&set='+SET;}
-function start(){$('#pick').style.display='none';$('#main').style.display='block';load();clearInterval(POLL);POLL=setInterval(load,8000);}
+function start(){$('#pick').style.display='none';$('#main').style.display='block';load();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)load();},10000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});}
 
 async function load(){
   try{

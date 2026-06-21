@@ -158,7 +158,7 @@ async function submitNewEvent(){
     openEvent(r.eventId);
   }catch(e){err(e.message);} $('#createBtn').disabled=false;
 }
-function openEvent(id){CUR=id;show('panel');loadPanel();clearInterval(POLL);POLL=setInterval(loadPanel,10000);}
+function openEvent(id){CUR=id;show('panel');loadPanel();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)loadPanel();},15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&CUR)loadPanel();});}
 
 let DATA=null;
 async function loadPanel(){

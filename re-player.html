@@ -107,14 +107,14 @@ async function claim(pid){
     startMe();
   }catch(e){err(e.message);}
 }
-function startMe(){$('#claim').style.display='none';$('#me').style.display='block';load();clearInterval(POLL);POLL=setInterval(load,10000);}
+function startMe(){$('#claim').style.display='none';$('#me').style.display='block';load();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)load();},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});}
 
 async function load(){
   try{
-    const [d,rk]=await Promise.all([api('re/event/'+EV+'/player/'+PID),api('re/event/'+EV+'/ranking')]);
+    const d=await api('re/event/'+EV+'/player/'+PID);
     $('#evname').textContent=d.event.name;
     $('#evsub').textContent=(d.event.status==='done'?'selesai':(d.event.phase>=2?'Fase 2 · tier':'Fase 1 · seeding'));
-    renderNext(d);renderSched(d);renderBoard(d,rk);renderStats(d);
+    renderNext(d);renderSched(d);renderBoard(d);renderStats(d);
   }catch(e){err(e.message);}
 }
 function renderNext(d){
@@ -140,14 +140,10 @@ function renderSched(d){
   });
   $('#sched').innerHTML=html;
 }
-function renderBoard(d,rk){
+function renderBoard(d){
   $('#ranklab').textContent=d.me.tier?('Klasemen · Tier '+d.me.tier):'Klasemen live';
   $('#myrank').textContent='#'+d.me.rank+' dari '+d.me.scopeSize;
-  let rows=rk.ranking;
-  if(d.me.tier)rows=rows.filter(r=>r.tier===d.me.tier);
-  const i=rows.findIndex(r=>r.playerId===PID);
-  const from=Math.max(0,i-2),slice=rows.slice(from,from+5);
-  $('#board').innerHTML=slice.map(r=>`<div class="lb ${r.playerId===PID?'me':''}"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.playerId===PID?' (kamu)':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff}</span></div>`).join('');
+  $('#board').innerHTML=(d.board||[]).map(r=>`<div class="lb ${r.me?'me':''}"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.me?' (kamu)':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff}</span></div>`).join('');
 }
 function renderStats(d){
   $('#stats').innerHTML=`<div class="st"><div class="l">Selisih poin</div><div class="v">${d.me.diff>0?'+':''}${d.me.diff}</div></div>
