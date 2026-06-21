@@ -293,6 +293,12 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("reg/registrations/") && method === "GET")
       return await regListRegistrations(decodeURIComponent(path.replace("reg/registrations/", "")));
 
+    // --- DEDUP + SEED AGENT (AI-assisted) ---
+    if (path === "dedup/players-scan" && method === "GET") return await ddPlayersScan();
+    if (path === "dedup/match" && method === "POST") return await ddMatch(body);
+    if (path === "dedup/apply" && method === "POST") return await ddApply(body);
+    if (path === "dedup/merge" && method === "POST") return await ddMerge(body);
+
     return respond(404, { error: "Route not found", route: path });
   } catch (err) {
     console.error("Function error:", err);
@@ -2602,4 +2608,214 @@ async function regListRegistrations(formId) {
     return { regId: r[0], timestamp: r[2], name: r[3], gender: r[4], phone: r[5], photoUrl: r[6], paymentProofUrl: r[7], data, status: r[10] || "received" };
   });
   return respond(200, { registrations: list, count: list.length });
+}
+
+// ==============================================================
+// DEDUP + SEED AGENT  (fuzzy match di kode, AI hanya untuk judgment)
+// ==============================================================
+function ddNorm(s) {
+  return String(s || "").toLowerCase()
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[()]/g, " ")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ").trim();
+}
+function ddTokens(s) { return ddNorm(s).split(" ").filter(Boolean); }
+function ddLev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + c);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+function ddSim(a, b) {
+  const na = ddNorm(a), nb = ddNorm(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  const ta = ddTokens(a), tb = ddTokens(b);
+  const sa = new Set(ta), sb = new Set(tb);
+  let inter = 0; sa.forEach((t) => { if (sb.has(t)) inter++; });
+  const uni = new Set([...ta, ...tb]).size || 1;
+  const jacc = inter / uni;
+  const cont = inter / (Math.min(sa.size, sb.size) || 1);
+  const L = Math.max(na.length, nb.length) || 1;
+  const levR = 1 - ddLev(na, nb) / L;
+  let score = Math.max(jacc, 0.55 * cont + 0.45 * levR, levR);
+  if (Math.min(sa.size, sb.size) === 1) score = Math.min(score, 0.72); // nama 1 kata = ambigu
+  return Math.round(score * 100) / 100;
+}
+function ddBand(s) { return s >= 0.92 ? "match" : s >= 0.75 ? "review" : "new"; }
+function ddEloMap(eloRows) {
+  const m = {};
+  (eloRows || []).forEach((r) => {
+    const nm = (r[1] || "").trim(); if (!nm) return;
+    const key = nm.toLowerCase();
+    const e = parseInt(r[2]), w = parseInt(r[4]) || 0, l = parseInt(r[5]) || 0, ts = r[6] || "";
+    if (!m[key]) m[key] = { name: nm, elo: 1350, matches: 0, lastSeen: "" };
+    if (!isNaN(e)) m[key].elo = e;        // baris terakhir = ELO terkini
+    m[key].matches += w + l;
+    if (ts > m[key].lastSeen) m[key].lastSeen = ts;
+  });
+  return m;
+}
+async function ddAiAdjudicate(pairs) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key || !pairs.length) return null;
+  const list = pairs.map((p, i) => `${i}. "${p.a}"  vs  "${p.b}"`).join("\n");
+  const prompt = `Kamu memverifikasi duplikat nama pemain padel Indonesia. Untuk tiap pasang, tentukan apakah MERUJUK ORANG YANG SAMA. Pertimbangkan: nama panggilan/julukan, inisial, variasi ejaan, urutan kata, tambahan kata dalam kurung. Hati-hati: nama depan umum yang sama (mis. "Andi") belum tentu orang sama.\nBalas HANYA JSON array, tanpa teks lain: [{"i":0,"same":true,"confidence":0.0,"reason":"singkat"}]\n\n${list}`;
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001", max_tokens: 1024, messages: [{ role: "user", content: prompt }] }),
+    });
+    const j = await r.json();
+    let txt = (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim();
+    txt = txt.replace(/```json|```/g, "").trim();
+    const arr = JSON.parse(txt);
+    const out = {}; arr.forEach((o) => { out[o.i] = o; });
+    return out;
+  } catch (e) { console.error("ddAi:", e.message); return null; }
+}
+async function ddPlayersScan() {
+  const sheets = getSheets();
+  const [pRes, eRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }),
+  ]);
+  const eMap = ddEloMap(eRes.data.values || []);
+  const players = (pRes.data.values || []).map((r) => {
+    const em = eMap[(r[0] || "").toLowerCase()] || {};
+    return { name: r[0] || "", ig: r[1] || "", verified: r[2] === "TRUE", gender: (r[4] || "M").toUpperCase(),
+      region: r[5] || "", photoUrl: r[6] || "", elo: em.elo == null ? 1350 : em.elo, matches: em.matches || 0, lastSeen: em.lastSeen || "" };
+  }).filter((p) => p.name);
+  const parent = players.map((_, i) => i);
+  const find = (x) => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  for (let i = 0; i < players.length; i++)
+    for (let j = i + 1; j < players.length; j++)
+      if (ddSim(players[i].name, players[j].name) >= 0.85) parent[find(i)] = find(j);
+  const groups = {};
+  players.forEach((p, i) => { const g = find(i); (groups[g] = groups[g] || []).push(p); });
+  let clusters = Object.values(groups).filter((g) => g.length > 1).map((g) => {
+    g.sort((a, b) => (b.matches - a.matches) || (b.verified - a.verified) || (b.elo - a.elo));
+    return { canonical: g[0].name, members: g, maxScore: Math.max(...g.slice(1).map((m) => ddSim(g[0].name, m.name))) };
+  });
+  clusters.sort((a, b) => b.members.length - a.members.length || b.maxScore - a.maxScore);
+  return respond(200, { clusters, totalPlayers: players.length, dupGroups: clusters.length });
+}
+async function ddMatch(body) {
+  const sheets = getSheets();
+  let inputs = [];
+  if (body.formId) {
+    await ensureRegTabs(sheets);
+    const rres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+    (rres.data.values || []).filter((r) => r[1] === body.formId).forEach((r) => inputs.push({ name: r[3] || "", regId: r[0], gender: r[4] || "", status: r[10] || "received" }));
+  } else if (Array.isArray(body.names)) {
+    inputs = body.names.map((n) => ({ name: String(n || "") }));
+  }
+  inputs = inputs.filter((x) => x.name.trim());
+  if (!inputs.length) return respond(400, { error: "names atau formId wajib" });
+  const defaultSeed = parseInt(body.defaultSeed) || 1350;
+  const [pRes, eRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }),
+  ]);
+  const eMap = ddEloMap(eRes.data.values || []);
+  const players = (pRes.data.values || []).map((r) => ({ name: r[0] || "", gender: (r[4] || "M").toUpperCase(), region: r[5] || "" })).filter((p) => p.name);
+  const results = inputs.map((inp) => {
+    const cands = players.map((p) => {
+      const em = eMap[p.name.toLowerCase()] || {};
+      return { name: p.name, score: ddSim(inp.name, p.name), elo: em.elo == null ? 1350 : em.elo, matches: em.matches || 0, gender: p.gender, region: p.region };
+    }).filter((c) => c.score >= 0.6).sort((a, b) => b.score - a.score).slice(0, 3);
+    const best = cands[0];
+    const band = best ? ddBand(best.score) : "new";
+    return { input: inp.name, regId: inp.regId || null, regStatus: inp.status || null, status: band,
+      suggestedSeed: band === "match" && best ? best.elo : defaultSeed, candidates: cands };
+  });
+  const reviewPairs = [], idxMap = [];
+  results.forEach((res, ri) => { if (res.status === "review" && res.candidates[0]) { idxMap.push(ri); reviewPairs.push({ a: res.input, b: res.candidates[0].name }); } });
+  const ai = await ddAiAdjudicate(reviewPairs);
+  if (ai) {
+    idxMap.forEach((ri, k) => {
+      const v = ai[k]; if (!v) return;
+      const res = results[ri];
+      res.ai = { verdict: v.same ? "same" : "different", confidence: v.confidence, reason: v.reason };
+      if (v.same && v.confidence >= 0.6) { res.status = "match"; res.suggestedSeed = res.candidates[0].elo; }
+      else if (!v.same && v.confidence >= 0.6) { res.status = "new"; res.suggestedSeed = defaultSeed; }
+    });
+  }
+  return respond(200, { results, aiUsed: !!ai, count: results.length });
+}
+async function ddApply(body) {
+  const { regId, resolvedName, seed, action } = body; // action: "link" | "new"
+  if (!regId) return respond(400, { error: "regId wajib" });
+  const sheets = getSheets(); await ensureRegTabs(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((r) => r[0] === regId);
+  if (ri < 0) return respond(404, { error: "Registrasi tidak ditemukan" });
+  const sr = ri + 2, row = rows[ri];
+  const finalName = (resolvedName || row[3] || "").trim();
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!D${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[finalName]] } });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!K${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[action === "link" ? "linked" : "seeded"]] } });
+  if (action !== "link") {
+    const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
+    const exists = (pRes.data.values || []).some((r) => (r[0] || "").toLowerCase() === finalName.toLowerCase());
+    if (!exists) {
+      const now = new Date().toISOString();
+      const gender = (row[4] || "M").toUpperCase().startsWith("F") ? "F" : "M";
+      await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[finalName, "", "FALSE", finalName, gender, "", row[6] || "", "", now]] } });
+      await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [["INITIAL", finalName, parseInt(seed) || 1350, 0, 0, 0, now]] } });
+    }
+  }
+  return respond(200, { success: true, name: finalName });
+}
+async function ddMerge(body) {
+  const { canonical, aliases } = body;
+  if (!canonical || !Array.isArray(aliases) || !aliases.length) return respond(400, { error: "canonical & aliases wajib" });
+  const alset = new Set(aliases.filter((a) => a && a.toLowerCase() !== canonical.toLowerCase()).map((a) => a.toLowerCase()));
+  if (!alset.size) return respond(400, { error: "tidak ada alias valid" });
+  const sheets = getSheets();
+  // 1) rebind ELO_Log kolom B (alias -> canonical), 1x tulis kolom B
+  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+  const eRows = eRes.data.values || [];
+  let rebind = 0;
+  const colB = eRows.map((r) => { const nm = r[1] || ""; if (alset.has(nm.toLowerCase())) { rebind++; return [canonical]; } return [nm]; });
+  if (colB.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!B2:B${colB.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: colB } });
+  // 2) rebind Registrations kolom D
+  try {
+    const rRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+    const rRows = rRes.data.values || [];
+    if (rRows.length) {
+      const colD = rRows.map((r) => { const nm = r[3] || ""; return [alset.has(nm.toLowerCase()) ? canonical : nm]; });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!D2:D${colD.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: colD } });
+    }
+  } catch (e) { console.error("merge reg:", e.message); }
+  // 3) hapus baris alias di Players (perlu sheetId, hapus dari bawah)
+  let removed = 0;
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(sheetId,title))" });
+    const sh = (meta.data.sheets || []).find((s) => s.properties.title === TABS.players);
+    const sheetId = sh ? sh.properties.sheetId : null;
+    const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
+    const names = (pRes.data.values || []).map((r) => r[0] || "");
+    const delRows = [];
+    names.forEach((nm, i) => { if (alset.has(nm.toLowerCase())) delRows.push(i + 1); }); // i=0 -> sheet row 2 -> api index 1
+    if (sheetId != null && delRows.length) {
+      delRows.sort((a, b) => b - a);
+      const requests = delRows.map((idx) => ({ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: idx, endIndex: idx + 1 } } }));
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests } });
+      removed = delRows.length;
+    }
+  } catch (e) { console.error("merge players:", e.message); }
+  return respond(200, { success: true, canonical, merged: [...alset], eloRebind: rebind, playersRemoved: removed });
 }
