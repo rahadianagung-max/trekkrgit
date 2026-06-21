@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trekkr · Pemain</title>
+<title>Trekkr · Player</title>
 <style>
 :root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75;--rd:#d8442e}
 *{box-sizing:border-box}
@@ -24,9 +24,12 @@ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-ser
 .ic{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;background:var(--bg);color:var(--mut)}
 .ic.now{background:var(--o);color:#fff}
 .div{display:flex;align-items:center;gap:8px;margin:8px 0 2px}.div span.l{flex:1;height:1px;background:var(--bd)}.div .t{font-size:11px;color:#854F0B;background:#FAEEDA;padding:2px 8px;border-radius:8px}
-.lb{display:flex;justify-content:space-between;font-size:14px;padding:6px 8px}
-.lb.me{background:var(--o2);border-radius:8px;font-weight:700;color:#9A3C18}
-.lb .rk{color:var(--mut);margin-right:10px}
+.board{max-height:380px;overflow:auto;border:1px solid var(--bd);border-radius:10px}
+.lb{display:flex;justify-content:space-between;font-size:14px;padding:8px 10px;border-bottom:1px solid #f1ede7}
+.lb:last-child{border-bottom:none}
+.lb.me{background:var(--o2);font-weight:700;color:#9A3C18}
+.lb .rk{color:var(--mut);margin-right:10px;display:inline-block;min-width:22px;text-align:right}
+.gh{font-size:11px;font-weight:700;color:#854F0B;background:#FAEEDA;padding:4px 10px;text-transform:uppercase;letter-spacing:.04em}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .st{background:var(--bg);border-radius:9px;padding:12px 10px}.st .l{font-size:12px;color:var(--mut)}.st .v{font-size:22px;font-weight:700}
 .muted{color:var(--mut);font-size:13px}
@@ -40,14 +43,14 @@ input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;
 </head>
 <body>
 <div class="app">
-<div class="top"><div class="r1"><b>trekkr</b><small id="evname"></small></div><small id="evsub"></small></div>
+<div class="top"><div class="r1"><b>trekkr</b><span style="display:flex;align-items:center;gap:12px"><small id="evname"></small><button id="switchBtn" onclick="switchPlayer()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer">Change name</button></span></div><small id="evsub"></small></div>
 <div class="err" id="err"></div>
 
 <!-- CLAIM -->
 <div id="claim" style="display:none">
   <div class="pickwrap">
-    <div class="lab">Pilih namamu untuk mulai</div>
-    <input id="search" placeholder="Cari nama...">
+    <div class="lab">Pick your name to start</div>
+    <input id="search" placeholder="Search name...">
     <div id="plist"></div>
   </div>
 </div>
@@ -55,16 +58,16 @@ input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;
 <!-- PERSONAL -->
 <div id="me" style="display:none">
   <div class="sec">
-    <div class="lab">Match berikutnya</div>
+    <div class="lab">Next match</div>
     <div id="next"></div>
   </div>
   <div class="sec" style="padding-top:0">
-    <div class="lab">Jadwal hari saya</div>
+    <div class="lab">My match schedule</div>
     <div id="sched"></div>
   </div>
   <div class="sec" style="border-top:1px solid var(--bd)">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="lab" id="ranklab" style="margin:0">Klasemen live</div><span id="myrank" style="font-size:13px;font-weight:700;color:var(--o)"></span></div>
-    <div id="board"></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="lab" id="ranklab" style="margin:0">Live standings</div><span id="myrank" style="font-size:13px;font-weight:700;color:var(--o)"></span></div>
+    <div class="board" id="board"></div>
   </div>
   <div class="sec" style="border-top:1px solid var(--bd)">
     <div class="stats" id="stats"></div>
@@ -75,6 +78,8 @@ input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;
 const API='https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,PID=null,POLL=null,PLAYERS=[];
+const TIER_EN={Emas:'Gold',Perak:'Silver',Perunggu:'Bronze'};
+function tierEN(t){return TIER_EN[t]||t;}
 function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}
 async function api(path,opts){const r=await fetch(API+'/'+path,opts);const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
 function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
@@ -82,7 +87,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 
 async function boot(){
   const q=gp();EV=q.e;
-  if(!EV){err('Link tidak lengkap (butuh ?e=eventId).');return;}
+  if(!EV){err('Incomplete link (needs ?e=eventId).');return;}
   PID=q.p||localStorage.getItem('re_pid_'+EV);
   if(PID){startMe();}else{showClaim();}
 }
@@ -90,13 +95,13 @@ async function showClaim(){
   $('#claim').style.display='block';
   try{
     const d=await api('re/event/'+EV);
-    $('#evname').textContent=d.event.name;$('#evsub').textContent=(d.event.venue||'')+' · klaim namamu';
+    $('#evname').textContent=d.event.name;$('#evsub').textContent=(d.event.venue||'')+' · pick your name';
     PLAYERS=d.players;renderPick('');
   }catch(e){err(e.message);}
 }
 function renderPick(f){
   const list=PLAYERS.filter(p=>p.name.toLowerCase().includes(f.toLowerCase()));
-  $('#plist').innerHTML=list.map(p=>`<div class="pl" onclick="claim('${p.id}')"><span>${esc(p.name)}</span><span class="muted">${p.claimed?'✓ sudah diklaim':'pilih'}</span></div>`).join('')||'<div class="muted">Tidak ada nama cocok.</div>';
+  $('#plist').innerHTML=list.map(p=>`<div class="pl" onclick="claim('${p.id}')"><span>${esc(p.name)}</span><span class="muted">${p.claimed?'✓ claimed':'pick'}</span></div>`).join('')||'<div class="muted">No matching name.</div>';
 }
 $('#search').addEventListener('input',e=>renderPick(e.target.value));
 async function claim(pid){
@@ -107,47 +112,70 @@ async function claim(pid){
     startMe();
   }catch(e){err(e.message);}
 }
-function startMe(){$('#claim').style.display='none';$('#me').style.display='block';load();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)load();},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});}
+function startMe(){$('#claim').style.display='none';$('#me').style.display='block';$('#switchBtn').style.display='inline-block';load();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)load();},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});}
+function switchPlayer(){
+  if(!confirm('Go back to the name list and pick again?'))return;
+  clearInterval(POLL);
+  localStorage.removeItem('re_pid_'+EV);
+  PID=null;
+  history.replaceState(null,'',location.pathname+'?e='+EV);
+  $('#me').style.display='none';
+  $('#switchBtn').style.display='none';
+  if($('#search'))$('#search').value='';
+  window.scrollTo(0,0);
+  showClaim();
+}
 
 async function load(){
   try{
     const d=await api('re/event/'+EV+'/player/'+PID);
     $('#evname').textContent=d.event.name;
-    $('#evsub').textContent=(d.event.status==='done'?'selesai':(d.event.phase>=2?'Fase 2 · tier':'Fase 1 · seeding'));
-    renderNext(d);renderSched(d);renderBoard(d);renderStats(d);
+    $('#evsub').textContent=(d.event.status==='done'?'finished':(d.event.phase>=2?'Phase 2 · tiers':'Phase 1 · seeding'));
+    renderNext(d);renderSched(d);renderStandings(d);renderStats(d);
   }catch(e){err(e.message);}
 }
 function renderNext(d){
+  if(d.me.status==='withdrawn'){$('#next').innerHTML='<div class="nextcard"><div class="bd"><b>You\u2019ve withdrawn</b><div class="muted" style="margin-top:4px">You\u2019re no longer scheduled for upcoming rounds. Your played results still count. Ask the organizer to re-activate you if you\u2019re back.</div></div></div>';return;}
   const n=d.next;
-  if(!n){$('#next').innerHTML='<div class="nextcard"><div class="bd"><b>'+(d.event.status==='done'?'Acara selesai 🎉':'Belum ada match terjadwal')+'</b><div class="muted" style="margin-top:4px">'+(d.event.status==='done'?'Lihat ranking finalmu di bawah.':'Tunggu gelombang berikutnya digenerate.')+'</div></div></div>';return;}
-  if(n.rest){$('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>Gelombang ${n.wave}</span><span>${n.time}</span></div><div class="bd"><b>Istirahat 🧘</b><div class="muted" style="margin-top:4px">Gelombang ini kamu rehat. Siap-siap gelombang berikutnya.</div></div></div>`;return;}
-  $('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>▶ Gelombang ${n.wave} · Court ${n.court}</span><span>${n.time}</span></div>
-    <div class="bd">${n.tier?`<div style="margin-bottom:8px"><span class="tier">${n.tier}</span></div>`:''}
+  if(!n){$('#next').innerHTML='<div class="nextcard"><div class="bd"><b>'+(d.event.status==='done'?'Event finished 🎉':'No match scheduled yet')+'</b><div class="muted" style="margin-top:4px">'+(d.event.status==='done'?'See your final ranking below.':'Waiting for the next round to be generated.')+'</div></div></div>';return;}
+  if(n.rest){$('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>Round ${n.wave}</span><span>${n.time||''}</span></div><div class="bd"><b>Rest 🧘</b><div class="muted" style="margin-top:4px">You sit out this round. Get ready for the next one.</div></div></div>`;return;}
+  if(!n.court||!n.opponents){$('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>Round ${n.wave}</span><span>${n.time||''}</span></div><div class="bd"><b>You play this round</b><div class="muted" style="margin-top:4px">Court, partner & opponents appear once the organizer starts the round.</div></div></div>`;return;}
+  $('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>▶ Round ${n.wave} · Court ${n.court}</span><span>${n.time}</span></div>
+    <div class="bd">${n.tier?`<div style="margin-bottom:8px"><span class="tier">${tierEN(n.tier)}</span></div>`:''}
     <div class="kv"><span class="k">Partner</span><b>${esc(n.partner)}</b></div>
-    <div class="kv"><span class="k">Lawan</span><b style="text-align:right">${esc(n.opponents.join(' & '))}</b></div></div></div>`;
+    <div class="kv"><span class="k">Opponents</span><b style="text-align:right">${esc((n.opponents||[]).join(' & '))}</b></div></div></div>`;
 }
 function renderSched(d){
   let lastPhase=1,html='';
   d.schedule.forEach(s=>{
-    if(s.phase===2&&lastPhase===1){lastPhase=2;html+=`<div class="div"><span class="l"></span><span class="t">Fase 2 · Tier</span><span class="l"></span></div>`;}
-    if(s.rest){html+=`<div class="row"><span class="ic">🧘</span><div style="flex:1"><div style="font-size:14px">Gelombang ${s.wave} · Istirahat</div><div class="muted">${s.time}</div></div></div>`;return;}
+    if(s.phase===2&&lastPhase===1){lastPhase=2;html+=`<div class="div"><span class="l"></span><span class="t">Phase 2 · Tiers</span><span class="l"></span></div>`;}
+    if(s.rest){html+=`<div class="row"><span class="ic">🧘</span><div style="flex:1"><div style="font-size:14px">Round ${s.wave} · Rest</div><div class="muted">${s.time}</div></div></div>`;return;}
     const now=d.next&&d.next.wave===s.wave;
     const sc=s.status==='done'?`<span class="${s.myScore>s.oppScore?'win':'lose'}">${s.myScore}–${s.oppScore}</span>`:'';
     const icon=s.status==='done'?'✓':(now?'▶':'•');
+    const lbl=s.court?('Court '+s.court):'TBD';
     html+=`<div class="row" ${now?'style="background:var(--o2);border-radius:8px;margin:0 -6px;padding-left:6px;padding-right:6px;border-top:none"':''}>
       <span class="ic ${now?'now':''}">${icon}</span>
-      <div style="flex:1"><div style="font-size:14px;${now?'font-weight:600;color:#9A3C18':''}">Gelombang ${s.wave} · Court ${s.court}</div><div class="muted" ${now?'style="color:#B5532B"':''}>${s.time}${now?' · sekarang':''}</div></div>${sc}</div>`;
+      <div style="flex:1"><div style="font-size:14px;${now?'font-weight:600;color:#9A3C18':''}">Round ${s.wave} · ${lbl}</div><div class="muted" ${now?'style="color:#B5532B"':''}>${s.time}${now?' · now':''}</div></div>${sc}</div>`;
   });
   $('#sched').innerHTML=html;
 }
-function renderBoard(d){
-  $('#ranklab').textContent=d.me.tier?('Klasemen · Tier '+d.me.tier):'Klasemen live';
-  $('#myrank').textContent='#'+d.me.rank+' dari '+d.me.scopeSize;
-  $('#board').innerHTML=(d.board||[]).map(r=>`<div class="lb ${r.me?'me':''}"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.me?' (kamu)':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff}</span></div>`).join('');
+function renderStandings(d){
+  $('#ranklab').textContent='Live standings';
+  $('#myrank').textContent='#'+d.me.rank+' of '+d.me.scopeSize;
+  const rk=d.ranking||[];
+  let lastTier='',html='';
+  rk.forEach(r=>{
+    if(r.tier&&r.tier!==lastTier){lastTier=r.tier;html+=`<div class="gh">${tierEN(r.tier)}</div>`;}
+    html+=`<div class="lb ${r.me?'me':''}" ${r.withdrawn?'style="opacity:.5"':''}><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.me?' (you)':''}${r.withdrawn?' <span class="muted">· out</span>':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff}</span></div>`;
+  });
+  const box=$('#board');box.innerHTML=html;
+  const meEl=box.querySelector('.me');
+  if(meEl)box.scrollTop=Math.max(0,meEl.offsetTop-box.clientHeight/2);
 }
 function renderStats(d){
-  $('#stats').innerHTML=`<div class="st"><div class="l">Selisih poin</div><div class="v">${d.me.diff>0?'+':''}${d.me.diff}</div></div>
-   <div class="st"><div class="l">Main</div><div class="v">${d.me.played}</div></div>
+  $('#stats').innerHTML=`<div class="st"><div class="l">Point diff</div><div class="v">${d.me.diff>0?'+':''}${d.me.diff}</div></div>
+   <div class="st"><div class="l">Played</div><div class="v">${d.me.played}</div></div>
    <div class="st"><div class="l">ELO</div><div class="v">${d.me.elo}</div></div>`;
 }
 boot();

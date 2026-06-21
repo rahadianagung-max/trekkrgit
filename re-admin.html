@@ -80,8 +80,10 @@ a.btn{display:inline-block;text-decoration:none}
       <div><label>Gelombang Fase 1 (seeding)</label><input id="f_p1" type="number" value="5"></div>
       <div><label>Gelombang Fase 2 (tier)</label><input id="f_p2" type="number" value="6"></div>
     </div>
+    <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div>
     <label>Daftar pemain — satu nama per baris (kelipatan 12, ideal 36)</label>
-    <textarea id="f_players" placeholder="Reza A.&#10;Andi P.&#10;Budi S.&#10;..."></textarea>
+    <textarea id="f_players" placeholder="Reza A.&#10;Andi P. | gold&#10;Budi S. | silver&#10;..."></textarea>
+    <div class="muted" style="margin-top:4px">Tip: set level per orang dengan format <b>Nama | level</b> (mis. "Budi | gold"). Tanpa level → pakai level default. Pemain yang sudah punya ELO global pakai ELO-nya.</div>
     <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="submitNewEvent()">Buat event</button></div>
   </div>
 </div>
@@ -133,6 +135,9 @@ function show(id){['home','create','panel'].forEach(x=>$('#'+x).classList.toggle
 function showHome(){clearInterval(POLL);show('home');loadEvents();}
 function showCreate(){show('create');}
 function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
+const LEVELS=[['upper_beginner','Upper Beginner'],['lower_bronze','Lower Bronze'],['bronze','Bronze'],['upper_bronze','Upper Bronze'],['silver','Silver'],['gold','Gold'],['platinum','Platinum']];
+function levelOpts(sel){return LEVELS.map(([k,l])=>`<option value="${k}"${k===sel?' selected':''}>${l}</option>`).join('');}
+$('#f_level').innerHTML=levelOpts('lower_bronze');
 
 $('#f_players').addEventListener('input',()=>{const n=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean).length;$('#pcount').textContent=n+' pemain';});
 
@@ -151,7 +156,7 @@ async function loadEvents(){
 async function submitNewEvent(){
   const players=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
-    courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,players};
+    courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,defaultLevel:$('#f_level').value,players};
   $('#createBtn').disabled=true;
   try{
     const r=await api('re/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -166,7 +171,7 @@ async function loadPanel(){
     const d=await api('re/event/'+CUR); DATA=d;
     const e=d.event;
     $('#p_name').textContent=e.name;
-    $('#p_meta').textContent=`${e.venue||''} · ${e.courts} court · ${e.matchMinutes} mnt/match · ${d.players.length} pemain`;
+    $('#p_meta').textContent=`${e.venue||''} · ${e.courts} court · ${e.matchMinutes} mnt/match · ${d.activeCount} aktif / ${d.players.length} pemain`;
     const st=e.status==='done'?'selesai':(e.phase>=2?'Fase 2 · tier':'Fase 1 · seeding');
     $('#p_status').textContent=st;$('#p_status').className='pill '+(e.status==='done'?'done':'live');
     $('#p_wave').textContent=`Gelombang ${e.currentWave} / ${e.p1Waves+e.p2Waves}`;
@@ -205,7 +210,7 @@ async function renderRank(){
     $('#t_rank').innerHTML=(final?'<h3>Ranking final</h3>':'<h3>Klasemen live</h3>')+ranking.map(r=>{
       let hdr='';
       if(r.tier&&r.tier!==last){last=r.tier;hdr=`<div class="muted" style="margin:8px 0 4px;font-weight:600">${r.tier}</div>`;}
-      return hdr+`<div class="lb"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}</span><span>${r.diff>0?'+':''}${r.diff} · ${r.elo}</span></div>`;
+      return hdr+`<div class="lb" ${r.withdrawn?'style="opacity:.55"':''}><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.withdrawn?' <span class="muted">(withdrawn)</span>':''}</span><span>${r.diff>0?'+':''}${r.diff} · ${r.elo}</span></div>`;
     }).join('');
   }catch(e){$('#t_rank').innerHTML='<div class="muted">'+e.message+'</div>';}
 }
@@ -213,11 +218,39 @@ function renderPeople(){
   const base=location.origin+location.pathname.replace('re-admin.html','re-player.html');
   const claim=base+'?e='+CUR;
   const qr='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(claim);
+  const active=DATA.players.filter(p=>p.status!=='withdrawn').length;
   $('#t_people').innerHTML=`<h3>QR onboarding (1 QR untuk semua pemain → klaim nama)</h3>
    <div class="row" style="align-items:flex-start"><img src="${qr}" alt="QR" style="border:1px solid var(--bd);border-radius:10px" onerror="this.style.display='none'">
    <div style="flex:1;min-width:200px"><div class="linkbox">${claim}</div><div class="muted" style="margin-top:6px">Pemain scan → pilih namanya → layar pribadinya muncul.</div></div></div>
-   <h3 style="margin-top:16px">${DATA.players.length} pemain</h3>
-   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">${DATA.players.map(p=>`<a class="lb" style="text-decoration:none;color:inherit;border:1px solid var(--bd);border-radius:8px" href="${base}?e=${CUR}&p=${p.id}" target="_blank"><span>${esc(p.name)}${p.claimed?' ✓':''}</span><span class="muted">${p.tier||p.elo}</span></a>`).join('')}</div>`;
+   <h3 style="margin-top:16px">Roster — ${active} aktif / ${DATA.players.length} total</h3>
+   <div class="row" style="margin-bottom:10px;gap:6px"><input id="addName" placeholder="Nama pemain telat / tambahan..." style="flex:1;min-width:140px"><select id="addLevel" style="max-width:160px">${levelOpts('lower_bronze')}</select><button class="pri" onclick="rosterAdd()">+ Tambah</button></div>
+   <div style="display:grid;gap:6px">${DATA.players.map(p=>playerRow(p,base)).join('')}</div>
+   <div class="muted" style="margin-top:8px">Telat/tidak datang/berhenti → <b>Withdraw</b> (dikeluarkan dari pairing gelombang berikutnya, skor yang sudah ada tetap dihitung). Datang lagi → <b>Aktifkan</b>.</div>`;
+}
+function playerRow(p,base){
+  const wd=p.status==='withdrawn';
+  const badge=wd?'<span class="pill" style="background:#fdecea;color:#a3271a">withdrawn</span>':(p.tier?`<span class="tier">${p.tier}</span>`:'');
+  return `<div class="lb" style="border:1px solid var(--bd);border-radius:8px;${wd?'opacity:.6':''}">
+    <span style="flex:1;display:flex;align-items:center;gap:6px"><a href="${base}?e=${CUR}&p=${p.id}" target="_blank" style="color:inherit;text-decoration:none">${esc(p.name)}</a>${p.claimed?' ✓':''} ${badge}</span>
+    <span style="display:flex;align-items:center;gap:6px">
+      <select onchange="rosterLevel('${p.id}',this.value)" title="ganti level" style="font-size:12px;padding:4px">${levelOpts(p.level)}</select>
+      <span class="muted" style="font-size:12px;min-width:34px;text-align:right">${p.elo}</span>
+      <button onclick="rosterAct('${p.id}','${wd?'reactivate':'withdraw'}')" style="font-size:12px;padding:5px 9px;${wd?'':'color:#a3271a'}">${wd?'Aktifkan':'Withdraw'}</button>
+    </span></div>`;
+}
+async function rosterAdd(){
+  const name=($('#addName').value||'').trim(); if(!name){err('Nama kosong');return;}
+  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',name,level:$('#addLevel').value})}); await loadPanel(); }
+  catch(e){err(e.message);}
+}
+async function rosterAct(pid,action){
+  if(action==='withdraw'&&!confirm('Tarik pemain ini dari sisa gelombang?'))return;
+  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,playerId:pid})}); await loadPanel(); }
+  catch(e){err(e.message);}
+}
+async function rosterLevel(pid,level){
+  try{ await api('re/event/'+CUR+'/roster',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'setlevel',playerId:pid,level})}); await loadPanel(); }
+  catch(e){err(e.message);}
 }
 function renderLinks(){
   const sc=location.origin+location.pathname.replace('re-admin.html','re-scorer.html');
