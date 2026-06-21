@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trekkr · Ranked Event Admin</title>
+<style>
+:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75;--rd:#d8442e}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+.top{background:var(--o);color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.top b{font-size:18px;letter-spacing:.04em}
+.top small{color:#FFE3D6;font-size:12px}
+.wrap{max-width:1000px;margin:0 auto;padding:18px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 12px}
+h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;font-weight:600}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,textarea,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+textarea{min-height:160px;resize:vertical;line-height:1.5}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+button{font-family:inherit;font-size:14px;font-weight:600;border-radius:9px;cursor:pointer;border:1px solid var(--bd);background:#fff;padding:9px 14px;color:var(--ink)}
+button.pri{background:var(--o);color:#fff;border-color:var(--o)}
+button.pri:disabled{background:#f0ddd4;border-color:#f0ddd4;color:#bb9b8c;cursor:not-allowed}
+button.gho{background:transparent}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+.evrow{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;cursor:pointer}
+.evrow:hover{border-color:var(--o)}
+.pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#eee;color:#555}
+.pill.live{background:var(--o2);color:#9A3C18}
+.pill.done{background:#e7f5ef;color:#0f6e56}
+.courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ct{border:1px solid var(--bd);border-radius:10px;padding:11px}
+.ct .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FAEEDA;color:#854F0B}
+.team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
+.muted{color:var(--mut);font-size:13px}
+.bar{height:7px;background:#eee;border-radius:4px;overflow:hidden;margin:6px 0}.bar>i{display:block;height:100%;background:var(--o)}
+.lb{display:flex;justify-content:space-between;font-size:14px;padding:6px 10px;border-bottom:1px solid #f1ede7}
+.lb .rk{color:var(--mut);width:34px;display:inline-block}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button.act{background:var(--o);color:#fff;border-color:var(--o)}
+.err{background:#fdecea;color:#a3271a;padding:9px 12px;border-radius:9px;font-size:13px;margin:8px 0;display:none}
+.linkbox{font-size:12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;word-break:break-all;font-family:ui-monospace,monospace}
+a.btn{display:inline-block;text-decoration:none}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="top"><div><b>trekkr</b> <small>· Ranked Event admin</small></div><div id="topstat" class="muted" style="color:#FFE3D6"></div></div>
+<div class="wrap">
+<div class="err" id="err"></div>
+
+<!-- LIST + CREATE -->
+<div id="home">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Event</h2><div class="sp"></div><button class="pri" onclick="showCreate()">+ Event baru</button></div>
+    <div id="evlist" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- CREATE FORM -->
+<div id="create" class="hide">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">Buat Ranked Event</h2><div class="sp"></div><button class="gho" onclick="showHome()">Batal</button></div>
+    <div class="grid g2" style="margin-top:8px">
+      <div><label>Nama event</label><input id="f_name" placeholder="Stellar Ranked 36"></div>
+      <div><label>Venue</label><input id="f_venue" placeholder="Padel Haven"></div>
+    </div>
+    <div class="grid g4">
+      <div><label>Tanggal</label><input id="f_date" type="date"></div>
+      <div><label>Jam mulai</label><input id="f_start" value="13:00"></div>
+      <div><label>Court</label><input id="f_courts" type="number" value="6"></div>
+      <div><label>Menit/match</label><input id="f_min" type="number" value="15"></div>
+    </div>
+    <div class="grid g2">
+      <div><label>Gelombang Fase 1 (seeding)</label><input id="f_p1" type="number" value="5"></div>
+      <div><label>Gelombang Fase 2 (tier)</label><input id="f_p2" type="number" value="6"></div>
+    </div>
+    <label>Daftar pemain — satu nama per baris (kelipatan 12, ideal 36)</label>
+    <textarea id="f_players" placeholder="Reza A.&#10;Andi P.&#10;Budi S.&#10;..."></textarea>
+    <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="createEvent()">Buat event</button></div>
+  </div>
+</div>
+
+<!-- CONTROL PANEL -->
+<div id="panel" class="hide">
+  <div class="card">
+    <div class="row">
+      <button class="gho" onclick="showHome()">← Event</button><div class="sp"></div>
+      <span id="p_status" class="pill"></span>
+    </div>
+    <h2 id="p_name" style="margin:10px 0 2px"></h2>
+    <div class="muted" id="p_meta"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="pri" id="genBtn" onclick="genWave()">Generate gelombang berikutnya</button>
+      <button class="gho" onclick="loadPanel()">↻ Refresh</button>
+      <div class="sp"></div>
+      <span class="muted" id="p_wave"></span>
+    </div>
+    <div class="bar" id="p_bar" style="margin-top:10px"><i style="width:0%"></i></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab act" data-t="board" onclick="tab('board')">Gelombang ini</button>
+      <button class="tab" data-t="rank" onclick="tab('rank')">Klasemen</button>
+      <button class="tab" data-t="people" onclick="tab('people')">Pemain & QR</button>
+      <button class="tab" data-t="links" onclick="tab('links')">Scorer / TV</button>
+    </div>
+    <div id="t_board"></div>
+    <div id="t_rank" class="hide"></div>
+    <div id="t_people" class="hide"></div>
+    <div id="t_links" class="hide"></div>
+  </div>
+</div>
+
+</div>
+<script>
+const API='https://trekkr.online/api';
+const $=s=>document.querySelector(s);
+let CUR=null, POLL=null;
+function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}
+async function api(path,opts){
+  const r=await fetch(API+'/'+path,opts); const t=await r.text(); let j;
+  try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}
+  if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); return j;
+}
+function show(id){['home','create','panel'].forEach(x=>$('#'+x).classList.toggle('hide',x!==id));}
+function showHome(){clearInterval(POLL);show('home');loadEvents();}
+function showCreate(){show('create');}
+function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
+
+$('#f_players').addEventListener('input',()=>{const n=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean).length;$('#pcount').textContent=n+' pemain';});
+
+async function loadEvents(){
+  try{
+    const {events}=await api('re/events');
+    const el=$('#evlist');
+    if(!events.length){el.innerHTML='<div class="muted">Belum ada event. Klik "Event baru".</div>';return;}
+    el.innerHTML=events.slice().reverse().map(e=>{
+      const cls=e.status==='done'?'done':(e.currentWave>0?'live':'');
+      const lab=e.status==='done'?'selesai':(e.phase>=2?'Fase 2':'Fase 1');
+      return `<div class="evrow" onclick="openEvent('${e.id}')"><div><b>${esc(e.name)}</b><div class="muted">${esc(e.venue||'')} · gelombang ${e.currentWave}/${e.p1Waves+e.p2Waves}</div></div><span class="pill ${cls}">${lab}</span></div>`;
+    }).join('');
+  }catch(e){err(e.message);}
+}
+async function createEvent(){
+  const players=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
+    courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,players};
+  $('#createBtn').disabled=true;
+  try{
+    const r=await api('re/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    openEvent(r.eventId);
+  }catch(e){err(e.message);} $('#createBtn').disabled=false;
+}
+function openEvent(id){CUR=id;show('panel');loadPanel();clearInterval(POLL);POLL=setInterval(loadPanel,10000);}
+
+let DATA=null;
+async function loadPanel(){
+  try{
+    const d=await api('re/event/'+CUR); DATA=d;
+    const e=d.event;
+    $('#p_name').textContent=e.name;
+    $('#p_meta').textContent=`${e.venue||''} · ${e.courts} court · ${e.matchMinutes} mnt/match · ${d.players.length} pemain`;
+    const st=e.status==='done'?'selesai':(e.phase>=2?'Fase 2 · tier':'Fase 1 · seeding');
+    $('#p_status').textContent=st;$('#p_status').className='pill '+(e.status==='done'?'done':'live');
+    $('#p_wave').textContent=`Gelombang ${e.currentWave} / ${e.p1Waves+e.p2Waves}`;
+    const cw=d.currentWave;
+    $('#p_bar').firstElementChild.style.width=(cw.total?Math.round(cw.done/cw.total*100):0)+'%';
+    const gb=$('#genBtn');
+    gb.disabled=!cw.canGenerateNext;
+    gb.textContent=e.currentWave===0?'Mulai gelombang 1':(cw.canGenerateNext?(e.currentWave>=e.p1Waves&&e.phase<2?'Potong tier & mulai Fase 2':'Generate gelombang '+(e.currentWave+1)):`Menunggu skor (${cw.done}/${cw.total})`);
+    $('#topstat').textContent=e.name;
+    renderBoard();renderRank();renderPeople();renderLinks();
+  }catch(e){err(e.message);}
+}
+async function genWave(){
+  $('#genBtn').disabled=true;
+  try{ await api('re/event/'+CUR+'/wave',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); await loadPanel(); }
+  catch(e){err(e.message);loadPanel();}
+}
+function tab(t){['board','rank','people','links'].forEach(x=>$('#t_'+x).classList.toggle('hide',x!==t));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('act',b.dataset.t===t));}
+function renderBoard(){
+  const cw=DATA.event.currentWave;
+  const ms=DATA.matches.filter(m=>m.wave===cw).sort((a,b)=>a.court-b.court);
+  if(!ms.length){$('#t_board').innerHTML='<div class="muted">Belum ada gelombang berjalan. Klik tombol generate di atas.</div>';return;}
+  $('#t_board').innerHTML='<div class="courts">'+ms.map(m=>ctCard(m)).join('')+'</div>';
+}
+function ctCard(m){
+  const done=m.status==='done';
+  const aw=done&&m.scoreA>m.scoreB,bw=done&&m.scoreB>m.scoreA;
+  return `<div class="ct"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${m.tier}</span>`:`<span class="muted" style="font-size:11px">${done?'selesai':'berjalan'}</span>`}</div>
+   <div class="team"><span>${esc(m.teamA.join(' / '))}</span><span class="sc ${aw?'win':''}">${done?m.scoreA:'–'}</span></div>
+   <div class="team"><span>${esc(m.teamB.join(' / '))}</span><span class="sc ${bw?'win':''}">${done?m.scoreB:'–'}</span></div></div>`;
+}
+async function renderRank(){
+  try{
+    const {ranking,final}=await api('re/event/'+CUR+'/ranking');
+    let last='';
+    $('#t_rank').innerHTML=(final?'<h3>Ranking final</h3>':'<h3>Klasemen live</h3>')+ranking.map(r=>{
+      let hdr='';
+      if(r.tier&&r.tier!==last){last=r.tier;hdr=`<div class="muted" style="margin:8px 0 4px;font-weight:600">${r.tier}</div>`;}
+      return hdr+`<div class="lb"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}</span><span>${r.diff>0?'+':''}${r.diff} · ${r.elo}</span></div>`;
+    }).join('');
+  }catch(e){$('#t_rank').innerHTML='<div class="muted">'+e.message+'</div>';}
+}
+function renderPeople(){
+  const base=location.origin+location.pathname.replace('re-admin.html','re-player.html');
+  const claim=base+'?e='+CUR;
+  const qr='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(claim);
+  $('#t_people').innerHTML=`<h3>QR onboarding (1 QR untuk semua pemain → klaim nama)</h3>
+   <div class="row" style="align-items:flex-start"><img src="${qr}" alt="QR" style="border:1px solid var(--bd);border-radius:10px" onerror="this.style.display='none'">
+   <div style="flex:1;min-width:200px"><div class="linkbox">${claim}</div><div class="muted" style="margin-top:6px">Pemain scan → pilih namanya → layar pribadinya muncul.</div></div></div>
+   <h3 style="margin-top:16px">${DATA.players.length} pemain</h3>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">${DATA.players.map(p=>`<a class="lb" style="text-decoration:none;color:inherit;border:1px solid var(--bd);border-radius:8px" href="${base}?e=${CUR}&p=${p.id}" target="_blank"><span>${esc(p.name)}${p.claimed?' ✓':''}</span><span class="muted">${p.tier||p.elo}</span></a>`).join('')}</div>`;
+}
+function renderLinks(){
+  const sc=location.origin+location.pathname.replace('re-admin.html','re-scorer.html');
+  $('#t_links').innerHTML=`<h3>Scorer (${DATA.scorers.A} / ${DATA.scorers.B})</h3>
+   <div class="row"><a class="btn" href="${sc}?e=${CUR}&set=A" target="_blank"><button class="pri">Buka Scorer A · ${DATA.scorers.A}</button></a>
+   <a class="btn" href="${sc}?e=${CUR}&set=B" target="_blank"><button class="pri">Buka Scorer B · ${DATA.scorers.B}</button></a></div>
+   <div class="muted" style="margin-top:8px">Bagikan link Scorer A ke 1 petugas dan Scorer B ke petugas lain. Mereka hanya bisa input court bagiannya.</div>`;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+const q=gp();
+if(q.e){openEvent(q.e);}else{showHome();}
+</script>
+</body>
+</html>

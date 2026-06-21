@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trekkr · Pemain</title>
+<style>
+:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75;--rd:#d8442e}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+.app{max-width:440px;margin:0 auto;min-height:100vh;background:#fff}
+.top{background:var(--o);color:#fff;padding:14px 16px}
+.top .r1{display:flex;justify-content:space-between;align-items:center}
+.top b{font-size:18px;letter-spacing:.04em}
+.top small{color:#FFE3D6;font-size:13px}
+.sec{padding:14px 16px}
+.lab{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;font-weight:600}
+.nextcard{border:2px solid var(--o);border-radius:13px;overflow:hidden}
+.nextcard .hd{background:var(--o);color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.nextcard .bd{padding:12px}
+.tier{font-size:11px;background:#FAEEDA;color:#854F0B;padding:3px 9px;border-radius:8px;font-weight:600}
+.kv{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}.kv .k{color:var(--mut)}
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #f1ede7}
+.ic{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;background:var(--bg);color:var(--mut)}
+.ic.now{background:var(--o);color:#fff}
+.div{display:flex;align-items:center;gap:8px;margin:8px 0 2px}.div span.l{flex:1;height:1px;background:var(--bd)}.div .t{font-size:11px;color:#854F0B;background:#FAEEDA;padding:2px 8px;border-radius:8px}
+.lb{display:flex;justify-content:space-between;font-size:14px;padding:6px 8px}
+.lb.me{background:var(--o2);border-radius:8px;font-weight:700;color:#9A3C18}
+.lb .rk{color:var(--mut);margin-right:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.st{background:var(--bg);border-radius:9px;padding:12px 10px}.st .l{font-size:12px;color:var(--mut)}.st .v{font-size:22px;font-weight:700}
+.muted{color:var(--mut);font-size:13px}
+.win{color:var(--ok)}.lose{color:var(--rd)}
+.err{background:#fdecea;color:#a3271a;padding:9px 12px;border-radius:9px;font-size:13px;margin:10px 16px;display:none}
+.pickwrap{padding:16px}
+.pl{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:7px;cursor:pointer}
+.pl:hover{border-color:var(--o)}
+input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;font-size:14px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="top"><div class="r1"><b>trekkr</b><small id="evname"></small></div><small id="evsub"></small></div>
+<div class="err" id="err"></div>
+
+<!-- CLAIM -->
+<div id="claim" style="display:none">
+  <div class="pickwrap">
+    <div class="lab">Pilih namamu untuk mulai</div>
+    <input id="search" placeholder="Cari nama...">
+    <div id="plist"></div>
+  </div>
+</div>
+
+<!-- PERSONAL -->
+<div id="me" style="display:none">
+  <div class="sec">
+    <div class="lab">Match berikutnya</div>
+    <div id="next"></div>
+  </div>
+  <div class="sec" style="padding-top:0">
+    <div class="lab">Jadwal hari saya</div>
+    <div id="sched"></div>
+  </div>
+  <div class="sec" style="border-top:1px solid var(--bd)">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="lab" id="ranklab" style="margin:0">Klasemen live</div><span id="myrank" style="font-size:13px;font-weight:700;color:var(--o)"></span></div>
+    <div id="board"></div>
+  </div>
+  <div class="sec" style="border-top:1px solid var(--bd)">
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+</div>
+<script>
+const API='https://trekkr.online/api';
+const $=s=>document.querySelector(s);
+let EV=null,PID=null,POLL=null,PLAYERS=[];
+function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}
+async function api(path,opts){const r=await fetch(API+'/'+path,opts);const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
+function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function boot(){
+  const q=gp();EV=q.e;
+  if(!EV){err('Link tidak lengkap (butuh ?e=eventId).');return;}
+  PID=q.p||localStorage.getItem('re_pid_'+EV);
+  if(PID){startMe();}else{showClaim();}
+}
+async function showClaim(){
+  $('#claim').style.display='block';
+  try{
+    const d=await api('re/event/'+EV);
+    $('#evname').textContent=d.event.name;$('#evsub').textContent=(d.event.venue||'')+' · klaim namamu';
+    PLAYERS=d.players;renderPick('');
+  }catch(e){err(e.message);}
+}
+function renderPick(f){
+  const list=PLAYERS.filter(p=>p.name.toLowerCase().includes(f.toLowerCase()));
+  $('#plist').innerHTML=list.map(p=>`<div class="pl" onclick="claim('${p.id}')"><span>${esc(p.name)}</span><span class="muted">${p.claimed?'✓ sudah diklaim':'pilih'}</span></div>`).join('')||'<div class="muted">Tidak ada nama cocok.</div>';
+}
+$('#search').addEventListener('input',e=>renderPick(e.target.value));
+async function claim(pid){
+  try{
+    const r=await api('re/event/'+EV+'/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerId:pid})});
+    PID=r.playerId;localStorage.setItem('re_pid_'+EV,PID);
+    history.replaceState(null,'',location.pathname+'?e='+EV+'&p='+PID);
+    startMe();
+  }catch(e){err(e.message);}
+}
+function startMe(){$('#claim').style.display='none';$('#me').style.display='block';load();clearInterval(POLL);POLL=setInterval(load,10000);}
+
+async function load(){
+  try{
+    const [d,rk]=await Promise.all([api('re/event/'+EV+'/player/'+PID),api('re/event/'+EV+'/ranking')]);
+    $('#evname').textContent=d.event.name;
+    $('#evsub').textContent=(d.event.status==='done'?'selesai':(d.event.phase>=2?'Fase 2 · tier':'Fase 1 · seeding'));
+    renderNext(d);renderSched(d);renderBoard(d,rk);renderStats(d);
+  }catch(e){err(e.message);}
+}
+function renderNext(d){
+  const n=d.next;
+  if(!n){$('#next').innerHTML='<div class="nextcard"><div class="bd"><b>'+(d.event.status==='done'?'Acara selesai 🎉':'Belum ada match terjadwal')+'</b><div class="muted" style="margin-top:4px">'+(d.event.status==='done'?'Lihat ranking finalmu di bawah.':'Tunggu gelombang berikutnya digenerate.')+'</div></div></div>';return;}
+  if(n.rest){$('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>Gelombang ${n.wave}</span><span>${n.time}</span></div><div class="bd"><b>Istirahat 🧘</b><div class="muted" style="margin-top:4px">Gelombang ini kamu rehat. Siap-siap gelombang berikutnya.</div></div></div>`;return;}
+  $('#next').innerHTML=`<div class="nextcard"><div class="hd"><span>▶ Gelombang ${n.wave} · Court ${n.court}</span><span>${n.time}</span></div>
+    <div class="bd">${n.tier?`<div style="margin-bottom:8px"><span class="tier">${n.tier}</span></div>`:''}
+    <div class="kv"><span class="k">Partner</span><b>${esc(n.partner)}</b></div>
+    <div class="kv"><span class="k">Lawan</span><b style="text-align:right">${esc(n.opponents.join(' & '))}</b></div></div></div>`;
+}
+function renderSched(d){
+  let lastPhase=1,html='';
+  d.schedule.forEach(s=>{
+    if(s.phase===2&&lastPhase===1){lastPhase=2;html+=`<div class="div"><span class="l"></span><span class="t">Fase 2 · Tier</span><span class="l"></span></div>`;}
+    if(s.rest){html+=`<div class="row"><span class="ic">🧘</span><div style="flex:1"><div style="font-size:14px">Gelombang ${s.wave} · Istirahat</div><div class="muted">${s.time}</div></div></div>`;return;}
+    const now=d.next&&d.next.wave===s.wave;
+    const sc=s.status==='done'?`<span class="${s.myScore>s.oppScore?'win':'lose'}">${s.myScore}–${s.oppScore}</span>`:'';
+    const icon=s.status==='done'?'✓':(now?'▶':'•');
+    html+=`<div class="row" ${now?'style="background:var(--o2);border-radius:8px;margin:0 -6px;padding-left:6px;padding-right:6px;border-top:none"':''}>
+      <span class="ic ${now?'now':''}">${icon}</span>
+      <div style="flex:1"><div style="font-size:14px;${now?'font-weight:600;color:#9A3C18':''}">Gelombang ${s.wave} · Court ${s.court}</div><div class="muted" ${now?'style="color:#B5532B"':''}>${s.time}${now?' · sekarang':''}</div></div>${sc}</div>`;
+  });
+  $('#sched').innerHTML=html;
+}
+function renderBoard(d,rk){
+  $('#ranklab').textContent=d.me.tier?('Klasemen · Tier '+d.me.tier):'Klasemen live';
+  $('#myrank').textContent='#'+d.me.rank+' dari '+d.me.scopeSize;
+  let rows=rk.ranking;
+  if(d.me.tier)rows=rows.filter(r=>r.tier===d.me.tier);
+  const i=rows.findIndex(r=>r.playerId===PID);
+  const from=Math.max(0,i-2),slice=rows.slice(from,from+5);
+  $('#board').innerHTML=slice.map(r=>`<div class="lb ${r.playerId===PID?'me':''}"><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.playerId===PID?' (kamu)':''}</span><span class="${r.diff>0?'win':''}">${r.diff>0?'+':''}${r.diff}</span></div>`).join('');
+}
+function renderStats(d){
+  $('#stats').innerHTML=`<div class="st"><div class="l">Selisih poin</div><div class="v">${d.me.diff>0?'+':''}${d.me.diff}</div></div>
+   <div class="st"><div class="l">Main</div><div class="v">${d.me.played}</div></div>
+   <div class="st"><div class="l">ELO</div><div class="v">${d.me.elo}</div></div>`;
+}
+boot();
+</script>
+</body>
+</html>
