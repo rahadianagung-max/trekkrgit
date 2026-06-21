@@ -305,6 +305,28 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("recap/") && method === "GET")
       return await recapBuild(decodeURIComponent(path.replace("recap/", "")));
 
+    // --- RANKED EVENT (36-player two-phase tiered Mexicano, fixed-time) ---
+    if (path === "re/events" && method === "GET") return await reListEvents();
+    if (path === "re/event" && method === "POST") return await reCreateEvent(body);
+    if (path.startsWith("re/event/") && path.endsWith("/wave") && method === "POST")
+      return await reGenerateWave(decodeURIComponent(path.replace("re/event/", "").replace("/wave", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/score") && method === "POST")
+      return await reSubmitScore(decodeURIComponent(path.replace("re/event/", "").replace("/score", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/claim") && method === "POST")
+      return await reClaim(decodeURIComponent(path.replace("re/event/", "").replace("/claim", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
+      return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
+    if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
+      const seg = path.replace("re/event/", "").split("/");
+      return await reScorerView(decodeURIComponent(seg[0]), seg[2]);
+    }
+    if (/^re\/event\/[^/]+\/player\/[^/]+$/.test(path) && method === "GET") {
+      const seg = path.replace("re/event/", "").split("/");
+      return await rePlayerView(decodeURIComponent(seg[0]), decodeURIComponent(seg[2]));
+    }
+    if (path.startsWith("re/event/") && method === "GET")
+      return await reGetEvent(decodeURIComponent(path.replace("re/event/", "")));
+
     return respond(404, { error: "Route not found", route: path });
   } catch (err) {
     console.error("Function error:", err);
@@ -3103,4 +3125,411 @@ async function recapBuild(tournamentId) {
   recap.aiUsed = !!ai;
 
   return respond(200, { recap });
+}
+
+// ==============================================================
+// RANKED EVENT — 36-player two-phase tiered Mexicano (fixed-time)
+// Ranking utama = selisih poin kumulatif; ELO global = tiebreak.
+// Fase 1: 1 pool seeding. Fase 2: 3 tier (Emas/Perak/Perunggu) paralel
+// di 6 court (2+2+2). Skeleton (main/istirahat + jam) dibuat di awal;
+// court+partner+lawan diisi dinamis per gelombang dari klasemen.
+// ==============================================================
+const RE = { events: "RE_Events", players: "RE_Players", waves: "RE_Waves", matches: "RE_Matches" };
+const RE_HEADERS = {
+  RE_Events: ["Event_ID", "Name", "Venue", "Date", "Start_Time", "Status", "Phase", "Courts", "Match_Minutes", "P1_Waves", "P2_Waves", "Current_Wave", "Created_At"],
+  RE_Players: ["Event_ID", "Player_ID", "Name", "Canonical", "Start_Elo", "Tier", "Claimed_At"],
+  RE_Waves: ["Event_ID", "Wave", "Phase", "Start_Time", "Status", "Rest_IDs"],
+  RE_Matches: ["Event_ID", "Match_ID", "Wave", "Phase", "Tier", "Court", "A1", "A2", "B1", "B2", "Score_A", "Score_B", "Status", "Scorer", "Updated_At"],
+};
+async function reEnsureTabs(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  const toCreate = Object.keys(RE_HEADERS).filter((t) => !existing.includes(t));
+  if (!toCreate.length) return;
+  await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: toCreate.map((title) => ({ addSheet: { properties: { title } } })) } });
+  for (const title of toCreate) {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${title}!A1`, valueInputOption: "RAW", requestBody: { values: [RE_HEADERS[title]] } });
+  }
+}
+async function reGet(sheets, tab, range) {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${range}` }).catch(() => ({ data: { values: [] } }));
+  return r.data.values || [];
+}
+function reEventObj(row) {
+  return { id: row[0], name: row[1], venue: row[2], date: row[3], startTime: row[4], status: row[5] || "phase1", phase: parseInt(row[6]) || 1, courts: parseInt(row[7]) || 6, matchMinutes: parseInt(row[8]) || 15, p1Waves: parseInt(row[9]) || 5, p2Waves: parseInt(row[10]) || 6, currentWave: parseInt(row[11]) || 0, createdAt: row[12] || "" };
+}
+function rePlayerObj(row) {
+  return { eventId: row[0], id: row[1], name: row[2], canonical: row[3] || row[2], startElo: parseInt(row[4]) || 1350, tier: row[5] || "", claimedAt: row[6] || "" };
+}
+function reMatchObj(row) {
+  const sa = (row[10] === "" || row[10] == null) ? null : Number(row[10]);
+  const sb = (row[11] === "" || row[11] == null) ? null : Number(row[11]);
+  return { eventId: row[0], matchId: row[1], wave: parseInt(row[2]) || 0, phase: parseInt(row[3]) || 1, tier: row[4] || "", court: parseInt(row[5]) || 0, a: [row[6], row[7]], b: [row[8], row[9]], scoreA: sa, scoreB: sb, status: row[12] || "pending", scorer: row[13] || "", updatedAt: row[14] || "" };
+}
+function reWaveObj(row) {
+  return { eventId: row[0], wave: parseInt(row[1]) || 0, phase: parseInt(row[2]) || 1, startTime: row[3] || "", status: row[4] || "pending", rest: String(row[5] || "").split(",").filter(Boolean) };
+}
+function reMatchView(m, nameById) {
+  return { matchId: m.matchId, wave: m.wave, phase: m.phase, tier: m.tier, court: m.court, status: m.status, teamA: [nameById[m.a[0]] || "?", nameById[m.a[1]] || "?"], teamB: [nameById[m.b[0]] || "?", nameById[m.b[1]] || "?"], scoreA: m.scoreA, scoreB: m.scoreB };
+}
+// ELO state (global) from ELO_Log rows: latest elo + cumulative matchCount per name.
+function reEloStateFromRows(rows) {
+  const st = {};
+  for (const r of rows) {
+    if (!r[1]) continue;
+    const k = normName(r[1]);
+    if (!st[k]) st[k] = { name: r[1], elo: 1350, matchCount: 0, hist: 0 };
+    const elo = parseInt(r[2]) || 1350, w = parseInt(r[4]) || 0, l = parseInt(r[5]) || 0;
+    if (r[0] !== "INITIAL") { st[k].elo = elo; st[k].matchCount += w + l; st[k].hist++; }
+    else if (st[k].hist === 0) st[k].elo = elo;
+  }
+  return st;
+}
+// Even rest spread: pick `restPerWave` resters each wave, fewest-rests-first,
+// avoid back-to-back rest, random tiebreak.
+function reBuildRest(ids, waves, restPerWave) {
+  const cnt = {}; ids.forEach((id) => (cnt[id] = 0));
+  let last = new Set(); const out = [];
+  for (let w = 0; w < waves; w++) {
+    if (restPerWave <= 0) { out.push([]); continue; }
+    const pool = ids.slice().sort((x, y) => {
+      if (cnt[x] !== cnt[y]) return cnt[x] - cnt[y];
+      const lx = last.has(x) ? 1 : 0, ly = last.has(y) ? 1 : 0;
+      if (lx !== ly) return lx - ly;
+      return Math.random() - 0.5;
+    });
+    const rest = pool.slice(0, restPerWave);
+    rest.forEach((id) => cnt[id]++);
+    last = new Set(rest); out.push(rest);
+  }
+  return out;
+}
+// Canonical Mexicano pairing per court: top4 -> 1+4 vs 2+3, etc.
+function rePairCourts(sortedIds, courtNums) {
+  const pairs = [];
+  for (let c = 0; c < courtNums.length; c++) {
+    const g = sortedIds.slice(c * 4, c * 4 + 4);
+    if (g.length < 4) break;
+    pairs.push({ court: courtNums[c], a: [g[0], g[3]], b: [g[1], g[2]] });
+  }
+  return pairs;
+}
+// Standings by cumulative point-differential (primary), optional secondary diff
+// (tieMatches, e.g. phase-1 for phase-2 ordering), then global ELO.
+function reStandings(matches, playerIds, eloById, phaseFilter, tieMatches) {
+  const diff = {}, played = {};
+  playerIds.forEach((id) => { diff[id] = 0; played[id] = 0; });
+  for (const m of matches) {
+    if (m.status !== "done" || m.scoreA == null || m.scoreB == null) continue;
+    if (phaseFilter && m.phase !== phaseFilter) continue;
+    m.a.forEach((x) => { if (diff[x] != null) { diff[x] += (m.scoreA - m.scoreB); played[x]++; } });
+    m.b.forEach((x) => { if (diff[x] != null) { diff[x] += (m.scoreB - m.scoreA); played[x]++; } });
+  }
+  const tdiff = {};
+  if (tieMatches) {
+    playerIds.forEach((id) => (tdiff[id] = 0));
+    for (const m of tieMatches) {
+      if (m.status !== "done" || m.scoreA == null) continue;
+      m.a.forEach((x) => { if (tdiff[x] != null) tdiff[x] += (m.scoreA - m.scoreB); });
+      m.b.forEach((x) => { if (tdiff[x] != null) tdiff[x] += (m.scoreB - m.scoreA); });
+    }
+  }
+  const elo = (id) => (eloById[id] != null ? eloById[id] : 1350);
+  const ordered = playerIds.slice().sort((x, y) => {
+    if (diff[y] !== diff[x]) return diff[y] - diff[x];
+    if (tieMatches && tdiff[y] !== tdiff[x]) return tdiff[y] - tdiff[x];
+    return elo(y) - elo(x);
+  });
+  return { ordered, diff, played };
+}
+function reEloByIdMap(players, eloState) {
+  const m = {};
+  players.forEach((p) => { const s = eloState[normName(p.canonical || p.name)]; m[p.id] = s ? s.elo : p.startElo; });
+  return m;
+}
+
+async function reListEvents() {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const evRows = await reGet(sheets, RE.events, "A2:M");
+  return respond(200, { events: evRows.map(reEventObj) }, { "Cache-Control": "no-store" });
+}
+
+async function reCreateEvent(body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const names = (body.players || []).map((s) => String(s || "").trim()).filter(Boolean);
+  const N = names.length;
+  if (N < 24 || N % 12 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${N}). Ideal 36.` });
+  const courts = parseInt(body.courts) || 6;
+  const matchMinutes = parseInt(body.matchMinutes) || 15;
+  const p1Waves = parseInt(body.p1Waves) || 5;
+  const p2Waves = parseInt(body.p2Waves) || 6;
+  const startTime = normClock(body.startTime) || "13:00";
+  const interval = matchMinutes + 3;
+  const eventId = genId("RE");
+  const now = new Date().toISOString();
+  const eloRows = await reGet(sheets, TABS.elo_log, "A2:G");
+  const eloState = reEloStateFromRows(eloRows);
+  const seedElos = body.seedElos || {};
+  const playerRows = names.map((nm) => {
+    const k = normName(nm);
+    const elo = eloState[k] ? eloState[k].elo : (parseInt(seedElos[nm]) || 1350);
+    return [eventId, genId("REP"), nm, nm, elo, "", ""];
+  });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.events}!A:M`, valueInputOption: "USER_ENTERED", requestBody: { values: [[eventId, body.name || "Ranked Event", body.venue || "", body.date || "", startTime, "phase1", 1, courts, matchMinutes, p1Waves, p2Waves, 0, now]] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: playerRows } });
+  const ids = playerRows.map((r) => r[1]);
+  const restPerWave = N - courts * 4;
+  const rest = reBuildRest(ids, p1Waves, restPerWave);
+  const waveRows = [];
+  for (let w = 0; w < p1Waves; w++) waveRows.push([eventId, w + 1, 1, addMinutesToTime(startTime, w * interval), "pending", rest[w].join(",")]);
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.waves}!A:F`, valueInputOption: "USER_ENTERED", requestBody: { values: waveRows } });
+  return respond(200, { eventId, name: body.name || "Ranked Event", courts, matchMinutes, p1Waves, p2Waves, totalWaves: p1Waves + p2Waves, restPerWave, players: playerRows.map(rePlayerObj) });
+}
+
+async function reGenerateWave(eventId, body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const evRows = await reGet(sheets, RE.events, "A2:M");
+  const ei = evRows.findIndex((r) => r[0] === eventId);
+  if (ei < 0) return respond(404, { error: "Event not found" });
+  const ev = reEventObj(evRows[ei]);
+  if (ev.status === "done") return respond(400, { error: "Event sudah selesai." });
+  const [allPRows, wRowsAll, mRowsAll, eloRows] = await Promise.all([
+    reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"),
+    reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G"),
+  ]);
+  const players = allPRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const matches = mRowsAll.filter((r) => r[0] === eventId).map(reMatchObj);
+  let waves = wRowsAll.filter((r) => r[0] === eventId).map(reWaveObj);
+  const eloState = reEloStateFromRows(eloRows);
+  const eloById = reEloByIdMap(players, eloState);
+
+  if (ev.currentWave > 0) {
+    const cur = matches.filter((m) => m.wave === ev.currentWave);
+    if (cur.length && cur.some((m) => m.status !== "done")) return respond(409, { error: `Gelombang ${ev.currentWave} belum lengkap skornya.` });
+  }
+  const totalWaves = ev.p1Waves + ev.p2Waves;
+  if (ev.currentWave >= totalWaves) return respond(400, { error: "Semua gelombang sudah dibuat." });
+
+  let phase = ev.phase, cutJustHappened = false;
+  const tierOf = {}; players.forEach((p) => { if (p.tier) tierOf[p.id] = p.tier; });
+
+  if (phase === 1 && ev.currentWave >= ev.p1Waves) {
+    const st1 = reStandings(matches, players.map((p) => p.id), eloById, 1);
+    const tierSize = players.length / 3;
+    const tiers = ["Emas", "Perak", "Perunggu"];
+    st1.ordered.forEach((id, i) => { tierOf[id] = tiers[Math.min(2, Math.floor(i / tierSize))]; });
+    const outP = allPRows.map((r) => { const c = r.slice(); while (c.length < 7) c.push(""); if (r[0] === eventId && tierOf[r[1]]) c[5] = tierOf[r[1]]; return c.slice(0, 7); });
+    if (outP.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A2:G${outP.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: outP } });
+    const cpt = Math.floor(ev.courts / 3);
+    const interval = ev.matchMinutes + 3;
+    const lastP1 = waves.filter((w) => w.phase === 1).reduce((mx, w) => Math.max(mx, w.wave), 0) || ev.p1Waves;
+    const lastP1Wave = waves.find((w) => w.wave === lastP1);
+    const baseTime = lastP1Wave ? addMinutesToTime(lastP1Wave.startTime, interval) : addMinutesToTime(ev.startTime, ev.p1Waves * interval);
+    const tierRest = {};
+    tiers.forEach((t) => { const tids = players.filter((p) => tierOf[p.id] === t).map((p) => p.id); tierRest[t] = reBuildRest(tids, ev.p2Waves, Math.max(0, tids.length - cpt * 4)); });
+    const newWaveRows = [];
+    for (let w = 0; w < ev.p2Waves; w++) {
+      const restIds = [].concat(...tiers.map((t) => tierRest[t][w] || []));
+      newWaveRows.push([eventId, ev.p1Waves + w + 1, 2, addMinutesToTime(baseTime, w * interval), "pending", restIds.join(",")]);
+    }
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.waves}!A:F`, valueInputOption: "USER_ENTERED", requestBody: { values: newWaveRows } });
+    waves = waves.concat(newWaveRows.map(reWaveObj));
+    phase = 2; cutJustHappened = true;
+  }
+
+  const nextWaveNum = ev.currentWave + 1;
+  const wave = waves.find((w) => w.wave === nextWaveNum);
+  if (!wave) return respond(400, { error: `Skeleton gelombang ${nextWaveNum} tidak ditemukan.` });
+  phase = wave.phase;
+  const restSet = new Set(wave.rest);
+  const courtNums = Array.from({ length: ev.courts }, (_, i) => i + 1);
+  const matchRows = []; const nowGen = new Date().toISOString();
+  if (phase === 1) {
+    const playing = players.map((p) => p.id).filter((id) => !restSet.has(id));
+    const st = reStandings(matches, playing, eloById, 1);
+    rePairCourts(st.ordered, courtNums).forEach((pr) => matchRows.push([eventId, genId("REM"), nextWaveNum, 1, "", pr.court, pr.a[0], pr.a[1], pr.b[0], pr.b[1], "", "", "pending", "", nowGen]));
+  } else {
+    const cpt = Math.floor(ev.courts / 3);
+    const tiers = ["Emas", "Perak", "Perunggu"];
+    const tieMatches = matches.filter((m) => m.phase === 1);
+    tiers.forEach((t, ti) => {
+      const ids = players.filter((p) => tierOf[p.id] === t).map((p) => p.id).filter((id) => !restSet.has(id));
+      const st = reStandings(matches, ids, eloById, 2, tieMatches);
+      const courtsForTier = Array.from({ length: cpt }, (_, i) => ti * cpt + i + 1);
+      rePairCourts(st.ordered, courtsForTier).forEach((pr) => matchRows.push([eventId, genId("REM"), nextWaveNum, 2, t, pr.court, pr.a[0], pr.a[1], pr.b[0], pr.b[1], "", "", "pending", "", nowGen]));
+    });
+  }
+  if (matchRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.matches}!A:O`, valueInputOption: "USER_ENTERED", requestBody: { values: matchRows } });
+  const erow = evRows[ei].slice(); while (erow.length < 13) erow.push("");
+  erow[5] = phase === 2 ? "phase2" : "phase1"; erow[6] = phase; erow[11] = nextWaveNum;
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:M${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [erow.slice(0, 13)] } });
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  return respond(200, { wave: nextWaveNum, phase, cut: cutJustHappened, startTime: wave.startTime, matches: matchRows.map((r) => reMatchView(reMatchObj(r), nameById)) });
+}
+
+async function reSubmitScore(eventId, body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const matchId = body.matchId;
+  const scoreA = Math.max(0, Math.round(Number(body.scoreA)));
+  const scoreB = Math.max(0, Math.round(Number(body.scoreB)));
+  if (!matchId || isNaN(scoreA) || isNaN(scoreB)) return respond(400, { error: "matchId, scoreA, scoreB wajib." });
+  const mRows = await reGet(sheets, RE.matches, "A2:O");
+  const idx = mRows.findIndex((r) => r[0] === eventId && r[1] === matchId);
+  if (idx < 0) return respond(404, { error: "Match not found" });
+  const m = reMatchObj(mRows[idx]);
+  const [pRows, eloRows] = await Promise.all([reGet(sheets, RE.players, "A2:G"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.canonical || p.name));
+  const eloState = reEloStateFromRows(eloRows);
+  const getP = (id) => { const nm = nameById[id] || id; const s = eloState[normName(nm)] || { elo: 1350, matchCount: 0 }; return { name: nm, elo: s.elo, matchCount: s.matchCount }; };
+  const now = new Date().toISOString();
+  const appended = [];
+  try {
+    const P = [getP(m.a[0]), getP(m.a[1]), getP(m.b[0]), getP(m.b[1])];
+    const res = rmCalcElo(P[0], P[1], P[2], P[3], scoreA, scoreB);
+    const sess = "SES_RE_" + eventId;
+    res.forEach((r, i) => appended.push([sess, P[i].name, r.newElo, r.delta, r.w, r.l, now]));
+  } catch (e) { console.error("re elo:", e); }
+  if (appended.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: appended } });
+  const rowNum = idx + 2;
+  const updated = [eventId, m.matchId, m.wave, m.phase, m.tier, m.court, m.a[0], m.a[1], m.b[0], m.b[1], scoreA, scoreB, "done", body.scorer || "", now];
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.matches}!A${rowNum}:O${rowNum}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+  const waveMatches = mRows.filter((r) => r[0] === eventId && parseInt(r[2]) === m.wave).map(reMatchObj);
+  const remaining = waveMatches.filter((x) => x.matchId !== m.matchId && x.status !== "done").length;
+  const waveComplete = remaining === 0;
+  let eventDone = false;
+  if (waveComplete) {
+    const evRows = await reGet(sheets, RE.events, "A2:M");
+    const ei = evRows.findIndex((r) => r[0] === eventId);
+    if (ei >= 0) {
+      const ev = reEventObj(evRows[ei]);
+      if (ev.currentWave >= ev.p1Waves + ev.p2Waves) {
+        const row = evRows[ei].slice(); while (row.length < 13) row.push(""); row[5] = "done";
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:M${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 13)] } });
+        eventDone = true;
+      }
+    }
+  }
+  return respond(200, { ok: true, matchId, scoreA, scoreB, waveComplete, eventDone });
+}
+
+async function reScorerView(eventId, set) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const [evRows, pRows, mRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.matches, "A2:O")]);
+  const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
+  const event = reEventObj(ev);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  const matches = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
+  const cur = matches.filter((m) => m.wave === event.currentWave);
+  const doneAll = cur.filter((m) => m.status === "done").length;
+  const half = Math.floor(event.courts / 2);
+  const S = String(set || "A").toUpperCase();
+  const filt = S === "A" ? (c) => c <= half : (c) => c > half;
+  const mine = cur.filter((m) => filt(m.court)).sort((a, b) => a.court - b.court).map((m) => reMatchView(m, nameById));
+  return respond(200, {
+    event: { id: event.id, name: event.name, currentWave: event.currentWave, phase: event.phase, matchMinutes: event.matchMinutes },
+    set: S, courts: S === "A" ? `1-${half}` : `${half + 1}-${event.courts}`,
+    progress: { done: doneAll, total: cur.length },
+    matches: mine,
+    canGenerateNext: cur.length > 0 && doneAll === cur.length && event.currentWave < event.p1Waves + event.p2Waves,
+  }, { "Cache-Control": "no-store" });
+}
+
+async function rePlayerView(eventId, playerId) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const [evRows, pRows, wRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
+  const event = reEventObj(ev);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const me = players.find((p) => p.id === playerId); if (!me) return respond(404, { error: "Pemain tidak ditemukan" });
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  const matches = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
+  const waves = wRows.filter((r) => r[0] === eventId).map(reWaveObj).sort((a, b) => a.wave - b.wave);
+  const eloState = reEloStateFromRows(eloRows);
+  const eloById = reEloByIdMap(players, eloState);
+  const sched = waves.map((w) => {
+    const mm = matches.find((m) => m.wave === w.wave && (m.a.includes(playerId) || m.b.includes(playerId)));
+    if (mm) {
+      const onA = mm.a.includes(playerId);
+      const partner = (onA ? mm.a : mm.b).find((x) => x !== playerId);
+      const opp = onA ? mm.b : mm.a;
+      const myScore = onA ? mm.scoreA : mm.scoreB, oppScore = onA ? mm.scoreB : mm.scoreA;
+      return { wave: w.wave, phase: w.phase, time: w.startTime, rest: false, court: mm.court, tier: mm.tier, partner: nameById[partner] || "?", opponents: opp.map((x) => nameById[x] || "?"), status: mm.status, myScore, oppScore };
+    }
+    const resting = w.rest.includes(playerId);
+    return { wave: w.wave, phase: w.phase, time: w.startTime, rest: resting, court: null, status: resting ? "rest" : "pending" };
+  });
+  const next = sched.find((s) => !s.rest && s.status !== "done");
+  const phaseFilter = event.phase >= 2 ? 2 : 1;
+  const tieMatches = event.phase >= 2 ? matches.filter((m) => m.phase === 1) : null;
+  let scope = players.map((p) => p.id);
+  if (event.phase >= 2 && me.tier) scope = players.filter((p) => p.tier === me.tier).map((p) => p.id);
+  const st = reStandings(matches, scope, eloById, phaseFilter, tieMatches);
+  const myRank = st.ordered.indexOf(playerId) + 1;
+  return respond(200, {
+    event: { id: event.id, name: event.name, status: event.status, phase: event.phase, startTime: event.startTime },
+    me: { id: me.id, name: me.name, tier: me.tier, elo: eloById[me.id], diff: st.diff[playerId] || 0, played: st.played[playerId] || 0, rank: myRank, scopeSize: scope.length },
+    next: next || null, schedule: sched,
+  }, { "Cache-Control": "no-store" });
+}
+
+async function reRanking(eventId) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const [evRows, pRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
+  const event = reEventObj(ev);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  const matches = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
+  const eloState = reEloStateFromRows(eloRows);
+  const eloById = reEloByIdMap(players, eloState);
+  const phaseForStats = event.phase >= 2 ? 2 : 1;
+  const tieM = event.phase >= 2 ? matches.filter((m) => m.phase === 1) : null;
+  const stAll = reStandings(matches, players.map((p) => p.id), eloById, phaseForStats, tieM);
+  let ordered = [];
+  if (event.phase >= 2 && players.some((p) => p.tier)) {
+    for (const t of ["Emas", "Perak", "Perunggu"]) {
+      const ids = players.filter((p) => p.tier === t).map((p) => p.id);
+      const st = reStandings(matches, ids, eloById, 2, tieM);
+      ordered = ordered.concat(st.ordered.map((id) => ({ id, tier: t })));
+    }
+  } else {
+    ordered = stAll.ordered.map((id) => ({ id, tier: "" }));
+  }
+  const ranking = ordered.map((o, i) => ({ rank: i + 1, playerId: o.id, name: nameById[o.id], tier: o.tier, diff: stAll.diff[o.id] || 0, played: stAll.played[o.id] || 0, elo: eloById[o.id] || 1350 }));
+  return respond(200, { event: { id: event.id, name: event.name, status: event.status, phase: event.phase }, ranking, final: event.status === "done" }, { "Cache-Control": "no-store" });
+}
+
+async function reClaim(eventId, body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const pRows = await reGet(sheets, RE.players, "A2:G");
+  const abs = pRows.findIndex((r) => r[0] === eventId && (r[1] === body.playerId || normName(r[2]) === normName(body.name || "")));
+  if (abs < 0) return respond(404, { error: "Pemain tidak ditemukan" });
+  const row = pRows[abs].slice(); while (row.length < 7) row.push(""); row[6] = new Date().toISOString();
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:G${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 7)] } });
+  return respond(200, { ok: true, playerId: row[1], name: row[2] });
+}
+
+async function reGetEvent(eventId) {
+  const sheets = getSheets(); await reEnsureTabs(sheets);
+  const [evRows, pRows, wRows, mRows, eloRows] = await Promise.all([reGet(sheets, RE.events, "A2:M"), reGet(sheets, RE.players, "A2:G"), reGet(sheets, RE.waves, "A2:F"), reGet(sheets, RE.matches, "A2:O"), reGet(sheets, TABS.elo_log, "A2:G")]);
+  const ev = evRows.find((r) => r[0] === eventId); if (!ev) return respond(404, { error: "Event not found" });
+  const event = reEventObj(ev);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  const waves = wRows.filter((r) => r[0] === eventId).map(reWaveObj).sort((a, b) => a.wave - b.wave);
+  const matchObjs = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
+  const matches = matchObjs.map((m) => reMatchView(m, nameById));
+  const eloState = reEloStateFromRows(eloRows);
+  const eloById = reEloByIdMap(players, eloState);
+  const cur = matchObjs.filter((m) => m.wave === event.currentWave);
+  const doneCur = cur.filter((m) => m.status === "done").length;
+  const half = Math.floor(event.courts / 2);
+  return respond(200, {
+    event, players: players.map((p) => ({ id: p.id, name: p.name, tier: p.tier, elo: eloById[p.id], claimed: !!p.claimedAt })),
+    waves, matches,
+    scorers: { A: `court 1-${half}`, B: `court ${half + 1}-${event.courts}` },
+    currentWave: { wave: event.currentWave, done: doneCur, total: cur.length, canGenerateNext: event.currentWave === 0 || (cur.length > 0 && doneCur === cur.length && event.currentWave < event.p1Waves + event.p2Waves) },
+  }, { "Cache-Control": "no-store" });
 }
