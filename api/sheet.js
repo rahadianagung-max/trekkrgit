@@ -316,6 +316,8 @@ const netlifyHandler = async (event) => {
       return await reClaim(decodeURIComponent(path.replace("re/event/", "").replace("/claim", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/roster") && method === "POST")
       return await reRoster(decodeURIComponent(path.replace("re/event/", "").replace("/roster", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/swap") && method === "POST")
+      return await reSwapPlayer(decodeURIComponent(path.replace("re/event/", "").replace("/swap", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
       return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
     if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
@@ -3190,7 +3192,7 @@ function reWaveObj(row) {
   return { eventId: row[0], wave: parseInt(row[1]) || 0, phase: parseInt(row[2]) || 1, startTime: row[3] || "", status: row[4] || "pending", rest: String(row[5] || "").split(",").filter(Boolean) };
 }
 function reMatchView(m, nameById) {
-  return { matchId: m.matchId, wave: m.wave, phase: m.phase, tier: m.tier, court: m.court, status: m.status, teamA: [nameById[m.a[0]] || "?", nameById[m.a[1]] || "?"], teamB: [nameById[m.b[0]] || "?", nameById[m.b[1]] || "?"], scoreA: m.scoreA, scoreB: m.scoreB };
+  return { matchId: m.matchId, wave: m.wave, phase: m.phase, tier: m.tier, court: m.court, status: m.status, teamA: [nameById[m.a[0]] || "?", nameById[m.a[1]] || "?"], teamB: [nameById[m.b[0]] || "?", nameById[m.b[1]] || "?"], aIds: [m.a[0], m.a[1]], bIds: [m.b[0], m.b[1]], scoreA: m.scoreA, scoreB: m.scoreB };
 }
 // ELO state (global) from ELO_Log rows: latest elo + cumulative matchCount per name.
 function reEloStateFromRows(rows) {
@@ -3478,6 +3480,33 @@ async function reRoster(eventId, body) {
   await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A${abs + 2}:J${abs + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 10)] } });
   reCacheClear();
   return respond(200, { ok: true, player: rePlayerObj(row) });
+}
+
+async function reSwapPlayer(eventId, body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:swap:" + eventId;
+  const { matchId, outPlayerId, inPlayerId } = body;
+  if (!matchId || !outPlayerId || !inPlayerId) return respond(400, { error: "matchId, outPlayerId, inPlayerId wajib." });
+  if (outPlayerId === inPlayerId) return respond(400, { error: "Pemain keluar & masuk sama." });
+  const [mRows, pRows] = await reBatchGet(sheets, [`${RE.matches}!A2:O`, `${RE.players}!A2:J`], null, true);
+  const idx = mRows.findIndex((r) => r[0] === eventId && r[1] === matchId);
+  if (idx < 0) return respond(404, { error: "Match tidak ditemukan." });
+  const m = reMatchObj(mRows[idx]);
+  if (m.status === "done") return respond(409, { error: "Match sudah ada skornya, tidak bisa diganti." });
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const inP = players.find((p) => p.id === inPlayerId);
+  if (!inP) return respond(404, { error: "Pemain pengganti tidak ditemukan." });
+  if (inP.status === "withdrawn") return respond(400, { error: "Pengganti berstatus withdrawn. Aktifkan dulu." });
+  const sameWave = mRows.filter((r) => r[0] === eventId && parseInt(r[2]) === m.wave).map(reMatchObj);
+  const clash = sameWave.find((x) => x.matchId !== matchId && [...x.a, ...x.b].includes(inPlayerId));
+  if (clash) return respond(409, { error: `Pengganti sudah main di court ${clash.court} gelombang ini.` });
+  const row = mRows[idx].slice(); while (row.length < 15) row.push("");
+  let pos = -1;[6, 7, 8, 9].forEach((c) => { if (row[c] === outPlayerId) pos = c; });
+  if (pos < 0) return respond(400, { error: "Pemain yang diganti tidak ada di match ini." });
+  row[pos] = inPlayerId;
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.matches}!A${idx + 2}:O${idx + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 15)] } });
+  reCacheClear();
+  const nameById = {}; players.forEach((p) => (nameById[p.id] = p.name));
+  return respond(200, { ok: true, match: reMatchView(reMatchObj(row), nameById) });
 }
 
 async function reSubmitScore(eventId, body) {
