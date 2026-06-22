@@ -318,6 +318,8 @@ const netlifyHandler = async (event) => {
       return await reRoster(decodeURIComponent(path.replace("re/event/", "").replace("/roster", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/swap") && method === "POST")
       return await reSwapPlayer(decodeURIComponent(path.replace("re/event/", "").replace("/swap", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/purge") && method === "POST")
+      return await rePurge(decodeURIComponent(path.replace("re/event/", "").replace("/purge", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
       return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
     if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
@@ -3328,6 +3330,17 @@ async function reCreateEvent(body) {
   });
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.events}!A:N`, valueInputOption: "USER_ENTERED", requestBody: { values: [[eventId, body.name || "Ranked Event", body.venue || "", body.date || "", startTime, "phase1", 1, courts, matchMinutes, p1Waves, p2Waves, 0, now, category]] } });
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: playerRows } });
+  // Seed an INITIAL ELO_Log row for anyone new to the global system, so their
+  // first match is rated from their level floor (not the 1350 default).
+  const seen = new Set();
+  const initRows = [];
+  playerRows.forEach((r) => {
+    const k = normName(r[2]);
+    if (eloState[k] || seen.has(k)) return;
+    seen.add(k);
+    initRows.push(["INITIAL", r[2], r[4], 0, 0, 0, now]);
+  });
+  if (initRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: initRows } });
   await reRegisterGlobals(sheets, playerRows.map((r) => ({ name: r[2], gender: r[9] }))).catch((e) => console.error("re globals:", e));
   const waveRows = [];
   for (let w = 0; w < p1Waves; w++) waveRows.push([eventId, w + 1, 1, addMinutesToTime(startTime, w * interval), "pending", ""]);
@@ -3465,6 +3478,7 @@ async function reRoster(eventId, body) {
     if (ev.phase >= 2) tier = body.tier || "Perunggu"; // late arrival in phase 2 joins a tier
     const row = [eventId, genId("REP"), name, name, elo, tier, "", "active", level, gender];
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${RE.players}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: [row] } });
+    if (!eloState[normName(name)]) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: [["INITIAL", name, elo, 0, 0, 0, new Date().toISOString()]] } });
     await reRegisterGlobals(sheets, [{ name, gender }]).catch((e) => console.error("re globals:", e));
     reCacheClear();
     return respond(200, { ok: true, player: rePlayerObj(row) });
@@ -3509,6 +3523,49 @@ async function reSwapPlayer(eventId, body) {
   return respond(200, { ok: true, match: reMatchView(reMatchObj(row), nameById) });
 }
 
+// Delete data rows (row 2+) whose column `colIdx` equals `matchVal`, bottom-up
+// via deleteDimension (safe, no full-sheet rewrite). Returns count deleted.
+async function reDeleteMatching(sheets, sheetId, tabTitle, range, colIdx, matchVal) {
+  const rows = await reGet(sheets, tabTitle, range);
+  const dels = [];
+  rows.forEach((r, i) => { if ((r[colIdx] || "") === matchVal) dels.push(i + 1); }); // i+1: header is sheet row 1 (index 0)
+  if (!dels.length) return 0;
+  dels.sort((a, b) => b - a);
+  const requests = dels.map((rowIndex) => ({ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: rowIndex, endIndex: rowIndex + 1 } } }));
+  await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests } });
+  return dels.length;
+}
+
+// Cleanup tool. body: { elo (default true), venue, event }.
+// elo   -> remove this event's ELO_Log rows (session SES_RE_<id>) so global ELO is restored
+// venue -> remove this event's rows from the venue weekly log
+// event -> delete all RE_* rows for this event
+async function rePurge(eventId, body) {
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:purge:" + eventId;
+  const opt = body || {};
+  const doElo = opt.elo !== false, doVenue = !!opt.venue, doEvent = !!opt.event;
+  const removed = { elo: 0, venue: 0, events: 0, players: 0, waves: 0, matches: 0 };
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const idOf = (t) => { const s = (meta.data.sheets || []).find((x) => x.properties.title === t); return s ? s.properties.sheetId : null; };
+  if (doElo) {
+    const id = idOf(TABS.elo_log);
+    if (id != null) removed.elo = await reDeleteMatching(sheets, id, TABS.elo_log, "A2:G", 0, "SES_RE_" + eventId);
+  }
+  if (doVenue) {
+    const evRows = await reGet(sheets, RE.events, "A2:N");
+    const ev = evRows.find((r) => r[0] === eventId);
+    if (ev && ev[2]) { try { await writeTournamentVenueRows(sheets, ev[2], [], "RE_" + eventId); removed.venue = 1; } catch (e) { console.error("venue purge:", e); } }
+  }
+  if (doEvent) {
+    for (const [tab, range, key] of [[RE.matches, "A2:O", "matches"], [RE.waves, "A2:F", "waves"], [RE.players, "A2:J", "players"], [RE.events, "A2:N", "events"]]) {
+      const id = idOf(tab);
+      if (id != null) removed[key] = await reDeleteMatching(sheets, id, tab, range, 0, eventId);
+    }
+  }
+  reCacheClear();
+  return respond(200, { ok: true, removed });
+}
+
 async function reSubmitScore(eventId, body) {
   const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:score:" + eventId;
   const matchId = body.matchId;
@@ -3522,8 +3579,15 @@ async function reSubmitScore(eventId, body) {
   const m = reMatchObj(mRows[idx]);
   const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
   const nameById = {}; players.forEach((p) => (nameById[p.id] = p.canonical || p.name));
+  const pById = {}; players.forEach((p) => (pById[p.id] = p.startElo));
   const eloState = reEloStateFromRows(eloRows);
-  const getP = (id) => { const nm = nameById[id] || id; const s = eloState[normName(nm)] || { elo: 1350, matchCount: 0 }; return { name: nm, elo: s.elo, matchCount: s.matchCount }; };
+  const getP = (id) => {
+    const nm = nameById[id] || id;
+    const s = eloState[normName(nm)];
+    const startById = pById[id];
+    const base = s ? s.elo : (startById != null ? startById : 1350);
+    return { name: nm, elo: base, matchCount: s ? s.matchCount : 0 };
+  };
   const now = new Date().toISOString();
   const appended = [];
   try {
