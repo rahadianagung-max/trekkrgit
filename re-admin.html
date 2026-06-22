@@ -105,12 +105,16 @@ a.btn{display:inline-block;text-decoration:none}
       <span class="muted" id="p_wave"></span>
     </div>
     <div class="bar" id="p_bar" style="margin-top:10px"><i style="width:0%"></i></div>
-    <details style="margin-top:12px"><summary style="font-size:12px;color:#a3271a;cursor:pointer">⚠︎ Pembersih / hapus</summary>
+    <details style="margin-top:12px"><summary style="font-size:12px;color:#a3271a;cursor:pointer">⚠︎ Pembersih / perbaikan ELO</summary>
       <div class="row" style="gap:8px;margin-top:8px">
+        <button class="pri" onclick="rebuildElo()">Hitung ulang ELO (perbaiki passport)</button>
+      </div>
+      <div class="muted" style="margin-top:4px">Disarankan untuk membenahi ELO yang terlanjur salah: hapus baris ELO event yang keliru, seed ulang dari floor level, lalu putar ulang semua match selesai dengan ELO yang benar. Skor tidak hilang, passport jadi akurat.</div>
+      <div class="row" style="gap:8px;margin-top:10px">
         <button class="gho" style="color:#a3271a;border-color:#f0c8c0" onclick="purge('elo')">Bersihkan ELO event ini</button>
         <button class="gho" style="color:#a3271a;border-color:#f0c8c0" onclick="purge('all')">Hapus event sepenuhnya</button>
       </div>
-      <div class="muted" style="margin-top:6px">"Bersihkan ELO" mengembalikan ELO global pemain (hapus baris sesi event ini dari ELO_Log), data event tetap ada. "Hapus event sepenuhnya" juga menghapus baris venue + seluruh data event.</div>
+      <div class="muted" style="margin-top:6px">"Bersihkan ELO" hanya menghapus dampak ELO global (skor & data event tetap). "Hapus event sepenuhnya" menghapus skor, baris venue, dan semua data event.</div>
     </details>
   </div>
 
@@ -197,6 +201,14 @@ async function genWave(){
   $('#genBtn').disabled=true;
   try{ await api('re/event/'+CUR+'/wave',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); await loadPanel(); }
   catch(e){err(e.message);loadPanel();}
+}
+async function rebuildElo(){
+  if(!confirm('Hitung ulang ELO event ini? Baris ELO yang salah dihapus lalu match diputar ulang dengan ELO benar. Skor tidak hilang.'))return;
+  try{
+    const r=await api('re/event/'+CUR+'/rebuild-elo',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    alert(`Selesai. Baris salah dihapus: ${r.purgedWrongRows||0}, seed awal: ${r.seededInitial||0}, match dihitung ulang: ${r.ratedMatches||0}.`);
+    loadPanel();
+  }catch(e){err(e.message);}
 }
 async function purge(mode){
   const all=mode==='all';
