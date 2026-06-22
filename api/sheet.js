@@ -810,11 +810,24 @@ async function getVenueWeeklyRanking(venueName, params) {
   const latestElo = {};
   eRows.forEach((r) => { if (r[1]) latestElo[r[1].toLowerCase()] = parseInt(r[2]) || 1350; });
 
-  let ranking = Object.keys(stats).map((p) => ({
-    name: p, w: stats[p].w, l: stats[p].l, played: stats[p].played,
-    gender: stats[p].gender, elo: latestElo[p.toLowerCase()] || 1350,
-  }));
-  
+  // Join the global Players tab so the leaderboard can show photos/display names.
+  // Match by normalised name (case/space-insensitive) to survive minor mismatches.
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` }).catch(() => ({ data: { values: [] } }));
+  const info = {};
+  (pRes.data.values || []).forEach((r) => {
+    if (!r[0]) return;
+    info[normName(r[0])] = { displayName: r[3] || r[0], verified: r[2] === "TRUE", photoUrl: r[6] || "", region: r[5] || "" };
+  });
+
+  let ranking = Object.keys(stats).map((p) => {
+    const gi = info[normName(p)] || {};
+    return {
+      name: p, displayName: gi.displayName || p, w: stats[p].w, l: stats[p].l, played: stats[p].played,
+      gender: stats[p].gender, elo: latestElo[p.toLowerCase()] || 1350,
+      photoUrl: gi.photoUrl || "", verified: !!gi.verified, region: gi.region || "",
+    };
+  });
+
   ranking.sort((a, b) => b.w - a.w || b.elo - a.elo);
   if (params.gender) ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
   return respond(200, { week, venue: venueName, ranking });
