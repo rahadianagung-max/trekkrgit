@@ -105,6 +105,13 @@ a.btn{display:inline-block;text-decoration:none}
       <span class="muted" id="p_wave"></span>
     </div>
     <div class="bar" id="p_bar" style="margin-top:10px"><i style="width:0%"></i></div>
+    <details style="margin-top:12px"><summary style="font-size:12px;color:#a3271a;cursor:pointer">⚠︎ Pembersih / hapus</summary>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <button class="gho" style="color:#a3271a;border-color:#f0c8c0" onclick="purge('elo')">Bersihkan ELO event ini</button>
+        <button class="gho" style="color:#a3271a;border-color:#f0c8c0" onclick="purge('all')">Hapus event sepenuhnya</button>
+      </div>
+      <div class="muted" style="margin-top:6px">"Bersihkan ELO" mengembalikan ELO global pemain (hapus baris sesi event ini dari ELO_Log), data event tetap ada. "Hapus event sepenuhnya" juga menghapus baris venue + seluruh data event.</div>
+    </details>
   </div>
 
   <div class="card">
@@ -190,6 +197,19 @@ async function genWave(){
   $('#genBtn').disabled=true;
   try{ await api('re/event/'+CUR+'/wave',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); await loadPanel(); }
   catch(e){err(e.message);loadPanel();}
+}
+async function purge(mode){
+  const all=mode==='all';
+  const msg=all?'HAPUS event ini sepenuhnya? Ini menghapus ELO event, baris venue, dan semua data event. Tidak bisa dibatalkan.'
+               :'Bersihkan ELO event ini? ELO global pemain dikembalikan (baris sesi event dihapus dari ELO_Log). Data event tetap ada.';
+  if(!confirm(msg))return;
+  const body=all?{elo:true,venue:true,event:true}:{elo:true};
+  try{
+    const r=await api('re/event/'+CUR+'/purge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const rm=r.removed||{};
+    alert(`Selesai. ELO_Log: ${rm.elo||0} baris${all?`, venue: ${rm.venue?'dibersihkan':'-'}, match: ${rm.matches||0}, pemain: ${rm.players||0}, gelombang: ${rm.waves||0}, event: ${rm.events||0}`:''}.`);
+    if(all){showHome();}else{loadPanel();}
+  }catch(e){err(e.message);}
 }
 function tab(t){['board','rank','people','links'].forEach(x=>$('#t_'+x).classList.toggle('hide',x!==t));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('act',b.dataset.t===t));}
 function renderBoard(){
