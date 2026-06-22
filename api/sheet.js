@@ -320,6 +320,8 @@ const netlifyHandler = async (event) => {
       return await reSwapPlayer(decodeURIComponent(path.replace("re/event/", "").replace("/swap", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/purge") && method === "POST")
       return await rePurge(decodeURIComponent(path.replace("re/event/", "").replace("/purge", "")), body);
+    if (path.startsWith("re/event/") && path.endsWith("/rebuild-elo") && method === "POST")
+      return await reRebuildElo(decodeURIComponent(path.replace("re/event/", "").replace("/rebuild-elo", "")));
     if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
       return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
     if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
@@ -3564,6 +3566,46 @@ async function rePurge(eventId, body) {
   }
   reCacheClear();
   return respond(200, { ok: true, removed });
+}
+
+// Recompute this event's ELO accurately so the player passports are correct:
+// purge the event's existing ELO rows, seed INITIAL at each new player's level
+// floor, then replay every finished match in time order with the proper base.
+async function reRebuildElo(eventId) {
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:rebuild:" + eventId;
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const idOf = (t) => { const s = (meta.data.sheets || []).find((x) => x.properties.title === t); return s ? s.properties.sheetId : null; };
+  const eloId = idOf(TABS.elo_log);
+  let purged = 0;
+  if (eloId != null) purged = await reDeleteMatching(sheets, eloId, TABS.elo_log, "A2:G", 0, "SES_RE_" + eventId);
+  const [pRows, mRows, eloRows] = await reBatchGet(sheets, [`${RE.players}!A2:J`, `${RE.matches}!A2:O`, `${TABS.elo_log}!A2:G`], null, true);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const nameById = {}, startById = {}; players.forEach((p) => { nameById[p.id] = p.canonical || p.name; startById[p.id] = p.startElo; });
+  const eloState = reEloStateFromRows(eloRows);
+  const now = new Date().toISOString();
+  const base = {}, mc = {}, initRows = [];
+  const ensure = (id) => {
+    if (base[id] != null) return;
+    const nm = nameById[id] || id; const s = eloState[normName(nm)];
+    if (s) { base[id] = s.elo; mc[id] = s.matchCount; }
+    else { base[id] = startById[id] != null ? startById[id] : 1350; mc[id] = 0; initRows.push(["INITIAL", nm, base[id], 0, 0, 0, now]); }
+  };
+  const matches = mRows.filter((r) => r[0] === eventId).map(reMatchObj).filter((m) => m.status === "done" && m.scoreA != null);
+  matches.sort((a, b) => (a.updatedAt || "").localeCompare(b.updatedAt || "") || a.wave - b.wave || a.court - b.court);
+  const sess = "SES_RE_" + eventId;
+  const replay = [];
+  for (const m of matches) {
+    const ids = [m.a[0], m.a[1], m.b[0], m.b[1]];
+    ids.forEach(ensure);
+    const P = ids.map((id) => ({ name: nameById[id] || id, elo: base[id], matchCount: mc[id] }));
+    const res = rmCalcElo(P[0], P[1], P[2], P[3], m.scoreA, m.scoreB);
+    const ts = m.updatedAt || now;
+    res.forEach((r, i) => { const id = ids[i]; base[id] = r.newElo; mc[id] += (r.w + r.l); replay.push([sess, P[i].name, r.newElo, r.delta, r.w, r.l, ts]); });
+  }
+  const out = initRows.concat(replay);
+  if (out.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: out } });
+  reCacheClear();
+  return respond(200, { ok: true, purgedWrongRows: purged, seededInitial: initRows.length, ratedMatches: replay.length, matches: matches.length });
 }
 
 async function reSubmitScore(eventId, body) {
