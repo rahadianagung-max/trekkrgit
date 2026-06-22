@@ -196,14 +196,26 @@ function renderBoard(){
   const cw=DATA.event.currentWave;
   const ms=DATA.matches.filter(m=>m.wave===cw).sort((a,b)=>a.court-b.court);
   if(!ms.length){$('#t_board').innerHTML='<div class="muted">Belum ada gelombang berjalan. Klik tombol generate di atas.</div>';return;}
-  $('#t_board').innerHTML='<div class="courts">'+ms.map(m=>ctCard(m)).join('')+'</div>';
+  const inWave=new Set(); ms.forEach(m=>[...(m.aIds||[]),...(m.bIds||[])].forEach(id=>inWave.add(id)));
+  const subs=DATA.players.filter(p=>p.status!=='withdrawn'&&!inWave.has(p.id));
+  $('#t_board').innerHTML='<div class="courts">'+ms.map(m=>ctCard(m,subs)).join('')+'</div>'+
+    `<div class="muted" style="margin-top:10px">Pemain belum datang? "Ganti pemain" di match yang belum diskor untuk menukar dengan pemain yang sedang istirahat di gelombang ini. (Pemain bebas: ${subs.length})</div>`;
 }
-function ctCard(m){
+function ctCard(m,subs){
   const done=m.status==='done';
   const aw=done&&m.scoreA>m.scoreB,bw=done&&m.scoreB>m.scoreA;
+  const slots=[{id:(m.aIds||[])[0],name:m.teamA[0]},{id:(m.aIds||[])[1],name:m.teamA[1]},{id:(m.bIds||[])[0],name:m.teamB[0]},{id:(m.bIds||[])[1],name:m.teamB[1]}];
+  const swap=done?'':`<details style="margin-top:8px"><summary style="font-size:12px;color:var(--o);cursor:pointer">Ganti pemain</summary>
+   <div class="row" style="gap:5px;margin-top:6px"><select id="out_${m.matchId}" style="font-size:12px;padding:5px;flex:1">${slots.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><span>→</span><select id="in_${m.matchId}" style="font-size:12px;padding:5px;flex:1">${(subs||[]).length?subs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''):'<option value="">(tak ada pemain bebas)</option>'}</select><button onclick="swapDo('${m.matchId}')" style="font-size:12px;padding:5px 9px">Ganti</button></div></details>`;
   return `<div class="ct"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${m.tier}</span>`:`<span class="muted" style="font-size:11px">${done?'selesai':'berjalan'}</span>`}</div>
    <div class="team"><span>${esc(m.teamA.join(' / '))}</span><span class="sc ${aw?'win':''}">${done?m.scoreA:'–'}</span></div>
-   <div class="team"><span>${esc(m.teamB.join(' / '))}</span><span class="sc ${bw?'win':''}">${done?m.scoreB:'–'}</span></div></div>`;
+   <div class="team"><span>${esc(m.teamB.join(' / '))}</span><span class="sc ${bw?'win':''}">${done?m.scoreB:'–'}</span></div>${swap}</div>`;
+}
+async function swapDo(mid){
+  const out=$('#out_'+mid).value, inn=$('#in_'+mid).value;
+  if(!inn){err('Tidak ada pemain bebas. Pengganti harus pemain yang sedang istirahat di gelombang ini (atau Withdraw yang absen lalu generate ulang).');return;}
+  try{ await api('re/event/'+CUR+'/swap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId:mid,outPlayerId:out,inPlayerId:inn})}); await loadPanel(); }
+  catch(e){err(e.message);}
 }
 async function renderRank(){
   try{
