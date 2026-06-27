@@ -3,41 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1A6FE8" />
+  <meta name="theme-color" content="#FF6A00" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Trekkr Mexicano</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     :root {
-      --blue: #1A6FE8;
-      --blue-dark: #0D52B8;
-      --blue-light: #EBF2FF;
-      --blue-mid: #C5D9FA;
+      --blue: #FF6A00;
+      --blue-dark: #E55F00;
+      --blue-light: #FFF1E5;
+      --blue-mid: #FFD9BF;
       --white: #FFFFFF;
-      --bg: #F0F5FF;
+      --bg: #F5F5F7;
       --card: #FFFFFF;
-      --text: #0F172A;
-      --text2: #475569;
-      --text3: #94A3B8;
-      --border: #E2E8F0;
-      --green: #16A34A;
-      --green-light: #DCFCE7;
-      --red: #DC2626;
-      --red-light: #FEE2E2;
-      --gold: #F59E0B;
-      --gold-light: #FEF3C7;
+      --text: #0D0D0D;
+      --text2: #52525B;
+      --text3: #9A9AA2;
+      --border: #E4E4E7;
+      --green: #22A052;
+      --green-light: #E7F6EC;
+      --red: #FF2D55;
+      --red-light: #FFE9EE;
+      --gold: #FFB000;
+      --gold-light: #FFF6E6;
       --radius: 16px;
       --radius-sm: 10px;
-      --shadow: 0 2px 12px rgba(26,111,232,0.08);
-      --shadow-md: 0 4px 24px rgba(26,111,232,0.12);
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 24px rgba(0,0,0,0.10);
     }
 
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
 
@@ -64,13 +64,13 @@
     /* INPUTS */
     .input-group { margin-bottom: 14px; }
     .input-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
-    .input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.15s; }
     .input:focus { border-color: var(--blue); background: white; }
     .input::placeholder { color: var(--text3); }
     select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
     /* BUTTONS */
-    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; width: 100%; min-height: 48px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: var(--radius-sm); padding: 14px 20px; font-size: 15px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: all 0.15s; width: 100%; min-height: 48px; }
     .btn-primary { background: var(--blue); color: white; }
     .btn-primary:hover { background: var(--blue-dark); }
     .btn-primary:active { transform: scale(0.98); }
@@ -83,7 +83,7 @@
 
     /* SEGMENT */
     .segment { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 4px; gap: 4px; margin-bottom: 14px; }
-    .seg-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; border-radius: 7px; cursor: pointer; transition: all 0.15s; color: var(--text2); background: transparent; }
+    .seg-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; border: none; border-radius: 7px; cursor: pointer; transition: all 0.15s; color: var(--text2); background: transparent; }
     .seg-btn.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 
     /* COUNTER */
@@ -111,7 +111,7 @@
     .score-team { flex: 1; }
     .score-team-name { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-align: center; line-height: 1.4; min-height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .score-vs { font-size: 18px; font-weight: 800; color: var(--text3); padding: 0 4px; margin-top: 22px; }
-    .score-input { width: 100%; text-align: center; font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; transition: all 0.15s; }
+    .score-input { width: 100%; text-align: center; font-size: 28px; font-weight: 800; font-family: 'Saira Condensed', monospace; padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; transition: all 0.15s; }
     .score-input:focus { border-color: var(--blue); background: white; }
     .score-input.winner { border-color: var(--green); background: var(--green-light); color: var(--green); }
     .score-input.loser { border-color: var(--red-light); background: var(--red-light); color: var(--red); }
@@ -133,7 +133,7 @@
     .lb-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
     .lb-info { flex: 1; }
     .lb-name { font-size: 14px; font-weight: 700; color: var(--text); }
-    .lb-elo { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+    .lb-elo { font-size: 11px; color: var(--text3); font-family: 'Saira Condensed', monospace; }
     .lb-stats { text-align: right; }
     .lb-wl { font-size: 14px; font-weight: 700; color: var(--text); }
     .lb-diff { font-size: 12px; font-weight: 600; }
@@ -153,7 +153,7 @@
 
     /* TABS */
     .tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 61px; z-index: 99; }
-    .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border: none; background: transparent; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; border: none; background: transparent; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
     .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 
     /* ALERT */
@@ -212,6 +212,11 @@
     .rec-text { font-size:13px; color:var(--text); line-height:1.5; }
     .rec-text strong { color:var(--blue); }
     .rec-detail { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
+
+    /* Brand display treatment (retheme) */
+    .header-title{font-family:'Saira Condensed';font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
+    .screen-title{font-family:'Saira Condensed';font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
+    .header-logo-mark{background:linear-gradient(135deg,#FF3830,#FFB000)!important}
   </style>
 </head>
 <body>
@@ -683,7 +688,7 @@ function getTierName(elo) {
 // ═══════════════════════════════════════════════════════════════════════════
 // AVATAR HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
-const COLORS = ["#1A6FE8","#0D52B8","#7C3AED","#DB2777","#059669","#D97706","#DC2626","#0891B2"];
+const COLORS = ["#FF6A00","#0D52B8","#7C3AED","#DB2777","#059669","#D97706","#DC2626","#0891B2"];
 function avatarColor(name) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % COLORS.length;
@@ -967,7 +972,7 @@ function renderPlayerList() {
           </div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace">${p.elo}</div>
+          <div style="font-size:12px;color:var(--text3);font-family:'Saira Condensed',monospace">${p.elo}</div>
         </div>
         ${sel ? `<div class="chip-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>` : ""}
       </div>`;
@@ -1857,7 +1862,7 @@ function renderHistory() {
       ${r.matches.map(m => `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1;font-size:12px;font-weight:600">${m.team1.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?"var(--green)":m.score1<m.score2?"var(--red)":"var(--text)"}">${m.score1} – ${m.score2}</div>
+          <div style="font-family:'Saira Condensed',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?"var(--green)":m.score1<m.score2?"var(--red)":"var(--text)"}">${m.score1} – ${m.score2}</div>
           <div style="flex:1;font-size:12px;font-weight:600;text-align:right">${m.team2.map(p=>p.name.split(" ")[0]).join(" / ")}</div>
         </div>`).join("")}
     </div>`).join("");
@@ -1878,7 +1883,7 @@ function showEndConfirm() {
     `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span>${["🥇","🥈","🥉"][i]}</span>
       <span style="font-size:13px;font-weight:700;flex:1">${p.name}</span>
-      <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
+      <span style="font-size:12px;font-family:'Saira Condensed',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
     </div>`).join("");
   document.getElementById("modal-end-confirm").classList.remove("hidden");
 }
@@ -2337,7 +2342,7 @@ function showApiWarning(msg) {
       "max-width:390px", "width:calc(100% - 40px)", "padding:12px 16px",
       "border-radius:12px", "font-size:13px", "font-weight:600", "line-height:1.4",
       "z-index:9999", "box-shadow:0 4px 20px rgba(0,0,0,0.2)",
-      "display:flex", "align-items:flex-start", "gap:10px", "font-family:'DM Sans',sans-serif"
+      "display:flex", "align-items:flex-start", "gap:10px", "font-family:'Plus Jakarta Sans',sans-serif"
     ].join(";");
     document.body.appendChild(toast);
   }
@@ -2599,7 +2604,7 @@ function showCycleModal(st) {
       <div class="fc-player-dots">
         ${Array.from({length:st.maxMatches}).map((_,i) => {
           const bg = i < st.minMatches ? "#16A34A"
-                   : i < c             ? "#1A6FE8"
+                   : i < c             ? "#FF6A00"
                    :                     "rgba(0,0,0,0.08)";
           return `<div class="fc-dot" style="background:${bg}"></div>`;
         }).join("")}
