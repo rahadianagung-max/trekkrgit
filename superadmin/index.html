@@ -4,43 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trekkr — Superadmin</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#0a0c12;--s1:#10131a;--s2:#161a24;--s3:#1c2130;--border:#1e2333;--border2:#2a3045;--lime:#d4f53c;--lime2:#b8d930;--coral:#ff5757;--text:#eeeef5;--muted:#4a5068;--muted2:#6b7394}
+:root{--bg:#FFFFFF;--s1:#F5F5F7;--s2:#FFFFFF;--s3:#EFEFF1;--border:#E4E4E7;--border2:#EDEDF0;--lime:#FF6A00;--lime2:#E55F00;--coral:#FF3830;--text:#0D0D0D;--muted:#9A9AA2;--muted2:#52525B}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh}
 .wrap{max-width:860px;margin:0 auto;padding:20px 20px 80px}
-.page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:5px;color:var(--lime);margin-bottom:4px}
-.page-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:20px}
+.page-title{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:38px;letter-spacing:2px;text-transform:uppercase;color:var(--lime);margin-bottom:4px}
+.page-sub{font-family:'Saira Condensed',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:20px}
 .login-card{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:32px;max-width:380px;margin:60px auto}
-.login-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--lime);margin-bottom:20px;text-align:center}
-.field{margin-bottom:12px}.field-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;display:block}
-.field-input,.field-select,.field-textarea{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color 0.2s}
+.login-title{font-family:'Saira Condensed',sans-serif;font-size:28px;letter-spacing:4px;color:var(--lime);margin-bottom:20px;text-align:center}
+.field{margin-bottom:12px}.field-label{font-family:'Saira Condensed',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;display:block}
+.field-input,.field-select,.field-textarea{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-family:'Saira Condensed',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color 0.2s}
 .field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--lime)}.field-input::placeholder,.field-textarea::placeholder{color:var(--muted)}
 .field-select{appearance:none;cursor:pointer}.field-textarea{min-height:60px;resize:vertical}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;transition:all 0.15s}
+.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;transition:all 0.15s}
 .btn-primary{background:var(--lime);color:var(--bg)}.btn-primary:hover{background:var(--lime2)}
 .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted2);font-size:12px}.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
 .btn-sm{padding:6px 14px;font-size:11px}.btn-full{width:100%}
 .admin-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--border);overflow-x:auto}
-.a-tab{padding:10px 18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap}
+.a-tab{padding:10px 18px;font-family:'Saira Condensed',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap}
 .a-tab:hover{color:var(--text)}.a-tab.active{color:var(--lime);border-bottom-color:var(--lime)}
 .tab-pane{display:none}.tab-pane.active{display:block}
 .section{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
-.section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);margin-bottom:14px}
-.data-table{width:100%;border-collapse:collapse}.data-table th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+.section-title{font-family:'Saira Condensed',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);margin-bottom:14px}
+.data-table{width:100%;border-collapse:collapse}.data-table th{font-family:'Saira Condensed',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
 .data-table td{font-size:12px;padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
 .data-table tr:hover td{background:var(--s2)}.data-table .photo-cell img{width:32px;height:32px;border-radius:6px;object-fit:cover;background:var(--s3)}
-.status-msg{padding:10px 14px;border-radius:8px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none}
+.status-msg{padding:10px 14px;border-radius:8px;margin-top:12px;font-family:'Saira Condensed',monospace;font-size:11px;display:none}
 .status-msg.success{display:block;background:rgba(212,245,60,0.08);border:1px solid rgba(212,245,60,0.3);color:var(--lime)}
 .status-msg.error{display:block;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.3);color:var(--coral)}
 .logout-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.logout-bar .user-info{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)}
-.badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;padding:2px 6px;border-radius:3px;letter-spacing:1px}
+.logout-bar .user-info{font-family:'Saira Condensed',monospace;font-size:10px;color:var(--muted2)}
+.badge{display:inline-block;font-family:'Saira Condensed',monospace;font-size:8px;padding:2px 6px;border-radius:3px;letter-spacing:1px}
 .badge-lime{background:rgba(212,245,60,0.1);border:1px solid rgba(212,245,60,0.3);color:var(--lime)}
 .badge-muted{background:rgba(90,90,120,0.15);border:1px solid rgba(90,90,120,0.3);color:var(--muted2)}
-footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
+footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'Saira Condensed',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
 footer span{color:var(--lime)}
 @media(max-width:640px){.field-row{grid-template-columns:1fr}.a-tab{padding:8px 12px;font-size:8px}}
 </style>
@@ -206,7 +206,7 @@ function editVenue(name){
 
 async function loadAdmins(){try{const d=await TrekkrAPI.getAdmins();document.getElementById('adminsTbody').innerHTML=d.admins.map(a=>`<tr><td><strong>${a.username}</strong></td><td><span class="badge ${a.role==='superadmin'?'badge-lime':'badge-muted'}">${a.role}</span></td><td>${a.venue||'—'}</td></tr>`).join('')}catch(e){console.warn(e)}}
 async function addAdmin(){const st=document.getElementById('addAdminStatus'),u=document.getElementById('aa-user').value.trim(),p=document.getElementById('aa-pass').value;if(!u||!p){st.className='status-msg error';st.textContent='Username and password required';return}try{await TrekkrAPI.addAdmin({username:u,password:p,role:document.getElementById('aa-role').value,venue:document.getElementById('aa-venue').value});st.className='status-msg success';st.textContent=`✓ "${u}" created`;document.getElementById('aa-user').value='';document.getElementById('aa-pass').value='';await loadAdmins()}catch(e){st.className='status-msg error';st.textContent=e.message}}
-async function loadSessions(){try{const d=await TrekkrAPI.listSessions();document.getElementById('sessionsTbody').innerHTML=d.sessions.map(s=>`<tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px">${s.id}</td><td>${s.name}</td><td>${s.venue||'—'}</td><td>${s.playerCount||'—'}</td><td>${s.roundCount||'—'}</td><td style="font-size:10px">${s.createdAt?new Date(s.createdAt).toLocaleDateString():''}</td></tr>`).join('')}catch(e){console.warn(e)}}
+async function loadSessions(){try{const d=await TrekkrAPI.listSessions();document.getElementById('sessionsTbody').innerHTML=d.sessions.map(s=>`<tr><td style="font-family:'Saira Condensed',monospace;font-size:10px">${s.id}</td><td>${s.name}</td><td>${s.venue||'—'}</td><td>${s.playerCount||'—'}</td><td>${s.roundCount||'—'}</td><td style="font-size:10px">${s.createdAt?new Date(s.createdAt).toLocaleDateString():''}</td></tr>`).join('')}catch(e){console.warn(e)}}
 
 // Site Settings
 const SETTINGS_KEYS=['hero_eyebrow','hero_title','hero_subtitle','hero_image','venue_eyebrow','venue_title','venue_subtitle','venue_image','passport_label','passport_title','passport_image'];
