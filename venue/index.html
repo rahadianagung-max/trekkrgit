@@ -1,864 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Venue | Trekkr</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&display=swap" rel="stylesheet"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Venues — Trekkr</title>
+<meta name="description" content="Trekkr venues across Indonesia — find your home court and its ranked-match leaderboard."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-:root{--primary:#003ec7;--primary-container:#0052ff;--secondary-container:#cd4800;--on-surface:#0b1c30;--on-surface-variant:#434656;--on-inverse:#eaf1ff;--on-primary:#fff;--surface:#f8f9ff;--surface-low:#eff4ff;--surface-container:#e5eeff;--surface-high:#dce9ff;--surface-highest:#d3e4fe;--surface-lowest:#fff;--surface-inverse:#213145;--ok:#1f9d63;--danger:#ba1a1a;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--rhythm-section:32px;--rhythm-major:48px;--shadow-soft:0 16px 34px rgba(11,28,48,0.08);--motion-base:220ms;--ease-out:cubic-bezier(0.22,0.61,0.36,1)}
-*{box-sizing:border-box}html,body{margin:0;padding:0}body{color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,0.11),transparent 58%),radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,0.1),transparent 54%),var(--surface)}a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p{margin:0}
-.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
-.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.03em;text-transform:uppercase}.nav-links{display:flex;gap:6px}.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base)}.nav-link:hover{background:var(--surface-container)}.nav-link.is-active{color:var(--primary);background:var(--surface-container)}.header-actions{display:flex;gap:12px}.btn{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base)}.btn--primary{background:var(--primary);color:var(--on-primary)}.btn--primary:hover{background:var(--primary-container)}.btn--ghost{background:var(--surface-container);color:var(--primary)}.btn--text{background:transparent;color:var(--on-surface-variant)}
-/* Venue hero */
-.v-hero{position:relative;overflow:hidden;background:linear-gradient(140deg,rgba(0,62,199,0.08),rgba(205,72,0,0.08));padding:var(--rhythm-major) 0}
-.v-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(145deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),var(--v-bg,url("https://i.ibb.co.com/99jXdc9f/Screen-Shot-2026-04-21-at-01-35-48.png"));background-size:cover;background-position:center;pointer-events:none}
-.v-hero>.container{position:relative;z-index:1}
-.v-eyebrow{display:inline-flex;padding:5px 12px;border-radius:999px;background:var(--secondary-container);color:#fff;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
-.v-title{margin-top:14px;font-family:'Space Grotesk',sans-serif;font-size:clamp(48px,10vw,88px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
-.v-subtitle{margin-top:12px;max-width:740px;color:var(--on-surface-variant);font-size:clamp(15px,2.3vw,20px)}
-/* Venue grid */
-.section{margin-top:var(--rhythm-section)}.section-title{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--on-surface-variant);text-transform:uppercase}
-.v-grid{margin-top:16px;display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr))}
-.v-card{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface-low);box-shadow:var(--shadow-soft);transition:transform var(--motion-base),background var(--motion-base);cursor:pointer}
-.v-card:hover{transform:translateY(-2px);background:var(--surface-high)}
-.v-card__body{padding:18px;display:grid;gap:8px}
-.v-card__region{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
-.v-card__title{font-family:'Space Grotesk',sans-serif;font-size:24px;line-height:0.94;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
-.v-card__meta{color:var(--on-surface-variant);font-size:13px}
-.v-card__footer{margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.v-card__init{width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary);color:#fff;display:grid;place-items:center;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:900;flex-shrink:0}
-/* Venue detail */
-.vd-hero{position:relative;overflow:hidden;min-height:280px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:var(--rhythm-major) 0}
-.vd-hero>.container{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
-.vd-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(36px,6vw,64px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
-.vd-subtitle{margin-top:8px;font-size:14px;opacity:0.8}
-.vd-info{background:rgba(255,255,255,0.08);border-radius:var(--radius-lg);padding:18px;min-width:240px;backdrop-filter:blur(8px)}
-.vd-info-title{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7}
-.vd-info-line{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}
-.vd-info-kpi{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.vd-info-label{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.6}
-.vd-info-value{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;margin-top:2px}
-/* Controls */
-.vd-controls{padding:16px 0;border-bottom:1px solid rgba(115,118,136,0.12);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.vd-week{display:flex;align-items:center;gap:12px}
-.vd-week-btn{width:36px;height:36px;border:0;border-radius:var(--radius-md);background:var(--surface-container);color:var(--primary);font-size:16px;font-weight:700;cursor:pointer}
-.vd-week-label{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800}
-.seg-control{background:var(--surface-container);border-radius:var(--radius-md);padding:4px;display:flex;gap:4px}
-.seg-control__item{flex:1;border:0;background:transparent;border-radius:8px;min-height:36px;padding:0 16px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);cursor:pointer}
-.seg-control__item.is-active{color:var(--primary);background:var(--surface-lowest)}
-/* Ranking table */
-.data-table-wrap{margin-top:16px;background:var(--surface-low);border-radius:var(--radius-lg);overflow:auto}
-.data-table{width:100%;border-collapse:collapse}
-.data-table th{text-align:left;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--on-surface-variant);background:rgba(203,219,245,0.5);padding:12px 14px}
-.data-table td{padding:14px;background:var(--surface-lowest);font-size:14px}
-.data-table tr:nth-child(even) td{background:rgba(239,244,255,0.65)}
-.data-table tr:hover td{background:var(--surface-highest)}
-.data-table tr{cursor:pointer;transition:background var(--motion-base)}
-.v-rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--primary)}
-.v-rank--1{color:var(--secondary-container)}
-.v-elo{font-family:'Inter',sans-serif;font-weight:700;color:var(--primary)}
-/* Top 3 podium cards */
-.podium{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.podium-card{border-radius:var(--radius-xl);padding:24px 20px;text-align:center;cursor:pointer;transition:transform var(--motion-base),box-shadow var(--motion-base)}
-.podium-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-soft)}
-.podium-card--1{background:linear-gradient(135deg,#001c6f,#003ec7);color:#fff;grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px}
-.podium-card--2{background:var(--surface-container)}
-.podium-card--3{background:var(--surface-container)}
-.podium-rank{font-family:'Space Grotesk',sans-serif;font-weight:900;opacity:0.25;line-height:1}
-.podium-card--1 .podium-rank{font-size:72px}
-.podium-card--2 .podium-rank,.podium-card--3 .podium-rank{font-size:48px;color:var(--on-surface)}
-.podium-avatar{border-radius:50%;object-fit:cover;margin:16px auto 12px;display:block}
-.podium-card--1 .podium-avatar{width:120px;height:120px;border:4px solid rgba(255,255,255,0.25);box-shadow:0 12px 32px rgba(0,0,0,0.3)}
-.podium-card--2 .podium-avatar,.podium-card--3 .podium-avatar{width:80px;height:80px;border:3px solid var(--surface-highest);box-shadow:0 8px 20px rgba(11,28,48,0.08)}
-.podium-name{font-family:'Space Grotesk',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;margin-top:4px}
-.podium-card--1 .podium-name{font-size:24px}
-.podium-card--2 .podium-name,.podium-card--3 .podium-name{font-size:16px}
-.podium-tier{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px}
-.podium-card--1 .podium-tier{opacity:0.8}
-.podium-card--2 .podium-tier,.podium-card--3 .podium-tier{color:var(--on-surface-variant)}
-.podium-stats{margin-top:10px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em}
-.podium-card--1 .podium-stats{opacity:0.75}
-.podium-card--2 .podium-stats,.podium-card--3 .podium-stats{color:var(--on-surface-variant)}
-/* Table avatar */
-.tbl-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface-highest);flex-shrink:0}
-.tbl-player{display:flex;align-items:center;gap:10px}
-@media(max-width:767px){.podium{grid-template-columns:1fr}.podium-card--1{grid-row:auto;min-height:280px}}
-/* States */
-.state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
-.state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
-.state-copy{margin:10px auto 0;max-width:700px;color:var(--on-surface-variant);font-size:16px}
-/* Footer */
-.site-footer{margin-top:72px;border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
-.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase}
-.footer-links{display:flex;gap:20px;font-size:13px;color:var(--on-surface-variant)}
-.footer-copy{font-size:12px;color:var(--on-surface-variant)}
-@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.v-grid{grid-template-columns:repeat(2,1fr)}.vd-hero>.container{grid-template-columns:1fr}}
-@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.v-grid{grid-template-columns:1fr}.vd-hero>.container{grid-template-columns:1fr}}
+.page-head{padding:26px 0 0}
+.page-head h1{font-size:clamp(28px,5vw,42px);margin:8px 0 0}
+.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:600px}
+.back{font-size:12px;font-weight:600;color:var(--subtle);display:inline-flex;align-items:center;gap:5px}
+.back:hover{color:var(--orange)}
 
-/* ── CALIBRATION STATUS PILLS ─────────────────────────────────── */
-.pill-cal {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 9px; border-radius: 999px;
-  background: rgba(205,72,0,0.1); border: 1px solid rgba(205,72,0,0.25);
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: #cd4800;
-  white-space: nowrap; vertical-align: middle;
-}
-.pill-cal .cdot {
-  width: 5px; height: 5px; border-radius: 50%; background: #cd4800; flex-shrink: 0;
-  animation: cpulse 1.4s ease-out infinite;
-}
-@keyframes cpulse {
-  0%  { box-shadow: 0 0 0 0 rgba(205,72,0,0.5); }
-  70% { box-shadow: 0 0 0 5px rgba(205,72,0,0); }
-  100%{ box-shadow: 0 0 0 0 rgba(205,72,0,0); }
-}
-.pill-rated {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 9px; border-radius: 999px;
-  background: rgba(0,62,199,0.08); border: 1px solid rgba(0,62,199,0.2);
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary);
-  white-space: nowrap; vertical-align: middle;
-}
-/* Light versions for dark podium card #1 */
-.pill-cal--light {
-  background: rgba(255,255,255,0.15); border-color: rgba(255,140,0,0.5); color: #ffb366;
-}
-.pill-rated--light {
-  background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); color: rgba(234,241,255,0.85);
-}
+.searchbar{margin-top:16px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 12px;max-width:360px}
+.searchbar i{color:var(--orange);font-size:16px}
+.searchbar input{flex:1;border:0;outline:0;background:transparent;font-family:inherit;font-size:14px;padding:11px 0;color:var(--text)}
 
-/* ── BADGE CHIPS ───────────────────────────────────────────────── */
-.badge-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; justify-content: center; }
-.badge-chip {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 3px 8px; border-radius: 999px;
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  white-space: nowrap; transition: transform 0.15s; cursor: default;
-}
-.badge-chip:hover { transform: scale(1.06); }
-.badge-chip.common   { background: rgba(100,116,139,0.12); color:#475569; border:1px solid rgba(100,116,139,0.2); }
-.badge-chip.uncommon { background: rgba(0,62,199,0.1);     color:var(--primary); border:1px solid rgba(0,62,199,0.2); }
-.badge-chip.rare     { background: rgba(124,58,237,0.1);   color:#7C3AED; border:1px solid rgba(124,58,237,0.2); }
-.badge-chip.epic     { background: rgba(245,158,11,0.1);   color:#D97706; border:1px solid rgba(245,158,11,0.2); }
-.badge-chip.legendary{ background: rgba(220,38,38,0.1);    color:#DC2626; border:1px solid rgba(220,38,38,0.2); }
-/* Light versions for dark card */
-.badge-chip--light   { background: rgba(255,255,255,0.13) !important; color:rgba(234,241,255,0.9) !important; border-color:rgba(255,255,255,0.22) !important; }
+.grid{margin-top:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.vcard{display:block;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s,transform .2s}
+.vcard:hover{border-color:var(--orange);transform:translateY(-2px)}
+.vcard .vlogo{width:42px;height:42px;border-radius:11px;background:#FFE3CC;color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;overflow:hidden}
+.vcard .vlogo img{width:100%;height:100%;object-fit:cover}
+.vcard .vname{font-size:17px;font-weight:700;margin-top:12px;line-height:1.2}
+.vcard .vmeta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:5px}
+.vcard .vmeta i{color:var(--subtle);font-size:13px}
+.vcard .vgo{font-size:12px;font-weight:600;color:var(--orange);margin-top:14px;display:inline-flex;align-items:center;gap:5px}
 
-/* ── WEEKLY TOP PLAYERS — bigger title ─────────────────────────── */
-.weekly-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 900; text-transform: uppercase;
-  letter-spacing: -0.03em; line-height: 0.95;
-  margin-bottom: 16px;
-}
-.weekly-title span { color: var(--secondary-container); }
+/* Detail */
+.vhero{margin-top:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.vhero .vlogo{width:72px;height:72px;border-radius:16px;font-size:28px}
+.vhero .vinfo{flex:1;min-width:200px}
+.vhero h2{font-size:clamp(24px,4.5vw,34px);margin:0}
+.vtags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.vtag{font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 12px;display:inline-flex;align-items:center;gap:5px}
+.vtag i{color:var(--orange);font-size:13px}
+.lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border-soft);transition:background .2s}
+.lb-row:last-child{border-bottom:0}
+.lb-row:hover{background:var(--surface-2)}
+.lb-row .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:24px;text-align:center}
+.lb-row.top .rk{color:var(--orange)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--border-soft);color:var(--muted);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;object-fit:cover;overflow:hidden}
+.lb-row .who{flex:1;min-width:0}
+.lb-row .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-row .mt{font-size:10px;color:var(--subtle)}
+.lb-row .elo{font-size:14px;font-weight:700;color:var(--orange)}
 
-/* ── PODIUM ENHANCEMENTS ────────────────────────────────────────── */
-/* Tier dot */
-.tier-dot-wrap {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase;
-}
-.tier-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
+.skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* Table tier dot */
-.tbl-tier { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
-.tbl-tier-name {
-  font-size: 10px; color: var(--on-surface-variant);
-  text-transform: uppercase; font-weight: 700; letter-spacing: 0.09em;
-}
-.tbl-player-col { display: flex; flex-direction: column; }
-.tbl-pills { display: flex; align-items: center; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
-
-
-/* ── VENUE VALUE PROP SECTION ──────────────────────────────────── */
-.venue-value{padding:64px 0;background:var(--surface-lowest);border-bottom:1px solid rgba(115,118,136,0.1)}
-.venue-value__header{text-align:center;margin-bottom:48px}
-.venue-value__eyebrow{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
-.venue-value__title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-0.03em;text-transform:uppercase;line-height:1}
-.venue-value__sub{margin-top:10px;font-size:16px;color:var(--on-surface-variant);max-width:520px;margin-left:auto;margin-right:auto}
-.venue-value__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.venue-value-card{background:var(--surface-low);border-radius:var(--radius-xl);padding:24px 20px;transition:transform 220ms,box-shadow 220ms}
-.venue-value-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,28,48,0.08)}
-.venue-value-card__icon{width:44px;height:44px;border-radius:var(--radius-lg);background:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:20px}
-.venue-value-card__title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:-0.01em;margin-bottom:8px}
-.venue-value-card__desc{font-size:13px;color:var(--on-surface-variant);line-height:1.6}
-.venue-value-cta{margin-top:40px;text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-@media(max-width:1023px){.venue-value__grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:767px){.venue-value__grid{grid-template-columns:1fr}.venue-value{padding:40px 0}}
-
-/* ── MOBILE NAV (venue page) ─────────────────────────────────── */
-.mobile-nav{display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:rgba(248,249,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(115,118,136,0.12);position:sticky;top:80px;z-index:49;padding:0 16px}
-.mobile-nav::-webkit-scrollbar{display:none}
-.mobile-nav__inner{display:flex;gap:4px;padding:8px 0;width:max-content;min-width:100%}
-.mobile-nav__link{display:inline-flex;align-items:center;white-space:nowrap;padding:8px 16px;border-radius:var(--radius-pill);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--on-surface-variant);text-decoration:none;transition:all 180ms ease}
-.mobile-nav__link:hover{background:var(--surface-container)}
-.mobile-nav__link.is-active{color:var(--primary);background:var(--surface-container)}
-.mobile-nav__link--cta{color:var(--primary);border:1.5px solid rgba(0,62,199,0.25);background:var(--surface-low)}
-.mobile-nav__link--cta:hover{background:var(--surface-container)}
-@media(max-width:1023px){.mobile-nav{display:block}}
-
-/* ══════════════════════════════════════════════════
-   LIGA MODE — STANDINGS TABLE (Opsi C)
-   On-brand: uses --primary #003ec7 palette only
-   ══════════════════════════════════════════════════ */
-.liga-wrap { margin-top: 8px; }
-
-/* Context banner */
-.liga-banner {
-  display: flex; align-items: center; gap: 14px;
-  background: linear-gradient(135deg, #001c6f, #003ec7);
-  border-radius: var(--radius-xl); padding: 16px 22px; margin-bottom: 20px; color: #fff;
-}
-.liga-banner-icon { font-size: 20px; flex-shrink: 0; }
-.liga-banner-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; }
-.liga-banner-sub { font-size: 12px; opacity: .75; margin-top: 3px; line-height: 1.45; }
-.liga-reset-pill {
-  margin-left: auto; flex-shrink: 0; background: rgba(255,255,255,.15);
-  border-radius: var(--radius-pill); padding: 5px 13px;
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
-}
-
-/* ── TOP 3 HERO CARDS ── */
-.liga-top3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-
-.liga-hero-card {
-  border-radius: var(--radius-xl); overflow: hidden; cursor: pointer; position: relative;
-  transition: transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base);
-  display: flex; flex-direction: column;
-}
-.liga-hero-card:hover { transform: translateY(-4px); box-shadow: 0 20px 48px rgba(11,28,48,.18); }
-
-/* Rank 1 — primary blue, largest */
-.liga-hero-card--1 { background: linear-gradient(160deg, #001c6f 0%, #003ec7 100%); color: #fff; }
-/* Rank 2 — surface-inverse dark blue */
-.liga-hero-card--2 { background: linear-gradient(160deg, #0b1c30 0%, #213145 100%); color: #fff; }
-/* Rank 3 — slightly lighter dark */
-.liga-hero-card--3 { background: linear-gradient(160deg, #0f2238 0%, #1c3a5e 100%); color: #fff; }
-
-.liga-hero-photo-wrap {
-  width: 100%; flex: 1; overflow: hidden; position: relative; min-height: 160px;
-}
-/* Photo fills the box, object-fit cover */
-.liga-hero-photo {
-  width: 100%; height: 100%; object-fit: cover; object-position: top center;
-  display: block; transition: transform .4s ease;
-}
-.liga-hero-card:hover .liga-hero-photo { transform: scale(1.04); }
-/* Fallback initials avatar */
-.liga-hero-initials {
-  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  font-family: 'Space Grotesk', sans-serif; font-size: clamp(40px, 6vw, 72px);
-  font-weight: 900; background: rgba(255,255,255,.08); color: rgba(255,255,255,.6);
-}
-/* Gradient overlay on photo for readability */
-.liga-hero-photo-wrap::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.1) 50%, transparent 100%);
-  pointer-events: none;
-}
-/* Medal badge top-left */
-.liga-hero-medal {
-  position: absolute; top: 10px; left: 10px; z-index: 2;
-  font-size: 22px; line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
-}
-
-.liga-hero-info {
-  padding: 14px 14px 16px; position: relative; z-index: 1;
-}
-.liga-hero-name {
-  font-family: 'Space Grotesk', sans-serif; font-size: clamp(18px, 2.8vw, 26px);
-  font-weight: 900; text-transform: uppercase; letter-spacing: -.02em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;
-  line-height: 1;
-}
-.liga-hero-pts-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
-.liga-hero-pts {
-  font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 3.5vw, 36px);
-  font-weight: 900; line-height: 1; color: #eaf1ff;
-}
-.liga-hero-pts-label {
-  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase; opacity: .6;
-}
-.liga-hero-wl { font-size: 12px; opacity: .75; margin-bottom: 6px; }
-.liga-hero-form { display: flex; gap: 3px; flex-wrap: wrap; }
-
-/* Form text labels (circles removed) */
-.form-dot { display: none; } /* kept for compatibility only */
-
-/* ── LIGA TABLE ── */
-.liga-table-wrap {
-  background: var(--surface-lowest,#fff); border-radius: var(--radius-xl);
-  overflow: hidden; border: 1px solid rgba(115,118,136,.1); box-shadow: var(--shadow-soft);
-}
-.liga-table-header {
-  display: grid; grid-template-columns: 44px 1fr 58px 50px 50px 50px 90px;
-  padding: 10px 16px; background: var(--surface-low,#eff4ff);
-  border-bottom: 1px solid rgba(115,118,136,.1);
-}
-.liga-th {
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--on-surface-variant,#434656);
-  display: flex; align-items: center;
-}
-.liga-th--center { justify-content: center; }
-.liga-row {
-  display: grid; grid-template-columns: 44px 1fr 58px 50px 50px 50px 90px;
-  padding: 12px 16px; align-items: center; cursor: pointer;
-  border-bottom: 1px solid rgba(115,118,136,.06); transition: background var(--motion-base);
-}
-.liga-row:last-child { border-bottom: none; }
-.liga-row:hover { background: var(--surface-low,#eff4ff); }
-.liga-row--4  { background: rgba(0,62,199,.04); }
-.liga-row--5  { }
-.liga-rank {
-  font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 900;
-  color: var(--on-surface-variant,#434656); text-align: center;
-}
-.liga-player { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.liga-player-av { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.liga-player-name { font-size: 14px; font-weight: 700; color: var(--on-surface,#0b1c30); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.liga-player-sub  { font-size: 11px; color: var(--on-surface-variant,#434656); margin-top: 1px; }
-.liga-cell { text-align: center; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--on-surface,#0b1c30); }
-.liga-cell--pts { font-size: 18px; color: var(--primary,#003ec7); }
-.liga-cell--w   { color: var(--ok,#1f9d63); }
-.liga-cell--l   { color: var(--danger,#ba1a1a); }
-.liga-form      { display: flex; justify-content: center; gap: 3px; flex-wrap: wrap; }
-
-/* Legend */
-.liga-legend {
-  padding: 10px 16px; border-top: 1px solid rgba(115,118,136,.08);
-  font-size: 11px; color: var(--on-surface-variant); display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
-}
-.liga-legend-item { display: flex; align-items: center; gap: 5px; }
-.liga-legend-cta  { margin-left: auto; color: var(--primary); font-weight: 700; font-size: 11px; }
-
-/* ── MATCH HISTORY ── */
-.liga-mh-wrap { margin-top: 24px; }
-.liga-mh-title {
-  font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: -.02em; margin-bottom: 14px; color: var(--on-surface);
-}
-/* Session group */
-.liga-session {
-  margin-bottom: 20px;
-}
-.liga-session-header {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-  padding: 7px 12px; background: var(--surface-container,#e5eeff);
-  border-radius: var(--radius-md); width: fit-content;
-}
-.liga-session-label {
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase; color: var(--primary,#003ec7);
-}
-.liga-session-date { font-size: 11px; color: var(--on-surface-variant); }
-.liga-session-count { font-size: 11px; color: var(--on-surface-variant); }
-.liga-mh-row {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
-  background: var(--surface-lowest,#fff); border-radius: var(--radius-lg);
-  margin-bottom: 6px; border: 1px solid rgba(115,118,136,.1);
-  transition: background var(--motion-base);
-}
-.liga-mh-score {
-  font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 900;
-  min-width: 68px; text-align: center; flex-shrink: 0; letter-spacing: -.02em;
-}
-.liga-mh-teams { flex: 1; min-width: 0; }
-.liga-mh-t  { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.liga-mh-sub { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; font-family: 'Inter', sans-serif; }
-.liga-mh-badge {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: .04em;
-}
-.liga-mh-badge--w { background: #dcfce7; color: #15803d; }
-.liga-mh-badge--l { background: #fce4e4; color: var(--danger,#ba1a1a); }
-.liga-mh-badge--d { background: var(--surface-container); color: var(--on-surface-variant); }
-
-/* Total count */
-.liga-mh-total { text-align: center; padding: 10px 0 4px; font-size: 12px; color: var(--on-surface-variant); }
-
-@media(max-width: 1023px) {
-  .liga-top3 { grid-template-columns: 1fr 1fr 1fr; }
-  .liga-hero-photo-wrap { min-height: 130px; }
-}
-@media(max-width: 767px) {
-  .liga-banner { flex-wrap: wrap; }
-  .liga-reset-pill { margin-left: 0; }
-  .liga-table-header, .liga-row { grid-template-columns: 36px 1fr 50px 42px 42px 42px 72px; }
-  .liga-hero-pts { font-size: 26px; }
-  .liga-hero-photo-wrap { min-height: 140px; }
-}
-@media(max-width: 480px) {
-  .liga-top3 { grid-template-columns: 1fr; }
-  .liga-table-header, .liga-row { grid-template-columns: 32px 1fr 44px 38px 38px 38px 64px; padding: 10px; }
-  .liga-cell { font-size: 13px; }
-  .liga-cell--pts { font-size: 15px; }
-  .liga-player-name { font-size: 13px; }
-  .liga-player-av { width: 28px; height: 28px; }
-  .liga-hero-photo-wrap { min-height: 180px; }
-}
+@media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
 </style>
 </head>
 <body>
-<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online" class="brand">Trekkr</a><nav class="nav-links"><a class="nav-link" href="https://trekkr.online">National Ranking</a><a class="nav-link is-active" href="https://venue.trekkr.online">Venues</a><a class="nav-link" href="https://trekkr.online#how-it-works">How It Works</a></nav><div class="header-actions"><button class="btn btn--ghost" type="button" onclick="location.href='https://trekkr.online#how-it-works'">I'm a Player</button><button class="btn btn--primary" type="button" onclick="location.href='https://admin.trekkr.online'">Venue Login</button></div></div></header>
-<main><div class="mobile-nav" role="navigation" aria-label="Mobile navigation">
-  <div class="mobile-nav__inner">
-    <a class="mobile-nav__link" href="https://trekkr.online">National Ranking</a>
-    <a class="mobile-nav__link is-active" href="https://venue.trekkr.online">Venues</a>
-    <a class="mobile-nav__link" href="https://trekkr.online#how-it-works">How It Works</a>
-    <a class="mobile-nav__link mobile-nav__link--cta" href="https://admin.trekkr.online">Venue Login</a>
-  </div>
-</div>
 
-<div id="mainContent"><div class="container"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading venue data...</p></div></div></div></main>
-<footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://trekkr.online#how-it-works">How It Works</a><a href="https://trekkr.online">National Ranking</a><a href="https://admin.trekkr.online">Venue Login</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
-<script src="https://trekkr.online/trekkr-api.js"></script>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="brand">Trekkr</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="/rankings">Rankings</a>
+      <a href="/venues" class="active">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+    </nav>
+    <div class="header-actions">
+      <a href="/rankings#find" class="btn btn--outline"><i class="ti ti-search" aria-hidden="true"></i>Find me</a>
+      <a href="https://admin.trekkr.online" class="btn btn--primary">Venue login</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+    </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="/rankings">Rankings</a>
+      <a href="/venues">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+      <a href="/rankings#find">Find me</a>
+      <a href="https://admin.trekkr.online">Venue login</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container" id="main">
+  <div id="content"><div class="skeleton" style="margin-top:26px"></div></div>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/rankings">Rankings</a>
+      <a href="/venues">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+    </nav>
+    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
+  </div>
+</footer>
+
 <script>
+(function(){
+  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
-// ── CALIBRATION & BADGE HELPERS ──────────────────────────────────────────
-const CALIB_MIN = 15;
-const TIER_COLORS = {
-  'Platinum':'#6B7280','Gold':'#D97706','Silver':'#64748B',
-  'Upper Bronze':'#92400E','Bronze':'#B45309','Lower Bronze':'#78350F',
-  'Upper Beginner':'#3B82F6','Beginner':'#94A3B8',
-};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
+  function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
+  function avatar(p){if(p.photoUrl)return '<img class="avatar" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="avatar">'+esc(initials(p.displayName||p.name))+'</span>';}
+  var content=document.getElementById('content');
 
-function statusPill(totalMatches, light=false) {
-  const cal = (totalMatches||0) < CALIB_MIN;
-  if (cal) {
-    return `<span class="pill-cal${light?' pill-cal--light':''}"><span class="cdot"></span>Calibrating</span>`;
+  function selected(){
+    var q=new URLSearchParams(location.search).get('v');
+    if(q)return q;
+    var seg=decodeURIComponent(location.pathname.split('/').filter(Boolean).pop()||'');
+    if(seg&&seg.toLowerCase()!=='venue'&&seg.toLowerCase()!=='venues'&&!/\.html?$/i.test(seg))return seg;
+    return null;
   }
-  return `<span class="pill-rated${light?' pill-rated--light':''}">✓ Rated</span>`;
-}
 
-function tierDotHTML(tierName, light=false) {
-  const col = TIER_COLORS[tierName] || '#94A3B8';
-  const textCol = light ? 'rgba(234,241,255,0.8)' : 'var(--on-surface-variant)';
-  return `<span class="tier-dot-wrap" style="color:${textCol}"><span class="tier-dot" style="background:${col}"></span>${tierName}</span>`;
-}
-
-// Badge definitions — computed from leaderboard data fields
-const VENUE_BADGES = [
-  { id:'centurion', emoji:'🎖️', name:'Veteran',     rarity:'uncommon', fn: p => (p.totalMatches||p.w+p.l||0) >= 100 },
-  { id:'legend',    emoji:'🏛️', name:'Legend',      rarity:'epic',     fn: p => (p.totalMatches||p.w+p.l||0) >= 500 },
-  { id:'dominator', emoji:'💥', name:'Dominator',   rarity:'rare',     fn: p => (p.w+p.l)>=10 && p.w/(p.w+p.l)>=0.7 },
-  { id:'flawless',  emoji:'🎯', name:'Clutch',      rarity:'uncommon', fn: p => p.w >= 5 && p.l === 0 },
-  { id:'onfire',    emoji:'🔥', name:'On Fire',     rarity:'rare',     fn: p => /^([5-9]|\d{2,})W/.test(p.streak||'') },
-  { id:'gold',      emoji:'🥇', name:'Gold Tier',   rarity:'epic',     fn: p => (p.elo||0) >= 2500 },
-  { id:'silver',    emoji:'🥈', name:'Silver',      rarity:'rare',     fn: p => (p.elo||0) >= 2100 },
-  { id:'bronze',    emoji:'🥉', name:'Bronze',      rarity:'uncommon', fn: p => (p.elo||0) >= 1500 },
-  { id:'consistent',emoji:'📈', name:'Consistent',  rarity:'uncommon', fn: p => (p.winRate||0) >= 60 && (p.w+p.l) >= 10 },
-  { id:'ironman',   emoji:'💪', name:'Ironman',     rarity:'rare',     fn: p => (p.w+p.l) >= 30 },
-];
-
-function earnedBadges(player) {
-  // Enrich totalMatches if not present
-  if (!player.totalMatches) player.totalMatches = (player.w||0) + (player.l||0);
-  return VENUE_BADGES.filter(b => { try{ return b.fn(player); } catch(e){ return false; } });
-}
-
-function badgeStrip(player, light=false, max=5) {
-  const earned = earnedBadges(player);
-  if (!earned.length) return '';
-  const show = earned.slice(0, max);
-  const chips = show.map(b =>
-    `<span class="badge-chip ${b.rarity}${light?' badge-chip--light':''}" title="${b.name}">${b.emoji} ${b.name}</span>`
-  ).join('');
-  const more = earned.length > max
-    ? `<span class="badge-chip common${light?' badge-chip--light':''}" title="${earned.length - max} more">+${earned.length - max}</span>`
-    : '';
-  return `<div class="badge-strip">${chips}${more}</div>`;
-}
-
-let cG='M',cW=getCW(),vName='',vData=null;
-
-function getCW(){const d=new Date(),s=new Date(d.getFullYear(),0,1),df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;return Math.ceil((df/86400000+s.getDay()+1)/7)}
-function switchGender(g){cG=g;document.querySelectorAll('.seg-control__item').forEach(t=>t.classList.toggle('is-active',t.dataset.gender===g));loadRanking()}
-function changeWeek(d){cW+=d;if(cW<1)cW=1;document.getElementById('weekLabel').textContent=`Week ${cW}`;loadRanking()}
-
-// --- FUNGSI MENGUBAH ANGKA ELO MENJADI TEKS LEVEL (TIER) ---
-function getTierName(elo) {
-  if (elo >= 3000) return "Platinum";
-  if (elo >= 2500) return "Gold";
-  if (elo >= 2100) return "Silver";
-  if (elo >= 1800) return "Upper Bronze";
-  if (elo >= 1500) return "Bronze";
-  if (elo >= 1200) return "Lower Bronze";
-  if (elo >= 900) return "Upper Beginner";
-  return "Beginner";
-}
-
-
-async function shareVenuePage(venueName) {
-  const slug = venueName.trim().replace(/\s+/g, '');
-  const url = `https://venue.trekkr.online/${encodeURIComponent(slug)}`;
-  const text = `Cek leaderboard ${venueName} di Trekkr!\n${url}`;
-  if (navigator.share) {
-    try { await navigator.share({ title: `Trekkr – ${venueName}`, text, url }); return; } catch(e) {}
+  /* ---- Directory ---- */
+  function renderDirectory(venues){
+    var cards=venues.filter(function(v){return v.name;}).map(function(v){
+      var loc=v.region||v.location||'';
+      return '<a class="vcard" href="?v='+encodeURIComponent(v.name)+'">'+vlogo(v)
+        +'<div class="vname">'+esc(v.name)+'</div>'
+        +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
+        +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
+        +'<div class="vgo">View leaderboard <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
+    }).join('');
+    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display">Venues</h1>'
+      +'<p>Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
+      +'<div class="searchbar"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search venues…" aria-label="Search venues"/></div>'
+      +'<div class="grid" id="vgrid">'+cards+'</div>';
+    var inp=document.getElementById('vsearch'), grid=document.getElementById('vgrid');
+    inp.addEventListener('input',function(){
+      var q=inp.value.toLowerCase();
+      Array.prototype.forEach.call(grid.children,function(c){
+        c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
+      });
+    });
   }
-  // WhatsApp fallback
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-}
 
-async function init(){
-  const p=window.location.pathname.replace(/\/$/,'').split('/').filter(Boolean);
-  vName=p.length>0&&p[0]!=='venue'?decodeURIComponent(p[p.length-1]):(p.length>1?decodeURIComponent(p[1]):'');
-  if(!vName||vName==='venue'){await showVenueList();return}
-  document.title=`${vName} — Trekkr Venue`;await loadVenueDetail();
-}
+  /* ---- Detail ---- */
+  function renderDetail(v, players){
+    var loc=v.region||v.location||'';
+    var tags='';
+    if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
+    if(v.schedule)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(v.schedule)+'</span>';
+    if(v.prizePool)tags+='<span class="vtag"><i class="ti ti-trophy"></i>'+esc(v.prizePool)+'</span>';
+    if(v.contact)tags+='<span class="vtag"><i class="ti ti-phone"></i>'+esc(v.contact)+'</span>';
+    var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
 
-async function showVenueList(){
-  document.title='Venue Directory — Trekkr';
-  // Load settings for hero
-  let heroEyebrow='Official Listings',heroTitle='Venue\nDirectory',heroSubtitle='Discover verified courts and performance hubs in the Trekkr network.';
-  try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.venue_eyebrow)heroEyebrow=st.venue_eyebrow;if(st.venue_title)heroTitle=st.venue_title;if(st.venue_subtitle)heroSubtitle=st.venue_subtitle;if(st.venue_image)document.documentElement.style.setProperty('--v-bg','url('+st.venue_image+')')}catch(e){}
-  try{
-    const d=await TrekkrAPI.getVenues();
-    const sorted=d.venues.sort((a,b)=>a.name.localeCompare(b.name));
-    let h=`<section class="v-hero"><div class="container"><span class="v-eyebrow">${heroEyebrow}</span><h1 class="v-title">${heroTitle.replace(/\\n/g,'<br/>')}</h1><p class="v-subtitle">${heroSubtitle}</p></div></section>`;
-    h+=`<section class="section"><div class="container"><p class="section-title">All Venues</p><div class="v-grid">`;
-    sorted.forEach(v=>{
-      h+=`<article class="v-card" onclick="location.href='/${encodeURIComponent(v.name)}'"><div class="v-card__body" style="display:flex;gap:14px;align-items:center"><div class="v-card__init">${v.name.charAt(0)}</div><div style="flex:1;min-width:0"><span class="v-card__region">${v.region||'—'}</span><h3 class="v-card__title">${v.name}</h3><p class="v-card__meta">${v.location||'—'}</p></div></div></article>`;
-    });
-    if(!sorted.length)h+='<div class="state-panel" style="grid-column:1/-1"><h2 class="state-title">No Venues</h2><p class="state-copy">No venues configured yet</p></div>';
-    h+=`</div></div></section>`;
-    h+=`<section class=\"venue-value\" id=\"why-trekkr\" aria-labelledby=\"vv-title\">
-  <div class=\"container\">
-    <div class=\"venue-value__header\">
-      <p class=\"venue-value__eyebrow\">For court owners</p>
-      <h2 class=\"venue-value__title\" id=\"vv-title\">Turn your court<br/>into a community.</h2>
-      <p class=\"venue-value__sub\">Trekkr gives your players a live weekly leaderboard, ELO rankings, and match history — keeping them engaged and coming back.</p>
-    </div>
-    <div class=\"venue-value__grid\">
-      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F501;</div><h3 class=\"venue-value-card__title\">More return visits</h3><p class=\"venue-value-card__desc\">Players with an active ranking visit up to 40% more often — their position on the leaderboard gives them a reason to return every week.</p></div>
-      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F4CA;</div><h3 class=\"venue-value-card__title\">Player analytics</h3><p class=\"venue-value-card__desc\">See who your most active players are, track weekly engagement, and understand your community at a glance — from your admin dashboard.</p></div>
-      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F3C6;</div><h3 class=\"venue-value-card__title\">Run tournaments</h3><p class=\"venue-value-card__desc\">Built-in tournament and Ranked Match module. Brackets managed automatically, scores submitted directly — no spreadsheets needed.</p></div>
-      <div class=\"venue-value-card\"><div class=\"venue-value-card__icon\">&#x1F4AC;</div><h3 class=\"venue-value-card__title\">Replace WhatsApp</h3><p class=\"venue-value-card__desc\">No more manual results in group chats. Match history, rankings, and schedules all live in one place your whole community can access.</p></div>
-    </div>
-    <div class=\"venue-value-cta\">
-      <button class=\"btn btn--primary\" onclick=\"location.href='https://admin.trekkr.online'\" style=\"padding:14px 32px;font-size:14px\">Get your venue listed &rarr;</button>
-    </div>
-  </div>
-</section>`;
-    document.getElementById('mainContent').innerHTML=h;
-  }catch(e){document.getElementById('mainContent').innerHTML='<div class="container"><div class="state-panel"><h2 class="state-title">Error</h2><p class="state-copy">Could not load venues</p></div></div>'}
-}
+    var rows=players.length?players.map(function(p,i){
+      var club=(String(p.clubs||'').split(',')[0]||'').trim();
+      var meta=[p.level,(p.gender==='F'?'Women':'Men')].filter(Boolean).join(' · ');
+      return '<a class="lb-row'+(i===0?' top':'')+'" href="/player/'+encodeURIComponent(p.name)+'">'
+        +'<span class="rk">'+(i+1)+'</span>'+avatar(p)
+        +'<span class="who"><span class="nm">'+esc(p.displayName||p.name)+'</span><span class="mt">'+esc(meta)+'</span></span>'
+        +'<span class="elo">'+p.elo+'</span></a>';
+    }).join(''):'<div class="state">No ranked players at this venue yet.</div>';
 
-async function loadVenueDetail(){
-  try{const d=await TrekkrAPI.getVenues();vData=d.venues.find(v=>v.name.toLowerCase()===vName.toLowerCase())}catch(e){}
-  const v=vData||{name:vName};
-  // Store venue name globally so share button can access it safely
-  window._currentVenueName = v.name || vName;
-  const _registerBtn = v.registerUrl ? `<a href="${v.registerUrl}" class="btn btn--primary" target="_blank">Register Now</a>` : '';
-  const _infoBlock = (v.schedule||v.prizePool)
-    ? `<div class="vd-info"><p class="vd-info-title">Info</p>`
-      + (v.schedule ? `<div class="vd-info-line"><span>Schedule</span><strong>${v.schedule}</strong></div>` : '')
-      + (v.prizePool ? `<div class="vd-info-kpi"><div><p class="vd-info-label">Prize Pool</p><p class="vd-info-value">${v.prizePool}</p></div></div>` : '')
-      + `</div>`
-    : '';
-  let h = `<section class="vd-hero"><div class="container"><div>`
-    + `<h1 class="vd-title">${(v.name||vName).toUpperCase()}</h1>`
-    + `<p class="vd-subtitle">${[v.location,v.region].filter(Boolean).join(' · ')}</p>`
-    + `<p style="margin-top:14px;font-size:13px;opacity:0.75;max-width:480px;line-height:1.6">The weekly leaderboard resets every week — play more, win more, and climb higher. Every match counts at this venue.</p>`
-    + `<div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">`
-    + _registerBtn
-    + `<button class="btn btn--ghost" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)" onclick="shareVenuePage(window._currentVenueName)">`
-    + `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:6px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share this page`
-    + `</button>`
-    + `<a href="https://venue.trekkr.online" class="btn btn--ghost" style="background:rgba(255,255,255,0.1);color:#fff">All Venues</a>`
-    + `</div></div>`
-    + _infoBlock
-    + `</div></section>`;
-
-  h+=`<section class="section"><div class="container"><div class="vd-controls"><div class="vd-week"><button class="vd-week-btn" onclick="changeWeek(-1)">←</button><p class="vd-week-label" id="weekLabel">Week ${cW}</p><button class="vd-week-btn" onclick="changeWeek(1)">→</button></div>
-  <div class="seg-control"><button class="seg-control__item is-active" data-gender="M" onclick="switchGender('M')">Men</button><button class="seg-control__item" data-gender="F" onclick="switchGender('F')">Women</button></div></div>
-  <div id="rankingContainer"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading weekly ranking...</p></div></div></div></section>`;
-  document.getElementById('mainContent').innerHTML=h;await loadRanking();
-}
-
-async function loadRanking(){
-  const c=document.getElementById('rankingContainer');if(!c)return;
-  c.innerHTML='<div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Loading ranking...</p></div>';
-  try{
-    // 1. Fetch venue weekly ranking (has: name, elo, w, l, played, gender)
-    const d=await TrekkrAPI.getVenueWeeklyRanking(vName,{week:`W${cW}`,gender:cG});
-    if(!d.ranking||!d.ranking.length){c.innerHTML='<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week</p></div>';loadMatchHistory();return}
-
-    // 2. Fetch player photos from national leaderboard (has: photoUrl, displayName)
-    let photoMap={};
-    try{
-      const lb=await TrekkrAPI.getNationalLeaderboard({limit:200});
-      if(lb.leaderboard){
-        lb.leaderboard.forEach(p=>{
-          photoMap[p.name.toLowerCase()]={
-            photoUrl:     p.photoUrl||'',
-            displayName:  p.displayName||p.name,
-            // Extra stats from updated backend (sheet.js patch)
-            totalMatches: p.totalMatches||0,
-            totalW:       p.totalW||0,
-            totalL:       p.totalL||0,
-            winRate:      p.winRate||0,
-            streak:       p.streak||'',
-          };
-        });
-      }
-    }catch(e){}
-
-    // 3. Helper: get avatar URL
-    function ava(p){
-      const info=photoMap[p.name.toLowerCase()];
-      if(info&&info.photoUrl)return info.photoUrl;
-      const dn=info?info.displayName:p.name;
-      return 'https://ui-avatars.com/api/?name='+encodeURIComponent(dn)+'&background=e5eeff&color=003ec7&bold=true&size=200';
-    }
-    function dn(p){const info=photoMap[p.name.toLowerCase()];return info?info.displayName:p.name}
-
-    // ── SORT: Wins first → fewest losses → ELO tiebreak ──
-    d.ranking.sort((a,b) => b.w - a.w || a.l - b.l || b.elo - a.elo);
-
-    // ── BUILD FORM GUIDE per player from raw matches ──
-    // weekMatches already filtered by week from API; build per-player match sequence
-    const formMap = {};
-    try {
-      const rawRes = await TrekkrAPI.getVenueMatches(vName, {week:`W${cW}`});
-      if (rawRes.matches) {
-        rawRes.matches.forEach(m => {
-          const t1=[m.p1t1,m.p2t1].filter(Boolean), t2=[m.p1t2,m.p2t2].filter(Boolean);
-          const t1w = m.scoreT1 > m.scoreT2, t2w = m.scoreT2 > m.scoreT1;
-          [...t1,...t2].forEach(name => {
-            if (!name) return;
-            const k = name.toLowerCase();
-            if (!formMap[k]) formMap[k] = [];
-            const inT1 = t1.map(x=>x.toLowerCase()).includes(k);
-            formMap[k].push(inT1 ? (t1w?'W':'L') : (t2w?'W':'L'));
-          });
-        });
-      }
-    } catch(e) {}
-
-    function formDots(name, darkBg) {
-      const arr = (formMap[name.toLowerCase()] || []).slice(-5);
-      return arr.map(r => darkBg
-        ? `<span class="form-dot form-dot--${r.toLowerCase()}">${r}</span>`
-        : `<span class="form-dot form-dot--${r.toLowerCase()}-tbl">${r}</span>`
-      ).join('');
-    }
-
-    const medals = ['🥇','🥈','🥉'];
-    const heroCards = ['liga-hero-card--1','liga-hero-card--2','liga-hero-card--3'];
-    let h = '';
-
-    // ── CONTEXT BANNER ──
-    h += '<div class="liga-wrap">';
-
-    // Context banner
-    h += '<div class="liga-banner">'
-      + '<div class="liga-banner-icon">\uD83C\uDFC6</div>'
-      + '<div>'
-      + '<div class="liga-banner-title">Weekly Standings \u2014 Week ' + cW + '</div>'
-      + '<div class="liga-banner-sub">Most wins = top of the table. Win = 3 pts. Resets every Monday at midnight.</div>'
-      + '</div>'
-      + '<div class="liga-reset-pill">\u21BA Resets Monday</div>'
-      + '</div>';
-
-    // Sort: wins desc, losses asc, elo tiebreak
-    d.ranking.sort(function(a,b){ return b.w - a.w || a.l - b.l || b.elo - a.elo; });
-    var top3 = d.ranking.slice(0,3);
-    var rest  = d.ranking.slice(3);
-    var medals2 = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
-    var heroCards2 = ['liga-hero-card--1','liga-hero-card--2','liga-hero-card--3'];
-    var fbBase = 'https://ui-avatars.com/api/?background=e5eeff&color=003ec7&bold=true&size=200&name=';
-
-    // TOP 3 HERO CARDS
-    if (top3.length) {
-      h += '<div class="liga-top3">';
-      top3.forEach(function(p, i) {
-        var pts      = p.w * 3;
-        var pname    = dn(p);
-        var inits    = pname.trim().split(' ').filter(function(w){return w;}).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
-        var photoSrc = ava(p);
-        var isAva    = photoSrc.indexOf('ui-avatars.com') !== -1;
-        var imgHtml  = isAva
-          ? '<div class="liga-hero-initials">' + inits + '</div>'
-          : '<img class="liga-hero-photo" src="' + photoSrc + '" alt="" onerror="this.parentNode.innerHTML=\'<div class=liga-hero-initials>' + inits + '</div>\'">';
-
-        h += '<div class="' + heroCards2[i] + ' liga-hero-card" data-href="https://trekkr.online/player/' + encodeURIComponent(p.name) + '">'
-          + '<div class="liga-hero-photo-wrap">'
-          + '<div class="liga-hero-medal">' + medals2[i] + '</div>'
-          + imgHtml
-          + '</div>'
-          + '<div class="liga-hero-info">'
-          + '<div class="liga-hero-name">' + pname + '</div>'
-          + '<div class="liga-hero-pts-row">'
-          + '<span class="liga-hero-pts">' + pts + '</span>'
-          + '<span class="liga-hero-pts-label">PTS</span>'
-          + '</div>'
-          + '<div class="liga-hero-wl">Win <strong>' + p.w + '</strong> &nbsp;·&nbsp; Lose <strong>' + p.l + '</strong> &nbsp;·&nbsp; Played <strong>' + (p.w + p.l) + '</strong></div>'
-          + '<div class="liga-hero-form">' + formDots(p.name, true) + '</div>'
-          + '</div>'
-          + '</div>';
-      });
-      h += '</div>';
-    }
-
-    // TABLE: rank 4+
-    if (rest.length) {
-      h += '<div class="liga-table-wrap">'
-        + '<div class="liga-table-header">'
-        + '<div class="liga-th liga-th--center">#</div>'
-        + '<div class="liga-th">Player</div>'
-        + '<div class="liga-th liga-th--center">Pts</div>'
-        + '<div class="liga-th liga-th--center">MP</div>'
-        + '<div class="liga-th liga-th--center">W</div>'
-        + '<div class="liga-th liga-th--center">L</div>'
-        + '<div class="liga-th liga-th--center">Form</div>'
-        + '</div>';
-
-      rest.forEach(function(p, i) {
-        var rank  = i + 4;
-        var pts   = p.w * 3;
-        var pname = dn(p);
-        var avSrc = ava(p);
-        var avHtml = '<img class="liga-player-av" src="' + avSrc + '" alt="">';
-        h += '<div class="liga-row" data-href="https://trekkr.online/player/' + encodeURIComponent(p.name) + '">'
-          + '<span class="liga-rank">' + rank + '</span>'
-          + '<div class="liga-player">'
-          + avHtml
-          + '<div style="min-width:0"><div class="liga-player-name">' + pname + '</div></div>'
-          + '</div>'
-          + '<div class="liga-cell liga-cell--pts">' + pts + '</div>'
-          + '<div class="liga-cell">' + (p.w + p.l) + '</div>'
-          + '<div class="liga-cell liga-cell--w">' + p.w + '</div>'
-          + '<div class="liga-cell liga-cell--l">' + p.l + '</div>'
-          + '<div class="liga-form">' + formDots(p.name, false) + '</div>'
-          + '</div>';
-      });
-
-      h += '<div class="liga-legend">'
-        + '<div class="liga-legend-item"><strong style="color:var(--ok,#1f9d63)">W</strong>&nbsp;= Win (3 pts)</div>'
-        + '<div class="liga-legend-item"><strong style="color:var(--danger,#ba1a1a)">L</strong>&nbsp;= Loss (0 pts)</div>'
-        + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
-        + '</div>'
-        + '</div>';
-    } else {
-      h += '<div class="liga-legend" style="background:var(--surface-lowest);border-radius:var(--radius-xl);padding:12px 16px;border:1px solid rgba(115,118,136,.1);margin-top:8px">'
-        + '<div class="liga-legend-item"><strong style="color:var(--ok,#1f9d63)">W</strong>&nbsp;= Win (3 pts)</div>'
-        + '<div class="liga-legend-item"><strong style="color:var(--danger,#ba1a1a)">L</strong>&nbsp;= Loss (0 pts)</div>'
-        + '<div class="liga-legend-cta">Tap your name for full stats \u2192</div>'
-        + '</div>';
-    }
-
-    h += '</div>'; // end liga-wrap
-    c.innerHTML = h;
-
-    // Attach click handlers via data-href (avoids quote nesting in HTML strings)
-    c.querySelectorAll('[data-href]').forEach(function(el) {
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', function() {
-        location.href = el.getAttribute('data-href');
-      });
-    });
-
-    loadMatchHistory();
-  } catch(e) {
-    c.innerHTML = '<div class="state-panel"><h2 class="state-title">No Data</h2><p class="state-copy">No matches found for this week.</p></div>';
-    loadMatchHistory();
+    content.innerHTML='<div class="page-head"><a class="back" href="/venues"><i class="ti ti-arrow-left"></i>All venues</a></div>'
+      +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="display">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>'
+      +'<div class="sec-label">Venue leaderboard</div><div class="lb">'+rows+'</div>';
   }
-}
 
-// ── MATCH HISTORY for current week ──
-async function loadMatchHistory(){
-  let hc=document.getElementById('historyContainer');
-  if(!hc){const rc=document.getElementById('rankingContainer');if(!rc)return;const div=document.createElement('div');div.id='historyContainer';div.style.marginTop='32px';rc.parentElement.appendChild(div);hc=div}
-  hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px">Loading matches...</div>';
-  try{
-    const d=await TrekkrAPI.getVenueMatches(vName,{week:`W${cW}`});
-    if(!d.matches||!d.matches.length){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">No matches recorded this week.</div>';return}
-    // Group matches into sessions by sourceUrl (same sourceUrl = same session)
-    // Fallback: group by date if sourceUrl is empty/same for all
-    const allMatches = d.matches.slice().reverse(); // newest first
-
-    // Build sessions: group consecutive matches with same sourceUrl+date
-    const sessions = [];
-    allMatches.forEach(m => {
-      const key = (m.sourceUrl && m.sourceUrl !== 'Trekkr Ranked Match')
-        ? m.sourceUrl
-        : (m.date || 'unknown');
-      const last = sessions[sessions.length - 1];
-      if (last && last.key === key) {
-        last.matches.push(m);
-      } else {
-        sessions.push({ key, date: m.date || '', matches: [m] });
-      }
-    });
-    const totalSessions = sessions.length;
-
-    let mh = '<div class="liga-mh-wrap">'
-      + '<div class="liga-mh-title">Match Results — Week ' + cW + '</div>'
-      + '<div style="font-size:12px;color:var(--on-surface-variant);margin-bottom:14px">'
-      + 'Most recent first · W = winner · L = loser'
-      + '</div>';
-
-    sessions.forEach((sess, si) => {
-      const sessNum = totalSessions - si; // Session 3, 2, 1 (newest = highest)
-      mh += '<div class="liga-session">'
-        + '<div class="liga-session-header">'
-        + '<span class="liga-session-label">Session ' + sessNum + '</span>'
-        + '<span class="liga-session-date">' + (sess.date || '') + '</span>'
-        + '<span class="liga-session-count">· ' + sess.matches.length + ' match' + (sess.matches.length > 1 ? 'es' : '') + '</span>'
-        + '</div>';
-
-      sess.matches.forEach(m => {
-        const t1w = m.scoreT1 > m.scoreT2, t2w = m.scoreT2 > m.scoreT1, draw = m.scoreT1 === m.scoreT2;
-        const t1names = [m.p1t1, m.p2t1].filter(Boolean).join(' & ');
-        const t2names = [m.p1t2, m.p2t2].filter(Boolean).join(' & ');
-        const sc1 = t1w ? 'var(--ok,#1f9d63)' : t2w ? 'var(--danger,#ba1a1a)' : '#94a3b8';
-        const sc2 = t2w ? 'var(--ok,#1f9d63)' : t1w ? 'var(--danger,#ba1a1a)' : '#94a3b8';
-        const b1class = t1w ? 'liga-mh-badge--w' : t2w ? 'liga-mh-badge--l' : 'liga-mh-badge--d';
-        const b2class = t2w ? 'liga-mh-badge--w' : t1w ? 'liga-mh-badge--l' : 'liga-mh-badge--d';
-        const b1text  = t1w ? 'W' : t2w ? 'L' : 'D';
-        const b2text  = t2w ? 'W' : t1w ? 'L' : 'D';
-        mh += '<div class="liga-mh-row">'
-          + '<div class="liga-mh-score">'
-          + '<span style="color:' + sc1 + '">' + m.scoreT1 + '</span>'
-          + '<span style="color:#94a3b8;font-size:14px;margin:0 2px">–</span>'
-          + '<span style="color:' + sc2 + '">' + m.scoreT2 + '</span>'
-          + '</div>'
-          + '<div class="liga-mh-teams">'
-          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
-          + '<span class="liga-mh-badge ' + b1class + '">' + b1text + '</span>'
-          + '<span class="liga-mh-t" style="font-weight:' + (t1w?800:400) + ';color:' + (t1w?'var(--ok)':'inherit') + '">' + t1names + '</span>'
-          + '</div>'
-          + '<div style="display:flex;align-items:center;gap:6px">'
-          + '<span class="liga-mh-badge ' + b2class + '">' + b2text + '</span>'
-          + '<span class="liga-mh-t" style="font-weight:' + (t2w?800:400) + ';color:' + (t2w?'var(--ok)':'var(--on-surface-variant)') + '">' + t2names + '</span>'
-          + '</div>'
-          + '<div class="liga-mh-sub">' + (m.gender === 'F' ? 'Women' : 'Men') + '</div>'
-          + '</div>'
-          + '</div>';
-      });
-      mh += '</div>'; // end liga-session
-    });
-
-    mh += '<div class="liga-mh-total">' + d.matches.length + ' match' + (d.matches.length > 1 ? 'es' : '') + ' across ' + totalSessions + ' session' + (totalSessions > 1 ? 's' : '') + ' this week</div>';
-    mh += '</div>';
-    hc.innerHTML = mh;
-  }catch(e){hc.innerHTML='<p class="section-title" style="margin-bottom:12px">Match History — Week '+cW+'</p><div style="color:var(--on-surface-variant);font-size:14px;padding:16px 0">Could not load match history.</div>'}
-}
-
-window.addEventListener('load',init);
+  /* ---- Load ---- */
+  var sel=selected();
+  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+    var venues=(d&&d.venues)||[];
+    if(!sel){renderDirectory(venues);return;}
+    var v=venues.filter(function(x){return (x.name||'').toLowerCase()===sel.toLowerCase();})[0]||{name:sel};
+    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:v.name,limit:50}).toString())
+      .then(function(r){return r.json();}).then(function(ld){renderDetail(v,(ld&&ld.leaderboard)||[]);})
+      .catch(function(){renderDetail(v,[]);});
+  }).catch(function(){
+    content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
+  });
+})();
 </script>
 </body>
 </html>

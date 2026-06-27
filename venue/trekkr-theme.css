@@ -1,0 +1,78 @@
+/* ==========================================================================
+   trekkr-theme.css — shared TREKKR brand system
+   Tokens + chrome (header, nav, buttons, footer, base utilities).
+   Link this once per page: <link rel="stylesheet" href="/trekkr-theme.css"/>
+   Page-specific styles live in each page's own <style> block.
+   ========================================================================== */
+
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F5F7; --surface-3:#EFEFF1;
+  --border:#E4E4E7; --border-soft:#EDEDF0;
+  --text:#0D0D0D; --muted:#52525B; --subtle:#9A9AA2; --faint:#C4C4C8;
+  --orange:#FF6A00; --red:#FF3830; --amber:#FFB000; --green:#22A052; --alert:#FF2D55; --focus:#885CF6;
+  --warm:#FFF4EA; --warm-border:#F0D9C4;
+  --grad:linear-gradient(90deg,#FF3830,#FFB000);
+  --radius:12px; --radius-pill:999px;
+  --display:'Saira Condensed',system-ui,sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+
+/* Reset / base */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:4px}
+
+/* Layout / type utilities */
+.container{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);font-weight:600}
+.display{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;line-height:.95}
+.sec-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);font-weight:600;margin:24px 4px 12px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Header / navigation */
+.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
+.brand{font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;letter-spacing:-.02em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav{display:flex;gap:2px}
+.nav a{font-size:13px;font-weight:600;color:var(--muted);padding:8px 14px;border-radius:var(--radius-pill);transition:color .2s,background .2s}
+.nav a:hover{color:var(--text);background:var(--surface-2)}
+.nav a.active{color:var(--orange)}
+.header-actions{display:flex;align-items:center;gap:10px}
+.menu-toggle{display:none;background:transparent;border:1px solid var(--border);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--text);font-size:20px}
+.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 16px;border-top:1px solid var(--border-soft)}
+.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:600;color:var(--muted)}
+.mobile-nav a:hover{background:var(--surface-2);color:var(--text)}
+.mobile-nav.open{display:flex}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:var(--radius-pill);border:1px solid transparent;transition:transform .15s,background .2s,border-color .2s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn--primary{background:var(--orange);color:#fff}
+.btn--primary:hover:not(:disabled){background:#ff7d1f}
+.btn--outline{border-color:var(--orange);color:var(--orange);background:transparent}
+.btn--outline:hover:not(:disabled){background:rgba(255,106,0,.08)}
+.btn--ghost{border-color:var(--border);color:var(--text);background:transparent}
+.btn--ghost:hover:not(:disabled){background:var(--surface-2)}
+
+/* Footer */
+.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:32px}
+.footer-inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--faint);text-transform:uppercase}
+.footer-links{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--subtle)}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:12px;color:var(--faint)}
+
+/* Base responsive: collapse nav to hamburger */
+@media(max-width:860px){
+  .nav{display:none}
+  .menu-toggle{display:flex}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
