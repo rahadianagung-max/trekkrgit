@@ -1,19 +1,23 @@
+# =====================================================================
+# netlify.toml — Trekkr (siap pakai)
+# Taruh file ini di ROOT repo, lalu commit & push. Netlify deploy ulang.
+# Urutan penting: aturan spesifik di ATAS, fallback (wildcard) di BAWAH.
+# =====================================================================
+
 [build]
   functions = "netlify/functions"
   publish = "."
 
-# ── API (main domain only) ──
+# ── API (domain utama) ──────────────────────────────────────────────
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/sheet/:splat"
   status = 200
   force = true
 
-# ==========================================
-# ── PENGECUALIAN FILE (.js / .css) UNTUK SUBDOMAIN ──
-# Harus di ATAS aturan fallback (index.html) supaya Netlify
-# memberikan file aslinya, bukan index.html.
-# ==========================================
+# ── PENGECUALIAN FILE (.js / .css) UNTUK SUBDOMAIN ──────────────────
+# Harus di ATAS fallback subdomain, supaya file aslinya yang dikirim
+# (bukan index.html).
 [[redirects]]
   from = "https://venue.trekkr.online/trekkr-api.js"
   to = "/venue/trekkr-api.js"
@@ -38,11 +42,9 @@
   status = 200
   force = true
 
-# ==========================================
-# ── URL BERSIH DOMAIN UTAMA (halaman desain baru) ──
-# Memetakan /rankings → rankings.html, dst. Harus di ATAS
-# fallback /player, /venue agar tidak tertelan.
-# ==========================================
+# ── URL BERSIH DOMAIN UTAMA (halaman desain baru) ───────────────────
+# Memetakan /rankings → rankings.html, dst. Query string ikut terbawa
+# otomatis (mis. /register?form=abc → /register.html?form=abc).
 [[redirects]]
   from = "/rankings"
   to = "/rankings.html"
@@ -63,9 +65,43 @@
   to = "/tournament-demo.html"
   status = 200
 
-# ==========================================
-# ── SPA FALLBACK UNTUK SUBDOMAIN ──
-# ==========================================
+[[redirects]]
+  from = "/recap"
+  to = "/recap.html"
+  status = 200
+
+[[redirects]]
+  from = "/register"
+  to = "/register.html"
+  status = 200
+
+[[redirects]]
+  from = "/re-public"
+  to = "/re-public.html"
+  status = 200
+
+[[redirects]]
+  from = "/re-player"
+  to = "/re-player.html"
+  status = 200
+
+[[redirects]]
+  from = "/re-scorer"
+  to = "/re-scorer.html"
+  status = 200
+
+[[redirects]]
+  from = "/re-admin"
+  to = "/re-admin.html"
+  status = 200
+
+# Opsional: direktori venue juga bisa diakses dari domain utama
+[[redirects]]
+  from = "/venues"
+  to = "/venue/index.html"
+  status = 200
+
+# ── SPA FALLBACK UNTUK SUBDOMAIN ────────────────────────────────────
 [[redirects]]
   from = "https://venue.trekkr.online/*"
   to = "/venue/index.html"
@@ -84,9 +120,8 @@
   status = 200
   force = true
 
-# ==========================================
-# ── FALLBACK PATH DOMAIN UTAMA ──
-# ==========================================
+# ── FALLBACK PATH DOMAIN UTAMA ──────────────────────────────────────
+# /player/{nama} → passport; /venue, /admin, /superadmin via path.
 [[redirects]]
   from = "/player/*"
   to = "/player/index.html"
