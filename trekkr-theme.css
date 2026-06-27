@@ -37,7 +37,7 @@ button{font-family:inherit;cursor:pointer}
 /* Header / navigation */
 .site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
 .header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
-.brand{font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;letter-spacing:-.02em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand{display:inline-block;font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;letter-spacing:0;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .32em .04em .02em;line-height:1.2;overflow:visible}
 .nav{display:flex;gap:2px}
 .nav a{font-size:13px;font-weight:600;color:var(--muted);padding:8px 14px;border-radius:var(--radius-pill);transition:color .2s,background .2s}
 .nav a:hover{color:var(--text);background:var(--surface-2)}
