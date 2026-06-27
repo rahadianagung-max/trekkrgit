@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trekkr · Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75;--rd:#d8442e}
+:root{--o:#FF6A00;--o2:#FFF4EA;--ink:#0D0D0D;--mut:#52525B;--bd:#E4E4E7;--bg:#F5F5F7;--ok:#22A052;--rd:#FF3830}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
 .app{max-width:440px;margin:0 auto;min-height:100vh;background:#fff}
 .top{background:var(--o);color:#fff;padding:14px 16px}
 .top .r1{display:flex;justify-content:space-between;align-items:center}
@@ -18,18 +19,18 @@ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-ser
 .nextcard{border:2px solid var(--o);border-radius:13px;overflow:hidden}
 .nextcard .hd{background:var(--o);color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
 .nextcard .bd{padding:12px}
-.tier{font-size:11px;background:#FAEEDA;color:#854F0B;padding:3px 9px;border-radius:8px;font-weight:600}
+.tier{font-size:11px;background:#FFF4EA;color:#FF6A00;padding:3px 9px;border-radius:8px;font-weight:600}
 .kv{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}.kv .k{color:var(--mut)}
 .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #f1ede7}
 .ic{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;background:var(--bg);color:var(--mut)}
 .ic.now{background:var(--o);color:#fff}
-.div{display:flex;align-items:center;gap:8px;margin:8px 0 2px}.div span.l{flex:1;height:1px;background:var(--bd)}.div .t{font-size:11px;color:#854F0B;background:#FAEEDA;padding:2px 8px;border-radius:8px}
+.div{display:flex;align-items:center;gap:8px;margin:8px 0 2px}.div span.l{flex:1;height:1px;background:var(--bd)}.div .t{font-size:11px;color:#FF6A00;background:#FFF4EA;padding:2px 8px;border-radius:8px}
 .board{max-height:380px;overflow:auto;border:1px solid var(--bd);border-radius:10px}
 .lb{display:flex;justify-content:space-between;font-size:14px;padding:8px 10px;border-bottom:1px solid #f1ede7}
 .lb:last-child{border-bottom:none}
-.lb.me{background:var(--o2);font-weight:700;color:#9A3C18}
+.lb.me{background:var(--o2);font-weight:700;color:#C2410C}
 .lb .rk{color:var(--mut);margin-right:10px;display:inline-block;min-width:22px;text-align:right}
-.gh{font-size:11px;font-weight:700;color:#854F0B;background:#FAEEDA;padding:4px 10px;text-transform:uppercase;letter-spacing:.04em}
+.gh{font-size:11px;font-weight:700;color:#FF6A00;background:#FFF4EA;padding:4px 10px;text-transform:uppercase;letter-spacing:.04em}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .st{background:var(--bg);border-radius:9px;padding:12px 10px}.st .l{font-size:12px;color:var(--mut)}.st .v{font-size:22px;font-weight:700}
 .muted{color:var(--mut);font-size:13px}
@@ -39,6 +40,10 @@ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-ser
 .pl{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:7px;cursor:pointer}
 .pl:hover{border-color:var(--o)}
 input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;font-size:14px;margin-bottom:10px}
+
+  /* brand display (retheme) */
+  h1,h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;letter-spacing:-.01em}
+  .champ .n,.st .v,.val,.ro,.sc{font-family:'Saira Condensed',sans-serif;font-style:italic}
 </style>
 </head>
 <body>
@@ -156,7 +161,7 @@ function renderSched(d){
     const lbl=s.court?('Court '+s.court):'TBD';
     html+=`<div class="row" ${now?'style="background:var(--o2);border-radius:8px;margin:0 -6px;padding-left:6px;padding-right:6px;border-top:none"':''}>
       <span class="ic ${now?'now':''}">${icon}</span>
-      <div style="flex:1"><div style="font-size:14px;${now?'font-weight:600;color:#9A3C18':''}">Round ${s.wave} · ${lbl}</div><div class="muted" ${now?'style="color:#B5532B"':''}>${s.time}${now?' · now':''}</div></div>${sc}</div>`;
+      <div style="flex:1"><div style="font-size:14px;${now?'font-weight:600;color:#C2410C':''}">Round ${s.wave} · ${lbl}</div><div class="muted" ${now?'style="color:#B5532B"':''}>${s.time}${now?' · now':''}</div></div>${sc}</div>`;
   });
   $('#sched').innerHTML=html;
 }

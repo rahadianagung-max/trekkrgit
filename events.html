@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Events — Trekkr</title>
+<meta name="description" content="Upcoming padel tournaments powered by Trekkr. Find one near you and join."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+/* Header */
+.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
+
+/* Page head + filters */
+.page-head{padding:28px 0 0}
+.page-head h1{font-size:clamp(30px,5vw,44px);margin:8px 0 0}
+.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:560px}
+.filters{margin-top:18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:600;padding:7px 14px;border-radius:var(--radius-pill);background:var(--surface-2);border:1px solid var(--border);color:var(--muted)}
+.chip.active{background:var(--orange);border-color:var(--orange);color:#fff}
+.select{margin-left:auto}
+.select select{font-family:inherit;font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.stack{display:flex;flex-direction:column;gap:8px}
+
+/* Event card */
+.ev-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;overflow:hidden;transition:border-color .2s}
+.ev-card:hover{border-color:var(--orange)}
+.ev-card.live{background:var(--warm);border-color:var(--warm-border)}
+.ev-card.live::before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--grad)}
+.ev-date{text-align:center;min-width:50px}
+.ev-date .m{display:block;font-size:9px;color:var(--orange);font-weight:700;letter-spacing:.1em}
+.ev-date .d{display:block;font-family:var(--display);font-style:italic;font-weight:800;font-size:24px;line-height:1}
+.ev-main{flex:1;min-width:170px}
+.ev-name{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:17px;line-height:1;margin-top:6px}
+.ev-meta{font-size:11px;color:var(--muted);margin-top:5px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill)}
+.badge.open{color:var(--green);background:var(--green-tint)}
+.badge.live{color:var(--alert);background:#FFE9EE}
+.badge.up{color:var(--muted);background:var(--border-soft)}
+.badge.fin{color:var(--muted);background:var(--border-soft)}
+.badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--alert)}
+.ev-cta{flex-shrink:0}
+
+/* Past rows */
+.past-row{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:10px;padding:11px 14px;flex-wrap:wrap}
+.past-row .pr-main{flex:1;min-width:150px}
+.past-row .pr-name{font-size:13px;font-weight:700}
+.past-row .pr-meta{font-size:10px;color:var(--subtle)}
+.past-row .pr-link{font-size:11px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:4px}
+
+.state{font-size:13px;color:var(--subtle);padding:16px 4px}
+.skeleton{height:64px;border-radius:12px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Footer */
+.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:32px}
+
+@media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.skeleton{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="brand">Trekkr</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="/rankings">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events" class="active">Events</a>
+    </nav>
+    <div class="header-actions">
+      <a href="/rankings#find" class="btn btn--outline"><i class="ti ti-search" aria-hidden="true"></i>Find me</a>
+      <a href="https://admin.trekkr.online" class="btn btn--primary">Venue login</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+    </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="/rankings">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+      <a href="/rankings#find">Find me</a>
+      <a href="https://admin.trekkr.online">Venue login</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="page-head">
+    <span class="eyebrow">Special events</span>
+    <h1 class="display">Events</h1>
+    <p>Upcoming padel tournaments powered by Trekkr. Find one near you and join.</p>
+  </div>
+
+  <div class="filters">
+    <button class="chip active" data-filter="all">All</button>
+    <button class="chip" data-filter="open">Registration open</button>
+    <button class="chip" data-filter="live">Live</button>
+    <button class="chip" data-filter="upcoming">Upcoming</button>
+    <button class="chip" data-filter="finished">Finished</button>
+    <div class="select"><select id="regionSel" aria-label="Region"><option value="">All regions</option></select></div>
+  </div>
+
+  <div id="loading">
+    <div class="sec-label">Loading</div>
+    <div class="skeleton"></div><div class="skeleton" style="margin-top:8px"></div>
+  </div>
+
+  <section id="secLive" hidden>
+    <div class="sec-label">Live now</div>
+    <div class="stack" id="listLive"></div>
+  </section>
+
+  <section id="secUpcoming" hidden>
+    <div class="sec-label">Upcoming</div>
+    <div class="stack" id="listUpcoming"></div>
+  </section>
+
+  <section id="secPast" hidden>
+    <div class="sec-label">Past events</div>
+    <div class="stack" id="listPast"></div>
+  </section>
+
+  <div id="empty" class="state" hidden>No events match this filter yet. Check back soon.</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/rankings">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+    </nav>
+    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
+
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function truthy(v){return v===true||String(v).toUpperCase()==='TRUE'||v===undefined;}
+  var MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  function parseDate(s){if(!s)return null;var d=new Date(s);return isNaN(d)?null:d;}
+  function badgeFor(st){
+    if(st==='live')return '<span class="badge live"><span class="pulse"></span>LIVE</span>';
+    if(st==='open')return '<span class="badge open">Registration open</span>';
+    if(st==='finished')return '<span class="badge fin">Finished</span>';
+    return '<span class="badge up">Upcoming</span>';
+  }
+  function dateRange(e){
+    var a=parseDate(e.date_start), b=parseDate(e.date_end);
+    if(!a)return '';
+    var sa=MON[a.getMonth()].slice(0,3).replace(/^(.)(.*)$/,function(_,x,y){return x+y.toLowerCase();})+' '+a.getDate();
+    if(b&&b.getTime()!==a.getTime()){
+      var sb=(b.getMonth()===a.getMonth()? b.getDate() : MON[b.getMonth()].slice(0,3).replace(/^(.)(.*)$/,function(_,x,y){return x+y.toLowerCase();})+' '+b.getDate());
+      return sa+'–'+sb;
+    }
+    return sa;
+  }
+  function meta(e){
+    return [e.venue,e.category,e.format,dateRange(e)].filter(Boolean).map(esc).join(' · ');
+  }
+  function ctaFor(e){
+    if(e.status==='live')return {label:'Follow live',cls:'btn btn--primary',url:e.live_url};
+    if(e.status==='open')return {label:'Register',cls:'btn btn--primary',url:e.register_url};
+    if(e.status==='finished')return {label:'View recap',cls:'btn btn--outline',url:e.recap_url};
+    return {label:'View details',cls:'btn btn--outline',url:e.register_url||e.live_url||e.recap_url||'#'};
+  }
+  function cardHTML(e){
+    var d=parseDate(e.date_start);
+    var dateBlock=d?'<div class="ev-date"><span class="m">'+MON[d.getMonth()]+'</span><span class="d">'+d.getDate()+'</span></div>':'';
+    var c=ctaFor(e);
+    var cta=c.url?'<a class="ev-cta '+c.cls+'" href="'+esc(c.url)+'">'+c.label+'</a>':'';
+    return '<div class="ev-card'+(e.status==='live'?' live':'')+'">'+dateBlock
+      +'<div class="ev-main">'+badgeFor(e.status)
+      +'<div class="ev-name">'+esc(e.name)+'</div>'
+      +'<div class="ev-meta">'+meta(e)+'</div></div>'+cta+'</div>';
+  }
+  function pastHTML(e){
+    var url=e.recap_url||'';
+    var link=url?'<a class="pr-link" href="'+esc(url)+'">View recap <i class="ti ti-arrow-right" aria-hidden="true"></i></a>':'';
+    return '<div class="past-row"><div class="pr-main"><div class="pr-name">'+esc(e.name)+'</div>'
+      +'<div class="pr-meta">'+meta(e)+'</div></div>'+badgeFor('finished')+link+'</div>';
+  }
+
+  var all=[], filter='all', region='';
+
+  var FALLBACK=[
+    {name:'Madre Ranked Match',date_start:'2026-06-26',venue:'PIPC Veteran',region:'Jakarta',category:"Women's",format:'Mexicano · 36 players',status:'live',live_url:'#'},
+    {name:'Jakarta Padel Open 2026',date_start:'2026-08-12',date_end:'2026-08-14',venue:'PIPC Arena',region:'Jakarta',category:'Open',format:'Tournament · 32 teams',status:'open',register_url:'#'},
+    {name:'Jabodetabek Padel League',date_start:'2026-08-16',venue:'Multi-venue',region:'Jabodetabek',category:'Mixed',format:'League · 7-player roster',status:'open',register_url:'#'},
+    {name:'Stellar Ranked Night',date_start:'2026-08-20',venue:'Stellar Padel',region:'Tangerang',category:"Men's",format:'Mexicano · 24 players',status:'upcoming',register_url:'#'},
+    {name:'Bintaro Padel Cup',date_start:'2026-07-10',venue:'Bintaro',region:'Tangsel',category:'Mixed',format:'24 teams',status:'finished',recap_url:'#'},
+    {name:'PIK Mixed Open',date_start:'2026-06-05',venue:'PIK',region:'Jakarta',category:'Open',format:'16 teams',status:'finished',recap_url:'#'}
+  ];
+
+  function show(id,on){document.getElementById(id).hidden=!on;}
+
+  function rerender(){
+    var list=all.filter(function(e){return !region||e.region===region;});
+    var live=list.filter(function(e){return e.status==='live';});
+    var up=list.filter(function(e){return e.status==='open'||e.status==='upcoming';})
+              .sort(function(a,b){return (parseDate(a.date_start)||0)-(parseDate(b.date_start)||0);});
+    var past=list.filter(function(e){return e.status==='finished';})
+                .sort(function(a,b){return (parseDate(b.date_start)||0)-(parseDate(a.date_start)||0);});
+
+    var showLive = (filter==='all'||filter==='live') && live.length;
+    var showUp   = (filter==='all'||filter==='open'||filter==='upcoming') &&
+                   (filter==='all'?up.length:up.filter(function(e){return e.status===filter;}).length);
+    var showPast = (filter==='all'||filter==='finished') && past.length;
+
+    if(filter==='open')up=up.filter(function(e){return e.status==='open';});
+    if(filter==='upcoming')up=up.filter(function(e){return e.status==='upcoming';});
+
+    document.getElementById('listLive').innerHTML=live.map(cardHTML).join('');
+    document.getElementById('listUpcoming').innerHTML=up.map(cardHTML).join('');
+    document.getElementById('listPast').innerHTML=past.map(pastHTML).join('');
+    show('secLive',!!showLive); show('secUpcoming',!!showUp); show('secPast',!!showPast);
+    show('empty',!(showLive||showUp||showPast));
+  }
+
+  function ready(items){
+    all=items.filter(function(e){return e&&e.name&&truthy(e.active);});
+    var regions={}; all.forEach(function(e){if(e.region)regions[e.region]=1;});
+    var sel=document.getElementById('regionSel');
+    Object.keys(regions).sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);});
+    show('loading',false);
+    rerender();
+  }
+
+  document.querySelectorAll('.chip').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); filter=b.dataset.filter; rerender();
+    });
+  });
+  document.getElementById('regionSel').addEventListener('change',function(){region=this.value;rerender();});
+
+  fetch(BASE+'/events')
+    .then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(d){var list=Array.isArray(d)?d:(d&&d.events)||[];ready(list.length?list:FALLBACK);})
+    .catch(function(){ready(FALLBACK);});
+})();
+</script>
+</body>
+</html>

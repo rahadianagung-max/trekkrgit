@@ -10,13 +10,19 @@
   force = true
 
 # ==========================================
-# ── PENGECUALIAN UNTUK FILE JAVASCRIPT ──
-# Aturan ini harus ada di ATAS aturan fallback (index.html)
-# supaya Netlify memberikan file .js aslinya, bukan file HTML.
+# ── PENGECUALIAN FILE (.js / .css) UNTUK SUBDOMAIN ──
+# Harus di ATAS aturan fallback (index.html) supaya Netlify
+# memberikan file aslinya, bukan index.html.
 # ==========================================
 [[redirects]]
   from = "https://venue.trekkr.online/trekkr-api.js"
   to = "/venue/trekkr-api.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://venue.trekkr.online/trekkr-theme.css"
+  to = "/venue/trekkr-theme.css"
   status = 200
   force = true
 
@@ -32,11 +38,33 @@
   status = 200
   force = true
 
+# ==========================================
+# ── URL BERSIH DOMAIN UTAMA (halaman desain baru) ──
+# Memetakan /rankings → rankings.html, dst. Harus di ATAS
+# fallback /player, /venue agar tidak tertelan.
+# ==========================================
+[[redirects]]
+  from = "/rankings"
+  to = "/rankings.html"
+  status = 200
+
+[[redirects]]
+  from = "/events"
+  to = "/events.html"
+  status = 200
+
+[[redirects]]
+  from = "/tournaments"
+  to = "/tournaments.html"
+  status = 200
+
+[[redirects]]
+  from = "/tournaments/demo"
+  to = "/tournament-demo.html"
+  status = 200
 
 # ==========================================
 # ── SPA FALLBACK UNTUK SUBDOMAIN ──
-# Apapun alamat venue yang diketik (misal /jakarta, /bintaro),
-# akan selalu diarahkan ke index.html
 # ==========================================
 [[redirects]]
   from = "https://venue.trekkr.online/*"
@@ -56,10 +84,8 @@
   status = 200
   force = true
 
-
 # ==========================================
-# ── SPA FALLBACK UNTUK DOMAIN UTAMA ──
-# (Jika diakses via trekkr.online/venue/jakarta)
+# ── FALLBACK PATH DOMAIN UTAMA ──
 # ==========================================
 [[redirects]]
   from = "/player/*"

@@ -4,26 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trekkr · Event</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75}
+:root{--o:#FF6A00;--o2:#FFF4EA;--ink:#0D0D0D;--mut:#52525B;--bd:#E4E4E7;--bg:#F5F5F7;--ok:#22A052}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
 .top{background:var(--o);color:#fff;padding:16px 18px}
 .top b{font-size:20px;letter-spacing:.04em}
 .top .sub{color:#FFE3D6;font-size:13px;margin-top:4px}
 .wrap{max-width:760px;margin:0 auto;padding:16px}
 .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
 h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px;font-weight:700}
-.champ{background:linear-gradient(135deg,#E85D26,#c64a1c);color:#fff;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
+.champ{background:linear-gradient(135deg,#FF6A00,#c64a1c);color:#fff;border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
 .champ .t{font-size:12px;color:#FFE3D6;text-transform:uppercase;letter-spacing:.08em}
 .champ .n{font-size:24px;font-weight:700;margin:6px 0}
 .courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .ct{border:1px solid var(--bd);border-radius:10px;padding:11px}
 .ct .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FAEEDA;color:#854F0B}
+.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FFF4EA;color:#FF6A00}
 .team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
-.gh{font-size:11px;font-weight:700;color:#854F0B;background:#FAEEDA;padding:5px 12px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;margin:10px 0 4px;display:inline-block}
+.gh{font-size:11px;font-weight:700;color:#FF6A00;background:#FFF4EA;padding:5px 12px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;margin:10px 0 4px;display:inline-block}
 .lb{display:flex;justify-content:space-between;font-size:15px;padding:9px 10px;border-bottom:1px solid #f1ede7}
 .lb:last-child{border-bottom:none}
 .lb .rk{color:var(--mut);margin-right:12px;display:inline-block;min-width:26px;text-align:right;font-weight:600}
@@ -31,6 +32,10 @@ h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em
 .muted{color:var(--mut);font-size:13px}
 .err{background:#fdecea;color:#a3271a;padding:10px 14px;border-radius:10px;margin:12px 0}
 .foot{text-align:center;color:var(--mut);font-size:12px;padding:10px 0 24px}
+
+  /* brand display (retheme) */
+  h1,h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;letter-spacing:-.01em}
+  .champ .n,.st .v,.val,.ro,.sc{font-family:'Saira Condensed',sans-serif;font-style:italic}
 </style>
 </head>
 <body>

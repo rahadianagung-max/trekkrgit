@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trekkr · Ranked Event Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75;--rd:#d8442e}
+:root{--o:#FF6A00;--o2:#FFF4EA;--ink:#0D0D0D;--mut:#52525B;--bd:#E4E4E7;--bg:#F5F5F7;--ok:#22A052;--rd:#FF3830}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
 .top{background:var(--o);color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
 .top b{font-size:18px;letter-spacing:.04em}
 .top small{color:#FFE3D6;font-size:12px}
@@ -29,12 +30,12 @@ button.gho{background:transparent}
 .evrow{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .evrow:hover{border-color:var(--o)}
 .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#eee;color:#555}
-.pill.live{background:var(--o2);color:#9A3C18}
+.pill.live{background:var(--o2);color:#C2410C}
 .pill.done{background:#e7f5ef;color:#0f6e56}
 .courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .ct{border:1px solid var(--bd);border-radius:10px;padding:11px}
 .ct .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FAEEDA;color:#854F0B}
+.ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FFF4EA;color:#FF6A00}
 .team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
 .muted{color:var(--mut);font-size:13px}
@@ -47,6 +48,10 @@ button.gho{background:transparent}
 .linkbox{font-size:12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;word-break:break-all;font-family:ui-monospace,monospace}
 a.btn{display:inline-block;text-decoration:none}
 .hide{display:none}
+
+  /* brand display (retheme) */
+  h1,h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;letter-spacing:-.01em}
+  .champ .n,.st .v,.val,.ro,.sc{font-family:'Saira Condensed',sans-serif;font-style:italic}
 </style>
 </head>
 <body>

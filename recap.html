@@ -4,32 +4,33 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Trekkr · Recap Turnamen</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-  :root{--or:#E85D26;--bg:#0B0B0C;--card:#161618;--line:#262629;--mut:#8A8A8E}
+  :root{--or:#FF6A00;--bg:#FFFFFF;--card:#F5F5F7;--line:#E4E4E7;--mut:#9A9AA2}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:var(--bg);color:#0D0D0D;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   .top{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
-  .logo{font-weight:800;font-size:19px;letter-spacing:.5px}.logo .o{color:var(--or)}
+  .logo{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;font-weight:800;font-size:21px;letter-spacing:.5px}.logo .o{color:var(--or)}
   .wrap{max-width:760px;margin:0 auto;padding:18px}
-  h2{font-size:19px;margin:6px 0 14px}
+  h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;font-size:22px;margin:6px 0 14px}
   .hint{color:var(--mut);font-size:13px}
   .btn{background:var(--or);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer}
-  .btn.gh{background:transparent;border:1px solid var(--line);color:#fff}
+  .btn.gh{background:transparent;border:1px solid var(--line);color:#0D0D0D}
   .btn.sm{padding:8px 12px;font-size:13px}
   .btn:disabled{opacity:.5}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
   .frow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
-  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#2a2a2e;color:#bbb}
-  .badge.fin{background:rgba(34,197,94,.16);color:#46d180}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#EFEFF1;color:#52525B}
+  .badge.fin{background:#E7F6EC;color:#22A052}
   .center{text-align:center;color:var(--mut);padding:40px 0}
   .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
   @keyframes s{to{transform:rotate(360deg)}}
-  #cv{width:100%;max-width:380px;border-radius:14px;display:block;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  #cv{width:100%;max-width:380px;border-radius:14px;display:block;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,.12)}
   .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
-  textarea{width:100%;min-height:130px;background:var(--card);border:1px solid var(--line);color:#fff;border-radius:10px;padding:11px;font-size:13px;font-family:inherit;resize:vertical}
-  .ai{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#2a2a2e;color:#888}
-  .ai.on{background:rgba(232,93,38,.16);color:var(--or)}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#fff;color:#111;padding:11px 18px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transition:.25s;z-index:9}
+  textarea{width:100%;min-height:130px;background:var(--card);border:1px solid var(--line);color:#0D0D0D;border-radius:10px;padding:11px;font-size:13px;font-family:inherit;resize:vertical}
+  .ai{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#EFEFF1;color:#9A9AA2}
+  .ai.on{background:rgba(255,106,0,.12);color:var(--or)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#0D0D0D;color:#fff;padding:11px 18px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transition:.25s;z-index:9}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 </style>
 </head>
@@ -103,7 +104,7 @@ function renderRecap(){
 }
 
 // ---------- CANVAS CARD ----------
-const C={W:1080,H:1350,or:'#E85D26',bg:'#0B0B0C',card:'#161618',white:'#fff',mut:'#8E8E93',M:84};
+const C={W:1080,H:1350,or:'#FF6A00',bg:'#0B0B0C',card:'#161618',white:'#fff',mut:'#8E8E93',M:84};
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function wrap(ctx,text,maxW){const words=String(text||'').split(/\s+/);const lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width<=maxW||!cur)cur=t;else{lines.push(cur);cur=w;}}if(cur)lines.push(cur);return lines;}
 function fitWrap(ctx,text,maxW,maxS,minS,maxLines,weight){for(let s=maxS;s>=minS;s-=2){ctx.font=`${weight} ${s}px Arial`;const l=wrap(ctx,text,maxW);if(l.length<=maxLines)return{size:s,lines:l};}ctx.font=`${minS}px Arial`;return{size:minS,lines:wrap(ctx,text,maxW).slice(0,maxLines)};}

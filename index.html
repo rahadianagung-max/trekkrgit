@@ -3,691 +3,331 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>National Rankings | Trekkr</title>
+<title>Trekkr — Core engine for padel Indonesia</title>
+<meta name="description" content="Trekkr is the ELO engine that tracks every padel player in Indonesia, powers venue loyalty, and runs tournaments — all in one system."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-:root{--primary:#003ec7;--primary-container:#0052ff;--secondary:#a33800;--secondary-container:#cd4800;--on-surface:#0b1c30;--on-surface-variant:#434656;--on-inverse:#eaf1ff;--on-primary:#fff;--surface:#f8f9ff;--surface-low:#eff4ff;--surface-container:#e5eeff;--surface-high:#dce9ff;--surface-highest:#d3e4fe;--surface-lowest:#fff;--surface-inverse:#213145;--ok:#1f9d63;--warn:#c17c00;--danger:#ba1a1a;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--space-8:40px;--space-9:56px;--space-10:72px;--rhythm-section:32px;--rhythm-major:48px;--shadow-soft:0 16px 34px rgba(11,28,48,0.08);--motion-base:220ms;--ease-out:cubic-bezier(0.22,0.61,0.36,1)}
-*{box-sizing:border-box}html,body{margin:0;padding:0}
-body{color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;background:radial-gradient(1200px 500px at 100% -15%,rgba(0,82,255,0.11),transparent 58%),radial-gradient(900px 500px at -10% 110%,rgba(205,72,0,0.1),transparent 54%),var(--surface)}
-a{color:inherit;text-decoration:none}img{display:block;max-width:100%}h1,h2,h3,p{margin:0}
-.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+.section-label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--subtle);font-weight:600;margin:0}
 
-/* Avatar Styles Modifikasi Top 3 */
-.avatar-top1 {
-    width: 100%;
-    max-width: 320px; /* 4x lebih besar dari 80px */
-    aspect-ratio: 1 / 1; /* Memaksa bentuk persegi */
-    border-radius: 12px; /* Sudut sedikit melengkung agar elegan */
-    object-fit: cover;
-    border: 4px solid rgba(255,255,255,0.2);
-    margin-top: 32px;
-    background: rgba(255,255,255,0.1);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+/* ---------- Header ---------- */
+.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;overflow:hidden;padding:64px 0 40px}
+.hero__speed{position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(115deg,transparent 0 38px,rgba(255,106,0,.05) 38px 40px);
+  -webkit-mask-image:linear-gradient(115deg,transparent 30%,#000 95%);mask-image:linear-gradient(115deg,transparent 30%,#000 95%)}
+.hero__inner{position:relative;max-width:680px}
+.hero h1{margin:14px 0 0;font-size:clamp(42px,8vw,76px)}
+.hero h1 .accent{color:var(--orange)}
+.hero__sub{margin:18px 0 0;color:var(--muted);font-size:clamp(15px,2.2vw,18px);max-width:560px}
+.pillars{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.pillar{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:6px 13px;border-radius:var(--radius-pill)}
+.hero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+
+/* ---------- Event banner ---------- */
+.banner{margin:8px 0 4px}
+.banner__frame{position:relative;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface-2)}
+.banner__viewport{overflow:hidden}
+.banner__track{display:flex;transition:transform .5s var(--ease)}
+.slide{flex:0 0 100%;min-width:100%;position:relative;min-height:168px;display:flex;flex-direction:column;justify-content:center;
+  padding:26px 60px;background:linear-gradient(120deg,var(--warm),var(--surface) 72%)}
+.slide::before{content:"";position:absolute;left:0;top:0;width:5px;height:100%;background:var(--grad)}
+.slide__tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:600}
+.slide__title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(24px,4.4vw,34px);line-height:1;margin:8px 0 0}
+.slide__sub{color:var(--muted);font-size:14px;margin:8px 0 0}
+.slide__cta{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#fff;background:var(--orange);padding:7px 16px;border-radius:var(--radius-pill);margin-top:14px;width:fit-content}
+.banner__arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.8);color:var(--text);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .2s var(--ease)}
+.banner__arrow:hover{background:rgba(255,255,255,.98)}
+.banner__arrow--prev{left:12px}
+.banner__arrow--next{right:12px}
+.banner__dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:2}
+.banner__dot{width:8px;height:8px;border-radius:50%;background:var(--border);border:0;padding:0;transition:background .2s var(--ease),width .2s var(--ease)}
+.banner__dot.active{background:var(--orange);width:20px;border-radius:5px}
+
+/* ---------- Sections ---------- */
+.section{padding:40px 0}
+.section__head{margin:0 0 18px}
+.grid-4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+.feature{position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:border-color .2s var(--ease),transform .2s var(--ease)}
+.feature:hover{border-color:var(--orange);background:#fff;transform:translateY(-2px)}
+.feature__icon{font-size:26px;color:var(--orange);line-height:1}
+.feature__title{font-size:17px;font-weight:600;margin:12px 0 0}
+.feature__desc{color:var(--muted);font-size:13.5px;margin:8px 0 16px}
+.feature__cta{font-size:13px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:5px}
+.feature:hover .feature__cta{gap:9px}
+
+.showcase{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px}
+.showcase__preview{height:54px;display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:10px;padding:0 14px;margin-bottom:14px;border:1px solid var(--border-soft)}
+.showcase__preview .ico{font-size:22px;color:var(--orange)}
+.showcase__bars{flex:1;display:flex;flex-direction:column;gap:6px}
+.bar{height:6px;border-radius:3px;background:var(--border)}
+.bar--accent{background:var(--orange);opacity:.6}
+.showcase__elo{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--border)}
+.showcase__title{font-size:15px;font-weight:600}
+.showcase__desc{color:var(--subtle);font-size:12.5px;margin:6px 0 0}
+
+/* ---------- Footer ---------- */
+.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:24px}
+
+/* ---------- Responsive ---------- */
+@media(max-width:860px){
+  .nav,.header-actions .btn--ghost{display:none}
+  .menu-toggle{display:flex}
+  .slide{padding:24px 48px}
+  .grid-4{grid-template-columns:1fr}
 }
-.avatar-top23 {
-    width: 100%;
-    max-width: 180px; /* 4x lipat lebih besar dari 48px standar */
-    aspect-ratio: 1 / 1; /* Memaksa bentuk persegi */
-    border-radius: 12px;
-    object-fit: cover;
-    background: var(--surface-high);
-    border: 2px solid rgba(115,118,136,0.1);
-    box-shadow: 0 8px 24px rgba(11,28,48,0.08);
+@media(max-width:520px){
+  .slide{padding:22px 44px;min-height:158px}
+  .hero{padding:44px 0 28px}
 }
-
-.avatar-s{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--surface-high);flex-shrink:0}
-.avatar-xs{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface-highest);flex-shrink:0}
-.flex-player{display:flex;align-items:center;gap:12px}
-.flex-player-col{display:flex;flex-direction:column;justify-content:center}
-
-/* Header */
-.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}
-.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
-.brand{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.03em;text-transform:uppercase}
-.nav-links{display:flex;gap:6px}
-.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base) var(--ease-out)}
-.nav-link:hover{background:var(--surface-container)}
-.nav-link.is-active{color:var(--primary);background:var(--surface-container)}
-.header-actions{display:flex;align-items:center;gap:12px}
-.btn{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base) var(--ease-out)}
-.btn--primary{background:var(--primary);color:var(--on-primary)}
-.btn--primary:hover{background:var(--primary-container)}
-.btn--ghost{background:var(--surface-container);color:var(--primary)}
-.btn--ghost:hover{background:var(--surface-highest)}
-.btn--text{background:transparent;color:var(--on-surface-variant)}
-/* Hero */
-.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(0,62,199,0.08),rgba(0,82,255,0.05));padding:var(--rhythm-major) 0}
-.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(140deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),var(--hero-bg,url("https://i.ibb.co.com/fdgQ9Pwr/Screen-Shot-2026-04-21-at-01-30-34.png"));background-size:cover;background-position:center;pointer-events:none}
-.hero>.container{position:relative;z-index:1}
-.hero__eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;background:var(--secondary-container);color:#fff;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
-.hero__title{margin:14px 0 12px;font-family:'Space Grotesk',sans-serif;font-size:clamp(48px,10vw,88px);line-height:0.9;letter-spacing:-0.04em;font-weight:900;text-transform:uppercase}
-.hero__subtitle{max-width:720px;color:var(--on-surface-variant);font-size:clamp(15px,2.4vw,20px)}
-/* Controls bar */
-.controls{margin-top:24px;background:var(--surface-lowest);border-radius:var(--radius-xl);padding:10px;box-shadow:var(--shadow-soft);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.segmented{display:flex;padding:4px;border-radius:var(--radius-lg);background:var(--surface-low)}
-.segmented__button{border:0;background:transparent;padding:10px 18px;border-radius:var(--radius-md);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--on-surface-variant);cursor:pointer}
-.segmented__button.is-active{color:var(--primary);background:var(--surface-lowest);box-shadow:0 10px 20px rgba(11,28,48,0.08)}
-.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1}
-.controls .select,.search-input{border:0;background:var(--surface-low);border-radius:var(--radius-md);padding:11px 14px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--on-surface);min-height:44px;font-size:14px}
-.controls .select{width:auto;min-width:140px}
-.search-wrap{margin-left:auto}
-.search-input{min-width:220px}
-/* Section */
-.section{margin-top:var(--rhythm-section)}.section-title{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;color:var(--on-surface-variant);text-transform:uppercase}
-/* Spotlight: #1 hero + #2 #3 cards */
-.spotlight{margin-top:var(--space-4);display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
-.spotlight-feature{position:relative;border-radius:var(--radius-xl);overflow:hidden;min-height:420px;background:linear-gradient(135deg,#001c6f 0%,#003ec7 100%);color:#fff;padding:28px;cursor:pointer;transition:box-shadow var(--motion-base)}
-.spotlight-feature:hover{box-shadow:0 24px 48px rgba(0,42,155,0.22)}
-.spotlight-feature__rank{font-family:'Space Grotesk',sans-serif;font-size:92px;font-weight:900;line-height:0.8;opacity:0.24}
-.spotlight-feature__points{position:absolute;top:24px;right:24px;text-align:right}
-.points-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.82}
-.points-value{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:800}
-.spotlight-feature__name{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,4vw,56px);line-height:0.92;letter-spacing:-0.03em;text-transform:uppercase;font-weight:900}
-.spotlight-feature__meta{margin-top:8px;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.85}
-.spotlight-col{display:grid;gap:12px}
-.player-card{border-radius:var(--radius-lg);background:var(--surface-container);padding:16px;transition:background var(--motion-base);cursor:pointer}
-.player-card:hover{background:var(--surface-highest)}
-.player-card__top{display:flex;justify-content:space-between;align-items:center}
-.player-card__rank{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:900;color:rgba(11,28,48,0.18);line-height:0.9}
-.player-card__points{text-align:right}
-.player-card__name{font-family:'Space Grotesk',sans-serif;line-height:0.95;letter-spacing:-0.02em;text-transform:uppercase;font-weight:800}
-.player-card__meta{margin-top:4px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
-/* Top 4-10 grid */
-.topten-grid{margin-top:var(--space-4);display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
-.topten-item{background:var(--surface-low);border-radius:var(--radius-md);padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:background var(--motion-base)}
-.topten-item:hover{background:var(--surface-high)}
-.topten-item__left{display:flex;gap:10px;align-items:center}
-.topten-item__rank{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:var(--on-surface-variant)}
-.topten-item__name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.01em}
-.topten-item__meta{font-family:'Inter',sans-serif;font-size:10px;color:var(--on-surface-variant);letter-spacing:0.09em;text-transform:uppercase}
-.topten-item__points{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--primary)}
-/* Table 11+ */
-.table-wrap{margin-top:var(--space-4);overflow-x:auto;border-radius:var(--radius-xl);background:var(--surface-low)}
-.rank-table{width:100%;border-collapse:separate;border-spacing:0}
-.rank-table thead{background:rgba(203,219,245,0.5)}
-.rank-table th{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--on-surface-variant);text-align:left;padding:14px 18px}
-.rank-table th.th-right{text-align:right}
-.rank-table td{padding:14px 18px;font-size:14px}
-.rank-table tbody tr{background:var(--surface-lowest);cursor:pointer;transition:background var(--motion-base)}
-.rank-table tbody tr:nth-child(even){background:rgba(239,244,255,0.6)}
-.rank-table tbody tr:hover{background:var(--surface-highest)}
-.rank-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:var(--primary)}
-.rank-player{font-weight:700}
-.rank-tier{margin-top:2px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
-.rank-points{text-align:right;font-family:'Inter',sans-serif;font-weight:800}
-.load-more{margin-top:16px;display:flex;justify-content:center}
-/* States */
-.state-panel{margin-top:var(--rhythm-section);background:var(--surface-container);border-radius:var(--radius-xl);padding:44px 28px;text-align:center}
-.state-icon{width:64px;height:64px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:var(--surface-high);color:var(--primary);font-size:28px;font-family:'Space Grotesk',sans-serif;font-weight:800}
-.state-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,48px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase}
-.state-copy{margin:10px auto 24px;max-width:700px;color:var(--on-surface-variant);font-size:16px}
-/* Footer */
-.site-footer{margin-top:var(--space-10);border-top:1px solid rgba(115,118,136,0.12);padding:var(--space-7) 0}
-.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.footer-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase}
-.footer-links{display:flex;gap:20px;font-size:13px;color:var(--on-surface-variant)}
-.footer-copy{font-size:12px;color:var(--on-surface-variant)}
-/* Skeleton loading */
-.skeleton{border-radius:var(--radius-md);background:linear-gradient(90deg,#eff4ff 0%,#e5eeff 50%,#eff4ff 100%);background-size:220% 100%;animation:shimmer 1.3s linear infinite}
-@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-/* Responsive */
-@media(max-width:1199px){.spotlight{grid-template-columns:1fr}}
-@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.search-wrap{margin-left:0;width:100%}.search-input{width:100%;min-width:0}.topten-grid{grid-template-columns:1fr}}
-@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.header-actions{display:none}.hero{padding:var(--rhythm-section) 0}.hero__title{font-size:54px}.state-panel{padding:var(--rhythm-section) var(--space-5)}}
-
-/* Nav highlight for new items */
-.nav-link--highlight{color:var(--primary);font-weight:800}
-.nav-link--highlight:hover{background:var(--surface-container);color:var(--primary-container)}
-
-/* Mobile bottom nav → move to top scroll bar instead */
-.mobile-nav{display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:rgba(248,249,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(115,118,136,0.12);position:sticky;top:80px;z-index:49;padding:0 16px}
-.mobile-nav::-webkit-scrollbar{display:none}
-.mobile-nav__inner{display:flex;gap:4px;padding:8px 0;width:max-content;min-width:100%}
-.mobile-nav__link{display:inline-flex;align-items:center;white-space:nowrap;padding:8px 16px;border-radius:var(--radius-pill);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--on-surface-variant);text-decoration:none;transition:all 180ms ease;border:1.5px solid transparent;flex-shrink:0}
-.mobile-nav__link:hover{background:var(--surface-container)}
-.mobile-nav__link.is-active{color:var(--primary);background:var(--surface-container);border-color:var(--surface-high)}
-.mobile-nav__link--highlight{color:var(--primary);border-color:rgba(0,62,199,0.25);background:var(--surface-low)}
-.mobile-nav__link--highlight:hover{background:var(--surface-container);border-color:var(--primary)}
-@media(max-width:1023px){.mobile-nav{display:block}}
-
-/* ── CALIBRATION STATUS PILLS ─────────────────────────────────── */
-.pill-calibrating {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; border-radius: 999px;
-  background: rgba(205,72,0,0.1); border: 1px solid rgba(205,72,0,0.25);
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: #cd4800;
-  white-space: nowrap;
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .banner__track{transition:none}
+  .feature{transition:none}
 }
-.pill-calibrating .cdot {
-  width: 5px; height: 5px; border-radius: 50%; background: #cd4800;
-  animation: cal-pulse 1.4s ease-out infinite; flex-shrink: 0;
-}
-@keyframes cal-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(205,72,0,0.5); }
-  70%  { box-shadow: 0 0 0 5px rgba(205,72,0,0); }
-  100% { box-shadow: 0 0 0 0 rgba(205,72,0,0); }
-}
-.pill-rated {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; border-radius: 999px;
-  background: rgba(0,62,199,0.08); border: 1px solid rgba(0,62,199,0.18);
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary);
-  white-space: nowrap;
-}
-
-/* ── TIER BADGE (colored dot + name for 4-10) ─────────────────── */
-.tier-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase;
-  color: var(--on-surface-variant);
-}
-.tier-dot {
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-}
-
-/* ── ACHIEVEMENT BADGE STRIP (top 3) ─────────────────────────── */
-.badge-strip {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  margin-top: 10px;
-}
-.badge-chip {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 3px 8px; border-radius: 999px;
-  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  white-space: nowrap; cursor: default;
-  transition: transform 0.15s;
-}
-.badge-chip:hover { transform: scale(1.05); }
-.badge-chip.common    { background: rgba(100,116,139,0.12); color: #475569; border: 1px solid rgba(100,116,139,0.2); }
-.badge-chip.uncommon  { background: rgba(0,62,199,0.1);     color: var(--primary); border: 1px solid rgba(0,62,199,0.2); }
-.badge-chip.rare      { background: rgba(124,58,237,0.1);   color: #7C3AED; border: 1px solid rgba(124,58,237,0.2); }
-.badge-chip.epic      { background: rgba(245,158,11,0.1);   color: #D97706; border: 1px solid rgba(245,158,11,0.2); }
-.badge-chip.legendary { background: rgba(220,38,38,0.1);    color: #DC2626; border: 1px solid rgba(220,38,38,0.2); }
-/* On dark spotlight card (rank 1) badges need light variant */
-.badge-chip--light { background: rgba(255,255,255,0.15) !important; color: rgba(234,241,255,0.9) !important; border-color: rgba(255,255,255,0.25) !important; }
-.badge-chip--light:hover { background: rgba(255,255,255,0.22) !important; }
-
-/* tooltip on badge chip */
-.badge-chip[title] { position: relative; }
-
-/* ── TOPTEN additions ─────────────────────────────────────────── */
-.topten-item__info { display: flex; flex-direction: column; gap: 2px; }
-.topten-item__right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-
-/* ── HERO CTA ROW ─────────────────────────────────────────────── */
-.hero__cta-row{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
-.hero__cta-btn{padding:14px 28px;font-size:14px;border-radius:var(--radius-pill)}
-.hero__stats{display:flex;align-items:center;gap:20px;margin-top:24px;flex-wrap:wrap}
-.hero__stat{display:flex;flex-direction:column;gap:2px}
-.hero__stat-val{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--on-surface)}
-.hero__stat-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant)}
-.hero__stat-divider{width:1px;height:28px;background:rgba(115,118,136,0.2)}
-
-/* ── HOW IT WORKS SECTION ─────────────────────────────────────── */
-.how-section{margin-top:80px;padding:72px 0;background:var(--surface-lowest);border-top:1px solid rgba(115,118,136,0.1);border-bottom:1px solid rgba(115,118,136,0.1)}
-.how-header{text-align:center;margin-bottom:56px}
-.how-eyebrow{display:inline-block;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--primary);margin-bottom:12px}
-.how-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,5vw,48px);font-weight:900;letter-spacing:-0.03em;line-height:1;text-transform:uppercase;color:var(--on-surface)}
-.how-subtitle{margin-top:12px;font-size:17px;color:var(--on-surface-variant);max-width:520px;margin-left:auto;margin-right:auto}
-.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
-.how-card{position:relative;background:var(--surface-low);border-radius:var(--radius-xl);padding:32px 28px;transition:transform var(--motion-base) var(--ease-out),box-shadow var(--motion-base)}
-.how-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(11,28,48,0.09)}
-.how-card__num{font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:900;line-height:1;color:var(--surface-container);position:absolute;top:16px;right:20px;pointer-events:none;user-select:none}
-.how-card__icon{width:52px;height:52px;border-radius:var(--radius-lg);background:var(--primary);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
-.how-card__icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.how-card__title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase;color:var(--on-surface);margin-bottom:10px}
-.how-card__desc{font-size:14px;color:var(--on-surface-variant);line-height:1.6}
-.how-card__tag{margin-top:20px;display:inline-block;padding:5px 14px;border-radius:var(--radius-pill);background:var(--surface-container);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary)}
-
-/* User type split */
-.how-for-whom{margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.for-card{border-radius:var(--radius-xl);padding:28px 32px;cursor:pointer;transition:transform var(--motion-base),box-shadow var(--motion-base)}
-.for-card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,28,48,0.1)}
-.for-card--player{background:linear-gradient(135deg,#003ec7,#0052ff);color:#fff}
-.for-card--venue{background:linear-gradient(135deg,#1c1c2e,#2d1b69);color:#fff}
-.for-card__label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;opacity:0.75;margin-bottom:10px}
-.for-card__title{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:10px}
-.for-card__desc{font-size:14px;opacity:0.85;line-height:1.55;margin-bottom:20px}
-.for-card__cta{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.18);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fff;transition:background var(--motion-base)}
-.for-card__cta:hover{background:rgba(255,255,255,0.28)}
-
-@media(max-width:1023px){.how-grid{grid-template-columns:1fr 1fr}.how-for-whom{grid-template-columns:1fr}}
-@media(max-width:767px){.how-grid{grid-template-columns:1fr}.how-section{padding:48px 0}.hero__cta-row{flex-direction:column}.hero__cta-btn{width:100%;text-align:center}.hero__stats{gap:14px}.hero__stat-divider{display:none}}
 </style>
 </head>
 <body>
+
 <header class="site-header">
-  <div class="container site-header__inner">
+  <div class="container header-inner">
     <a href="https://trekkr.online" class="brand">Trekkr</a>
-    <nav class="nav-links" aria-label="Primary">
-      <a class="nav-link is-active" href="https://trekkr.online">National Ranking</a>
-      <a class="nav-link" href="https://venue.trekkr.online">Venues</a>
-      <a class="nav-link" href="#how-it-works">How It Works</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="/rankings" class="active">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
     </nav>
     <div class="header-actions">
-      <button class="btn btn--ghost" type="button" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">I'm a Player</button>
-      <button class="btn btn--primary" type="button" onclick="location.href='https://admin.trekkr.online'">Venue Login</button>
+      <a href="/rankings#find" class="btn btn--outline"><i class="ti ti-search" aria-hidden="true"></i>Find me</a>
+      <a href="https://admin.trekkr.online" class="btn btn--primary">Venue login</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
     </div>
   </div>
-</header>
-<div class="mobile-nav" role="navigation" aria-label="Mobile navigation">
-  <div class="mobile-nav__inner">
-    <a class="mobile-nav__link is-active" href="https://trekkr.online">National Ranking</a>
-    <a class="mobile-nav__link" href="https://venue.trekkr.online">Venues</a>
-    <a class="mobile-nav__link" href="#how-it-works">How It Works</a>
-    <a class="mobile-nav__link mobile-nav__link--highlight" href="https://admin.trekkr.online">Venue Login</a>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="/rankings">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+      <a href="/rankings#find">Find me</a>
+      <a href="https://admin.trekkr.online">Venue login</a>
+    </nav>
   </div>
-</div>
+</header>
 
 <main>
-  <section class="hero">
-    <div class="container">
-      <span class="hero__eyebrow" id="heroEyebrow">&#127952; Indonesia's Padel Community</span>
-      <h1 class="hero__title" id="heroTitle">Where every<br/>padel player<br/>has a ranking.</h1>
-      <p class="hero__subtitle" id="heroSubtitle">Trekkr is Indonesia's community platform for padel — live leaderboards at every court and a competitive ecosystem built for players who want more than just a game.</p>
-      <div class="hero__cta-row">
-        <button class="btn btn--primary hero__cta-btn" type="button" onclick="location.href='https://venue.trekkr.online'">Find my venue</button>
-        <button class="btn btn--ghost hero__cta-btn" type="button" onclick="location.href='https://venue.trekkr.online'">I own a court</button>
-      </div>
-      <div class="hero__stats" id="heroStats">
-        <div class="hero__stat"><span class="hero__stat-val" id="statVenues"></span><span class="hero__stat-label"></span></div>
-        <div class="hero__stat-divider"></div>
-        <div class="hero__stat"><span class="hero__stat-val" id="statPlayers"></span><span class="hero__stat-label"></span></div>
-        <div class="hero__stat-divider"></div>
-        <div class="hero__stat"><span class="hero__stat-val"> &middot; &middot; </span><span class="hero__stat-label"></span></div>
-      </div>
 
-      <div class="controls" role="group" aria-label="Ranking filters">
-        <div class="segmented" aria-label="Gender selector">
-          <button class="segmented__button is-active" data-gender="M" type="button" onclick="switchGender('M')">Men</button>
-          <button class="segmented__button" data-gender="F" type="button" onclick="switchGender('F')">Women</button>
+  <section class="hero">
+    <div class="hero__speed" aria-hidden="true"></div>
+    <div class="container hero__inner">
+      <span class="eyebrow">Core engine for padel Indonesia</span>
+      <h1 class="display">Make every<br><span class="accent">match count</span></h1>
+      <p class="hero__sub">The ELO engine that tracks every padel player in Indonesia, powers venue loyalty, and runs tournaments — all in one system.</p>
+      <div class="pillars">
+        <span class="pillar">For players</span>
+        <span class="pillar">For court owners</span>
+        <span class="pillar">For tournaments</span>
+      </div>
+      <div class="hero__cta">
+        <a href="/rankings#find" class="btn btn--primary">Find your profile</a>
+        <a href="/rankings" class="btn btn--ghost">Explore rankings</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="banner" aria-label="Featured events">
+    <div class="container">
+      <div class="banner__frame">
+        <div class="banner__viewport">
+          <div class="banner__track" id="bannerTrack"></div>
         </div>
-        <div class="filters">
-          <select class="select" id="levelFilter" aria-label="Level" onchange="applyFilters()">
-            <option value="">All Levels</option>
-            <option value="Platinum">Platinum</option><option value="Gold">Gold</option><option value="Silver">Silver</option>
-            <option value="Upper Bronze">Upper Bronze</option><option value="Bronze">Bronze</option><option value="Lower Bronze">Lower Bronze</option>
-            <option value="Upper Beginner">Upper Beginner</option><option value="Beginner">Beginner</option>
-          </select>
-          <select class="select" id="regionFilter" aria-label="Region" onchange="applyFilters()"><option value="">All Regions</option></select>
-          <select class="select" id="venueFilter" aria-label="Venue" onchange="applyFilters()"><option value="">All Venues</option></select>
-        </div>
-        <div class="search-wrap">
-          <input class="search-input" id="searchInput" type="search" placeholder="Search player..." aria-label="Search player" oninput="debounceSearch()"/>
-        </div>
+        <button class="banner__arrow banner__arrow--prev" id="bannerPrev" aria-label="Previous">‹</button>
+        <button class="banner__arrow banner__arrow--next" id="bannerNext" aria-label="Next">›</button>
+        <div class="banner__dots" id="bannerDots"></div>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="container">
-      <div id="topSection">
-        <div class="state-panel">
-          <div class="state-icon"><div class="skeleton" style="width:28px;height:28px;border-radius:50%"></div></div>
-          <h2 class="state-title">Loading Rankings</h2>
-          <p class="state-copy">Fetching the latest ELO data from the national circuit...</p>
-        </div>
+      <p class="section-label section__head">What Trekkr does</p>
+      <div class="grid-4">
+        <a class="feature" href="/rankings">
+          <i class="ti ti-trophy feature__icon" aria-hidden="true"></i>
+          <h3 class="feature__title">Player ranking</h3>
+          <p class="feature__desc">National ELO leaderboard tracking every player's progress in Indonesia.</p>
+          <span class="feature__cta">View rankings <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+        </a>
+        <a class="feature" href="https://venue.trekkr.online">
+          <i class="ti ti-ball-tennis feature__icon" aria-hidden="true"></i>
+          <h3 class="feature__title">Regular ranked match</h3>
+          <p class="feature__desc">Weekly ranked mexicano at your venue. Pick a court and climb the board.</p>
+          <span class="feature__cta">Find a venue <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+        </a>
+        <a class="feature" href="/tournaments">
+          <i class="ti ti-tournament feature__icon" aria-hidden="true"></i>
+          <h3 class="feature__title">Tournament management</h3>
+          <p class="feature__desc">Run your padel tournament on Trekkr — draws, scoring, and live results.</p>
+          <span class="feature__cta">Learn more <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+        </a>
+        <a class="feature" href="/events">
+          <i class="ti ti-calendar-event feature__icon" aria-hidden="true"></i>
+          <h3 class="feature__title">Special event</h3>
+          <p class="feature__desc">Upcoming tournaments powered by Trekkr. Find one near you and join.</p>
+          <span class="feature__cta">See events <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
+        </a>
       </div>
     </div>
   </section>
 
-  <section class="section" id="tableSection" style="display:none">
-    <div class="container" id="tableContainer"></div>
-  </section>
-
-  <div id="loadMoreWrap" style="display:none">
-    <div class="container"><div class="load-more"><button class="btn btn--ghost" type="button" onclick="loadMore()">Load More</button></div></div>
-  </div>
-
-  <!-- ── HOW IT WORKS ──────────────────────────────────────────── -->
-  <section class="how-section" id="how-it-works" aria-labelledby="how-title">
+  <section class="section" style="padding-top:0">
     <div class="container">
-      <div class="how-header">
-        <p class="how-eyebrow">Get started in minutes</p>
-        <h2 class="how-title" id="how-title">How Trekkr works</h2>
-        <p class="how-subtitle">Join thousands of padel players across Indonesia who track their performance every week.</p>
-      </div>
-
-      <div class="how-grid">
-        <div class="how-card">
-          <span class="how-card__num" aria-hidden="true">1</span>
-          <div class="how-card__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <p class="section-label section__head">The features behind it</p>
+      <div class="grid-4">
+        <div class="showcase">
+          <div class="showcase__preview">
+            <i class="ti ti-id-badge-2 ico" aria-hidden="true"></i>
+            <div class="showcase__bars"><span class="bar" style="width:50%"></span><span class="bar bar--accent" style="width:30%"></span></div>
+            <span class="showcase__elo">1480</span>
           </div>
-          <h3 class="how-card__title">Find your venue</h3>
-          <p class="how-card__desc">Browse active Trekkr venues near you. Each venue has its own community leaderboard — find the court you play at most.</p>
-          <span class="how-card__tag">Browse venues &rarr;</span>
+          <div class="showcase__title">Player passport</div>
+          <p class="showcase__desc">ELO, match history, win rate, and best partners — one shareable profile.</p>
         </div>
-
-        <div class="how-card">
-          <span class="how-card__num" aria-hidden="true">2</span>
-          <div class="how-card__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 8l2 2-5 5"/></svg>
+        <div class="showcase">
+          <div class="showcase__preview">
+            <i class="ti ti-building-store ico" aria-hidden="true"></i>
+            <div class="showcase__bars"><span class="bar" style="width:60%"></span><span class="bar" style="width:40%"></span></div>
           </div>
-          <h3 class="how-card__title">Get registered</h3>
-          <p class="how-card__desc">Ask your venue admin to add you to the leaderboard. Once you're in, every match result goes straight to your ranking.</p>
-          <span class="how-card__tag">Talk to your admin</span>
+          <div class="showcase__title">Special venue page</div>
+          <p class="showcase__desc">A branded leaderboard page for each court, with weekly rankings.</p>
         </div>
-
-        <div class="how-card">
-          <span class="how-card__num" aria-hidden="true">3</span>
-          <div class="how-card__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <div class="showcase">
+          <div class="showcase__preview">
+            <i class="ti ti-device-mobile ico" aria-hidden="true"></i>
+            <div class="showcase__bars"><span class="bar bar--accent" style="width:45%"></span><span class="bar" style="width:65%"></span></div>
           </div>
-          <h3 class="how-card__title">Track & climb</h3>
-          <p class="how-card__desc">Your ELO ranking updates after every match. Leaderboards reset every Monday — fight your way back to the top, every week.</p>
-          <span class="how-card__tag">See the rankings</span>
+          <div class="showcase__title">Ranked match app</div>
+          <p class="showcase__desc">The match-day scoring app venues use to run ranked sessions in minutes.</p>
         </div>
-      </div>
-
-      <div class="how-for-whom">
-        <div class="for-card for-card--player" role="button" tabindex="0" onclick="document.querySelector('.section').scrollIntoView({behavior:'smooth'})" onkeydown="if(event.key==='Enter')this.click()">
-          <p class="for-card__label">For players</p>
-          <h3 class="for-card__title">Know where you stand</h3>
-          <p class="for-card__desc">Live ELO ranking, match history, partner stats, and weekly performance charts — all tied to the court you actually play at.</p>
-          <span class="for-card__cta">View national rankings &rarr;</span>
-        </div>
-
-        <div class="for-card for-card--venue" role="button" tabindex="0" onclick="location.href='https://venue.trekkr.online'" onkeydown="if(event.key==='Enter')this.click()">
-          <p class="for-card__label">For court owners</p>
-          <h3 class="for-card__title">Build a loyal community</h3>
-          <p class="for-card__desc">Give your players a reason to keep coming back. Weekly rankings, tournaments, and analytics — all in one platform.</p>
-          <span class="for-card__cta">Get your venue listed &rarr;</span>
+        <div class="showcase">
+          <div class="showcase__preview">
+            <i class="ti ti-layout-dashboard ico" aria-hidden="true"></i>
+            <div class="showcase__bars"><span class="bar" style="width:55%"></span><span class="bar" style="width:35%"></span></div>
+          </div>
+          <div class="showcase__title">Tournament dashboard</div>
+          <p class="showcase__desc">Live standings, brackets, and a TV view for organizers.</p>
         </div>
       </div>
     </div>
   </section>
-
 
 </main>
 
 <footer class="site-footer">
-  <div class="container site-footer__inner">
-    <div class="footer-brand">Trekkr</div>
-    <div class="footer-links"><a href="#how-it-works">How It Works</a><a href="https://venue.trekkr.online">Venues</a><a href="https://venue.trekkr.online">For Court Owners</a></div>
-    <div class="footer-copy">© 2026 Trekkr. All rights reserved.</div>
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/rankings">Rankings</a>
+      <a href="https://venue.trekkr.online">Venues</a>
+      <a href="/tournaments">Tournaments</a>
+      <a href="/events">Events</a>
+    </nav>
+    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
   </div>
 </footer>
 
-<script src="/trekkr-api.js"></script>
 <script>
+/* ---------- Mobile menu ---------- */
+(function(){
+  var t=document.getElementById('menuToggle'), m=document.getElementById('mobileNav');
+  if(t&&m){t.addEventListener('click',function(){
+    var open=m.classList.toggle('open');
+    t.setAttribute('aria-expanded',open?'true':'false');
+  });}
+})();
 
+/* ---------- Event banner (sheet-driven, text template) ---------- */
+(function(){
+  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
+  var track=document.getElementById('bannerTrack'),
+      dotsEl=document.getElementById('bannerDots'),
+      prev=document.getElementById('bannerPrev'),
+      next=document.getElementById('bannerNext'),
+      frame=track.closest('.banner__frame');
 
-// ── UPDATE HERO STATS FROM LIVE DATA ─────────────────────────────────────
-async function updateHeroStats() {
-  try {
-    const data = await TrekkrAPI.getLeaderboard({ gender: 'M', limit: 500 });
-    const players = data.players || [];
-    const venues = new Set(players.map(p => p.venue).filter(Boolean));
-    const venueCount = venues.size;
-    const playerCount = players.length;
-    const statV = document.getElementById('statVenues');
-    const statP = document.getElementById('statPlayers');
-    if (statV && venueCount > 0) statV.textContent = venueCount + '+';
-    if (statP && playerCount > 0) statP.textContent = playerCount.toLocaleString('id-ID') + '+';
-  } catch(e) { /* keep defaults */ }
-}
-updateHeroStats();
+  // Fallback content if the sheet/endpoint isn't wired yet.
+  var FALLBACK=[
+    {tag:'Special event',title:'Jakarta Padel Open 2026',subtitle:'Aug 12–14 · PIPC Arena · powered by Trekkr',cta_label:'Register',target_url:'/events'},
+    {tag:'Ranked league',title:'Jabodetabek Padel League',subtitle:'Season 1 · register your team now',cta_label:'Join the league',target_url:'/events'},
+    {tag:'Venue spotlight',title:'Stellar Padel Academy',subtitle:'New ranked sessions every week',cta_label:'See venue',target_url:'https://venue.trekkr.online'},
+    {tag:'Live now',title:'Madre Ranked Match',subtitle:"36 players · women's open · in progress",cta_label:'Watch live',target_url:'/events'}
+  ];
 
+  var idx=0, slides=[], timer=null;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
-// ── CALIBRATION & TIER HELPERS ────────────────────────────────────────────
-const CALIB_THRESHOLD = 15;
-
-function isCalibrating(totalMatches) {
-  return (totalMatches || 0) < CALIB_THRESHOLD;
-}
-
-function statusPill(totalMatches, light = false) {
-  if (isCalibrating(totalMatches)) {
-    return `<span class="pill-calibrating"><span class="cdot"></span>Calibrating</span>`;
+  function render(data){
+    slides=data.slice(0,4);
+    if(!slides.length){frame.parentElement.parentElement.style.display='none';return;}
+    track.innerHTML=slides.map(function(b){
+      var url=b.target_url||'#';
+      var cta=b.cta_label?'<span class="slide__cta">'+esc(b.cta_label)+' <i class="ti ti-arrow-right" aria-hidden="true"></i></span>':'';
+      return '<a class="slide" href="'+esc(url)+'">'
+        +(b.tag?'<span class="slide__tag">'+esc(b.tag)+'</span>':'')
+        +'<span class="slide__title">'+esc(b.title)+'</span>'
+        +(b.subtitle?'<span class="slide__sub">'+esc(b.subtitle)+'</span>':'')
+        +cta+'</a>';
+    }).join('');
+    dotsEl.innerHTML=slides.map(function(_,i){return '<button class="banner__dot'+(i===0?' active':'')+'" data-i="'+i+'" aria-label="Go to slide '+(i+1)+'"></button>';}).join('');
+    var single=slides.length<2;
+    prev.style.display=next.style.display=dotsEl.style.display=single?'none':'';
+    go(0);
+    if(!single)start();
   }
-  return `<span class="pill-rated">✓ Rated</span>`;
-}
 
-const TIER_COLORS = {
-  'Platinum':     '#6B7280',
-  'Gold':         '#D97706',
-  'Silver':       '#64748B',
-  'Upper Bronze': '#92400E',
-  'Bronze':       '#B45309',
-  'Lower Bronze': '#78350F',
-  'Upper Beginner':'#3B82F6',
-  'Beginner':     '#94A3B8',
-};
+  function go(i){
+    idx=(i+slides.length)%slides.length;
+    track.style.transform='translateX(-'+(idx*100)+'%)';
+    var dots=dotsEl.querySelectorAll('.banner__dot');
+    dots.forEach(function(d,k){d.classList.toggle('active',k===idx);});
+  }
+  function start(){stop();timer=setInterval(function(){go(idx+1);},6000);}
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
 
-function tierDot(tierName) {
-  const col = TIER_COLORS[tierName] || '#94A3B8';
-  return `<span class="tier-badge"><span class="tier-dot" style="background:${col}"></span>${tierName}</span>`;
-}
+  prev.addEventListener('click',function(){go(idx-1);start();});
+  next.addEventListener('click',function(){go(idx+1);start();});
+  dotsEl.addEventListener('click',function(e){var d=e.target.closest('.banner__dot');if(d){go(+d.dataset.i);start();}});
+  frame.addEventListener('mouseenter',stop);
+  frame.addEventListener('mouseleave',function(){if(slides.length>1)start();});
 
-// ── BADGE DEFINITIONS (compact — same set as player page) ─────────────────
-// Each badge: { id, emoji, name, rarity, compute(playerSnapshot) }
-// playerSnapshot from leaderboard: { elo, totalMatches, totalW, totalL, winRate, level }
-// We can only compute what's available in leaderboard data (no match history)
-const LB_BADGES = [
-  { id:'veteran',    emoji:'🎖️', name:'Veteran',     rarity:'uncommon', compute: p => (p.totalMatches||0) >= 100 },
-  { id:'legend',     emoji:'🏛️', name:'Legend',      rarity:'epic',     compute: p => (p.totalMatches||0) >= 500 },
-  { id:'summit',     emoji:'🏔️', name:'Summit',      rarity:'common',   compute: p => (p.elo||0) >= 2000 },
-  { id:'unstoppable',emoji:'🔥', name:'On Fire',     rarity:'rare',     compute: p => (p.streak||'').startsWith('5') || parseInt(p.streak||'0') >= 5 },
-  { id:'gold_tier',  emoji:'🥇', name:'Gold Tier',   rarity:'epic',     compute: p => (p.elo||0) >= 2500 },
-  { id:'silver_tier',emoji:'🥈', name:'Silver',      rarity:'rare',     compute: p => (p.elo||0) >= 2100 },
-  { id:'bronze',     emoji:'🥉', name:'Bronze',      rarity:'uncommon', compute: p => (p.elo||0) >= 1500 },
-  { id:'centurion',  emoji:'💯', name:'100 Matches', rarity:'uncommon', compute: p => (p.totalMatches||0) >= 100 },
-  { id:'dominator',  emoji:'💥', name:'Dominator',   rarity:'rare',     compute: p => (p.winRate||0) >= 70 && (p.totalMatches||0) >= 20 },
-  { id:'ironman',    emoji:'💪', name:'Ironman',     rarity:'rare',     compute: p => (p.totalMatches||0) >= 200 },
-];
-
-function getEarnedBadges(player) {
-  return LB_BADGES.filter(b => {
-    try { return b.compute(player); } catch(e) { return false; }
+  // Touch swipe
+  var x0=null;
+  frame.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;stop();},{passive:true});
+  frame.addEventListener('touchend',function(e){
+    if(x0===null)return;
+    var dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>40)go(idx+(dx<0?1:-1));
+    x0=null;if(slides.length>1)start();
   });
-}
 
-function renderBadgeStrip(player, light = false) {
-  const earned = getEarnedBadges(player);
-  if (!earned.length) return '';
-  // Show max 5 badges to keep it clean
-  const show = earned.slice(0, 5);
-  const chips = show.map(b =>
-    `<span class="badge-chip ${b.rarity}${light ? ' badge-chip--light' : ''}" title="${b.name}">${b.emoji} ${b.name}</span>`
-  ).join('');
-  const more = earned.length > 5
-    ? `<span class="badge-chip common${light ? ' badge-chip--light' : ''}" title="${earned.length - 5} more badges">+${earned.length - 5}</span>`
-    : '';
-  return `<div class="badge-strip">${chips}${more}</div>`;
-}
-
-let cG='M',cP=1,sT=null;
-
-function switchGender(g){
-  cG=g;cP=1;
-  document.querySelectorAll('.segmented__button').forEach(b=>{
-    b.classList.toggle('is-active',b.dataset.gender===g);
-  });
-  loadLB();
-}
-function applyFilters(){cP=1;loadLB()}
-function debounceSearch(){clearTimeout(sT);sT=setTimeout(()=>{cP=1;loadLB()},300)}
-
-async function loadLB(){
-  const t=document.getElementById('topSection'),tc=document.getElementById('tableContainer'),ts=document.getElementById('tableSection');
-  if(cP===1){
-    t.innerHTML='<div class="state-panel"><div class="state-icon"><div class="skeleton" style="width:28px;height:28px;border-radius:50%"></div></div><h2 class="state-title">Loading Rankings</h2><p class="state-copy">Fetching the latest ELO data from the national circuit...</p></div>';
-    ts.style.display='none';
-  }
-  const p={gender:cG,page:1,limit:100};
-  const lv=document.getElementById('levelFilter').value;
-  const rg=document.getElementById('regionFilter').value;
-  const vn=document.getElementById('venueFilter').value;
-  const sr=document.getElementById('searchInput').value;
-  if(lv)p.level=lv;if(rg)p.region=rg;if(sr)p.search=sr;if(vn)p.venue=vn;
-  try{
-    const d=await TrekkrAPI.getNationalLeaderboard(p);
-    renderRanking(d.leaderboard);
-    if(cP===1){popReg(d.leaderboard);popVenues()}
-  }catch(e){
-    console.warn('API err:',e);
-    t.innerHTML='<div class="state-panel"><div class="state-icon" style="color:var(--danger)">!</div><h2 class="state-title">Connection Error</h2><p class="state-copy">Unable to load ranking data. Showing demo data.</p></div>';
-    setTimeout(()=>renderRanking(demo()),800);
-  }
-}
-
-function renderRanking(pl){
-  const t=document.getElementById('topSection'),tc=document.getElementById('tableContainer'),ts=document.getElementById('tableSection'),lm=document.getElementById('loadMoreWrap');
-  if(!pl.length){
-    t.innerHTML='<div class="state-panel"><div class="state-icon">∅</div><h2 class="state-title">No Players Found</h2><p class="state-copy">Try adjusting your filters or search term.</p></div>';
-    ts.style.display='none';lm.style.display='none';return;
-  }
-  const top=pl.slice(0,10),rest=pl.slice(10);
-  let h='';
-
-  function getAva(p, c='003ec7', bg='e5eeff'){
-    return p.photoUrl ? p.photoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName||p.name)}&background=${bg}&color=${c}&bold=true`;
-  }
-
-  // Top 1-3: Spotlight Menggunakan Foto Persegi
-  if(top.length>=1){
-    const p1=top[0];
-    const ava1 = getAva(p1, 'fff', '003ec7');
-    h+=`<p class="section-title">The Elite Ten</p><div class="spotlight">`;
-    h+=`<article class="spotlight-feature" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p1.name)}'" style="animation:fadeUp .5s ease both">
-      <div class="spotlight-feature__rank">01</div>
-      <div class="spotlight-feature__points"><div class="points-label">ELO</div><div class="points-value">${p1.elo}</div></div>
-      
-      <img src="${ava1}" class="avatar-top1" alt="${p1.name}">
-      
-      <h2 class="spotlight-feature__name" style="margin-top:24px">${(p1.displayName||p1.name).replace(/ /,'<br/>')}</h2>
-      <p class="spotlight-feature__meta">${p1.level||TrekkrAPI.getTierName(p1.elo)} • ${p1.region||'Indonesia'}</p>
-      ${statusPill(p1.totalMatches, true)}
-      ${renderBadgeStrip(p1, true)}
-    </article>`;
-    
-    h+=`<div class="spotlight-col">`;
-    [1,2].forEach(i=>{
-      if(!top[i])return;
-      const p=top[i],rk=String(i+1).padStart(2,'0');
-      const ava = getAva(p);
-      h+=`<article class="player-card" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .5s ease ${i*.1}s both">
-        <div class="player-card__top"><div class="player-card__rank">${rk}</div><div class="player-card__points"><div class="points-label">ELO</div><div class="points-value">${p.elo}</div></div></div>
-        
-        <div style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:16px; margin-top:16px">
-          <img src="${ava}" class="avatar-top23" alt="${p.name}">
-          <div class="flex-player-col">
-            <h3 class="player-card__name" style="font-size:22px;margin-top:0">${p.displayName||p.name}</h3>
-            <p class="player-card__meta" style="margin-top:0">${p.level||TrekkrAPI.getTierName(p.elo)} • ${p.region||'Indonesia'}</p>
-            ${statusPill(p.totalMatches)}
-            ${renderBadgeStrip(p)}
-          </div>
-        </div>
-      </article>`;
-    });
-    h+=`</div></div>`;
-  }
-
-  // Top 4-10: Grid Tetap menggunakan avatar standar (bulat & kecil)
-  if(top.length>3){
-    h+=`<div class="topten-grid">`;
-    for(let i=3;i<top.length;i++){
-      const p=top[i],rk=String(i+1).padStart(2,'0');
-      const ava = getAva(p);
-      const tn410 = p.level || TrekkrAPI.getTierName(p.elo);
-      h+=`<article class="topten-item" onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .4s ease ${(i-3)*.06}s both">
-        <div class="topten-item__left">
-          <div class="topten-item__rank">${rk}</div>
-          <img src="${ava}" class="avatar-s" alt="${p.name}">
-          <div class="topten-item__info">
-            <div class="topten-item__name">${p.displayName||p.name}</div>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
-              ${tierDot(tn410)}
-              ${statusPill(p.totalMatches)}
-            </div>
-          </div>
-        </div>
-        <div class="topten-item__right">
-          <div class="topten-item__points">${p.elo}</div>
-        </div>
-      </article>`;
-    }
-    h+=`</div>`;
-  }
-  t.innerHTML=h;
-
-  // Table 11+ Tetap menggunakan avatar sangat kecil
-  if(rest.length){
-    ts.style.display='block';
-    let x=`<p class="section-title">National Circuit ${top.length+1}–${top.length+rest.length}</p>
-    <div class="table-wrap"><table class="rank-table"><thead><tr><th>Rank</th><th>Player</th><th>Region</th><th class="th-right">ELO</th></tr></thead><tbody>`;
-    rest.forEach((p,i)=>{
-      const r=top.length+1+i,tn=p.level||TrekkrAPI.getTierName(p.elo);
-      const ava = getAva(p);
-      x+=`<tr onclick="location.href='https://trekkr.online/player/${encodeURIComponent(p.name)}'" style="animation:fadeUp .3s ease ${i*.03}s both">
-        <td><span class="rank-num">${r}</span></td>
-        <td>
-          <div class="flex-player">
-            <img src="${ava}" class="avatar-xs" alt="${p.name}">
-            <div class="flex-player-col">
-              <div class="rank-player">${p.displayName||p.name}</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
-                <div class="rank-tier" style="margin-top:0">${tn}</div>
-                ${statusPill(p.totalMatches)}
-              </div>
-            </div>
-          </div>
-        </td>
-        <td>${p.region||''}</td>
-        <td class="rank-points">${p.elo}</td></tr>`;
-    });
-    x+=`</tbody></table></div>`;
-    tc.innerHTML=x;
-  }else ts.style.display='none';
-  lm.style.display=pl.length>30?'block':'none';
-}
-
-function loadMore(){cP++;loadLB()}
-
-function popReg(pl){
-  const rs=[...new Set(pl.map(p=>p.region).filter(Boolean))].sort(),s=document.getElementById('regionFilter'),c=s.value;
-  while(s.options.length>1)s.remove(1);
-  rs.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;s.appendChild(o)});
-  if(c)s.value=c;
-}
-
-async function popVenues(){
-  try{
-    const d=await TrekkrAPI.getVenues();
-    const s=document.getElementById('venueFilter'),c=s.value;
-    while(s.options.length>1)s.remove(1);
-    d.venues.sort((a,b)=>a.name.localeCompare(b.name)).forEach(v=>{
-      const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o);
-    });
-    if(c)s.value=c;
-  }catch(e){console.warn('Could not load venues for filter')}
-}
-
-function demo(){
-  const m=["Freddy Liam","Reza Rangkuti","Tom Doe","Azrin R D","Sundeep Khan","Richard Bern","Tommy Frans","Toto Sumarno","Doni Guam","Wahyu Sihombing","Rocky Matulessy","Dino Baldwin","Rahadian Agung","Feri Gunawan","Indra Herduno"];
-  const f=["Zahrina Partono","Donna Azali","Ayu Teana","Kiki Rosita","Marcella Handoko","Zara Versya","Nuri Handayani","Lulu Hembing","Putri KR","Diona Marsya","Matulada","Friska Wijaya","Ratu Syah","Fransisca HS","Renata Jaya"];
-  return(cG==='M'?m:f).map((n,i)=>({name:n,displayName:n,elo:1389-i*3,level:"Lower Bronze",gender:cG,region:["Jakarta","Tangerang","Bekasi","Bintaro"][i%4],photoUrl:"",clubs:"",totalMatches:i<5?8+i*2:25+i*3,totalW:Math.floor((25+i*3)*0.6),totalL:Math.floor((25+i*3)*0.4),winRate:60,streak:i===0?'5W':'2W'}));
-}
-
-window.addEventListener('load',async()=>{
-  try{
-    const s=await TrekkrAPI.getSettings();
-    const st=s.settings||{};
-    if(st.hero_eyebrow)document.getElementById('heroEyebrow').textContent=st.hero_eyebrow;
-    if(st.hero_title)document.getElementById('heroTitle').innerHTML=st.hero_title.replace(/\\n/g,'<br/>');
-    if(st.hero_subtitle)document.getElementById('heroSubtitle').textContent=st.hero_subtitle;
-    if(st.hero_image){const hero=document.querySelector('.hero');hero.style.setProperty('--hero-bg','url('+st.hero_image+')')}
-  }catch(e){console.warn('Settings not loaded:',e)}
-  loadLB();
-});
+  // Load from sheet; fall back gracefully.
+  fetch(BASE+'/banners')
+    .then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(data){
+      var list=Array.isArray(data)?data:(data&&data.banners)||[];
+      list=list.filter(function(b){return b&&b.title&&(b.active===undefined||b.active===true||String(b.active).toUpperCase()==='TRUE');})
+               .sort(function(a,b){return (a.order||0)-(b.order||0);});
+      render(list.length?list:FALLBACK);
+    })
+    .catch(function(){render(FALLBACK);});
+})();
 </script>
 </body>
 </html>

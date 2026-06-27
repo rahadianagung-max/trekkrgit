@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trekkr · Scorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--o:#E85D26;--o2:#FFF4EF;--ink:#1a1a1a;--mut:#6b6b6b;--bd:#e7e3dc;--bg:#faf8f5;--ok:#1D9E75}
+:root{--o:#FF6A00;--o2:#FFF4EA;--ink:#0D0D0D;--mut:#52525B;--bd:#E4E4E7;--bg:#F5F5F7;--ok:#22A052}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
 .top{background:var(--o);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
 .top b{font-size:16px}.top .r{text-align:right}.top small{color:#FFE3D6;font-size:12px;display:block}
 .wrap{max-width:460px;margin:0 auto;padding:14px}
@@ -17,7 +18,7 @@ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-ser
 .mc{background:#fff;border:1px solid var(--bd);border-radius:13px;padding:13px;margin-bottom:12px}
 .mc.live{border:2px solid var(--o)}
 .mc .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.mc .h b{font-size:15px}.tier{font-size:11px;font-weight:600;padding:2px 9px;border-radius:8px;background:#FAEEDA;color:#854F0B}
+.mc .h b{font-size:15px}.tier{font-size:11px;font-weight:600;padding:2px 9px;border-radius:8px;background:#FFF4EA;color:#FF6A00}
 .done{font-size:12px;color:var(--ok);font-weight:600}
 .tr{display:flex;align-items:center;justify-content:space-between;padding:7px 0}
 .tr+.tr{border-top:1px solid #f1ede7}
@@ -34,6 +35,10 @@ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-ser
 .pick{background:#fff;border:1px solid var(--bd);border-radius:13px;padding:16px;margin-top:14px}
 input,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:9px;font-size:14px;margin-top:6px}
 .ro{font-size:18px;font-weight:700}
+
+  /* brand display (retheme) */
+  h1,h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;letter-spacing:-.01em}
+  .champ .n,.st .v,.val,.ro,.sc{font-family:'Saira Condensed',sans-serif;font-style:italic}
 </style>
 </head>
 <body>
