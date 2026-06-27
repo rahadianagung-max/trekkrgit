@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trekkr Padel — Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{--blue:#1e9fff;--green:#00c875;--orange:#ff9955;--purple:#cc55ff;--red:#ff4444;--bg:#0a0e1a;--card:#0f1829;--card2:#111c30;--border:#1e2a40;--text:#f0f4ff;--sub:#8aaccc;--dim:#4a6a8a;}
-html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;}
+:root{--blue:#FF6A00;--green:#22A052;--orange:#FFB000;--purple:#885CF6;--red:#FF3830;--bg:#F5F5F7;--card:#FFFFFF;--card2:#F5F5F7;--border:#E4E4E7;--text:#0D0D0D;--sub:#52525B;--dim:#9A9AA2;}
+html,body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;}
 
 /* MODAL */
 .mb{position:fixed;inset:0;background:#000000dd;z-index:500;display:none;align-items:center;justify-content:center;}
 .mb.show{display:flex;}
-.modal{background:var(--card);border:1.5px solid #1e9fff44;border-radius:16px;padding:28px;width:440px;max-width:94vw;max-height:90vh;overflow-y:auto;}
+.modal{background:var(--card);border:1.5px solid #FF6A0044;border-radius:16px;padding:28px;width:440px;max-width:94vw;max-height:90vh;overflow-y:auto;}
 .modal::-webkit-scrollbar{width:4px;}
 .modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-.modal.dm{border-color:#ff444444;}
-.mt{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.modal.dm{border-color:#FF383044;}
+.mt{font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
 .ms{font-size:12px;color:var(--dim);margin-bottom:18px;line-height:1.5;}
 .mf{margin-bottom:12px;}
 .mf label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:5px;font-weight:600;}
-.mf input,.mf select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;}
-.mf input:focus,.mf select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1e9fff22;}
+.mf input,.mf select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;}
+.mf input:focus,.mf select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #FF6A0022;}
 .mf select option{background:var(--card);}
 .merr{font-size:11px;color:var(--red);margin-top:-8px;margin-bottom:8px;display:none;}
 .mbtns{display:flex;gap:8px;margin-top:18px;}
@@ -35,7 +35,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .wiz-step:not(:last-child)::after{content:'';flex:1;height:2px;background:var(--border);margin:0 4px;}
 .wd{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#4a5a7a;flex-shrink:0;transition:all 0.3s;}
 .wiz-step.active .wd{border-color:var(--blue);background:var(--blue);color:#fff;}
-.wiz-step.done .wd{border-color:#1e9fff44;background:#1e9fff22;color:var(--blue);}
+.wiz-step.done .wd{border-color:#FF6A0044;background:#FF6A0022;color:var(--blue);}
 .wl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#4a5a7a;margin-left:5px;font-weight:600;white-space:nowrap;}
 .wiz-step.active .wl{color:var(--blue);}
 .wiz-step.done .wl{color:#4a8aaa;}
@@ -43,46 +43,46 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .player-grid::-webkit-scrollbar{width:4px;}
 .player-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 .pr{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 9px;}
-.pn{font-size:10px;font-weight:700;color:var(--blue);width:20px;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
-.pi{flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:'Barlow',sans-serif;outline:none;}
+.pn{font-size:10px;font-weight:700;color:var(--blue);width:20px;flex-shrink:0;font-family:'Saira Condensed',sans-serif;}
+.pi{flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;}
 .eg-sec{margin-bottom:14px;}
 .eg-hdr{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:600;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;}
 .ep-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.ep-num{font-size:11px;font-weight:700;width:22px;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
-.ep-inp{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'Barlow',sans-serif;font-size:12px;outline:none;}
+.ep-num{font-size:11px;font-weight:700;width:22px;flex-shrink:0;font-family:'Saira Condensed',sans-serif;}
+.ep-inp{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;outline:none;}
 .ep-inp:focus{border-color:var(--blue);}
 .rc-list{display:flex;flex-direction:column;gap:6px;margin:14px 0;}
-.rc-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#ff44440a;border:1px solid #ff444422;border-radius:7px;font-size:11px;color:#ff8888;}
+.rc-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#FF38300a;border:1px solid #FF383022;border-radius:7px;font-size:11px;color:#ff8888;}
 .rc-item::before{content:'✕';font-weight:700;}
 
 /* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 14px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;border:none;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 14px;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;border:none;flex-shrink:0;}
 .btn-primary{background:var(--blue);color:#fff;}
 .btn-primary:hover{background:#3aafff;}
 .btn-success{background:var(--green);color:#fff;}
 .btn-success:hover{background:#00e088;}
 .btn-ghost{background:var(--card2);border:1.5px solid var(--border);color:var(--sub);}
 .btn-ghost:hover{border-color:var(--dim);color:var(--text);}
-.btn-danger{background:#ff444418;border:1.5px solid #ff444455;color:#ff8888;}
-.btn-danger:hover{background:#ff444430;}
+.btn-danger{background:#FF383018;border:1.5px solid #FF383055;color:#ff8888;}
+.btn-danger:hover{background:#FF383030;}
 .btn-save{background:var(--blue);border:none;color:#fff;padding:4px 10px;font-size:10px;}
 .btn-save:hover{background:#3aafff;}
-.btn-orange{background:#ff995522;border:1.5px solid #ff995555;color:#ff9955;}
-.btn-orange:hover{background:#ff995533;}
+.btn-orange{background:#FFB00022;border:1.5px solid #FFB00055;color:#FFB000;}
+.btn-orange:hover{background:#FFB00033;}
 .btn-adm-off{background:var(--card2);border:1.5px solid var(--dim);color:var(--sub);}
 .btn-adm-off:hover{color:var(--text);}
-.btn-adm-on{background:#ff444422;border:1.5px solid #ff6666;color:#ff8888;}
+.btn-adm-on{background:#FF383022;border:1.5px solid #FF2D55;color:#ff8888;}
 
 /* WELCOME */
 .wel{display:flex;flex-direction:column;align-items:center;padding:40px 24px 32px;min-height:100vh;position:relative;z-index:1;}
 .wel::before{content:'';position:fixed;inset:0;background-image:linear-gradient(#4af 1px,transparent 1px),linear-gradient(90deg,#4af 1px,transparent 1px);background-size:60px 60px;opacity:0.025;pointer-events:none;}
-.wl-logo{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:900;letter-spacing:4px;color:var(--blue);line-height:1;text-align:center;margin-bottom:4px;}
-.wl-sub{font-size:10px;color:#2a3a55;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
-.wl-adm-chip{display:inline-flex;align-items:center;gap:6px;background:#ff444411;border:1px solid #ff444433;border-radius:20px;padding:4px 14px;font-size:10px;color:#ff8888;font-weight:600;letter-spacing:1px;margin-bottom:32px;}
-.wl-adm-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:#ff6666;animation:pulse 1.5s infinite;}
+.wl-logo{font-family:'Saira Condensed',sans-serif;font-size:52px;font-weight:900;letter-spacing:4px;color:var(--blue);line-height:1;text-align:center;margin-bottom:4px;}
+.wl-sub{font-size:10px;color:#E4E4E7;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+.wl-adm-chip{display:inline-flex;align-items:center;gap:6px;background:#FF383011;border:1px solid #FF383033;border-radius:20px;padding:4px 14px;font-size:10px;color:#ff8888;font-weight:600;letter-spacing:1px;margin-bottom:32px;}
+.wl-adm-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:#FF2D55;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-.atc{background:var(--card);border:1.5px solid #00c87533;border-radius:14px;padding:18px;width:100%;max-width:480px;margin-bottom:18px;}
+.atc{background:var(--card);border:1.5px solid #22A05233;border-radius:14px;padding:18px;width:100%;max-width:480px;margin-bottom:18px;}
 .atc-h{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .atc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
 .atc-t{font-size:10px;font-weight:700;color:var(--green);letter-spacing:2px;text-transform:uppercase;}
@@ -96,20 +96,20 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .ac:hover{transform:translateY(-1px);}
 .ac-icon{font-size:22px;flex-shrink:0;width:36px;text-align:center;}
 .ac-body{flex:1;}
-.ac-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;margin-bottom:2px;}
+.ac-title{font-family:'Saira Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;margin-bottom:2px;}
 .ac-desc{font-size:11px;color:var(--dim);line-height:1.4;}
 .ac-tag{flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:5px;}
 
 /* MAIN APP NAV */
-.top-nav{background:var(--card);border-bottom:2px solid #1e9fff22;padding:10px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;flex-wrap:wrap;}
-.logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;color:var(--blue);flex-shrink:0;}
+.top-nav{background:var(--card);border-bottom:2px solid #FF6A0022;padding:10px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;flex-wrap:wrap;}
+.logo{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;color:var(--blue);flex-shrink:0;}
 .t-name{font-size:12px;color:var(--dim);flex-shrink:0;}
 .nav-tabs{display:flex;gap:3px;margin-left:auto;}
-.tab{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:#7a8aaa;transition:all 0.2s;font-family:'Barlow',sans-serif;}
-.tab:hover{color:#bcc8dd;border-color:#4a6a8a;}
+.tab{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:#7a8aaa;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.tab:hover{color:#bcc8dd;border-color:#9A9AA2;}
 .tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
-.adm-badge{display:flex;align-items:center;gap:5px;background:#ff444411;border:1px solid #ff444433;border-radius:6px;padding:3px 8px;font-size:10px;color:#ff8888;font-weight:600;letter-spacing:1px;flex-shrink:0;}
-.adm-dot{width:6px;height:6px;border-radius:50%;background:#ff6666;animation:pulse 1.5s infinite;}
+.adm-badge{display:flex;align-items:center;gap:5px;background:#FF383011;border:1px solid #FF383033;border-radius:6px;padding:3px 8px;font-size:10px;color:#ff8888;font-weight:600;letter-spacing:1px;flex-shrink:0;}
+.adm-dot{width:6px;height:6px;border-radius:50%;background:#FF2D55;animation:pulse 1.5s infinite;}
 
 /* MAIN */
 .main{padding:14px 18px;}
@@ -120,7 +120,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .groups-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .gc{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
 .gh{padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
-.gl{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;line-height:1;}
+.gl{font-family:'Saira Condensed',sans-serif;font-size:26px;font-weight:900;line-height:1;}
 .gm{font-size:10px;color:var(--dim);letter-spacing:1px;}
 .gcrt{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:auto;}
 .st{width:100%;border-collapse:collapse;}
@@ -128,30 +128,30 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .st th:not(:first-child){text-align:center;}
 .st td{padding:6px 9px;font-size:12px;border-top:1px solid var(--bg);}
 .st td:not(:first-child){text-align:center;color:var(--dim);}
-.st tr:nth-child(odd) td{background:#ffffff03;}
+.st tr:nth-child(odd) td{background:#00000005;}
 .sb3{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
-.qr td{background:#1e9fff06!important;}
+.qr td{background:#FF6A0006!important;}
 
 /* SCHEDULE */
 .sf-row{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
-.fb{padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:#7a8aaa;font-family:'Barlow',sans-serif;transition:all 0.2s;}
+.fb{padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:#7a8aaa;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;}
 .fb:hover{color:#ccd8ee;border-color:var(--dim);}
-.fb.active{background:var(--card2);color:#e0ecff;border-color:var(--dim);}
+.fb.active{background:var(--card2);color:#F5F5F7;border-color:var(--dim);}
 .sl{display:flex;flex-direction:column;gap:5px;}
 .mr{display:grid;grid-template-columns:72px 60px 48px 1fr auto;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;}
-.mr:hover{border-color:#2a3a55;}
-.mt2{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#e0ecff;}
+.mr:hover{border-color:#E4E4E7;}
+.mt2{font-family:'Saira Condensed',sans-serif;font-size:15px;font-weight:700;color:#F5F5F7;}
 .cb{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:1px;text-align:center;}
 .mts{font-size:12px;color:var(--sub);}
-.mts span{color:#e0ecff;font-weight:500;}
+.mts span{color:#F5F5F7;font-weight:500;}
 .mvs{color:var(--dim);margin:0 5px;}
 .sa{display:flex;align-items:center;gap:5px;}
-.sd{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--green);min-width:48px;text-align:center;}
+.sd{font-family:'Saira Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--green);min-width:48px;text-align:center;}
 .sia{display:flex;align-items:center;gap:5px;}
-.sb2{width:30px;height:28px;background:var(--bg);border:1.5px solid #2a3a55;border-radius:5px;color:var(--text);font-size:13px;font-weight:700;text-align:center;font-family:'Barlow Condensed',sans-serif;outline:none;}
+.sb2{width:30px;height:28px;background:var(--bg);border:1.5px solid #E4E4E7;border-radius:5px;color:var(--text);font-size:13px;font-weight:700;text-align:center;font-family:'Saira Condensed',sans-serif;outline:none;}
 .sb2:focus{border-color:var(--blue);}
 .ss{color:var(--dim);font-size:14px;font-weight:700;}
-.md{border-left:2.5px solid #00c87566!important;}
+.md{border-left:2.5px solid #22A05266!important;}
 
 /* PLAYOFF */
 .bw{overflow-x:auto;padding-bottom:8px;}
@@ -159,30 +159,30 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .brd{display:flex;flex-direction:column;justify-content:space-around;flex:1;padding:0 6px;}
 .brt{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;padding:5px 0 10px;font-weight:600;}
 .bm{background:var(--card);border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin:3px 0;}
-.bm.wd{border-left:2.5px solid #1e9fff66;}
+.bm.wd{border-left:2.5px solid #FF6A0066;}
 .bms{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;gap:6px;}
 .bms:first-child{border-bottom:1px solid var(--bg);}
 .bmt{font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);}
 .bmt.w{color:var(--text);font-weight:600;}
 .bmt.tbd{color:var(--border);font-style:italic;}
-.bmsc{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#3a5070;}
+.bmsc{font-family:'Saira Condensed',sans-serif;font-size:14px;font-weight:700;color:#9A9AA2;}
 .bmsc.w{color:var(--blue);}
 .bmseed{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-right:3px;flex-shrink:0;}
-.posb{width:28px;height:24px;background:var(--bg);border:1.5px solid #2a3a55;border-radius:4px;color:var(--text);font-size:12px;font-weight:700;text-align:center;font-family:'Barlow Condensed',sans-serif;outline:none;}
+.posb{width:28px;height:24px;background:var(--bg);border:1.5px solid #E4E4E7;border-radius:4px;color:var(--text);font-size:12px;font-weight:700;text-align:center;font-family:'Saira Condensed',sans-serif;outline:none;}
 .posb:focus{border-color:var(--blue);}
 
 /* LINKS */
 .links-section{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-top:16px;}
-.links-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+.links-title{font-family:'Saira Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
 .link-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
 .link-icon{font-size:16px;flex-shrink:0;}
 .link-info{flex:1;}
 .link-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
 .link-url{font-size:10px;color:var(--dim);font-family:monospace;}
-.link-open{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:5px;background:var(--blue);color:#fff;cursor:pointer;border:none;font-family:'Barlow',sans-serif;text-decoration:none;}
+.link-open{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:5px;background:var(--blue);color:#fff;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:none;}
 
 /* TOAST */
-.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 18px;border-radius:9px;font-size:12px;font-weight:600;z-index:9999;display:none;align-items:center;gap:6px;box-shadow:0 4px 20px #00c87544;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 18px;border-radius:9px;font-size:12px;font-weight:600;z-index:9999;display:none;align-items:center;gap:6px;box-shadow:0 4px 20px #22A05244;}
 .toast.show{display:flex;}
 .toast.err{background:var(--red);}
 
@@ -190,10 +190,10 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .avt{width:22px;height:22px;border-radius:50%;object-fit:cover;background:var(--card2);border:1.5px solid var(--border);flex-shrink:0;}
 .avt.sm{width:18px;height:18px;}
 .avt.lg{width:30px;height:30px;}
-.avt-ph{width:22px;height:22px;border-radius:50%;background:var(--card2);border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.avt-ph{width:22px;height:22px;border-radius:50%;background:var(--card2);border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Saira Condensed',sans-serif;}
 .avt-stack{display:inline-flex;align-items:center;}
 .avt-stack .avt,.avt-stack .avt-ph{margin-right:-6px;box-shadow:0 0 0 2px var(--card);}
-.elo{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;border-radius:4px;padding:1px 6px;letter-spacing:.5px;flex-shrink:0;}
+.elo{font-family:'Saira Condensed',sans-serif;font-size:11px;font-weight:700;color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;border-radius:4px;padding:1px 6px;letter-spacing:.5px;flex-shrink:0;}
 .elo.sm{font-size:10px;padding:0 5px;}
 .teamline{display:flex;align-items:center;gap:7px;min-width:0;}
 .teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -202,8 +202,8 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .fmt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .fmt-card{border:1.5px solid var(--border);background:var(--bg);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .18s;}
 .fmt-card:hover{border-color:var(--dim);}
-.fmt-card.active{border-color:var(--blue);background:#1e9fff0d;}
-.fmt-card .ft{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e0ecff;}
+.fmt-card.active{border-color:var(--blue);background:#FF6A000d;}
+.fmt-card .ft{font-family:'Saira Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#F5F5F7;}
 .fmt-card .fd{font-size:10px;color:var(--dim);line-height:1.4;margin-top:2px;}
 .fmt-card.active .ft{color:var(--blue);}
 
@@ -213,11 +213,11 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .pair-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 .pair-row{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
 .pair-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
-.pair-no{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:1px;}
-.pair-elo{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#ffd24a;}
+.pair-no{font-family:'Saira Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:1px;}
+.pair-elo{font-family:'Saira Condensed',sans-serif;font-size:11px;font-weight:700;color:#FFB000;}
 .pp-slot{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
 .pp-slot:last-child{margin-bottom:0;}
-.pp-inp{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:'Barlow',sans-serif;font-size:12px;outline:none;min-width:0;}
+.pp-inp{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;outline:none;min-width:0;}
 .pp-inp:focus{border-color:var(--blue);}
 .pp-meta{font-size:9px;color:var(--dim);min-width:42px;text-align:right;}
 .roster-note{font-size:10px;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
@@ -225,16 +225,16 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 .roster-dot.on{background:var(--green);}
 
 /* ── TREKKR: split brackets ── */
-.split-col-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 0 6px;display:flex;align-items:center;gap:8px;}
+.split-col-title{font-family:'Saira Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 0 6px;display:flex;align-items:center;gap:8px;}
 .split-col-title .pill{font-size:9px;padding:2px 8px;border-radius:20px;letter-spacing:1px;}
-.split-up{color:#ffd24a;}
-.split-lo{color:#4ecdc4;}
+.split-up{color:#FFB000;}
+.split-lo{color:#FFB000;}
 
 /* ── TREKKR: sync badge ── */
 .sync-badge{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;color:var(--sub);font-weight:600;letter-spacing:.5px;cursor:pointer;flex-shrink:0;}
 .sync-badge .sd{width:6px;height:6px;border-radius:50%;background:var(--green);}
-.sync-badge.pending{border-color:#ff995555;color:#ff9955;}
-.sync-badge.pending .sd{background:#ff9955;animation:pulse 1.5s infinite;}
+.sync-badge.pending{border-color:#FFB00055;color:#FFB000;}
+.sync-badge.pending .sd{background:#FFB000;animation:pulse 1.5s infinite;}
 .sync-badge.syncing .sd{background:var(--blue);animation:pulse .8s infinite;}
 </style>
 </head>
@@ -258,7 +258,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
 <!-- TREKKR LOGIN MODAL (venue admin) -->
 <div class="mb" id="m-tklogin">
   <div class="modal">
-    <div class="mt" style="color:#ffd24a;">🔗 Login Trekkr</div>
+    <div class="mt" style="color:#FFB000;">🔗 Login Trekkr</div>
     <div class="ms">Masuk dengan akun venue admin Trekkr untuk menulis hasil match & update ELO ke leaderboard.</div>
     <div class="mf"><label>Username</label><input type="text" id="tk-user" placeholder="mis. stellar" onkeydown="if(event.key==='Enter')document.getElementById('tk-pass').focus()"></div>
     <div class="mf"><label>Password</label><input type="password" id="tk-pass" placeholder="••••••" onkeydown="if(event.key==='Enter')tkDoLogin()"></div>
@@ -358,7 +358,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
     <div class="wl-adm-chip">MODE ADMIN</div>
     <div id="atc-wrap" style="display:none;width:100%;max-width:480px;"></div>
     <div class="ag" id="ag"></div>
-    <div style="margin-top:20px;font-size:10px;color:#2a3a55;letter-spacing:1px;">PIN default: 1234</div>
+    <div style="margin-top:20px;font-size:10px;color:#E4E4E7;letter-spacing:1px;">PIN default: 1234</div>
   </div>
 </div>
 
@@ -387,7 +387,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
     <div class="view" id="view-courts"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="court-grid"></div></div>
     <div class="view" id="view-playoff">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div><div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Playoff Bracket</div><div style="font-size:11px;color:var(--dim);margin-top:2px;" id="po-st"></div></div>
+        <div><div style="font-family:'Saira Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Playoff Bracket</div><div style="font-size:11px;color:var(--dim);margin-top:2px;" id="po-st"></div></div>
         <div id="po-act"></div>
       </div>
       <div id="seed-sec"></div>
@@ -420,9 +420,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif
             <div class="link-name">Admin Panel</div>
             <div class="link-url">admin.html (file ini)</div>
           </div>
-          <span class="link-open" style="background:#2a3a55;cursor:default;">Ini</span>
+          <span class="link-open" style="background:#E4E4E7;cursor:default;">Ini</span>
         </div>
-        <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border:1px solid #1e9fff22;border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7;">
+        <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border:1px solid #FF6A0022;border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7;">
           💡 <b style="color:var(--blue);">Cara pakai:</b> Buka admin.html di laptop/tablet admin. Buka tv.html di browser yang terhubung ke TV via HDMI. Bagikan link public.html ke peserta. Semua data sync otomatis via localStorage browser.
         </div>
       </div>
@@ -536,15 +536,15 @@ function goWelcome(){
 function showWelcomeEmpty(){
   document.getElementById('atc-wrap').style.display='none';
   document.getElementById('ag').innerHTML=`
-    <div class="ac" style="background:var(--card);border-color:#1e9fff33;" onclick="openNewWizard()">
+    <div class="ac" style="background:var(--card);border-color:#FF6A0033;" onclick="openNewWizard()">
       <div class="ac-icon">🏆</div>
       <div class="ac-body"><div class="ac-title" style="color:var(--blue);">Buat Turnamen Baru</div><div class="ac-desc">Setup turnamen padel baru dari awal</div></div>
-      <span class="ac-tag" style="background:#1e9fff22;border:1px solid #1e9fff44;color:var(--blue);">Admin</span>
+      <span class="ac-tag" style="background:#FF6A0022;border:1px solid #FF6A0044;color:var(--blue);">Admin</span>
     </div>
-    <div class="ac" style="background:var(--card);border-color:#cc55ff33;" onclick="loadDemo()">
+    <div class="ac" style="background:var(--card);border-color:#885CF633;" onclick="loadDemo()">
       <div class="ac-icon">🎮</div>
       <div class="ac-body"><div class="ac-title" style="color:var(--purple);">Mode Demo</div><div class="ac-desc">Isi data contoh untuk test tampilan</div></div>
-      <span class="ac-tag" style="background:#cc55ff22;border:1px solid #cc55ff44;color:var(--purple);">Admin</span>
+      <span class="ac-tag" style="background:#885CF622;border:1px solid #885CF644;color:var(--purple);">Admin</span>
     </div>`;
 }
 
@@ -561,20 +561,20 @@ function showWelcomeActive(d){
     </div>
   </div>`;
   document.getElementById('ag').innerHTML=`
-    <div class="ac" style="background:var(--card);border-color:#00c87533;" onclick="loadTournament()">
+    <div class="ac" style="background:var(--card);border-color:#22A05233;" onclick="loadTournament()">
       <div class="ac-icon">▶</div>
       <div class="ac-body"><div class="ac-title" style="color:var(--green);">Lanjutkan Turnamen</div><div class="ac-desc">Masuk ke panel manajemen turnamen aktif</div></div>
-      <span class="ac-tag" style="background:#00c87522;border:1px solid #00c87544;color:var(--green);">Admin</span>
+      <span class="ac-tag" style="background:#22A05222;border:1px solid #22A05244;color:var(--green);">Admin</span>
     </div>
-    <div class="ac" style="background:var(--card);border-color:#1e9fff33;" onclick="openNewWizard()">
+    <div class="ac" style="background:var(--card);border-color:#FF6A0033;" onclick="openNewWizard()">
       <div class="ac-icon">➕</div>
       <div class="ac-body"><div class="ac-title" style="color:var(--blue);">Turnamen Baru</div><div class="ac-desc">Buat turnamen baru, data lama akan dihapus</div></div>
-      <span class="ac-tag" style="background:#1e9fff22;border:1px solid #1e9fff44;color:var(--blue);">Admin</span>
+      <span class="ac-tag" style="background:#FF6A0022;border:1px solid #FF6A0044;color:var(--blue);">Admin</span>
     </div>
-    <div class="ac" style="background:var(--card);border-color:#ff444422;" onclick="showResetModal()">
+    <div class="ac" style="background:var(--card);border-color:#FF383022;" onclick="showResetModal()">
       <div class="ac-icon">🗑</div>
       <div class="ac-body"><div class="ac-title" style="color:#ff8888;">Hapus Data</div><div class="ac-desc">Reset dan hapus semua data turnamen</div></div>
-      <span class="ac-tag" style="background:#ff444411;border:1px solid #ff444433;color:#ff8888;">Admin</span>
+      <span class="ac-tag" style="background:#FF383011;border:1px solid #FF383033;color:#ff8888;">Admin</span>
     </div>`;
 }
 
@@ -617,7 +617,7 @@ function wizGo(step){
     const fLabel=fmt==='split'?'Round Robin → Split':'Grup + Playoff';
     const lastRow=fmt==='split'?['Bracket','Upper / Lower (bagi rata)']:['Lolos Playoff',`${document.getElementById('n-adv').value}/grup`];
     document.getElementById('wz-confirm').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      ${[['Turnamen',document.getElementById('n-name').value],['Format',fLabel],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Pasangan Terisi',`${filled}/${nt}`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],lastRow].map(([k,v])=>`<div style="padding:8px;background:#ffffff03;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#e0ecff;font-weight:500;">${v}</div></div>`).join('')}
+      ${[['Turnamen',document.getElementById('n-name').value],['Format',fLabel],['Tanggal',document.getElementById('n-date').value],['Pasangan/Grup',`${nt} · ${ng} grup · ${nc} court`],['Pasangan Terisi',`${filled}/${nt}`],['Scoring GS/PO',`${sm[document.getElementById('n-gs').value]} / ${sm[document.getElementById('n-po').value]}`],lastRow].map(([k,v])=>`<div style="padding:8px;background:#00000005;border-radius:6px;"><div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">${k}</div><div style="font-size:13px;color:#F5F5F7;font-weight:500;">${v}</div></div>`).join('')}
     </div>`;
   }
   document.getElementById('wz1').style.display=step===1?'block':'none';
@@ -846,9 +846,9 @@ function rGroups(){
   if(!T)return;
   const el=document.getElementById('groups-grid'),ng=T.numGroups,nc=T.numCourts,adv=T.advanceCount;let h='';
   GL.slice(0,ng).forEach(g=>{
-    const ct=(GL.indexOf(g)%nc)+1,col=GC[g]||'#1e9fff',cc=CC[ct]||'#1e9fff';
+    const ct=(GL.indexOf(g)%nc)+1,col=GC[g]||'#FF6A00',cc=CC[ct]||'#FF6A00';
     h+=`<div class="gc"><div class="gh"><div class="gl" style="color:${col};">${g}</div><div class="gm">GRUP ${g} · ${(groups[g]||[]).length} PASANGAN</div><div class="gcrt" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${ct}</div></div><table class="st"><tr><th>#</th><th>Pasangan</th><th>M</th><th>W</th><th>L</th><th>GD</th><th>Pts</th></tr>`;
-    (groups[g]||[]).forEach((t,i)=>{const q=i<adv,gd=t.GF-t.GA,p=t.W+t.L;h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Barlow Condensed',sans-serif;">${i+1}</div></td><td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#e0ecff':'#8aaccc'};font-weight:${q?500:400};">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#6a8aaa'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td></tr>`;});
+    (groups[g]||[]).forEach((t,i)=>{const q=i<adv,gd=t.GF-t.GA,p=t.W+t.L;h+=`<tr class="${q?'qr':''}"><td><div class="sb3" style="background:${col}${q?'22':'11'};color:${col};font-family:'Saira Condensed',sans-serif;">${i+1}</div></td><td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#F5F5F7':'#52525B'};font-weight:${q?500:400};">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td><td>${p}</td><td>${t.W}</td><td>${t.L}</td><td style="color:${gd>0?'#22A052':gd<0?'#FF2D55':'#9A9AA2'}">${gd>0?'+':''}${gd}</td><td style="color:${q?col:'#9A9AA2'};font-weight:${q?700:400}">${t.pts}</td></tr>`;});
     h+='</table></div>';
   });
   el.innerHTML=h;
@@ -867,7 +867,7 @@ function rSchedule(){
   else if(filt!=='all')list=sched.filter(m=>m.group===filt);
   let h='';
   list.forEach(m=>{
-    const gc=GC[m.group]||'#1e9fff',cc=CC[m.court]||'#1e9fff',sv=m.scoreHome??'',sa=m.scoreAway??'';
+    const gc=GC[m.group]||'#FF6A00',cc=CC[m.court]||'#FF6A00',sv=m.scoreHome??'',sa=m.scoreAway??'';
     h+=`<div class="mr${m.done?' md':''}"><div class="mt2">${m.startTime}</div><div class="cb" style="color:${cc};background:${cc}1a;border:1px solid ${cc}44;">Court ${m.court}</div><div class="cb" style="color:${gc};background:${gc}1a;border:1px solid ${gc}44;">Grp ${m.group}</div><div class="mts"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<span class="nm">${esc(m.home)}</span></span><span class="mvs">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<span class="nm">${esc(m.away)}</span></span></div><div class="sa"><div class="sia"><input class="sb2" id="sh-${m.id}" type="number" min="0" max="9" value="${sv}" placeholder="-"><span class="ss">:</span><input class="sb2" id="sa-${m.id}" type="number" min="0" max="9" value="${sa}" placeholder="-"><button class="btn btn-save" onclick="saveScore(${m.id})">✓</button></div></div></div>`;
   });
   document.getElementById('sl').innerHTML=h||'<p style="color:var(--dim);padding:20px;text-align:center;">Tidak ada match</p>';
@@ -876,10 +876,10 @@ function rSchedule(){
 function rCourts(){
   if(!T)return;let h='';
   for(let c=1;c<=T.numCourts;c++){
-    const col=CC[c]||'#1e9fff',cms=sched.filter(m=>m.court===c);
-    h+=`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;"><div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:${col};">Court ${c}</div><div style="font-size:10px;color:var(--dim);">${cms.length} match</div></div><div style="padding:8px;">`;
-    cms.forEach(m=>{const gc=GC[m.group]||'#1e9fff';h+=`<div style="padding:7px 9px;border-radius:6px;margin-bottom:4px;background:${m.done?'#00c87508':'#ffffff03'};border:1px solid ${m.done?'#00c87522':'var(--border)'};">
-      <div style="display:flex;align-items:center;gap:6px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;">${m.startTime}</div><div style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;color:${gc};background:${gc}11;">Grp ${m.group}</div>${m.done?`<div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;">${m.scoreHome}:${m.scoreAway}</div>`:''}</div>
+    const col=CC[c]||'#FF6A00',cms=sched.filter(m=>m.court===c);
+    h+=`<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;"><div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;"><div style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:900;color:${col};">Court ${c}</div><div style="font-size:10px;color:var(--dim);">${cms.length} match</div></div><div style="padding:8px;">`;
+    cms.forEach(m=>{const gc=GC[m.group]||'#FF6A00';h+=`<div style="padding:7px 9px;border-radius:6px;margin-bottom:4px;background:${m.done?'#22A05208':'#00000005'};border:1px solid ${m.done?'#22A05222':'var(--border)'};">
+      <div style="display:flex;align-items:center;gap:6px;"><div style="font-family:'Saira Condensed',sans-serif;font-size:13px;font-weight:700;">${m.startTime}</div><div style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;color:${gc};background:${gc}11;">Grp ${m.group}</div>${m.done?`<div style="font-family:'Saira Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;">${m.scoreHome}:${m.scoreAway}</div>`:''}</div>
       <div style="color:var(--sub);font-size:11px;margin-top:2px;"><span style="color:#ddeeff;">${m.home}</span> <span style="color:var(--dim);">vs</span> <span style="color:#ddeeff;">${m.away}</span></div>
     </div>`;});
     h+='</div></div>';
@@ -940,7 +940,7 @@ function bmTeamHTML(side, m){
   const sc = side==='A'? m.scoreA : m.scoreB;
   const won = m.done && m.winner?.team===t.team;
   const tbd = t.team==='TBD';
-  const col = t.group? GC[t.group] : '#4a6a8a';
+  const col = t.group? GC[t.group] : '#9A9AA2';
   const seed = t.seed? `<span class="bmseed" style="color:${col};background:${col}11;">#${t.seed}</span>` : '';
   const av = (t.players&&t.players.length)? teamAvatars(t.players,'sm') : '';
   const label = t.isBye? 'BYE' : esc(t.team);
@@ -949,7 +949,7 @@ function bmTeamHTML(side, m){
 function bmHTML(m){
   let h=`<div class="bm${m.done?' wd':''}">${bmTeamHTML('A',m)}${bmTeamHTML('B',m)}`;
   if(!m.done&&!m.isByeMatch&&m.teamA.team!=='TBD'&&m.teamB.team!=='TBD')
-    h+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#ffffff03;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
+    h+=`<div style="padding:5px 8px;border-top:1px solid var(--bg);display:flex;align-items:center;gap:5px;background:#00000005;"><input class="posb" id="psa-${m.id}" type="number" min="0" max="9" placeholder="-"><span style="color:var(--dim);font-size:12px;">:</span><input class="posb" id="psb-${m.id}" type="number" min="0" max="9" placeholder="-"><button class="btn btn-save" onclick="savePO('${m.id}')">✓</button></div>`;
   return h+`</div>`;
 }
 function bracketRowHTML(struct){
@@ -961,7 +961,7 @@ function bracketRowHTML(struct){
   });
   const tm=struct.thirdMatch;
   if(tm){
-    bh+=`<div class="brd" style="flex:0 0 auto;width:140px;"><div class="brt" style="color:#ff9955;">Juara 3</div>${bmHTML(tm)}</div>`;
+    bh+=`<div class="brd" style="flex:0 0 auto;width:140px;"><div class="brt" style="color:#FFB000;">Juara 3</div>${bmHTML(tm)}</div>`;
   }
   return bh+'</div>';
 }
@@ -970,12 +970,12 @@ function podiumHTML(struct,title,accent){
   const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
   const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
   if(!champ) return '';
-  const pl=[{r:1,t:champ?.team,c:'#f5c842',l:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',l:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',l:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',l:'4th'}];
-  return `<div style="margin-top:14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${accent||'var(--blue)'};margin-bottom:12px;">${title}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${pl.map(p=>`<div style="text-align:center;padding:12px 8px;border-radius:9px;background:${p.c}11;border:1.5px solid ${p.c}33;"><div style="font-size:20px;">${p.l}</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${p.c};">${p.r}</div><div style="font-size:11px;color:#e0ecff;margin-top:3px;">${esc(p.t)}</div></div>`).join('')}</div></div>`;
+  const pl=[{r:1,t:champ?.team,c:'#FFB000',l:'🥇'},{r:2,t:ru?.team||'—',c:'#E4E4E7',l:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',l:'🥉'},{r:4,t:fourth?.team||'—',c:'#9A9AA2',l:'4th'}];
+  return `<div style="margin-top:14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;"><div style="font-family:'Saira Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${accent||'var(--blue)'};margin-bottom:12px;">${title}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${pl.map(p=>`<div style="text-align:center;padding:12px 8px;border-radius:9px;background:${p.c}11;border:1.5px solid ${p.c}33;"><div style="font-size:20px;">${p.l}</div><div style="font-family:'Saira Condensed',sans-serif;font-size:28px;font-weight:900;color:${p.c};">${p.r}</div><div style="font-size:11px;color:#F5F5F7;margin-top:3px;">${esc(p.t)}</div></div>`).join('')}</div></div>`;
 }
 function seedTableHTML(seeded){
   let sh=`<div style="overflow-x:auto;margin-bottom:14px;"><table style="width:100%;border-collapse:collapse;background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;"><tr style="border-bottom:1px solid var(--border);">${['Seed','Pasangan','Grup','Peringkat'].map(h=>`<th style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);padding:7px 10px;text-align:left;font-weight:600;">${h}</th>`).join('')}</tr>`;
-  seeded.forEach(s=>{const col=s.group?GC[s.group]:'#4a6a8a';sh+=`<tr style="border-top:1px solid var(--bg);"><td style="padding:7px 10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blue);">#${s.seed}</td><td style="padding:7px 10px;"><div class="teamline">${teamAvatars(s.players,'sm')}<span class="nm" style="color:#e0ecff;font-weight:500;font-size:12px;">${esc(s.team)}</span>${s.elo?`<span class="elo sm">${s.elo}</span>`:''}</div></td><td style="padding:7px 10px;">${s.group?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;color:${col};background:${col}11;border:1px solid ${col}33;">Grup ${s.group}</span>`:'—'}</td><td style="padding:7px 10px;color:var(--dim);font-size:12px;">${s.rank?('Peringkat '+s.rank):'—'}</td></tr>`;});
+  seeded.forEach(s=>{const col=s.group?GC[s.group]:'#9A9AA2';sh+=`<tr style="border-top:1px solid var(--bg);"><td style="padding:7px 10px;font-family:'Saira Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--blue);">#${s.seed}</td><td style="padding:7px 10px;"><div class="teamline">${teamAvatars(s.players,'sm')}<span class="nm" style="color:#F5F5F7;font-weight:500;font-size:12px;">${esc(s.team)}</span>${s.elo?`<span class="elo sm">${s.elo}</span>`:''}</div></td><td style="padding:7px 10px;">${s.group?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;color:${col};background:${col}11;border:1px solid ${col}33;">Grup ${s.group}</span>`:'—'}</td><td style="padding:7px 10px;color:var(--dim);font-size:12px;">${s.rank?('Peringkat '+s.rank):'—'}</td></tr>`;});
   return sh+'</table></div>';
 }
 
@@ -988,7 +988,7 @@ function rPlayoff(){
     document.getElementById('po-act').innerHTML=`<button class="btn btn-success" onclick="genPO()">⚡ ${isSplit?'Generate Upper/Lower':'Generate Bracket'}</button>`;
     document.getElementById('seed-sec').innerHTML='';
     document.getElementById('bracket').style.display='block';
-    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--dim);">${isSplit?'Klik Generate untuk membagi peringkat ke Upper & Lower bracket':'Klik Generate Bracket setelah group stage selesai'}</div></div>`;
+    document.getElementById('bracket').innerHTML=`<div style="padding:40px;text-align:center;color:var(--dim);width:100%;"><div style="font-family:'Saira Condensed',sans-serif;font-size:16px;color:var(--dim);">${isSplit?'Klik Generate untuk membagi peringkat ke Upper & Lower bracket':'Klik Generate Bracket setelah group stage selesai'}</div></div>`;
     document.getElementById('pod-sec').innerHTML='';return;
   }
   document.getElementById('po-act').innerHTML=`<button class="btn btn-ghost" style="font-size:10px;" onclick="if(confirm('Reset bracket?')){playoff=null;save();rPlayoff();}">↺ Reset</button>`;
@@ -1001,10 +1001,10 @@ function rPlayoff(){
     document.getElementById('po-st').textContent=`Split bracket · Upper ${nU} · Lower ${nL}`;
     document.getElementById('seed-sec').innerHTML='';
     let h='';
-    h+=`<div class="split-col-title split-up">🏆 Upper Bracket <span class="pill" style="color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;">peringkat atas</span></div>`;
-    h+=bracketRowHTML(up)+podiumHTML(up,'🏆 Hasil Upper','#ffd24a');
-    h+=`<div class="split-col-title split-lo" style="margin-top:18px;">🛡 Lower Bracket <span class="pill" style="color:#4ecdc4;background:#4ecdc414;border:1px solid #4ecdc433;">peringkat bawah</span></div>`;
-    h+=bracketRowHTML(lo)+podiumHTML(lo,'🛡 Hasil Lower','#4ecdc4');
+    h+=`<div class="split-col-title split-up">🏆 Upper Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat atas</span></div>`;
+    h+=bracketRowHTML(up)+podiumHTML(up,'🏆 Hasil Upper','#FFB000');
+    h+=`<div class="split-col-title split-lo" style="margin-top:18px;">🛡 Lower Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat bawah</span></div>`;
+    h+=bracketRowHTML(lo)+podiumHTML(lo,'🛡 Hasil Lower','#FFB000');
     document.getElementById('bracket').innerHTML=h;
     return;
   }

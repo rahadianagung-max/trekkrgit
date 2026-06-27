@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trekkr Padel — TV Display</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --blue:#1e9fff;--green:#00c875;--orange:#ff9955;--purple:#cc55ff;
-  --bg:#0a0e1a;--card:#0f1829;--card2:#111c30;--border:#1e2a40;
-  --text:#f0f4ff;--sub:#8aaccc;--dim:#3a5070;
+  --blue:#FF6A00;--green:#22A052;--orange:#FFB000;--purple:#885CF6;
+  --bg:#F5F5F7;--card:#FFFFFF;--card2:#F5F5F7;--border:#E4E4E7;
+  --text:#0D0D0D;--sub:#52525B;--dim:#9A9AA2;
 }
 html,body{
   width:100%;height:100%;background:var(--bg);color:var(--text);
-  font-family:'Barlow',sans-serif;overflow:hidden;
+  font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden;
 }
 
 /* 16:9 wrapper — fills screen, letterboxes if needed */
@@ -35,14 +35,14 @@ html,body{
 
 /* HEADER BAR */
 .tv-hdr{
-  background:var(--card);border-bottom:3px solid #1e9fff22;
+  background:var(--card);border-bottom:3px solid #FF6A0022;
   padding:0 40px;height:80px;
   display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;position:relative;z-index:2;
 }
-.tv-logo{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:900;letter-spacing:4px;color:var(--blue);}
+.tv-logo{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:38px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .tv-tname{font-size:13px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
-.tv-clock{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:700;color:var(--text);letter-spacing:2px;}
+.tv-clock{font-family:'Saira Condensed',sans-serif;font-size:52px;font-weight:700;color:var(--text);letter-spacing:2px;}
 .tv-right{text-align:right;}
 .tv-date{font-size:13px;color:var(--dim);margin-top:4px;}
 
@@ -57,14 +57,14 @@ html,body{
   padding:7px 22px;border-radius:7px;font-size:12px;font-weight:700;
   letter-spacing:2px;text-transform:uppercase;cursor:pointer;
   border:1.5px solid var(--border);background:transparent;color:var(--dim);
-  font-family:'Barlow',sans-serif;transition:all 0.2s;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;
 }
 .tv-tab:hover{color:var(--sub);border-color:var(--dim);}
 .tv-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .tv-live{margin-left:auto;display:flex;align-items:center;gap:8px;}
 .live-pill{
   display:flex;align-items:center;gap:6px;
-  background:#00c87511;border:1px solid #00c87533;
+  background:#22A05211;border:1px solid #22A05233;
   border-radius:20px;padding:4px 14px;font-size:11px;color:var(--green);font-weight:700;letter-spacing:2px;
 }
 .live-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
@@ -88,7 +88,7 @@ html,body{
 }
 .group-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
 .group-head{padding:10px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.group-letter{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;line-height:1;}
+.group-letter{font-family:'Saira Condensed',sans-serif;font-size:48px;font-weight:900;line-height:1;}
 .group-head-info{flex:1;}
 .group-head-name{font-size:15px;font-weight:600;color:var(--text);}
 .group-head-meta{font-size:11px;color:var(--dim);margin-top:1px;}
@@ -98,9 +98,9 @@ html,body{
 .tv-st{width:100%;border-collapse:collapse;flex:1;}
 .tv-st th{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:6px 16px;text-align:left;font-weight:600;}
 .tv-st th:not(:first-child){text-align:center;}
-.tv-st td{padding:8px 16px;font-size:15px;border-top:1px solid #ffffff04;}
+.tv-st td{padding:8px 16px;font-size:15px;border-top:1px solid #00000007;}
 .tv-st td:not(:first-child){text-align:center;color:var(--dim);}
-.tv-st tr.q td{background:#1e9fff07;}
+.tv-st tr.q td{background:#FF6A0007;}
 .tv-st tr.q td:nth-child(2){color:var(--text);font-weight:500;}
 
 /* SCHEDULE VIEW */
@@ -113,12 +113,12 @@ html,body{
   background:var(--card);border:1.5px solid var(--border);
   border-radius:9px;padding:8px 14px;flex-shrink:0;
 }
-.match-row.done{border-left:3px solid #00c87555;opacity:0.7;}
-.match-time{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);}
+.match-row.done{border-left:3px solid #22A05255;opacity:0.7;}
+.match-time{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);}
 .match-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px;text-align:center;}
 .match-teams-tv{font-size:13px;color:var(--sub);}
 .match-teams-tv b{color:var(--text);font-weight:600;}
-.match-score-tv{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--blue);text-align:right;}
+.match-score-tv{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--blue);text-align:right;}
 .match-score-tv.pending{color:var(--dim);font-size:16px;}
 
 /* BRACKET VIEW */
@@ -126,15 +126,15 @@ html,body{
 .bracket-round-col{display:flex;flex-direction:column;justify-content:space-around;flex:1;padding:0 8px;min-width:200px;}
 .brc-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;padding:0 0 12px;font-weight:700;}
 .tv-bm{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin:6px 0;}
-.tv-bm.wd{border-left:3px solid #1e9fff66;}
+.tv-bm.wd{border-left:3px solid #FF6A0066;}
 .tv-bms{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px;}
-.tv-bms:first-child{border-bottom:1px solid #0a0e1a;}
+.tv-bms:first-child{border-bottom:1px solid #EDEDF0;}
 .tv-bmt{font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);}
 .tv-bmt.w{color:var(--text);font-weight:700;}
 .tv-bmt.tbd{color:var(--border);font-style:italic;}
-.tv-bmsc{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#3a5070;}
+.tv-bmsc{font-family:'Saira Condensed',sans-serif;font-size:18px;font-weight:700;color:#9A9AA2;}
 .tv-bmsc.w{color:var(--blue);}
-.tv-seed{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-right:5px;font-family:'Barlow Condensed',sans-serif;flex-shrink:0;}
+.tv-seed{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-right:5px;font-family:'Saira Condensed',sans-serif;flex-shrink:0;}
 
 /* PODIUM TV */
 .podium-tv{
@@ -143,7 +143,7 @@ html,body{
 }
 .podium-card-tv{border-radius:12px;padding:14px 10px;text-align:center;}
 .podium-emoji{font-size:22px;margin-bottom:4px;}
-.podium-rank-tv{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;line-height:1;}
+.podium-rank-tv{font-family:'Saira Condensed',sans-serif;font-size:36px;font-weight:900;line-height:1;}
 .podium-name-tv{font-size:13px;margin-top:6px;line-height:1.3;color:var(--text);}
 
 /* BOTTOM BAR */
@@ -157,18 +157,19 @@ html,body{
 .tv-progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 1s linear;}
 .tv-bottom-right{font-size:11px;color:var(--dim);}
 /* TREKKR avatars + elo (TV sized) */
-.avt{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#0a0e1a;border:2px solid var(--border);flex-shrink:0;}
+.avt{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#EDEDF0;border:2px solid var(--border);flex-shrink:0;}
 .avt.sm{width:24px;height:24px;}
-.avt-ph{width:30px;height:30px;border-radius:50%;background:#0a0e1a;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.avt-ph{width:30px;height:30px;border-radius:50%;background:#EDEDF0;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Saira Condensed',sans-serif;}
 .avt-ph.sm{width:24px;height:24px;font-size:11px;}
 .avt-stack{display:inline-flex;align-items:center;}
 .avt-stack .avt,.avt-stack .avt-ph{margin-right:-8px;box-shadow:0 0 0 2px var(--card);}
-.elo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;border-radius:5px;padding:1px 8px;letter-spacing:.5px;flex-shrink:0;}
+.elo{font-family:'Saira Condensed',sans-serif;font-size:14px;font-weight:700;color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;border-radius:5px;padding:1px 8px;letter-spacing:.5px;flex-shrink:0;}
 .elo.sm{font-size:12px;padding:0 6px;}
 .teamline{display:flex;align-items:center;gap:9px;min-width:0;}
 .teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.split-title-tv{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px;display:flex;align-items:center;gap:10px;}
+.split-title-tv{font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px;display:flex;align-items:center;gap:10px;}
 .split-title-tv .pill{font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:1px;font-weight:700;}
+.hdr-logo{background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent;}
 </style>
 </head>
 <body>
@@ -243,7 +244,7 @@ function load(){
 
 function showEmpty(){
   ['groups','schedule','bracket'].forEach(v=>{
-    document.getElementById('view-'+v).innerHTML=`<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;color:#2a3a55;">Menunggu Data Turnamen</div><div style="font-size:14px;color:#2a3a55;">Admin belum memulai turnamen</div></div>`;
+    document.getElementById('view-'+v).innerHTML=`<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;"><div style="font-family:'Saira Condensed',sans-serif;font-size:28px;color:#E4E4E7;">Menunggu Data Turnamen</div><div style="font-size:14px;color:#E4E4E7;">Admin belum memulai turnamen</div></div>`;
   });
 }
 
@@ -270,11 +271,11 @@ function renderGroups(){
     (groups[g]||[]).forEach((t,i)=>{
       const q=i<adv, gd=t.GF-t.GA, p=t.W+t.L;
       h+=`<tr class="${q?'q':''}">
-        <td style="color:${col};font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:20px;">${i+1}</td>
-        <td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#f0f4ff':'#8aaccc'};font-weight:${q?600:400};font-size:16px;">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td>
+        <td style="color:${col};font-weight:700;font-family:'Saira Condensed',sans-serif;font-size:20px;">${i+1}</td>
+        <td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#0D0D0D':'#52525B'};font-weight:${q?600:400};font-size:16px;">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td>
         <td>${p}</td><td>${t.W}</td><td>${t.L}</td>
-        <td style="color:${gd>0?'#00c875':gd<0?'#ff6666':'#4a6a8a'}">${gd>0?'+':''}${gd}</td>
-        <td style="color:${q?col:'#6a8aaa'};font-weight:${q?700:400}">${t.pts}</td>
+        <td style="color:${gd>0?'#22A052':gd<0?'#FF2D55':'#9A9AA2'}">${gd>0?'+':''}${gd}</td>
+        <td style="color:${q?col:'#9A9AA2'};font-weight:${q?700:400}">${t.pts}</td>
       </tr>`;
     });
     h+='</table></div>';
@@ -285,32 +286,32 @@ function renderGroups(){
 
 function renderSchedule(){
   const el=document.getElementById('view-schedule');
-  if(!sched.length){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#2a3a55;font-size:20px;font-family:\'Barlow Condensed\',sans-serif;">Jadwal belum tersedia</div>';return;}
+  if(!sched.length){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#E4E4E7;font-size:20px;font-family:\'Saira Condensed\',sans-serif;">Jadwal belum tersedia</div>';return;}
   const upcoming=sched.filter(m=>!m.done);
   const done=sched.filter(m=>m.done).slice(-8).reverse();
   let h='<div class="schedule-cols">';
   // Left: upcoming
-  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#1e9fff;">Akan Bermain</div>';
+  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#FF6A00;">Akan Bermain</div>';
   if(upcoming.length){upcoming.slice(0,8).forEach(m=>h+=schedRow(m));}
-  else h+='<div style="font-size:13px;color:#2a3a55;padding:10px 0;">Semua match selesai ✓</div>';
+  else h+='<div style="font-size:13px;color:#E4E4E7;padding:10px 0;">Semua match selesai ✓</div>';
   h+='</div>';
   // Right: recent results
-  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#00c875;">Hasil Terakhir</div>';
+  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#22A052;">Hasil Terakhir</div>';
   if(done.length){done.forEach(m=>h+=schedRow(m));}
-  else h+='<div style="font-size:13px;color:#2a3a55;padding:10px 0;">Belum ada hasil</div>';
+  else h+='<div style="font-size:13px;color:#E4E4E7;padding:10px 0;">Belum ada hasil</div>';
   h+='</div>';
   h+='</div>';
   el.innerHTML=h;
 }
 
 function schedRow(m){
-  const gc=GC[m.group]||'#1e9fff', cc=CC[m.court]||'#1e9fff';
+  const gc=GC[m.group]||'#FF6A00', cc=CC[m.court]||'#FF6A00';
   const score=m.done?`<div class="match-score-tv">${m.scoreHome} : ${m.scoreAway}</div>`:`<div class="match-score-tv pending">— : —</div>`;
   return `<div class="match-row${m.done?' done':''}">
     <div class="match-time">${m.startTime}</div>
     <div class="match-badge" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${m.court}</div>
     <div class="match-badge" style="color:${gc};background:${gc}11;border:1px solid ${gc}33;">Grp ${m.group}</div>
-    <div class="match-teams-tv" style="display:flex;align-items:center;gap:8px;"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<b class="nm">${esc(m.home)}</b></span><span style="color:#2a3a55;">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<b class="nm">${esc(m.away)}</b></span></div>
+    <div class="match-teams-tv" style="display:flex;align-items:center;gap:8px;"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<b class="nm">${esc(m.home)}</b></span><span style="color:#E4E4E7;">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<b class="nm">${esc(m.away)}</b></span></div>
     ${score}
   </div>`;
 }
@@ -318,7 +319,7 @@ function schedRow(m){
 function tvBmTeam(side,m){
   const t=side==='A'?m.teamA:m.teamB, sc=side==='A'?m.scoreA:m.scoreB;
   const won=m.done&&m.winner?.team===t.team, tbd=t.team==='TBD';
-  const c=t.group?GC[t.group]:'#4a6a8a';
+  const c=t.group?GC[t.group]:'#9A9AA2';
   const seed=t.seed?`<span class="tv-seed" style="color:${c};background:${c}11;">#${t.seed}</span>`:'';
   const av=(t.players&&t.players.length)?teamAvatars(t.players,'sm'):'';
   const label=t.isBye?'BYE':esc(t.team);
@@ -332,7 +333,7 @@ function tvBracket(struct){
     h+='</div>';
   });
   const tm=struct.thirdMatch;
-  if(tm){h+=`<div class="bracket-round-col" style="flex:0 0 auto;min-width:190px;"><div class="brc-title" style="color:#ff9955;">Juara 3</div><div class="tv-bm${tm.done?' wd':''}">${tvBmTeam('A',tm)}${tvBmTeam('B',tm)}</div></div>`;}
+  if(tm){h+=`<div class="bracket-round-col" style="flex:0 0 auto;min-width:190px;"><div class="brc-title" style="color:#FFB000;">Juara 3</div><div class="tv-bm${tm.done?' wd':''}">${tvBmTeam('A',tm)}${tvBmTeam('B',tm)}</div></div>`;}
   return h+'</div>';
 }
 function tvPodium(struct){
@@ -340,18 +341,18 @@ function tvPodium(struct){
   const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
   const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
   if(!champ)return '';
-  const pl=[{r:1,t:champ?.team,c:'#f5c842',e:'🥇'},{r:2,t:ru?.team||'—',c:'#c0c8d8',e:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',e:'🥉'},{r:4,t:fourth?.team||'—',c:'#6a8aaa',e:'4th'}];
+  const pl=[{r:1,t:champ?.team,c:'#FFB000',e:'🥇'},{r:2,t:ru?.team||'—',c:'#E4E4E7',e:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',e:'🥉'},{r:4,t:fourth?.team||'—',c:'#9A9AA2',e:'4th'}];
   let h='<div class="podium-tv">';
   pl.forEach(p=>h+=`<div class="podium-card-tv" style="background:${p.c}11;border:1.5px solid ${p.c}33;"><div class="podium-emoji">${p.e}</div><div class="podium-rank-tv" style="color:${p.c};">${p.r}</div><div class="podium-name-tv">${esc(p.t)}</div></div>`);
   return h+'</div>';
 }
 function renderBracket(){
   const el=document.getElementById('view-bracket');
-  if(!playoff){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#2a3a55;font-size:22px;font-family:\'Barlow Condensed\',sans-serif;">Bracket playoff belum dibuat</div>';return;}
+  if(!playoff){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#E4E4E7;font-size:22px;font-family:\'Saira Condensed\',sans-serif;">Bracket playoff belum dibuat</div>';return;}
   if(playoff.mode==='split'){
-    let h=`<div class="split-title-tv" style="color:#ffd24a;">🏆 Upper Bracket <span class="pill" style="color:#ffd24a;background:#ffd24a14;border:1px solid #ffd24a33;">peringkat atas</span></div>`;
+    let h=`<div class="split-title-tv" style="color:#FFB000;">🏆 Upper Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat atas</span></div>`;
     h+=tvBracket(playoff.upper)+tvPodium(playoff.upper);
-    h+=`<div class="split-title-tv" style="color:#4ecdc4;margin-top:14px;">🛡 Lower Bracket <span class="pill" style="color:#4ecdc4;background:#4ecdc414;border:1px solid #4ecdc433;">peringkat bawah</span></div>`;
+    h+=`<div class="split-title-tv" style="color:#FFB000;margin-top:14px;">🛡 Lower Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat bawah</span></div>`;
     h+=tvBracket(playoff.lower)+tvPodium(playoff.lower);
     el.innerHTML=h;return;
   }
