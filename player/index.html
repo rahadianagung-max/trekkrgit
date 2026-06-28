@@ -793,7 +793,7 @@ async function loadPlayer(){
           return true;
       });
       
-      myMatches.reverse(); // Data terbaru di atas
+      // urutan kronologis dipertahankan untuk sejajarkan delta ELO; dibalik saat render
 
       let partnerStats = {};
       let historyTable = [];
@@ -831,6 +831,8 @@ async function loadPlayer(){
               date: m.date || "N/A",
               partner: partner || "None",
               opponents: opponents,
+              scoreFor: isT1 ? m.scoreT1 : m.scoreT2,
+              scoreAgainst: isT1 ? m.scoreT2 : m.scoreT1,
               resClass: isTie ? 'res-d' : (isWin ? 'res-w' : 'res-l'),
               resText: isTie ? 'D' : (isWin ? 'W' : 'L')
           });
@@ -852,6 +854,14 @@ async function loadPlayer(){
 
       // Memasukkan hasil hitungan ke object Player Data utama
       d.bestPartner = { name: bestPartner, score: bestPartnerScore };
+      // Sejajarkan perubahan ELO (sumber sheet) ke tiap match — buang bye (w+l==0), align dari terbaru
+      try {
+          const eloReal = (d.history||[]).filter(e=>e && e.sessionId!=='INITIAL' && ((e.w||0)+(e.l||0))>0);
+          for (let k=1;k<=historyTable.length;k++){
+              const row=historyTable[historyTable.length-k], e=eloReal[eloReal.length-k];
+              if(e){ row.delta=Number(e.delta||0); row.newElo=e.elo; }
+          }
+      } catch(_){}
       d.historyTable = historyTable;
 
       // COMPUTE BADGES
@@ -945,52 +955,30 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   // UI CHART ELO
   if(history&&history.length>1)h+=`<div class="pp-chart"><p class="pp-chart-title">ELO Progress</p><canvas class="pp-chart-canvas" id="eloChart"></canvas></div>`;
 
-  // UI RATING HISTORY (perubahan ELO per hasil tercatat — sumber: pencatatan ELO sheet)
-  if (history && history.length) {
-      const elog = history.filter(e => e && e.sessionId !== 'INITIAL');
-      if (elog.length) {
-          let eRows = '';
-          elog.slice().reverse().forEach(e => {
-              const dt = e.timestamp ? new Date(e.timestamp).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : 'N/A';
-              const dv = Number(e.delta||0);
-              const cls = dv>0?'elo-up':(dv<0?'elo-dn':'elo-zero');
-              const txt = (dv>0?'+':'')+dv;
-              const res = (e.w||0)>(e.l||0)?'<span class="res-badge res-w">W</span>':((e.l||0)>(e.w||0)?'<span class="res-badge res-l">L</span>':'<span class="res-badge res-d">D</span>');
-              eRows += `<tr>
-                  <td><span style="color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px">${dt}</span></td>
-                  <td>${res}</td>
-                  <td><span class="elo-delta ${cls}">${txt}</span></td>
-                  <td><span style="font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;font-size:18px;color:var(--primary)">${e.elo}</span></td>
-              </tr>`;
-          });
-          h+=`<div class="pp-card" style="margin-top:16px; padding:0; overflow:hidden; background:transparent">
-              <p class="pp-chart-title" style="margin-bottom:12px; padding:0 4px; color:var(--on-surface)">Rating History</p>
-              <div class="data-table-wrap">
-                  <table class="data-table">
-                      <thead><tr><th width="96">Date</th><th width="56">Res</th><th width="68">&Delta; ELO</th><th>Rating</th></tr></thead>
-                      <tbody>${eRows}</tbody>
-                  </table>
-              </div>
-          </div>`;
-      }
-  }
-
   // UI PLAYING HISTORY TABLE
   if(historyTable) {
       let histRows = '';
       if (historyTable.length > 0) {
-          historyTable.forEach(hItem => {
+          historyTable.slice().reverse().forEach(hItem => {
+              const dv = (hItem.delta==null) ? null : Number(hItem.delta);
+              const cls = dv==null ? '' : (dv>0?'elo-up':(dv<0?'elo-dn':'elo-zero'));
+              const dtxt = dv==null ? '—' : ((dv>0?'+':'')+dv);
+              const eloCell = dv==null
+                  ? '<span style="color:var(--on-surface-variant)">—</span>'
+                  : `<span class="elo-delta ${cls}">${dtxt}</span>`+(hItem.newElo!=null?`<div style="font-size:10px;color:var(--on-surface-variant);margin-top:2px">${hItem.newElo}</div>`:'');
               histRows += `<tr>
                   <td><span style="color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px">${hItem.date}</span></td>
                   <td>
                       <div style="font-weight:700;font-size:14px;color:var(--on-surface)"><span style="color:var(--primary);font-size:11px;margin-right:4px">w/</span>${hItem.partner}</div>
-                      <div style="font-size:11px;color:var(--on-surface-variant);margin-top:2px;font-family:'Plus Jakarta Sans',sans-serif">VS ${hItem.opponents}</div>
+                      <div style="font-size:11px;color:var(--on-surface-variant);margin-top:2px;font-family:'Plus Jakarta Sans',sans-serif">vs ${hItem.opponents}</div>
+                      <div style="font-size:11px;color:var(--on-surface-variant);margin-top:3px;font-family:'Plus Jakarta Sans',sans-serif">Score <b style="color:var(--on-surface);font-size:12px">${hItem.scoreFor}–${hItem.scoreAgainst}</b></div>
                   </td>
+                  <td>${eloCell}</td>
                   <td><div class="res-badge ${hItem.resClass}">${hItem.resText}</div></td>
               </tr>`;
           });
       } else {
-          histRows = `<tr><td colspan="3" style="text-align:center;color:var(--on-surface-variant)">No match history found.</td></tr>`;
+          histRows = `<tr><td colspan="4" style="text-align:center;color:var(--on-surface-variant)">No match history found.</td></tr>`;
       }
       
       h+=`<div class="pp-card" style="margin-top:16px; padding:0; overflow:hidden; background:transparent">
@@ -999,9 +987,10 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
               <table class="data-table">
                   <thead>
                       <tr>
-                          <th width="90">Date</th>
+                          <th width="84">Date</th>
                           <th>Matchup</th>
-                          <th width="60">Res</th>
+                          <th width="66">&Delta; ELO</th>
+                          <th width="50">Res</th>
                       </tr>
                   </thead>
                   <tbody>
