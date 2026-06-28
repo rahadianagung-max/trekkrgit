@@ -188,7 +188,7 @@
     return '<span class="'+cls+'">'+esc(initials(p.displayName))+'</span>';
   }
   function meta(p){var parts=[p.level];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
-  function passportUrl(p){return '/player/'+encodeURIComponent(p.name);}
+  function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
 
   function rowHTML(p,rank){
     return '<a class="rrow" href="'+passportUrl(p)+'">'

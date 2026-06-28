@@ -40,16 +40,21 @@
 .vtag{font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 12px;display:inline-flex;align-items:center;gap:5px}
 .vtag i{color:var(--orange);font-size:13px}
 .lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
-.lb-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border-soft);transition:background .2s}
+.lb-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-soft);transition:background .2s}
 .lb-row:last-child{border-bottom:0}
 .lb-row:hover{background:var(--surface-2)}
-.lb-row .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:24px;text-align:center}
+.lb-row .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--subtle);width:20px;text-align:center;flex-shrink:0}
 .lb-row.top .rk{color:var(--orange)}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--border-soft);color:var(--muted);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;object-fit:cover;overflow:hidden}
-.lb-row .who{flex:1;min-width:0}
-.lb-row .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-row .mt{font-size:10px;color:var(--subtle)}
-.lb-row .elo{font-size:14px;font-weight:700;color:var(--orange)}
+.lb-photo{width:54px;height:54px;border-radius:12px;background:var(--surface-3);color:var(--muted);font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;object-fit:cover;overflow:hidden}
+.lb-name{flex:1;min-width:0;font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-name .lb-sub{display:block;font-size:11px;color:var(--subtle);font-weight:500;margin-top:3px}
+.lb-wl{flex-shrink:0;text-align:center;min-width:62px}
+.lb-wl .n{font-size:14px;font-weight:700}
+.lb-wl .n .w{color:var(--green)}.lb-wl .n .l{color:var(--red)}.lb-wl .n .sep{color:var(--faint);font-weight:600;margin:0 3px}
+.lb-wl .cap,.lb-elo .cap{display:block;font-size:9px;letter-spacing:.12em;color:var(--faint);font-weight:700;margin-top:3px}
+.lb-elo{flex-shrink:0;text-align:right;min-width:60px}
+.lb-elo .v{font-family:var(--display);font-style:italic;font-weight:800;font-size:24px;color:var(--orange);line-height:1}
+@media(max-width:520px){.lb-photo{width:46px;height:46px;font-size:17px}.lb-row{gap:10px;padding:12px}.lb-wl{min-width:50px}.lb-elo .v{font-size:20px}}
 
 .state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
 .skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
@@ -113,23 +118,22 @@
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
+  function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
-  function avatar(p){if(p.photoUrl)return '<img class="avatar" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="avatar">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
   var content=document.getElementById('content');
 
   function selected(){
-    var q=new URLSearchParams(location.search).get('v');
-    if(q)return q;
-    var seg=decodeURIComponent(location.pathname.split('/').filter(Boolean).pop()||'');
-    if(seg&&seg.toLowerCase()!=='venue'&&seg.toLowerCase()!=='venues'&&!/\.html?$/i.test(seg))return seg;
-    return null;
+    var seg=decodeURIComponent((location.pathname.split('/').filter(Boolean).pop())||'');
+    if(seg&&!/\.html?$/i.test(seg)&&seg.toLowerCase()!=='venue'&&seg.toLowerCase()!=='venues')return seg;
+    return new URLSearchParams(location.search).get('v')||null;
   }
 
   /* ---- Directory ---- */
   function renderDirectory(venues){
     var cards=venues.filter(function(v){return v.name;}).map(function(v){
       var loc=v.region||v.location||'';
-      return '<a class="vcard" href="?v='+encodeURIComponent(v.name)+'">'+vlogo(v)
+      return '<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
         +'<div class="vname">'+esc(v.name)+'</div>'
         +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
         +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
@@ -159,15 +163,16 @@
     var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
 
     var rows=players.length?players.map(function(p,i){
-      var club=(String(p.clubs||'').split(',')[0]||'').trim();
       var meta=[p.level,(p.gender==='F'?'Women':'Men')].filter(Boolean).join(' · ');
-      return '<a class="lb-row'+(i===0?' top':'')+'" href="/player/'+encodeURIComponent(p.name)+'">'
-        +'<span class="rk">'+(i+1)+'</span>'+avatar(p)
-        +'<span class="who"><span class="nm">'+esc(p.displayName||p.name)+'</span><span class="mt">'+esc(meta)+'</span></span>'
-        +'<span class="elo">'+p.elo+'</span></a>';
+      var w=(p.totalW!=null?p.totalW:0), l=(p.totalL!=null?p.totalL:0);
+      return '<a class="lb-row'+(i===0?' top':'')+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
+        +'<span class="rk">'+(i+1)+'</span>'+photo(p)
+        +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(meta)+'</span></span>'
+        +'<span class="lb-wl"><span class="n"><span class="w">'+w+'</span><span class="sep">/</span><span class="l">'+l+'</span></span><span class="cap">W / L</span></span>'
+        +'<span class="lb-elo"><span class="v">'+p.elo+'</span><span class="cap">ELO</span></span></a>';
     }).join(''):'<div class="state">No ranked players at this venue yet.</div>';
 
-    content.innerHTML='<div class="page-head"><a class="back" href="/venues"><i class="ti ti-arrow-left"></i>All venues</a></div>'
+    content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
       +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="display">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>'
       +'<div class="sec-label">Venue leaderboard</div><div class="lb">'+rows+'</div>';
   }
@@ -177,7 +182,9 @@
   fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
     var venues=(d&&d.venues)||[];
     if(!sel){renderDirectory(venues);return;}
-    var v=venues.filter(function(x){return (x.name||'').toLowerCase()===sel.toLowerCase();})[0]||{name:sel};
+    var key=slug(sel);
+    var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
+    if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
     fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:v.name,limit:50}).toString())
       .then(function(r){return r.json();}).then(function(ld){renderDetail(v,(ld&&ld.leaderboard)||[]);})
       .catch(function(){renderDetail(v,[]);});

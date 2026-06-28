@@ -718,17 +718,23 @@ function tierProg(e){const t=[{name:'Beginner',min:0,max:899},{name:'Upper Begin
 
 async function loadPlayer(){
   const parts=window.location.pathname.split('/').filter(Boolean);
-  const name=decodeURIComponent(parts[parts.length-1]||'');
-  if(!name){document.getElementById('content').innerHTML='<div class="state-panel"><h2 class="state-title">Not Found</h2><p class="state-copy">Player not specified</p></div>';return}
-  
-  let d;
-  try {
-      d = await TrekkrAPI.getPlayerDetail(name);
-      playerData = d;
-  } catch(e) {
-      renderDemo(name);
-      return;
+  const raw=decodeURIComponent(parts[parts.length-1]||'');
+  if(!raw){document.getElementById('content').innerHTML='<div class="state-panel"><h2 class="state-title">Not Found</h2><p class="state-copy">Player not specified</p></div>';return}
+
+  let name=raw, d=null;
+  try { d = await TrekkrAPI.getPlayerDetail(raw); } catch(e) { d=null; }
+  if(!d){
+      // Clean slug URL (e.g. /player/donnaazali) → resolve to the real player name
+      try {
+          const key=raw.toLowerCase().replace(/[^a-z0-9]+/g,'');
+          const pr=await TrekkrAPI.getPlayers({limit:5000});
+          const arr=(pr&&(pr.players||pr))||[];
+          const hit=arr.find(p=>String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')===key);
+          if(hit){ name=hit.name; d=await TrekkrAPI.getPlayerDetail(name); }
+      } catch(e2){ d=null; }
   }
+  if(!d){ renderDemo(raw); return; }
+  playerData = d;
 
   // ALGORITMA BARU: Tarik data history semua match untuk tabel dan kalkulasi Best Partner
   try {
@@ -1587,13 +1593,13 @@ window.addEventListener('load',loadPlayer);
 
 function openUrlModal(){
   if(!playerData)return;
-  document.getElementById('urlModalText').textContent='trekkr.online/player/'+encodeURIComponent(playerData.player.name);
+  document.getElementById('urlModalText').textContent='trekkr.online/player/'+(playerData.player.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   document.getElementById('urlModal').classList.add('open');
 }
 function closeUrlModal(){document.getElementById('urlModal').classList.remove('open');}
 
 function doUrlCopy(){
-  var url='https://trekkr.online/player/'+encodeURIComponent(playerData?.player?.name||'');
+  var url='https://trekkr.online/player/'+(playerData?.player?.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   var btn=document.getElementById('urlCopyBtn');
   navigator.clipboard.writeText(url).catch(function(){var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
   btn.textContent='Copied!';btn.classList.add('copied');
@@ -1628,7 +1634,7 @@ function closeResultModal(){document.getElementById('resultModal').classList.rem
 function shareResultWA(){
   if(!playerData)return;
   var p=playerData.player,s=playerData.stats,ti=tierProg(s.currentElo);
-  var url='https://trekkr.online/player/'+encodeURIComponent(p.name);
+  var url='https://trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   var text=(p.displayName||p.name)+' di Trekkr\n'+ti.current+' · ELO '+s.currentElo+'\nMatches: '+s.totalMatches+' · Win Rate: '+s.winRate+'%\n'+url;
   window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
