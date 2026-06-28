@@ -54,6 +54,8 @@
 .pp-chart-canvas{width:100%;height:180px;margin-top:16px}
 
 /* Table History Styles */
+.elo-delta{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;font-size:17px;line-height:1}
+.elo-up{color:var(--ok)}.elo-dn{color:var(--danger)}.elo-zero{color:var(--on-surface-variant)}
 .data-table-wrap{margin-top:0px;background:var(--surface-lowest);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(115,118,136,0.12)}
 .data-table{width:100%;border-collapse:collapse;text-align:left}
 .data-table th{background:var(--surface-low);padding:12px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--on-surface-variant);border-bottom:1px solid rgba(115,118,136,0.12)}
@@ -942,6 +944,36 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
 
   // UI CHART ELO
   if(history&&history.length>1)h+=`<div class="pp-chart"><p class="pp-chart-title">ELO Progress</p><canvas class="pp-chart-canvas" id="eloChart"></canvas></div>`;
+
+  // UI RATING HISTORY (perubahan ELO per hasil tercatat — sumber: pencatatan ELO sheet)
+  if (history && history.length) {
+      const elog = history.filter(e => e && e.sessionId !== 'INITIAL');
+      if (elog.length) {
+          let eRows = '';
+          elog.slice().reverse().forEach(e => {
+              const dt = e.timestamp ? new Date(e.timestamp).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : 'N/A';
+              const dv = Number(e.delta||0);
+              const cls = dv>0?'elo-up':(dv<0?'elo-dn':'elo-zero');
+              const txt = (dv>0?'+':'')+dv;
+              const res = (e.w||0)>(e.l||0)?'<span class="res-badge res-w">W</span>':((e.l||0)>(e.w||0)?'<span class="res-badge res-l">L</span>':'<span class="res-badge res-d">D</span>');
+              eRows += `<tr>
+                  <td><span style="color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px">${dt}</span></td>
+                  <td>${res}</td>
+                  <td><span class="elo-delta ${cls}">${txt}</span></td>
+                  <td><span style="font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;font-size:18px;color:var(--primary)">${e.elo}</span></td>
+              </tr>`;
+          });
+          h+=`<div class="pp-card" style="margin-top:16px; padding:0; overflow:hidden; background:transparent">
+              <p class="pp-chart-title" style="margin-bottom:12px; padding:0 4px; color:var(--on-surface)">Rating History</p>
+              <div class="data-table-wrap">
+                  <table class="data-table">
+                      <thead><tr><th width="96">Date</th><th width="56">Res</th><th width="68">&Delta; ELO</th><th>Rating</th></tr></thead>
+                      <tbody>${eRows}</tbody>
+                  </table>
+              </div>
+          </div>`;
+      }
+  }
 
   // UI PLAYING HISTORY TABLE
   if(historyTable) {
