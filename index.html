@@ -3,107 +3,61 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Trekkr — Core engine for padel Indonesia</title>
-<meta name="description" content="Trekkr is the ELO engine that tracks every padel player in Indonesia, powers venue loyalty, and runs tournaments — all in one system."/>
+<title>Trekkr — Where Every Match Builds Your Journey</title>
+<meta name="description" content="Trekkr is the rating and competition platform for padel. National rankings, PlayRank, tournaments, and a player passport for every match you play."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-.section-label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--subtle);font-weight:600;margin:0}
-
-/* ---------- Header ---------- */
-.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
-
-/* ---------- Hero ---------- */
-.hero{position:relative;overflow:hidden;padding:64px 0 40px}
-.hero__speed{position:absolute;inset:0;pointer-events:none;opacity:.5;
-  background:repeating-linear-gradient(115deg,transparent 0 38px,rgba(255,106,0,.05) 38px 40px);
-  -webkit-mask-image:linear-gradient(115deg,transparent 30%,#000 95%);mask-image:linear-gradient(115deg,transparent 30%,#000 95%)}
-.hero__inner{position:relative;max-width:680px}
-.hero h1{margin:14px 0 0;font-size:clamp(42px,8vw,76px)}
-.hero h1 .accent{color:var(--orange)}
-.hero__sub{margin:18px 0 0;color:var(--muted);font-size:clamp(15px,2.2vw,18px);max-width:560px}
-.pillars{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.pillar{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:6px 13px;border-radius:var(--radius-pill)}
-.hero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
-
-/* ---------- Event banner ---------- */
-.banner{margin:8px 0 4px}
-.banner__frame{position:relative;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface-2)}
-.banner__viewport{overflow:hidden}
-.banner__track{display:flex;transition:transform .5s var(--ease)}
-.slide{flex:0 0 100%;min-width:100%;position:relative;min-height:168px;display:flex;flex-direction:column;justify-content:center;
-  padding:26px 60px;background:linear-gradient(120deg,var(--warm),var(--surface) 72%)}
-.slide::before{content:"";position:absolute;left:0;top:0;width:5px;height:100%;background:var(--grad)}
-.slide__tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:600}
-.slide__title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(24px,4.4vw,34px);line-height:1;margin:8px 0 0}
-.slide__sub{color:var(--muted);font-size:14px;margin:8px 0 0}
-.slide__cta{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#fff;background:var(--orange);padding:7px 16px;border-radius:var(--radius-pill);margin-top:14px;width:fit-content}
-.banner__arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.8);color:var(--text);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .2s var(--ease)}
-.banner__arrow:hover{background:rgba(255,255,255,.98)}
-.banner__arrow--prev{left:12px}
-.banner__arrow--next{right:12px}
-.banner__dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:2}
-.banner__dot{width:8px;height:8px;border-radius:50%;background:var(--border);border:0;padding:0;transition:background .2s var(--ease),width .2s var(--ease)}
-.banner__dot.active{background:var(--orange);width:20px;border-radius:5px}
-
-/* ---------- Sections ---------- */
-.section{padding:40px 0}
-.section__head{margin:0 0 18px}
-.grid-4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-
-.feature{position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:border-color .2s var(--ease),transform .2s var(--ease)}
-.feature:hover{border-color:var(--orange);background:#fff;transform:translateY(-2px)}
-.feature__icon{font-size:26px;color:var(--orange);line-height:1}
-.feature__title{font-size:17px;font-weight:600;margin:12px 0 0}
-.feature__desc{color:var(--muted);font-size:13.5px;margin:8px 0 16px}
-.feature__cta{font-size:13px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:5px}
-.feature:hover .feature__cta{gap:9px}
-
-.showcase{background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px}
-.showcase__preview{height:54px;display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:10px;padding:0 14px;margin-bottom:14px;border:1px solid var(--border-soft)}
-.showcase__preview .ico{font-size:22px;color:var(--orange)}
-.showcase__bars{flex:1;display:flex;flex-direction:column;gap:6px}
-.bar{height:6px;border-radius:3px;background:var(--border)}
-.bar--accent{background:var(--orange);opacity:.6}
-.showcase__elo{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--border)}
-.showcase__title{font-size:15px;font-weight:600}
-.showcase__desc{color:var(--subtle);font-size:12.5px;margin:6px 0 0}
-
-/* ---------- Footer ---------- */
-.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:24px}
-
-/* ---------- Responsive ---------- */
-@media(max-width:860px){
-  .nav,.header-actions .btn--ghost{display:none}
-  .menu-toggle{display:flex}
-  .slide{padding:24px 48px}
-  .grid-4{grid-template-columns:1fr}
-}
-@media(max-width:520px){
-  .slide{padding:22px 44px;min-height:158px}
-  .hero{padding:44px 0 28px}
-}
-@media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  .banner__track{transition:none}
-  .feature{transition:none}
-}
+.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
+.band{padding:38px 0}
+.band--dark{background:var(--text);color:#fff}
+.center{text-align:center}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.p{color:var(--muted);font-size:14px;line-height:1.65}
+.secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
+.secname--dark{color:var(--text)}
+.secsub{font-size:14px;color:var(--muted);margin-top:3px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#15803D;background:#E7F6EC;border-radius:999px;padding:3px 9px}
+.hero{padding:54px 0 30px;text-align:center}
+.hero-wm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(54px,12vw,104px);line-height:.92;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.02em .12em;display:inline-block}
+.hero-h{font-size:clamp(20px,3.6vw,30px);margin:6px 0 0}
+.lead{color:var(--muted);font-size:15px;line-height:1.65;max-width:580px;margin:14px auto 0}
+.hero-cta{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(18px,2.6vw,22px);margin-top:18px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.stat{border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;background:var(--surface)}
+.stat .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(28px,5vw,40px);color:var(--text);line-height:1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:6px;font-weight:600}
+.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.col-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.col-h .dot{width:9px;height:9px;border-radius:50%}
+.col-h .lab{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.04em}
+.prow{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface);margin-top:8px}
+.prow .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:20px;text-align:center}
+.av{width:46px;height:46px;border-radius:11px;object-fit:cover;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--muted);font-size:15px;flex-shrink:0;overflow:hidden}
+.pn{flex:1;min-width:0;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--orange)}
+.find{display:flex;gap:8px;max-width:520px}
+.find input{flex:1;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font:inherit;font-size:14px}
+.fres a{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border-soft)}
+.eco{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ecocard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
+.lnk{color:var(--orange);font-weight:700;font-size:13px}
+@media(max-width:680px){.stats{grid-template-columns:1fr}.cols2{grid-template-columns:1fr}.eco{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <header class="site-header">
   <div class="container header-inner">
-    <a href="https://trekkr.online" class="brand">Trekkr</a>
+    <a href="https://trekkr.online/" class="brand">Trekkr</a>
     <nav class="nav" aria-label="Primary">
       <a href="https://trekkr.online/" class="active">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
     <div class="header-actions">
       <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
@@ -111,216 +65,143 @@
   </div>
   <div class="container">
     <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/" class="active">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
   </div>
 </header>
-
 <main>
+  <section class="hero container">
+    <div class="hero-wm">Trekkr</div>
+    <h1 class="display hero-h">Where Every Match Builds Your Journey</h1>
+    <p class="lead">Trekkr is the rating and competition platform for padel — turning every recorded match into ranking, progress, and a competitive identity that follows you across venues, leagues, and tournaments.</p>
+    <div class="hero-cta">Every Match Counts.</div>
+  </section>
 
-  <section class="hero">
-    <div class="hero__speed" aria-hidden="true"></div>
-    <div class="container hero__inner">
-      <span class="eyebrow">Core engine for padel Indonesia</span>
-      <h1 class="display">Make every<br><span class="accent">match count</span></h1>
-      <p class="hero__sub">The ELO engine that tracks every padel player in Indonesia, powers venue loyalty, and runs tournaments — all in one system.</p>
-      <div class="hero__cta">
-        <a href="/how-it-works.html" class="btn btn--primary">How Our Engine Works</a>
-        <a href="/rankings" class="btn btn--ghost">Explore rankings</a>
+  <section class="sec container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <span class="secname secname--dark">By The Numbers</span><span class="tag"><i class="ti ti-bolt" aria-hidden="true"></i>realtime</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statPlayers">—</div><div class="l">Players Rated</div></div>
+      <div class="stat"><div class="n" id="statMatches">—</div><div class="l">Matches Recorded</div></div>
+      <div class="stat"><div class="n" id="statAvg">—</div><div class="l">Avg Matches / Player</div></div>
+    </div>
+  </section>
+
+  <section class="sec container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <span class="secname">Event Highlight</span>
+      <span class="tag" style="color:#C2410C;background:var(--warm)"><i class="ti ti-table" aria-hidden="true"></i>from sheet</span>
+    </div>
+    <div id="homeEvent"><div class="empty">Event unggulan akan tampil di sini begitu sheet <strong>Events</strong> tersedia. <a class="lnk" href="https://trekkr.online/tournament">View all events &rarr;</a></div></div>
+  </section>
+
+  <section class="sec container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+      <span class="secname secname--dark">Trekkr Rankings</span>
+      <a class="lnk" href="https://trekkr.online/rankings">View more &rarr;</a>
+    </div>
+    <p class="p" style="margin-bottom:14px">The top of the national board, men and women, updated after every match.</p>
+    <div class="cols2">
+      <div>
+        <div class="col-h"><span class="dot" style="background:var(--orange)"></span><span class="lab">Men</span></div>
+        <div id="topM"><div class="empty">Loading…</div></div>
+      </div>
+      <div>
+        <div class="col-h"><span class="dot" style="background:var(--red)"></span><span class="lab">Women</span></div>
+        <div id="topF"><div class="empty">Loading…</div></div>
       </div>
     </div>
   </section>
 
-  <section class="banner" aria-label="Featured events">
-    <div class="container">
-      <div class="banner__frame">
-        <div class="banner__viewport">
-          <div class="banner__track" id="bannerTrack"></div>
-        </div>
-        <button class="banner__arrow banner__arrow--prev" id="bannerPrev" aria-label="Previous">‹</button>
-        <button class="banner__arrow banner__arrow--next" id="bannerNext" aria-label="Next">›</button>
-        <div class="banner__dots" id="bannerDots"></div>
-      </div>
+  <section class="sec container">
+    <span class="secname secname--dark">Find Your Name</span>
+    <p class="p mt8" style="margin-bottom:12px">Search yourself to open your player passport.</p>
+    <div class="find">
+      <input id="homeFind" type="search" placeholder="Find your name…" autocomplete="off" aria-label="Search players"/>
+      <button class="btn btn--primary" id="homeFindBtn">Search</button>
+    </div>
+    <div class="fres" id="homeFindRes" aria-live="polite"></div>
+  </section>
+
+  <section class="sec container">
+    <div class="center"><div class="eyebrow">The Trekkr Ecosystem</div><h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px);margin-top:6px">One Platform, Every Way to Compete</h2></div>
+    <div class="eco mt16">
+      <div class="ecocard"><i class="ti ti-trophy" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Tournament Management</div><p class="p" style="font-size:13px">Run professional tournaments — or have us run them for you — with player mobile views and broadcast-ready LED displays.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/tournament">Explore tournaments &rarr;</a></div>
+      <div class="ecocard"><i class="ti ti-rosette" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">PlayRank</div><p class="p" style="font-size:13px">Structured weekly competition and Combine events that turn casual play into meaningful progress for venues and communities.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/playrank">Explore PlayRank &rarr;</a></div>
+      <div class="ecocard"><i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Player Passport</div><p class="p" style="font-size:13px">Every player gets a passport: rating, tier, match history, best partner, and achievement badges — all earned on court.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/how-trekkr-works">See how it works &rarr;</a></div>
+      <div class="ecocard"><i class="ti ti-chart-dots" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Market Intelligence</div><p class="p" style="font-size:13px">Insight into the Indonesian padel scene — players, venues, and competitive trends across the network.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/market">View market intelligence &rarr;</a></div>
     </div>
   </section>
 
-  <section class="section">
-    <div class="container">
-      <p class="section-label section__head">What Trekkr does</p>
-      <div class="grid-4">
-        <a class="feature" href="/rankings">
-          <i class="ti ti-trophy feature__icon" aria-hidden="true"></i>
-          <h3 class="feature__title">Player ranking</h3>
-          <p class="feature__desc">National ELO leaderboard tracking every player's progress in Indonesia.</p>
-          <span class="feature__cta">View rankings <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
-        </a>
-        <a class="feature" href="https://venue.trekkr.online">
-          <i class="ti ti-ball-tennis feature__icon" aria-hidden="true"></i>
-          <h3 class="feature__title">Regular ranked match</h3>
-          <p class="feature__desc">Weekly ranked mexicano at your venue. Pick a court and climb the board.</p>
-          <span class="feature__cta">Find a venue <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
-        </a>
-        <a class="feature" href="/tournaments">
-          <i class="ti ti-tournament feature__icon" aria-hidden="true"></i>
-          <h3 class="feature__title">Tournament management</h3>
-          <p class="feature__desc">Run your padel tournament on Trekkr — draws, scoring, and live results.</p>
-          <span class="feature__cta">Learn more <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
-        </a>
-        <a class="feature" href="/events">
-          <i class="ti ti-calendar-event feature__icon" aria-hidden="true"></i>
-          <h3 class="feature__title">Special event</h3>
-          <p class="feature__desc">Upcoming tournaments powered by Trekkr. Find one near you and join.</p>
-          <span class="feature__cta">See events <i class="ti ti-arrow-right" aria-hidden="true"></i></span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" style="padding-top:0">
-    <div class="container">
-      <p class="section-label section__head">The features behind it</p>
-      <div class="grid-4">
-        <div class="showcase">
-          <div class="showcase__preview">
-            <i class="ti ti-id-badge-2 ico" aria-hidden="true"></i>
-            <div class="showcase__bars"><span class="bar" style="width:50%"></span><span class="bar bar--accent" style="width:30%"></span></div>
-            <span class="showcase__elo">1480</span>
-          </div>
-          <div class="showcase__title">Player passport</div>
-          <p class="showcase__desc">ELO, match history, win rate, and best partners — one shareable profile.</p>
-        </div>
-        <div class="showcase">
-          <div class="showcase__preview">
-            <i class="ti ti-building-store ico" aria-hidden="true"></i>
-            <div class="showcase__bars"><span class="bar" style="width:60%"></span><span class="bar" style="width:40%"></span></div>
-          </div>
-          <div class="showcase__title">Special venue page</div>
-          <p class="showcase__desc">A branded leaderboard page for each court, with weekly rankings.</p>
-        </div>
-        <div class="showcase">
-          <div class="showcase__preview">
-            <i class="ti ti-device-mobile ico" aria-hidden="true"></i>
-            <div class="showcase__bars"><span class="bar bar--accent" style="width:45%"></span><span class="bar" style="width:65%"></span></div>
-          </div>
-          <div class="showcase__title">Ranked match app</div>
-          <p class="showcase__desc">The match-day scoring app venues use to run ranked sessions in minutes.</p>
-        </div>
-        <div class="showcase">
-          <div class="showcase__preview">
-            <i class="ti ti-layout-dashboard ico" aria-hidden="true"></i>
-            <div class="showcase__bars"><span class="bar" style="width:55%"></span><span class="bar" style="width:35%"></span></div>
-          </div>
-          <div class="showcase__title">Tournament dashboard</div>
-          <p class="showcase__desc">Live standings, brackets, and a TV view for organizers.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
+  <section class="band band--dark center"><div class="container">
+    <div class="eyebrow" style="color:var(--amber)">How our engine works</div>
+    <div class="secname" style="color:#fff;font-size:clamp(24px,4vw,32px);margin-top:6px">Trekkr Rating System</div>
+    <div class="display" style="color:#B4B4BC;font-size:clamp(15px,2.4vw,18px);text-transform:uppercase;font-style:italic;font-weight:800;margin-top:4px">One Rating. One Journey.</div>
+    <p style="color:#B4B4BC;font-size:14px;line-height:1.65;max-width:520px;margin:12px auto 18px">A proven ELO system, adapted for padel. Every match adjusts your rating based on who you played and how you won.</p>
+    <a class="btn btn--primary" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+  </div></section>
 </main>
-
 <footer class="site-footer">
   <div class="container footer-inner">
     <span class="footer-brand">Trekkr</span>
     <nav class="footer-links" aria-label="Footer">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
+      <a href="https://admin.trekkr.online">Admin (Venue login)</a>
+      <a href="https://trekkr.online/market">Market Intelligence</a>
+      <a href="https://trekkr.online/about">About</a>
     </nav>
-    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
+    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
   </div>
 </footer>
-
 <script>
-/* ---------- Mobile menu ---------- */
 (function(){
-  var t=document.getElementById('menuToggle'), m=document.getElementById('mobileNav');
-  if(t&&m){t.addEventListener('click',function(){
-    var open=m.classList.toggle('open');
-    t.setAttribute('aria-expanded',open?'true':'false');
-  });}
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 })();
-
-/* ---------- Event banner (sheet-driven, text template) ---------- */
+</script>
+<script>
 (function(){
   var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
-  var track=document.getElementById('bannerTrack'),
-      dotsEl=document.getElementById('bannerDots'),
-      prev=document.getElementById('bannerPrev'),
-      next=document.getElementById('bannerNext'),
-      frame=track.closest('.banner__frame');
-
-  // Fallback content if the sheet/endpoint isn't wired yet.
-  var FALLBACK=[
-    {tag:'Special event',title:'Jakarta Padel Open 2026',subtitle:'Aug 12–14 · PIPC Arena · powered by Trekkr',cta_label:'Register',target_url:'/events'},
-    {tag:'Ranked league',title:'Jabodetabek Padel League',subtitle:'Season 1 · register your team now',cta_label:'Join the league',target_url:'/events'},
-    {tag:'Venue spotlight',title:'Stellar Padel Academy',subtitle:'New ranked sessions every week',cta_label:'See venue',target_url:'https://venue.trekkr.online'},
-    {tag:'Live now',title:'Madre Ranked Match',subtitle:"36 players · women's open · in progress",cta_label:'Watch live',target_url:'/events'}
-  ];
-
-  var idx=0, slides=[], timer=null;
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+  function initials(n){return (String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function av(p){var u=p.photoUrl||p.photo||'';if(u){return '<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.remove()"/></div>';}return '<div class="av">'+esc(initials(p.displayName||p.name))+'</div>';}
+  function fmt(n){return (n||0).toLocaleString('en-US');}
+  function prow(p,rank){return '<a class="prow" href="/player/'+slug(p.name)+'"><span class="rk">'+rank+'</span>'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span class="pe">'+(p.elo||0)+'</span></a>';}
 
-  function render(data){
-    slides=data.slice(0,4);
-    if(!slides.length){frame.parentElement.parentElement.style.display='none';return;}
-    track.innerHTML=slides.map(function(b){
-      var url=b.target_url||'#';
-      var cta=b.cta_label?'<span class="slide__cta">'+esc(b.cta_label)+' <i class="ti ti-arrow-right" aria-hidden="true"></i></span>':'';
-      return '<a class="slide" href="'+esc(url)+'">'
-        +(b.tag?'<span class="slide__tag">'+esc(b.tag)+'</span>':'')
-        +'<span class="slide__title">'+esc(b.title)+'</span>'
-        +(b.subtitle?'<span class="slide__sub">'+esc(b.subtitle)+'</span>':'')
-        +cta+'</a>';
-    }).join('');
-    dotsEl.innerHTML=slides.map(function(_,i){return '<button class="banner__dot'+(i===0?' active':'')+'" data-i="'+i+'" aria-label="Go to slide '+(i+1)+'"></button>';}).join('');
-    var single=slides.length<2;
-    prev.style.display=next.style.display=dotsEl.style.display=single?'none':'';
-    go(0);
-    if(!single)start();
-  }
-
-  function go(i){
-    idx=(i+slides.length)%slides.length;
-    track.style.transform='translateX(-'+(idx*100)+'%)';
-    var dots=dotsEl.querySelectorAll('.banner__dot');
-    dots.forEach(function(d,k){d.classList.toggle('active',k===idx);});
-  }
-  function start(){stop();timer=setInterval(function(){go(idx+1);},6000);}
-  function stop(){if(timer){clearInterval(timer);timer=null;}}
-
-  prev.addEventListener('click',function(){go(idx-1);start();});
-  next.addEventListener('click',function(){go(idx+1);start();});
-  dotsEl.addEventListener('click',function(e){var d=e.target.closest('.banner__dot');if(d){go(+d.dataset.i);start();}});
-  frame.addEventListener('mouseenter',stop);
-  frame.addEventListener('mouseleave',function(){if(slides.length>1)start();});
-
-  // Touch swipe
-  var x0=null;
-  frame.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;stop();},{passive:true});
-  frame.addEventListener('touchend',function(e){
-    if(x0===null)return;
-    var dx=e.changedTouches[0].clientX-x0;
-    if(Math.abs(dx)>40)go(idx+(dx<0?1:-1));
-    x0=null;if(slides.length>1)start();
+  fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).then(function(d){
+    var list=(d&&d.leaderboard)||[];
+    var players=list.length;
+    var sumM=list.reduce(function(a,p){return a+(p.totalMatches||0);},0);
+    document.getElementById('statPlayers').textContent=fmt(players);
+    document.getElementById('statMatches').textContent=fmt(sumM);
+    document.getElementById('statAvg').textContent=players?Math.round(sumM/players):0;
+    function top(g){return list.filter(function(p){return (p.gender||'')===g;}).sort(function(a,b){return (b.elo||0)-(a.elo||0);}).slice(0,3);}
+    var m=top('M'),f=top('F');
+    document.getElementById('topM').innerHTML = m.length?m.map(function(p,i){return prow(p,i+1);}).join(''):'<div class="empty">No data yet.</div>';
+    document.getElementById('topF').innerHTML = f.length?f.map(function(p,i){return prow(p,i+1);}).join(''):'<div class="empty">No data yet.</div>';
+  }).catch(function(){
+    document.getElementById('topM').innerHTML='<div class="empty">Couldn\'t load rankings.</div>';
+    document.getElementById('topF').innerHTML='<div class="empty">Couldn\'t load rankings.</div>';
   });
 
-  // Load from sheet; fall back gracefully.
-  fetch(BASE+'/banners')
-    .then(function(r){return r.ok?r.json():Promise.reject();})
-    .then(function(data){
-      var list=Array.isArray(data)?data:(data&&data.banners)||[];
-      list=list.filter(function(b){return b&&b.title&&(b.active===undefined||b.active===true||String(b.active).toUpperCase()==='TRUE');})
-               .sort(function(a,b){return (a.order||0)-(b.order||0);});
-      render(list.length?list:FALLBACK);
-    })
-    .catch(function(){render(FALLBACK);});
+  var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
+  function search(){
+    var q=(inp.value||'').trim();
+    if(q.length<2){res.innerHTML='';return;}
+    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:8}).toString()).then(function(r){return r.json();}).then(function(d){
+      var list=(d&&d.leaderboard)||[];
+      if(!list.length){res.innerHTML='<p class="p" style="padding:8px 4px">No players found.</p>';return;}
+      res.innerHTML=list.map(function(p){return '<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span class="pe" style="font-size:15px">'+(p.elo||0)+'</span></a>';}).join('');
+    }).catch(function(){res.innerHTML='';});
+  }
+  inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
+  btn&&btn.addEventListener('click',search);
+  inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
 })();
 </script>
 </body>

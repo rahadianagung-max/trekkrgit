@@ -1996,8 +1996,8 @@ function renderDoneScreen(standings) {
 // ── SHARE VENUE URL ──────────────────────────────────────────────────────
 async function shareVenueUrl() {
   const venue = state.venue || "";
-  const slug = venue.trim().replace(/\s+/g, "");
-  const url = `https://venue.trekkr.online/${encodeURIComponent(slug)}`;
+  const slug = venue.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const url = `https://venue.trekkr.online/${slug}`;
   const doneRounds = state.rounds.filter(r => r.submitted).length;
   const text = `Cek leaderboard ${venue} di Trekkr!\n${url}`;
 

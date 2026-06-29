@@ -50,10 +50,42 @@
   to = "/rankings.html"
   status = 200
 
+# Halaman struktur baru (5 menu)
+[[redirects]]
+  from = "/playrank"
+  to = "/playrank.html"
+  status = 200
+
+[[redirects]]
+  from = "/tournament"
+  to = "/tournament.html"
+  status = 200
+
+[[redirects]]
+  from = "/how-trekkr-works"
+  to = "/how-trekkr-works.html"
+  status = 200
+
+[[redirects]]
+  from = "/about"
+  to = "/about.html"
+  status = 200
+
+[[redirects]]
+  from = "/market"
+  to = "/market.html"
+  status = 200
+
+# Rename lama → baru (301 permanen)
 [[redirects]]
   from = "/how-it-works"
-  to = "/how-it-works.html"
-  status = 200
+  to = "/how-trekkr-works"
+  status = 301
+
+[[redirects]]
+  from = "/events"
+  to = "/tournament"
+  status = 301
 
 [[redirects]]
   from = "/events"
