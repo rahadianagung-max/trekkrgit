@@ -88,11 +88,6 @@
   status = 301
 
 [[redirects]]
-  from = "/events"
-  to = "/events.html"
-  status = 200
-
-[[redirects]]
   from = "/tournaments"
   to = "/tournaments.html"
   status = 200
