@@ -99,6 +99,13 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-intro{max-width:560px;margin:0 auto;padding:32px 0 40px}
 .rm-intro-badge{display:inline-flex;align-items:center;gap:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;margin-bottom:16px}
 .rm-intro-title{font-family:'Saira Condensed',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--on);margin-bottom:16px;line-height:1}
+.rm-intro-eyebrow{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--pr);margin-bottom:12px}
+.rm-intro-lead{font-size:14px;line-height:1.65;color:var(--on-v);margin-bottom:26px}
+.rm-basic-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--on-v);margin:0 0 14px}
+.rm-blist{display:grid;gap:11px;margin-bottom:28px}
+.rm-bitem{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.55;color:var(--on-v)}
+.rm-bitem .ck{width:20px;height:20px;border-radius:6px;background:var(--blue-lt);color:var(--pr);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rm-bitem b{font-weight:700;color:var(--on)}
 .rm-rules{display:grid;gap:12px;margin-bottom:28px}
 .rm-rule{display:flex;align-items:flex-start;gap:14px;background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px 18px}
 .rm-rule-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
@@ -364,39 +371,21 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
         <!-- ── SCREEN: INTRO ── -->
         <div class="rm-screen active" id="rm-intro">
           <div class="rm-intro">
-            <span class="rm-intro-badge">🏆 Trekkr Ranked Match System</span>
-            <h2 class="rm-intro-title">Ranked Match</h2>
-            <div class="rm-rules">
-              <div class="rm-rule highlight">
-                <div class="rm-rule-icon" style="background:#FFF1E5">🎾</div>
-                <div class="rm-rule-body">
-                  <div class="rm-rule-title">Tennis scoring — wajib</div>
-                  <div class="rm-rule-desc">Semua match dihitung menggunakan sistem skor tenis: <strong>Race to</strong> (contoh: Race to 4, menang saat capai angka tersebut lebih dulu) atau <strong>Best of</strong> (contoh: Best of 7, menang 4 game). Minimal Race to 4 atau Best of 4.</div>
-                </div>
-              </div>
-              <div class="rm-rule">
-                <div class="rm-rule-icon" style="background:#E7F6EC">♂♀</div>
-                <div class="rm-rule-body">
-                  <div class="rm-rule-title">Putra, Putri, atau Mixed — semua didukung</div>
-                  <div class="rm-rule-desc">Pilih kategori sesi: Putra, Putri, atau Mixed (campuran). Setiap match dicatat otomatis sesuai komposisi pemainnya (M / F / MIXED) di Google Sheet. ELO tetap satu per pemain.</div>
-                </div>
-              </div>
-              <div class="rm-rule">
-                <div class="rm-rule-icon" style="background:#FFF6E6">⚖️</div>
-                <div class="rm-rule-body">
-                  <div class="rm-rule-title">Selesaikan setelah semua pemain dapat jatah match yang sama</div>
-                  <div class="rm-rule-desc">Aplikasi akan memberi tahu kapan semua pemain sudah bermain sama banyak (fair cycle). Disarankan mengakhiri match di titik tersebut agar hasil ranking tidak berat sebelah — tidak ada pemain yang untung karena dapat lebih banyak kesempatan bermain.</div>
-                </div>
-              </div>
-              <div class="rm-rule">
-                <div class="rm-rule-icon" style="background:#F5F5F7">🔀</div>
-                <div class="rm-rule-body">
-                  <div class="rm-rule-title">Sistem Mexicano — matchup berdasarkan ranking berjalan</div>
-                  <div class="rm-rule-desc">Setiap ronde, pemain (atau tim) diurutkan dari leaderboard saat itu lalu dikelompokkan per court: yang selevel saling bertemu (1+4 vs 2+3). Pemain telat bisa ditambahkan dan yang batal bisa di-drop kapan saja tanpa merusak keadilan.</div>
-                </div>
-              </div>
+            <span class="rm-intro-eyebrow">Weekly PlayRank</span>
+            <h2 class="rm-intro-title">The Weekly Competition Engine</h2>
+            <p class="rm-intro-lead">A recurring ranked competition played throughout the week within a single venue or community. Players join multiple sessions, earning wins and points along the way. At the end of the week, the player with the strongest overall performance claims the top spot.</p>
+            <p class="rm-basic-title">Basic Rules</p>
+                        <div class="rm-blist">
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>One level per game</b> — e.g. Upper Beginner only, Upper Bronze only.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>New players start at the level you set.</b> Anyone already in the Trekkr engine keeps their existing ELO and level.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>No mixed-gender matches</b> — keeps the ranking precise.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Tennis scoring is required.</b></span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Individual (rotating) or fixed partners</b> — your choice.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Mexicano pairing</b> separates stronger and weaker players for a sharper ranking.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Everyone plays an equal number of matches</b> — the engine tells you when that's reached.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Ranked by wins.</b> Ties are broken by point difference.</span></div>
             </div>
-            <button class="btn btn-primary" style="padding:14px 36px;font-size:14px" onclick="rmGo('setup')">Mulai Ranked Match →</button>
+            <button class="btn btn-primary" style="padding:14px 36px;font-size:14px" onclick="rmGo('setup')">Start the match →</button>
           </div>
         </div>
 
@@ -418,7 +407,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 
             <div class="rm-card">
               <div class="rm-card-label">Kategori Sesi</div>
-              <div class="rm-gender-grid" style="grid-template-columns:repeat(3,1fr)">
+              <div class="rm-gender-grid">
                 <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
                   <div class="rm-gender-card-icon">♂</div>
                   <div class="rm-gender-card-label">Putra</div>
@@ -427,12 +416,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                   <div class="rm-gender-card-icon">♀</div>
                   <div class="rm-gender-card-label">Putri</div>
                 </div>
-                <div class="rm-gender-card" id="rm-gender-MIXED" onclick="rmSetGender('MIXED')">
-                  <div class="rm-gender-card-icon">♂♀</div>
-                  <div class="rm-gender-card-label">Mixed</div>
-                </div>
               </div>
-              <p class="rm-hint" id="rm-gender-hint">Putra/Putri menyaring daftar pemain. Mixed mengizinkan campuran; tiap match dicatat M/F/MIXED otomatis.</p>
+              <p class="rm-hint" id="rm-gender-hint">Putra atau Putri. Match campuran gender dimatikan agar ranking tetap presisi.</p>
             </div>
 
             <div class="rm-card">
@@ -921,7 +906,7 @@ function rmChangeCourts(d) {
 }
 function rmSetGender(g) {
   RM.gender = g;
-  ['M','F','MIXED'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
+  ['M','F'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
   if (document.getElementById('rm-player-list')) rmRenderPlayers();
 }
 // Per-match gender tag from the actual 4 players: all-male=M, all-female=F, else MIXED.
