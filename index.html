@@ -14,51 +14,64 @@
 .sec{padding:30px 0;border-top:1px solid var(--border-soft)}
 .band{padding:38px 0}
 .band--dark{background:var(--text);color:#fff}
-.center{text-align:center}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
 .p{color:var(--muted);font-size:14px;line-height:1.65}
 .secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
 .secname--dark{color:var(--text)}
-.secsub{font-size:14px;color:var(--muted);margin-top:3px}
-.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#15803D;background:#E7F6EC;border-radius:999px;padding:3px 9px}
+.lnk{color:var(--orange);font-weight:700;font-size:13px}
+.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+
+/* hero */
 .hero{padding:54px 0 30px;text-align:center}
 .hero-wm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(54px,12vw,104px);line-height:.92;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.02em .12em;display:inline-block}
 .hero-h{font-size:clamp(20px,3.6vw,30px);margin:6px 0 0}
-.lead{color:var(--muted);font-size:15px;line-height:1.65;max-width:580px;margin:14px auto 0}
 .hero-cta{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(18px,2.6vw,22px);margin-top:18px}
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.stat{border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;background:var(--surface)}
-.stat .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(28px,5vw,40px);color:var(--text);line-height:1}
-.stat .l{font-size:12px;color:var(--muted);margin-top:6px;font-weight:600}
-.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
-.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.col-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.col-h .dot{width:9px;height:9px;border-radius:50%}
-.col-h .lab{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:14px;letter-spacing:.04em}
-.prow{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface);margin-top:8px}
-.prow .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:20px;text-align:center}
-.av{width:46px;height:46px;border-radius:11px;object-fit:cover;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--muted);font-size:15px;flex-shrink:0;overflow:hidden}
+
+/* region filter */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
+.filter-tab{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);font-family:inherit}
+.filter-tab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* venue list */
+.venue-list{display:flex;flex-direction:column;gap:8px}
+.venue-row{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .2s}
+.venue-row:hover{border-color:var(--orange)}
+.venue-av{width:40px;height:40px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:13px;flex-shrink:0}
+.venue-info{flex:1;min-width:0}
+.venue-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.venue-tags{font-size:12px;color:var(--muted);margin-top:2px}
+.venue-region-badge{font-size:10px;font-weight:700;color:var(--subtle);background:var(--surface-2);border-radius:999px;padding:2px 7px;white-space:nowrap;flex-shrink:0}
+.show-more-btn{width:100%;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--orange);background:none;border:1px solid var(--border);border-radius:10px;cursor:pointer;margin-top:8px;font-family:inherit}
+.show-more-btn:hover{background:var(--surface)}
+
+/* player rows */
+.prow{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface);margin-top:8px;text-decoration:none;color:inherit;transition:border-color .2s}
+.prow:hover{border-color:var(--orange)}
+.rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:20px;text-align:center;flex-shrink:0}
+.av{width:40px;height:40px;border-radius:10px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--muted);font-size:14px;flex-shrink:0;overflow:hidden}
 .pn{flex:1;min-width:0;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pe{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--orange)}
+.pm{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* new players */
+.np-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.np-card{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
+.np-info{flex:1;min-width:0}
+.np-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.np-new{font-size:10px;font-weight:700;color:#0F6E56;background:rgba(34,160,82,.12);border-radius:999px;padding:2px 7px;flex-shrink:0}
+
+/* find */
 .find{display:flex;gap:8px;max-width:520px}
-.find input{flex:1;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font:inherit;font-size:14px}
-.fres a{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border-soft)}
-.eco{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.ecocard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
-.lnk{color:var(--orange);font-weight:700;font-size:13px}
-@media(max-width:680px){.stats{grid-template-columns:1fr}.cols2{grid-template-columns:1fr}.eco{grid-template-columns:1fr}}
-.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ev-card{display:block;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);transition:border-color .2s}
-.ev-card:hover{border-color:var(--orange)}
-.ev-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-bottom:8px}
-.ev-playrank{background:var(--warm);color:#C2410C}
-.ev-tournament{background:#EEF0FF;color:#534AB7}
-.ev-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);line-height:1.05}
-.ev-meta{font-size:12.5px;color:var(--muted);margin-top:6px}
-.ev-sub{font-size:11.5px;color:var(--subtle);margin-top:4px}
-.ev-status{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
-.ev-status.live,.ev-status.active{background:rgba(34,160,82,.12);color:#0F6E56}
-.ev-status.upcoming{background:#E6F1FB;color:#185FA5}
-@media(max-width:640px){.ev-grid{grid-template-columns:1fr}}
+.find input{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font:inherit;font-size:14px}
+.fres a{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border-soft);color:inherit;text-decoration:none}
+
+/* stats band */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.stat{text-align:center}
+.stat .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(28px,5vw,40px);color:#fff;line-height:1}
+.stat .l{font-size:12px;color:#B4B4BC;margin-top:6px;font-weight:600}
+
+@media(max-width:680px){.np-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -73,7 +86,7 @@
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
     <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#9776;</button>
     </div>
   </div>
   <div class="container">
@@ -87,77 +100,56 @@
   </div>
 </header>
 <main>
+
   <section class="hero container">
     <div class="hero-wm">Trekkr</div>
     <h1 class="display hero-h">Where Every Match Builds Your Journey</h1>
-    <p class="lead">Trekkr is the rating and competition platform for padel — turning every recorded match into ranking, progress, and a competitive identity that follows you across venues, leagues, and tournaments.</p>
     <div class="hero-cta">Every Match Counts.</div>
   </section>
 
   <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <span class="secname secname--dark">By The Numbers</span><span class="tag"><i class="ti ti-bolt" aria-hidden="true"></i>realtime</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span class="secname">Weekly PlayRank</span>
+      <a class="lnk" href="https://trekkr.online/playrank">learn more &rarr;</a>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="n" id="statPlayers">—</div><div class="l">Players Rated</div></div>
-      <div class="stat"><div class="n" id="statMatches">—</div><div class="l">Matches Recorded</div></div>
-      <div class="stat"><div class="n" id="statAvg">—</div><div class="l">Avg Matches / Player</div></div>
-    </div>
+    <div class="filter-tabs" id="prFilter"></div>
+    <div id="prVenues"><div class="empty">Loading&hellip;</div></div>
+    <button class="show-more-btn" id="prShowMore" style="display:none">Show more</button>
   </section>
 
   <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <span class="secname">Event Highlight</span>
-      <span class="tag" style="color:#C2410C;background:var(--warm)"><i class="ti ti-table" aria-hidden="true"></i>from sheet</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <span class="secname secname--dark">Most Active Players</span>
+      <a class="lnk" href="https://trekkr.online/rankings">View all &rarr;</a>
     </div>
-    <div id="homeEvent"><div class="empty">Event unggulan akan tampil di sini begitu sheet <strong>Events</strong> tersedia. <a class="lnk" href="https://trekkr.online/tournament">View all events &rarr;</a></div></div>
+    <div id="activePlayersEl"><div class="empty" style="margin-top:8px">Loading&hellip;</div></div>
   </section>
 
   <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
-      <span class="secname secname--dark">Trekkr Rankings</span>
-      <a class="lnk" href="https://trekkr.online/rankings">View more &rarr;</a>
-    </div>
-    <p class="p" style="margin-bottom:14px">The top of the national board, men and women, updated after every match.</p>
-    <div class="cols2">
-      <div>
-        <div class="col-h"><span class="dot" style="background:var(--orange)"></span><span class="lab">Men</span></div>
-        <div id="topM"><div class="empty">Loading…</div></div>
-      </div>
-      <div>
-        <div class="col-h"><span class="dot" style="background:var(--red)"></span><span class="lab">Women</span></div>
-        <div id="topF"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
+    <span class="secname secname--dark">New Players</span>
+    <div id="newPlayersEl"><div class="empty mt8">Loading&hellip;</div></div>
   </section>
 
   <section class="sec container">
-    <span class="secname secname--dark">Find Your Name</span>
-    <p class="p mt8" style="margin-bottom:12px">Search yourself to open your player passport.</p>
+    <div style="font-weight:700;font-size:15px;margin-bottom:10px">Find Your Name</div>
     <div class="find">
-      <input id="homeFind" type="search" placeholder="Find your name…" autocomplete="off" aria-label="Search players"/>
+      <input id="homeFind" type="search" placeholder="Search player name&hellip;" autocomplete="off" aria-label="Search players"/>
       <button class="btn btn--primary" id="homeFindBtn">Search</button>
     </div>
     <div class="fres" id="homeFindRes" aria-live="polite"></div>
   </section>
 
-  <section class="sec container">
-    <div class="center"><div class="eyebrow">The Trekkr Ecosystem</div><h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px);margin-top:6px">One Platform, Every Way to Compete</h2></div>
-    <div class="eco mt16">
-      <div class="ecocard"><i class="ti ti-trophy" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Tournament Management</div><p class="p" style="font-size:13px">Run professional tournaments — or have us run them for you — with player mobile views and broadcast-ready LED displays.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/tournament">Explore tournaments &rarr;</a></div>
-      <div class="ecocard"><i class="ti ti-rosette" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">PlayRank</div><p class="p" style="font-size:13px">Structured weekly competition and Combine events that turn casual play into meaningful progress for venues and communities.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/playrank">Explore PlayRank &rarr;</a></div>
-      <div class="ecocard"><i class="ti ti-id-badge-2" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Player Passport</div><p class="p" style="font-size:13px">Every player gets a passport: rating, tier, match history, best partner, and achievement badges — all earned on court.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/how-trekkr-works">See how it works &rarr;</a></div>
-      <div class="ecocard"><i class="ti ti-chart-dots" aria-hidden="true" style="font-size:22px;color:var(--orange)"></i><div class="display secname--dark" style="font-size:18px;margin:8px 0 5px">Market Intelligence</div><p class="p" style="font-size:13px">Insight into the Indonesian padel scene — players, venues, and competitive trends across the network.</p><a class="lnk mt8" style="display:inline-block" href="https://trekkr.online/market">View market intelligence &rarr;</a></div>
+  <section class="band band--dark">
+    <div class="container" style="text-align:center">
+      <div style="font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:#B4B4BC;font-size:13px;letter-spacing:.08em;margin-bottom:20px">The Numbers</div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="statPlayers">&mdash;</div><div class="l">Players Rated</div></div>
+        <div class="stat"><div class="n" id="statMatches">&mdash;</div><div class="l">Matches Recorded</div></div>
+        <div class="stat"><div class="n" id="statAvg">&mdash;</div><div class="l">Avg Matches / Player</div></div>
+      </div>
     </div>
   </section>
 
-  <section class="band band--dark center"><div class="container">
-    <div class="eyebrow" style="color:var(--amber)">How our engine works</div>
-    <div class="secname" style="color:#fff;font-size:clamp(24px,4vw,32px);margin-top:6px">Trekkr Rating System</div>
-    <div class="display" style="color:#B4B4BC;font-size:clamp(15px,2.4vw,18px);text-transform:uppercase;font-style:italic;font-weight:800;margin-top:4px">One Rating. One Journey.</div>
-    <p style="color:#B4B4BC;font-size:14px;line-height:1.65;max-width:520px;margin:12px auto 18px">A proven ELO system, adapted for padel. Every match adjusts your rating based on who you played and how you won.</p>
-    <a class="btn btn--primary" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-  </div></section>
 </main>
 <footer class="site-footer">
   <div class="container footer-inner">
@@ -172,64 +164,194 @@
 </footer>
 <script>
 (function(){
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
-})();
-</script>
-<script>
-(function(){
-  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function initials(n){return (String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  function av(p){var u=p.photoUrl||p.photo||'';if(u){return '<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.remove()"/></div>';}return '<div class="av">'+esc(initials(p.displayName||p.name))+'</div>';}
-  function fmt(n){return (n||0).toLocaleString('en-US');}
-  function prow(p,rank){return '<a class="prow" href="/player/'+slug(p.name)+'"><span class="rk">'+rank+'</span>'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span class="pe">'+(p.elo||0)+'</span></a>';}
-
-  fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).then(function(d){
-    var list=(d&&d.leaderboard)||[];
-    var players=list.length;
-    var sumM=list.reduce(function(a,p){return a+(p.totalMatches||0);},0);
-    document.getElementById('statPlayers').textContent=fmt(players);
-    document.getElementById('statMatches').textContent=fmt(sumM);
-    document.getElementById('statAvg').textContent=players?Math.round(sumM/players):0;
-    function top(g){return list.filter(function(p){return (p.gender||'')===g;}).sort(function(a,b){return (b.elo||0)-(a.elo||0);}).slice(0,3);}
-    var m=top('M'),f=top('F');
-    document.getElementById('topM').innerHTML = m.length?m.map(function(p,i){return prow(p,i+1);}).join(''):'<div class="empty">No data yet.</div>';
-    document.getElementById('topF').innerHTML = f.length?f.map(function(p,i){return prow(p,i+1);}).join(''):'<div class="empty">No data yet.</div>';
-  }).catch(function(){
-    document.getElementById('topM').innerHTML='<div class="empty">Couldn\'t load rankings.</div>';
-    document.getElementById('topF').innerHTML='<div class="empty">Couldn\'t load rankings.</div>';
-  });
-
-  var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
-  function search(){
-    var q=(inp.value||'').trim();
-    if(q.length<2){res.innerHTML='';return;}
-    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:8}).toString()).then(function(r){return r.json();}).then(function(d){
-      var list=(d&&d.leaderboard)||[];
-      if(!list.length){res.innerHTML='<p class="p" style="padding:8px 4px">No players found.</p>';return;}
-      res.innerHTML=list.map(function(p){return '<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span class="pe" style="font-size:15px">'+(p.elo||0)+'</span></a>';}).join('');
-    }).catch(function(){res.innerHTML='';});
-  }
-  inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
-  btn&&btn.addEventListener('click',search);
-  inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
 })();
 </script>
 <script>
 (function(){
   var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  var el=document.getElementById('homeEvent'); if(!el) return;
-  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
-    var hi=(d&&d.highlight)||[]; if(!hi.length) return;
-    el.innerHTML='<div class="ev-grid">'+hi.slice(0,2).map(function(x){
-      var label=x.type==='playrank'?'PlayRank':'Tournament';
-      var st=x.status?'<span class="ev-status '+esc(x.status)+'">'+esc(x.status)+'</span>':'';
-      return '<a class="ev-card" href="'+(x.url?esc(x.url):'#')+'"><span class="ev-type ev-'+esc(x.type)+'">'+label+'</span><div class="ev-title">'+esc(x.title)+'</div><div class="ev-meta">'+esc(x.venue||'')+(x.date?' · '+esc(x.date):'')+'</div>'+st+'</a>';
-    }).join('')+'</div>';
-  }).catch(function(){});
+  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+  function normName(n){return String(n||'').trim().toLowerCase();}
+  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function av(p){
+    var u=p.photoUrl||p.photo||'';
+    if(u)return'<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.textContent=\''+esc(initials(p.displayName||p.name))+'\'"/></div>';
+    return'<div class="av">'+esc(initials(p.displayName||p.name))+'</div>';
+  }
+  function fmt(n){return(n||0).toLocaleString('en-US');}
+
+  Promise.all([
+    fetch(BASE+'/public/feed').then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};})
+  ]).then(function(results){
+    var feedData=results[0],venuesData=results[1],lbData=results[2],playersData=results[3];
+    var activePlayrank=(feedData&&feedData.activePlayrank)||[];
+    var venues=(venuesData&&venuesData.venues)||[];
+    var leaderboard=(lbData&&lbData.leaderboard)||[];
+    var players=(playersData&&playersData.players)||[];
+
+    // --- PlayRank Venues ---
+    var venueRegionMap={};
+    venues.forEach(function(v){if(v.name)venueRegionMap[normName(v.name)]=v.region||'';});
+
+    var venueMap={};
+    activePlayrank.forEach(function(p){
+      var vn=(p.venue||'').trim();
+      if(!vn)return;
+      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||''};
+      venueMap[vn].sessions.push(p);
+    });
+    var venueList=Object.keys(venueMap).map(function(k){return venueMap[k];});
+
+    var regions=[];
+    venueList.forEach(function(v){if(v.region&&regions.indexOf(v.region)===-1)regions.push(v.region);});
+    regions.sort();
+
+    var filterEl=document.getElementById('prFilter');
+    var listEl=document.getElementById('prVenues');
+    var moreBtn=document.getElementById('prShowMore');
+    var showCount=4;
+    var currentRegion='All';
+
+    function venueInits(name){return String(name).trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()||'?';}
+    function sessionTags(sessions){
+      var levels=[],genders=[];
+      sessions.forEach(function(s){
+        if(s.level&&levels.indexOf(s.level)===-1)levels.push(s.level);
+        var g=s.gender==='M'||s.gender==='Putra'?'Putra':s.gender==='F'||s.gender==='Putri'?'Putri':s.gender;
+        if(g&&genders.indexOf(g)===-1)genders.push(g);
+      });
+      var parts=[];
+      if(levels.length)parts.push(levels.join(' · '));
+      if(genders.length)parts.push(genders.join(' · '));
+      return parts.join(' · ');
+    }
+
+    function renderVenues(){
+      var filtered=currentRegion==='All'?venueList:venueList.filter(function(v){return v.region===currentRegion;});
+      if(!filtered.length){
+        listEl.innerHTML='<div class="empty">Tidak ada sesi PlayRank aktif saat ini. <a class="lnk" href="https://trekkr.online/playrank">View PlayRank &rarr;</a></div>';
+        moreBtn.style.display='none';
+        return;
+      }
+      var shown=filtered.slice(0,showCount);
+      var html='<div class="venue-list">';
+      shown.forEach(function(v){
+        var s=slug(v.name);
+        var tags=sessionTags(v.sessions);
+        html+='<a class="venue-row" href="https://venue.trekkr.online/'+s+'">';
+        html+='<div class="venue-av">'+esc(venueInits(v.name))+'</div>';
+        html+='<div class="venue-info"><div class="venue-name">'+esc(v.name)+'</div>';
+        if(tags)html+='<div class="venue-tags">'+esc(tags)+'</div>';
+        html+='</div>';
+        if(v.region)html+='<span class="venue-region-badge">'+esc(v.region)+'</span>';
+        html+='<i class="ti ti-chevron-right" style="color:var(--muted);flex-shrink:0" aria-hidden="true"></i>';
+        html+='</a>';
+      });
+      html+='</div>';
+      listEl.innerHTML=html;
+      if(filtered.length>showCount){
+        moreBtn.style.display='block';
+        moreBtn.onclick=function(){showCount+=4;renderVenues();};
+      }else{
+        moreBtn.style.display='none';
+      }
+    }
+
+    if(filterEl&&regions.length){
+      var tabs=['All'].concat(regions);
+      filterEl.innerHTML=tabs.map(function(r){
+        return'<button class="filter-tab'+(r===currentRegion?' active':'')+'" data-r="'+esc(r)+'">'+esc(r)+'</button>';
+      }).join('');
+      filterEl.addEventListener('click',function(e){
+        var btn=e.target.closest('.filter-tab');
+        if(!btn)return;
+        currentRegion=btn.getAttribute('data-r');
+        showCount=4;
+        filterEl.querySelectorAll('.filter-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-r')===currentRegion);});
+        renderVenues();
+      });
+    }
+    renderVenues();
+
+    // --- Most Active Players ---
+    var activeEl=document.getElementById('activePlayersEl');
+    if(activeEl){
+      var sorted=leaderboard.slice().sort(function(a,b){return(b.totalMatches||0)-(a.totalMatches||0);}).slice(0,5);
+      activeEl.innerHTML=sorted.length?sorted.map(function(p,i){
+        return'<a class="prow" href="/player/'+slug(p.name)+'">'
+          +'<span class="rk">'+(i+1)+'</span>'
+          +av(p)
+          +'<span class="pn">'+esc(p.displayName||p.name)+'</span>'
+          +'<span class="pm">'+fmt(p.totalMatches||0)+' matches</span>'
+          +'</a>';
+      }).join(''):'<div class="empty" style="margin-top:8px">No data yet.</div>';
+    }
+
+    // --- New Players ---
+    var newEl=document.getElementById('newPlayersEl');
+    if(newEl){
+      var lbMap={};
+      leaderboard.forEach(function(p){lbMap[normName(p.name)]=p;});
+      var newPlayers=players.slice(-4).reverse();
+      newEl.innerHTML=newPlayers.length?'<div class="np-grid">'+newPlayers.map(function(p){
+        var lb=lbMap[normName(p.name)]||{};
+        var level=lb.level||'Unrated';
+        var region=p.region||lb.region||'';
+        var meta=[region,level].filter(Boolean).join(' · ');
+        return'<div class="np-card">'
+          +av({displayName:p.displayName||p.name,name:p.name,photoUrl:p.photoUrl||''})
+          +'<div class="np-info"><div class="np-name">'+esc(p.displayName||p.name)+'</div>'
+          +(meta?'<div class="np-meta">'+esc(meta)+'</div>':'')
+          +'</div><span class="np-new">New</span></div>';
+      }).join('')+'</div>':'<div class="empty mt8">No new players yet.</div>';
+    }
+
+    // --- The Numbers ---
+    var total=leaderboard.reduce(function(s,p){return s+(p.totalMatches||0);},0);
+    var sp=document.getElementById('statPlayers');
+    var sm=document.getElementById('statMatches');
+    var sa=document.getElementById('statAvg');
+    if(sp)sp.textContent=fmt(leaderboard.length);
+    if(sm)sm.textContent=fmt(total);
+    if(sa)sa.textContent=leaderboard.length?Math.round(total/leaderboard.length):0;
+
+  }).catch(function(){
+    var listEl=document.getElementById('prVenues');
+    if(listEl)listEl.innerHTML='<div class="empty">Gagal memuat data.</div>';
+  });
+})();
+</script>
+<script>
+(function(){
+  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function av(p){
+    var u=p.photoUrl||'';
+    if(u)return'<div class="av" style="width:36px;height:36px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover"/></div>';
+    return'<div class="av" style="width:36px;height:36px">'+esc(initials(p.displayName||p.name))+'</div>';
+  }
+  var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
+  function search(){
+    var q=(inp.value||'').trim();
+    if(q.length<2){res.innerHTML='';return;}
+    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:8}).toString()).then(function(r){return r.json();}).then(function(d){
+      var list=(d&&d.leaderboard)||[];
+      if(!list.length){res.innerHTML='<p style="padding:8px 4px;font-size:13px;color:var(--muted)">No players found.</p>';return;}
+      res.innerHTML=list.map(function(p){
+        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span style="font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)">'+(p.elo||0)+'</span></a>';
+      }).join('');
+    }).catch(function(){res.innerHTML='';});
+  }
+  inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
+  btn&&btn.addEventListener('click',search);
+  inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
 })();
 </script>
 </body>
