@@ -11,16 +11,17 @@
 .container{width:min(1280px,calc(100% - 80px));margin:0 auto}
 .site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,0.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,0.1)}
 .site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
-.brand{display:inline-block;font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:32px;font-weight:800;letter-spacing:0;text-transform:uppercase;padding:.04em .3em .04em .02em;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
-.nav-links{display:flex;gap:6px}.nav-link{border-radius:var(--radius-pill);padding:9px 18px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--on-surface-variant);transition:all var(--motion-base)}.nav-link:hover{background:var(--surface-container)}.nav-link.is-active{color:var(--primary);background:var(--surface-container)}
+.brand{display:inline-block;font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:26px;font-weight:800;letter-spacing:0;text-transform:uppercase;padding:.04em .3em .04em .02em;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.nav-links{display:flex;gap:4px}.nav-link{border-radius:var(--radius-pill);padding:8px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--on-surface-variant);transition:all var(--motion-base)}.nav-link:hover{color:var(--on-surface);background:var(--surface-container)}.nav-link.is-active{color:var(--primary)}
 .header-actions{display:flex;gap:12px}.btn{border:0;border-radius:var(--radius-pill);padding:10px 22px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all var(--motion-base)}.btn--primary{background:var(--primary);color:var(--on-primary)}.btn--ghost{background:var(--surface-container);color:var(--primary)}.btn--text{background:transparent;color:var(--on-surface-variant)}
 .btn--ig{background:linear-gradient(135deg,#833AB4,#E1306C,#F77737);color:#fff}.btn--wa{background:#25D366;color:#fff}
 /* Passport header */
 .pp-header{position:relative;overflow:hidden;padding:var(--rhythm-section) 0;border-bottom:1px solid rgba(115,118,136,0.18);background:linear-gradient(180deg,rgba(229,238,255,0.45),rgba(248,249,255,0))}
-.pp-header::before{content:"";position:absolute;inset:0;background-image:linear-gradient(140deg,rgba(248,249,255,0.82),rgba(248,249,255,0.46)),var(--pp-bg,url("https://i.ibb.co.com/DH2Kq7K5/Screen-Shot-2026-04-21-at-08-57-40.png"));background-size:cover;background-position:center;pointer-events:none}
+
 .pp-header>.container{position:relative;z-index:1}
 .pp-label{display:inline-flex;align-items:center;gap:8px;border-radius:var(--radius-pill);padding:6px 12px;background:var(--surface-container);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--primary)}
 .pp-title{margin-top:10px;font-family:'Saira Condensed',sans-serif;font-size:clamp(30px,4.6vw,58px);line-height:1.02;letter-spacing:-0.04em;text-transform:uppercase;font-weight:900}
+.pp-intro{margin-top:14px;max-width:640px;font-size:14px;line-height:1.65;color:var(--on-surface-variant)}
 /* Hero card */
 .pp-hero{margin-top:var(--space-7);border-radius:var(--radius-xl);padding:24px;background:linear-gradient(140deg,rgba(255,106,0,0.08),rgba(255,176,0,0.08));display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;box-shadow:var(--shadow-soft)}
 .pp-photo{width:120px;height:120px;border-radius:var(--radius-lg);object-fit:cover;background:var(--surface-container)}
@@ -633,7 +634,7 @@ canvas#shareCanvas{display:none}
 <body>
 <header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online/" class="brand">Trekkr</a><nav class="nav-links" aria-label="Primary"><a class="nav-link" href="https://trekkr.online/">Home</a><a class="nav-link" href="https://trekkr.online/rankings">Rankings</a><a class="nav-link" href="https://trekkr.online/playrank">PlayRank</a><a class="nav-link" href="https://trekkr.online/tournament">Tournament</a><a class="nav-link" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav><button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button></div><div class="container"><nav class="mobile-nav" id="mobileNav" aria-label="Mobile"><a href="https://trekkr.online/">Home</a><a href="https://trekkr.online/rankings">Rankings</a><a href="https://trekkr.online/playrank">PlayRank</a><a href="https://trekkr.online/tournament">Tournament</a><a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav></div></header>
 <main>
-  <section class="pp-header"><div class="container"><span class="pp-label" id="ppLabel">Trekkr Passport</span><h1 class="pp-title" id="ppTitle">Player Passport</h1></div></section>
+  <section class="pp-header"><div class="container"><span class="pp-label" id="ppLabel">Trekkr Passport</span><h1 class="pp-title" id="ppTitle">Player Passport</h1><p class="pp-intro">Your Player Passport is your padel identity on Trekkr. Every match you play is recorded and turned into a single rating that reflects your real level — no self-rating, no guesswork. It updates automatically after each match and follows you across every venue, league, and tournament powered by Trekkr.</p></div></section>
   <section><div class="container" id="content"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Fetching player data & calculating history...</p></div></div></section>
 </main>
 <canvas id="shareCanvas" width="1080" height="1920"></canvas>
@@ -881,7 +882,7 @@ async function loadPlayer(){
 
   renderPlayer(d);
 
-  try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;if(st.passport_image){document.querySelector('.pp-header').style.setProperty('--pp-bg','url('+st.passport_image+')')}}catch(e){}
+  try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;}catch(e){}
 }
 
 function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
