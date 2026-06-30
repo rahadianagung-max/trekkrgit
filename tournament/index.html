@@ -43,6 +43,19 @@
 .fcard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
 .acard{border:1px solid var(--border);border-radius:13px;padding:15px;background:var(--surface)}
 .empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ev-card{display:block;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);transition:border-color .2s}
+.ev-card:hover{border-color:var(--orange)}
+.ev-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-bottom:8px}
+.ev-playrank{background:var(--warm);color:#C2410C}
+.ev-tournament{background:#EEF0FF;color:#534AB7}
+.ev-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);line-height:1.05}
+.ev-meta{font-size:12.5px;color:var(--muted);margin-top:6px}
+.ev-sub{font-size:11.5px;color:var(--subtle);margin-top:4px}
+.ev-status{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.ev-status.live,.ev-status.active{background:rgba(34,160,82,.12);color:#0F6E56}
+.ev-status.upcoming{background:#E6F1FB;color:#185FA5}
+@media(max-width:640px){.ev-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -75,7 +88,7 @@
     <h1 class="display">Tournament Management</h1>
     <div class="tagline">Professional Tournament Experiences. Powered by Trekkr.</div>
     <p class="lead">From community competitions to large-scale championships, Trekkr helps organizers deliver tournaments that are structured, professional, and enjoyable for every participant. Whether you need a complete operations team or simply a powerful management platform, Trekkr provides the expertise and technology to make it happen.</p>
-    <div class="mt16"><a class="btn btn--primary" href="https://trekkr.online/tournament/demo.html">Try the engine</a></div>
+    <div class="mt16"><a class="btn btn--primary" href="https://trekkr.online/tournaments">Try the engine</a></div>
   </section>
 
   <section class="band band--warm"><div class="container">
@@ -102,7 +115,7 @@
     <div class="secname">Tournament Engine Licensing</div>
     <div class="secsub">Run Your Own Tournament Like a Pro</div>
     <p class="p mt8" style="max-width:700px">Designed for tournament organizers who want full control while leveraging Trekkr's proven tournament technology. Our platform is easy to learn, simple to operate, and backed by technical support from the Trekkr team.</p>
-    <div class="mt12"><a class="btn btn--ghost" href="https://trekkr.online/tournament/demo.html">Try the engine</a></div>
+    <div class="mt12"><a class="btn btn--ghost" href="https://trekkr.online/tournaments">Try the engine</a></div>
     <div class="eyebrow mt24">Built Into Every Licensed Engine</div>
     <div class="grid2 mt12">
       <div class="acard">
@@ -151,6 +164,21 @@
 (function(){
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
+})();
+</script>
+<script>
+(function(){
+  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  var el=document.getElementById('trEvents'); if(!el) return;
+  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
+    var list=(d&&d.events)||[]; if(!list.length) return;
+    el.innerHTML='<div class="ev-grid">'+list.map(function(e){
+      var sub=[e.format,e.category].filter(Boolean).join(' · ');
+      var st=e.status?'<span class="ev-status '+esc(e.status)+'">'+esc(e.status)+'</span>':'';
+      return '<a class="ev-card" href="'+(e.url?esc(e.url):'#')+'"><span class="ev-type ev-tournament">Tournament</span><div class="ev-title">'+esc(e.name)+'</div><div class="ev-meta">'+esc(e.venue||'')+(e.date?' · '+esc(e.date):'')+'</div>'+(sub?'<div class="ev-sub">'+esc(sub)+'</div>':'')+st+'</a>';
+    }).join('')+'</div>';
+  }).catch(function(){});
 })();
 </script>
 </body>
