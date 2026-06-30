@@ -21,6 +21,8 @@ const TABS = {
   venues: "Venues",
   admins: "Admins",
   claims: "Claims",
+  playrank_active: "PlayRank_Active",
+  t_events: "Tournament_Events",
 };
 
 const headers = {
@@ -117,12 +119,72 @@ exports.handler = async (event) => {
     if (path === "settings" && method === "GET") return await getSettings();
     if (path === "settings" && method === "PUT") return await updateSettings(body);
 
+    if (path === "public/feed" && method === "GET") return await getPublicFeed();
+
     return respond(404, { error: "Not found", route: path });
   } catch (err) {
     console.error("Function error:", err);
     return respond(500, { error: err.message });
   }
 };
+
+// ── PUBLIC FEED (Active PlayRank + Events + Event Highlight) ──
+async function feedRows(sheets, range) {
+  try {
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range });
+    return res.data.values || [];
+  } catch (e) {
+    return [];
+  }
+}
+function feedTrue(v) {
+  return String(v == null ? "" : v).trim().toUpperCase() === "TRUE";
+}
+async function getPublicFeed() {
+  const sheets = getSheets();
+  const [pr, ev] = await Promise.all([
+    feedRows(sheets, `${TABS.playrank_active}!A2:M`),
+    feedRows(sheets, `${TABS.t_events}!A2:M`),
+  ]);
+  const activePlayrank = pr
+    .filter((r) => r[0] || r[1])
+    .map((r) => ({
+      id: r[0] || "", title: r[1] || "", venue: r[2] || "", level: r[3] || "",
+      gender: r[4] || "", format: r[5] || "", weekStart: r[6] || "", weekEnd: r[7] || "",
+      status: (r[8] || "").toString().toLowerCase(), players: r[9] || "", leader: r[10] || "",
+      url: r[11] || "", highlight: feedTrue(r[12]),
+    }));
+  const events = ev
+    .filter((r) => r[0] || r[1])
+    .map((r) => ({
+      id: r[0] || "", name: r[1] || "", venue: r[2] || "", date: r[3] || "",
+      startTime: r[4] || "", status: (r[8] || "").toString().toLowerCase(),
+      format: r[9] || "", category: r[10] || "", url: r[11] || "", highlight: feedTrue(r[12]),
+    }));
+  const norm = []
+    .concat(activePlayrank.map((p) => ({
+      type: "playrank", title: p.title || p.venue, venue: p.venue,
+      date: p.weekStart || p.weekEnd || "", status: p.status, url: p.url, highlight: p.highlight,
+    })))
+    .concat(events.map((e) => ({
+      type: "tournament", title: e.name, venue: e.venue,
+      date: e.date || "", status: e.status, url: e.url, highlight: e.highlight,
+    })));
+  let highlight = norm.filter((x) => x.highlight);
+  if (!highlight.length) {
+    const rank = { live: 0, active: 0, upcoming: 1 };
+    highlight = norm
+      .filter((x) => x.status !== "completed" && x.status !== "finished")
+      .sort((a, b) =>
+        (rank[a.status] == null ? 2 : rank[a.status]) - (rank[b.status] == null ? 2 : rank[b.status]) ||
+        String(a.date).localeCompare(String(b.date))
+      );
+  } else {
+    highlight = highlight.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+  highlight = highlight.slice(0, 3);
+  return respond(200, { activePlayrank, events, highlight });
+}
 
 // ── AUTH ──
 async function login({ username, password }) {
