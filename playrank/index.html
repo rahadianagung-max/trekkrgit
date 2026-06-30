@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlayRank — Trekkr</title>
+<meta name="description" content="PlayRank turns casual games into structured competition. Weekly PlayRank and PlayRank Combine for venues and communities."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+.wrap{padding:30px 0 10px}
+.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
+.sec:first-of-type{border-top:0}
+.band{padding:34px 0}
+.band--warm{background:var(--warm);border-top:1px solid var(--warm-border);border-bottom:1px solid var(--warm-border)}
+.band--dark{background:var(--text);color:#fff}
+.hero{padding:46px 0 26px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,52px);margin:0}
+.tagline{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(15px,2.4vw,18px);margin-top:6px}
+.lead{color:var(--muted);font-size:14px;line-height:1.65;max-width:600px;margin:14px auto 0}
+.secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
+.secname--dark{color:var(--text)}
+.secsub{font-size:15px;font-weight:600;color:var(--text);margin-top:3px}
+.p{color:var(--muted);font-size:14px;line-height:1.65}
+.card{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.center{text-align:center}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.ico{font-size:24px;color:var(--orange)}
+@media(max-width:760px){.grid3{grid-template-columns:1fr}}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.acard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2410C;background:var(--warm);border:1px solid var(--warm-border);border-radius:999px;padding:3px 9px}
+.pcard{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:13px 15px;background:var(--surface)}
+.cpill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;display:inline-block}
+.ty-weekly{background:#FFF4DA;color:#854F0B}.ty-combine{background:#EEF0FF;color:#534AB7}
+.s-live{background:#E7F6EC;color:#15803D}.s-up{background:#EAF0FB;color:#185FA5}
+.lnk{color:var(--orange);font-weight:700;font-size:13px}
+.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="https://trekkr.online/" class="brand">Trekkr</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank" class="active">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+    </nav>
+    <div class="header-actions">
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+    </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank" class="active">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero container">
+    <h1 class="display">PlayRank</h1>
+    <div class="tagline">Competitive Play. Meaningful Progress.</div>
+    <p class="lead">PlayRank transforms casual games into structured competitive experiences that keep players engaged, returning, and improving. Whether you're looking for your next ranked session or building a thriving padel community, PlayRank provides flexible competition formats designed for every level of play.</p>
+  </section>
+
+  <section class="sec container center">
+    <h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px)">Two Ways to Compete</h2>
+  </section>
+
+  <section class="sec container" style="border-top:0;padding-top:0">
+    <div class="secname">Weekly PlayRank</div>
+    <div class="secsub">The Weekly Competition Engine</div>
+    <p class="p mt8" style="max-width:680px">A recurring ranked competition played throughout the week within a single venue or community. Players participate in multiple sessions, earning wins and points along the way. At the end of the week, the player with the strongest overall performance claims the top spot.</p>
+    <a class="lnk mt12" style="display:inline-block" href="https://admin.trekkr.online">Learn more &rarr; <span style="color:var(--muted)">(Venue Admin)</span></a>
+  </section>
+
+  <section class="band band--warm"><div class="container">
+    <div class="secname">PlayRank Combine</div>
+    <div class="secsub">Discover Your Community's Competitive Landscape</div>
+    <p class="p mt8" style="max-width:680px">A structured PlayRank format designed to accurately identify player levels and create a clear competitive hierarchy within a community. Unlike traditional social events, Community Skill Index focuses on generating a large sample of meaningful matches to reveal true player performance.</p>
+    <a class="lnk mt12" style="display:inline-block" href="https://admin.trekkr.online">Learn more &rarr; <span style="color:var(--muted)">(Venue Admin)</span></a>
+  </div></section>
+
+  <section class="sec container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <span class="secname">Active PlayRank</span>
+      <span class="tag"><i class="ti ti-table" aria-hidden="true"></i>from sheet · PlayRank_Active</span>
+    </div>
+    <div id="prActive">
+      <div class="empty">Belum ada PlayRank aktif saat ini. Daftar ini akan terisi otomatis begitu sheet <strong>PlayRank_Active</strong> tersedia.</div>
+    </div>
+  </section>
+
+  <section class="band band--warm"><div class="container">
+    <div class="grid2">
+      <div class="acard">
+        <i class="ti ti-target-arrow ico" aria-hidden="true" style="font-size:22px"></i>
+        <div class="eyebrow mt8">For Players</div>
+        <div class="display secname--dark" style="font-size:19px;margin:2px 0 6px">Find Ranked Matches Near You</div>
+        <p class="p" style="font-size:12.5px">Discover upcoming and ongoing PlayRank events hosted by courts and communities across the Trekkr network. Compete, earn results, track your progress, and build your Trekkr Rating through every match you play.</p>
+        <a class="lnk mt12" style="display:inline-block" href="https://venue.trekkr.online">Find ranked matches &rarr;</a>
+      </div>
+      <div class="acard">
+        <i class="ti ti-users-group ico" aria-hidden="true" style="font-size:22px"></i>
+        <div class="eyebrow mt8">For Courts &amp; Communities</div>
+        <div class="display secname--dark" style="font-size:19px;margin:2px 0 6px">Build Stronger Communities Through Competition</div>
+        <p class="p" style="font-size:12.5px">PlayRank helps courts and community leaders create recurring competition programs that drive engagement, retention, and player development.</p>
+        <a class="lnk mt12" style="display:inline-block" href="https://admin.trekkr.online">Host PlayRank &rarr;</a>
+      </div>
+    </div>
+  </div></section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://admin.trekkr.online">Admin (Venue login)</a>
+      <a href="https://trekkr.online/market">Market Intelligence</a>
+      <a href="https://trekkr.online/about">About</a>
+    </nav>
+    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
+  </div>
+</footer>
+<script>
+(function(){
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
+})();
+</script>
+</body>
+</html>

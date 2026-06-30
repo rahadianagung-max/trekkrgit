@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>How Trekkr Works — Trekkr</title>
+<meta name="description" content="How Trekkr's ELO rating engine works: match impact, tiers, calibration, best-partner analysis, and all achievement badges."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+.wrap{padding:30px 0 10px}
+.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
+.sec:first-of-type{border-top:0}
+.band{padding:34px 0}
+.band--warm{background:var(--warm);border-top:1px solid var(--warm-border);border-bottom:1px solid var(--warm-border)}
+.band--dark{background:var(--text);color:#fff}
+.hero{padding:46px 0 26px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,52px);margin:0}
+.tagline{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(15px,2.4vw,18px);margin-top:6px}
+.lead{color:var(--muted);font-size:14px;line-height:1.65;max-width:600px;margin:14px auto 0}
+.secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
+.secname--dark{color:var(--text)}
+.secsub{font-size:15px;font-weight:600;color:var(--text);margin-top:3px}
+.p{color:var(--muted);font-size:14px;line-height:1.65}
+.card{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.center{text-align:center}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.ico{font-size:24px;color:var(--orange)}
+@media(max-width:760px){.grid3{grid-template-columns:1fr}}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.ex{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.exlab{font-size:11px;font-weight:700;color:var(--muted)}
+.exval{font-family:var(--display);font-style:italic;font-weight:800;font-size:22px;color:var(--text)}
+.divv{height:34px;width:1px;background:var(--border)}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--border-soft)}
+.trow:last-child{border-bottom:0}
+.tierpill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.trange{font-size:13px;font-weight:600;color:var(--muted)}
+.bp{display:flex;align-items:center;gap:14px}
+.bpav{width:48px;height:48px;border-radius:12px;background:#FFE8D6;color:#C2410C;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;flex-shrink:0}
+.bcat{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--text);font-size:17px;margin:16px 0 0}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}
+.brow{display:flex;gap:10px;border:1px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--surface)}
+.bemoji{font-size:20px;line-height:1.1;flex-shrink:0}
+.binfo{min-width:0}
+.bname{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bcrit{font-size:12px;color:var(--muted);line-height:1.45;margin-top:3px}
+.rpill{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:999px}
+.r-common{background:#F1F1F3;color:#52525B}.r-uncommon{background:#FFF0E6;color:#C2410C}.r-rare{background:#F1ECFC;color:#6D28D9}.r-epic{background:#FFF4DA;color:#92600C}.r-legendary{background:#FCE9E7;color:#B91C1C}
+@media(max-width:560px){.bgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="https://trekkr.online/" class="brand">Trekkr</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works" class="active">How Trekkr Works</a>
+    </nav>
+    <div class="header-actions">
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+    </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works" class="active">How Trekkr Works</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero container">
+    <h1 class="display">How Trekkr Works</h1>
+    <div class="tagline">The Engine Behind Every Match</div>
+    <p class="lead">Trekkr uses a proven ELO rating system — the same idea used in chess and pro sports — adapted for padel. Every match you play adjusts your rating based on the result and the strength of your opponents.</p>
+  </section>
+
+  <section class="band band--warm"><div class="container">
+    <div class="secname">Every Match Moves Your Rating</div>
+    <p class="p mt8" style="max-width:640px">Win and your rating goes up. Lose and it dips. How much depends on who you played — beating a stronger pair is worth more than beating a weaker one.</p>
+    <div class="card mt16">
+      <div class="ex">
+        <div><div class="exlab">YOUR PAIR</div><div class="exval">1,500</div></div>
+        <div class="exlab">vs</div>
+        <div><div class="exlab">THEIR PAIR</div><div class="exval">1,700</div></div>
+        <div class="divv"></div>
+        <div><div class="exlab">RESULT</div><div class="exval">Win 6–3</div></div>
+        <div style="margin-left:auto;text-align:right"><div class="exlab">RATING</div><div class="exval" style="color:var(--green)">+22</div></div>
+      </div>
+      <p class="p" style="font-size:12.5px;margin:12px 0 0;border-top:1px solid var(--border-soft);padding-top:10px">You beat a higher-rated pair, so the gain is bigger — and both partners earn the same boost.</p>
+    </div>
+  </div></section>
+
+  <section class="sec container">
+    <div class="center"><div class="eyebrow">What Affects Your Rating</div><h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px);margin-top:6px">Three Things The Engine Weighs</h2></div>
+    <div class="grid3 mt16">
+      <div class="card"><i class="ti ti-scale ico" aria-hidden="true"></i><div class="secsub mt8">Opponent Strength</div><p class="p mt8" style="font-size:13px">Before each match the engine estimates each team's probability of winning, then compares it to the actual result. Beating stronger pairs earns more.</p></div>
+      <div class="card"><i class="ti ti-chart-arrows-vertical ico" aria-hidden="true"></i><div class="secsub mt8">Margin of Victory</div><p class="p mt8" style="font-size:13px">Winning matters — but how you win matters too. A dominant victory can generate additional rating benefit compared to a narrow win.</p></div>
+      <div class="card"><i class="ti ti-users ico" aria-hidden="true"></i><div class="secsub mt8">Team Play</div><p class="p mt8" style="font-size:13px">Padel is doubles. Trekkr averages each pair's rating to set the expectation, then adjusts both partners after the match.</p></div>
+    </div>
+  </section>
+
+  <section class="band band--warm"><div class="container" style="display:flex;gap:16px;align-items:flex-start">
+    <i class="ti ti-adjustments-alt ico" aria-hidden="true" style="font-size:26px;margin-top:2px"></i>
+    <div><div class="secsub" style="font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:19px">Calibration — Your First 15 Matches</div>
+    <p class="p mt8" style="max-width:680px">New players need match data before receiving a reliable rating. A minimum of 15 recorded matches is required — and the more you play, the more precise your rating becomes. Until then, your passport shows a "calibrating" status.</p></div>
+  </div></section>
+
+  <section class="sec container">
+    <div class="secname">The Tier System</div>
+    <p class="p mt8" style="max-width:600px">Your rating maps to a tier so you always know where you stand. Climb the ladder as your rating grows.</p>
+    <div class="mt16" style="max-width:560px"><div class="trow"><span class="tierpill" style="background:#F4F4F6;color:#71717A">Beginner</span><span class="trange">0 – 899</span></div><div class="trow"><span class="tierpill" style="background:#EDEDF0;color:#52525B">Upper Beginner</span><span class="trange">900 – 1199</span></div><div class="trow"><span class="tierpill" style="background:#FBEDE6;color:#B45309">Lower Bronze</span><span class="trange">1200 – 1499</span></div><div class="trow"><span class="tierpill" style="background:#F5E0D3;color:#9A3412">Bronze</span><span class="trange">1500 – 1799</span></div><div class="trow"><span class="tierpill" style="background:#EFD3C2;color:#7C2D12">Upper Bronze</span><span class="trange">1800 – 2099</span></div><div class="trow"><span class="tierpill" style="background:#ECECEF;color:#3F3F46">Silver</span><span class="trange">2100 – 2499</span></div><div class="trow"><span class="tierpill" style="background:#FFF4DA;color:#854F0B">Gold</span><span class="trange">2500 – 2999</span></div><div class="trow"><span class="tierpill" style="background:#EEF0FF;color:#534AB7">Platinum</span><span class="trange">3000 – 4000</span></div></div>
+  </section>
+
+  <section class="band band--warm"><div class="container">
+    <div class="secname">Know Your Best Partner</div>
+    <p class="p mt8" style="max-width:640px">Trekkr studies every match you've recorded to find the partner you win with most. Your strongest partnership — and your win rate together — shows right on your passport.</p>
+    <div class="card mt16 bp" style="max-width:520px">
+      <div class="bpav">JD</div>
+      <div style="flex:1;min-width:0"><div class="exlab">BEST PARTNER</div><div style="font-weight:700;font-size:15px">John Doe</div></div>
+      <div style="text-align:right"><div class="exval" style="color:var(--green)">82%</div><div class="exlab">win rate · 11 matches</div></div>
+    </div>
+  </div></section>
+
+  <section class="sec container">
+    <div class="secname">Achievement Badges</div>
+    <p class="p mt8" style="max-width:640px">Earn badges as you play — from clutch upsets to loyal partnerships. 25 badges across five categories, each unlocked by what you do on court.</p>
+    <div class="mt8"><div class="bcat">Combat</div><div class="bgrid"><div class="brow"><span class="bemoji">⚔️</span><div class="binfo"><div class="bname">Giant Slayer <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Beat a team averaging 200+ ELO above yours.</div></div></div><div class="brow"><span class="bemoji">🐉</span><div class="binfo"><div class="bname">Dragon Slayer <span class="rpill r-rare">rare</span></div><div class="bcrit">Beat a team averaging 400+ ELO above yours.</div></div></div><div class="brow"><span class="bemoji">🎯</span><div class="binfo"><div class="bname">Flawless <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Win a match with the opponent scoring 0.</div></div></div><div class="brow"><span class="bemoji">🔥</span><div class="binfo"><div class="bname">Unstoppable <span class="rpill r-rare">rare</span></div><div class="bcrit">Win 5 or more matches in a row.</div></div></div><div class="brow"><span class="bemoji">🛡️</span><div class="binfo"><div class="bname">Iron Wall <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Win a match holding opponents to 2 games or less.</div></div></div><div class="brow"><span class="bemoji">🪃</span><div class="binfo"><div class="bname">Comeback Kid <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Lose 3 in a row, then win the next 3 in the same session.</div></div></div></div><div class="bcat">Journey</div><div class="bgrid"><div class="brow"><span class="bemoji">🚀</span><div class="binfo"><div class="bname">Rocket <span class="rpill r-rare">rare</span></div><div class="bcrit">Gain 200+ ELO in a single day of play.</div></div></div><div class="brow"><span class="bemoji">🏔️</span><div class="binfo"><div class="bname">Summit <span class="rpill r-common">common</span></div><div class="bcrit">Reach a new personal-best ELO.</div></div></div><div class="brow"><span class="bemoji">📈</span><div class="binfo"><div class="bname">On The Rise <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Gain 150+ ELO over the last 30 days.</div></div></div><div class="brow"><span class="bemoji">⚡</span><div class="binfo"><div class="bname">Fast Track <span class="rpill r-rare">rare</span></div><div class="bcrit">Gain 200+ ELO within your first 20 matches after calibration.</div></div></div><div class="brow"><span class="bemoji">🌅</span><div class="binfo"><div class="bname">Late Bloomer <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Gain a tier after 50+ total matches.</div></div></div></div><div class="bcat">Consistency</div><div class="bgrid"><div class="brow"><span class="bemoji">🎖️</span><div class="binfo"><div class="bname">Veteran <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Complete 100 recorded matches.</div></div></div><div class="brow"><span class="bemoji">🏛️</span><div class="binfo"><div class="bname">Legend <span class="rpill r-epic">epic</span></div><div class="bcrit">Complete 500 recorded matches.</div></div></div><div class="brow"><span class="bemoji">💎</span><div class="binfo"><div class="bname">Iron Resolve <span class="rpill r-rare">rare</span></div><div class="bcrit">Lose 5 in a row, then hold a positive overall win rate.</div></div></div><div class="brow"><span class="bemoji">🌍</span><div class="binfo"><div class="bname">Nomad <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Play at 3 or more different venues.</div></div></div><div class="brow"><span class="bemoji">🎭</span><div class="binfo"><div class="bname">All-Rounder <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Play with 10 or more different partners.</div></div></div><div class="brow"><span class="bemoji">📍</span><div class="binfo"><div class="bname">Founding Player <span class="rpill r-legendary">legendary</span></div><div class="bcrit">Be one of the first 50 players to register on Trekkr.</div></div></div></div><div class="bcat">Partnership</div><div class="bgrid"><div class="brow"><span class="bemoji">🤜</span><div class="binfo"><div class="bname">Dynamic Duo <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">80%+ win rate with one partner over 10+ matches together.</div></div></div><div class="brow"><span class="bemoji">💑</span><div class="binfo"><div class="bname">Unbreakable <span class="rpill r-rare">rare</span></div><div class="bcrit">15 straight wins with the same partner.</div></div></div><div class="brow"><span class="bemoji">🧩</span><div class="binfo"><div class="bname">Team Player <span class="rpill r-rare">rare</span></div><div class="bcrit">60%+ win rate with 5+ partners (5+ matches each).</div></div></div><div class="brow"><span class="bemoji">🎪</span><div class="binfo"><div class="bname">Versatile <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Win at least one match with 5 different partners.</div></div></div></div><div class="bcat">Special</div><div class="bgrid"><div class="brow"><span class="bemoji">🎰</span><div class="binfo"><div class="bname">Underdog <span class="rpill r-uncommon">uncommon</span></div><div class="bcrit">Win as the lowest combined-ELO team in the session.</div></div></div><div class="brow"><span class="bemoji">🥷</span><div class="binfo"><div class="bname">Dark Horse <span class="rpill r-rare">rare</span></div><div class="bcrit">Finish 1st in a session after starting ranked 5th or lower.</div></div></div><div class="brow"><span class="bemoji">👑</span><div class="binfo"><div class="bname">King Killer <span class="rpill r-epic">epic</span></div><div class="bcrit">Defeat the #1 ELO player at any venue.</div></div></div><div class="brow"><span class="bemoji">🌊</span><div class="binfo"><div class="bname">Tide Turner <span class="rpill r-rare">rare</span></div><div class="bcrit">Improve from below 40% to above 60% win rate over 30 days.</div></div></div></div></div>
+  </section>
+
+  <section class="band band--dark center"><div class="container">
+    <div class="secname" style="color:#fff;font-size:clamp(26px,4vw,34px)">One Rating. One Journey.</div>
+    <p style="color:#B4B4BC;font-size:14px;line-height:1.65;max-width:540px;margin:12px auto 18px">Weekly PlayRank, a Combine, or a tournament — at any venue or community in the network — it all feeds a single rating. Your competitive identity follows you everywhere you play.</p>
+    <a class="btn btn--primary" href="https://trekkr.online/#find">Find your name</a>
+  </div></section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://admin.trekkr.online">Admin (Venue login)</a>
+      <a href="https://trekkr.online/market">Market Intelligence</a>
+      <a href="https://trekkr.online/about">About</a>
+    </nav>
+    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
+  </div>
+</footer>
+<script>
+(function(){
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
+})();
+</script>
+</body>
+</html>
