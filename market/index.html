@@ -4,19 +4,66 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Market Intelligence — Trekkr</title>
-<meta name="description" content="Insight into the Indonesian padel scene — players, venues, and competitive trends across the Trekkr network."/>
+<meta name="description" content="Indonesia padel market intelligence — courts, players, density, and spending power across 19 regions and 32 sub-areas."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-.hero{padding:54px 0 30px;text-align:center}
-.hero h1{font-size:clamp(30px,6vw,48px);margin:0}
-.tagline{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(15px,2.4vw,18px);margin-top:6px}
-.lead{color:var(--muted);font-size:15px;line-height:1.65;max-width:560px;margin:14px auto 0}
-.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
-.note{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px;max-width:620px}
+:root{--lime:#FF6A00;--sky:#378ADD;--coral:#F0683E;--gold:#F0C040}
+.hero{padding:46px 0 22px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,46px);margin:0;color:var(--text)}
+.tagline{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(14px,2.4vw,17px);margin-top:6px}
+.lead{color:var(--muted);font-size:14.5px;line-height:1.65;max-width:600px;margin:14px auto 0}
+.cta-wrap{text-align:center;margin-top:22px}
+.cta-button{display:inline-block;background:var(--orange);color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em;padding:12px 24px;border-radius:var(--radius-pill);transition:filter .2s,transform .2s}
+.cta-button:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0 6px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 14px;text-align:center}
+.kpi-val{font-family:var(--display);font-style:italic;font-weight:800;font-size:30px;line-height:1;color:var(--orange)}
+.kpi-label{font-size:11px;color:var(--muted);margin-top:8px;font-weight:600}
+.sec{padding:26px 0;border-top:1px solid var(--border-soft)}
+.sec-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.legend{display:flex;gap:16px;margin:0 0 14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.leg-item{display:flex;align-items:center;gap:6px}
+.leg-dot{width:10px;height:10px;border-radius:3px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;padding:11px 10px;background:var(--surface-2);font-size:10px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;font-weight:700;position:sticky;top:0;white-space:nowrap}
+td{padding:10px;border-top:1px solid var(--border-soft);vertical-align:middle}
+tr:hover td{background:var(--surface-2)}
+.area-name{font-weight:600;white-space:nowrap;color:var(--text)}
+.region-header td{background:var(--surface-2);font-weight:700;font-size:13px;border-top:2px solid var(--border)}
+.region-header .area-name{color:var(--orange)}
+.sub-area td{padding-left:24px}
+.sub-area .area-name{font-weight:400;color:var(--subtle)}
+.sub-area .area-name::before{content:'\2514  ';color:var(--faint)}
+.num{text-align:right;white-space:nowrap}
+.bar-cell{width:80px}
+.bar{height:11px;border-radius:3px;min-width:2px}
+.bar-lime{background:linear-gradient(90deg,#FFB000,#FF6A00)}
+.bar-sky{background:linear-gradient(90deg,#7CC0FF,#378ADD)}
+.bar-coral{background:linear-gradient(90deg,#FF9A7A,#F0683E)}
+.bar-gold{background:linear-gradient(90deg,#FFD27A,#F0C040)}
+.tier-tag{font-size:10px;font-weight:700;padding:2px 9px;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+.tt-1{background:var(--warm);color:#C2410C}
+.tt-2{background:#E6F1FB;color:#185FA5}
+.tt-3{background:#FAEEDA;color:#854F0B}
+.tt-4{background:var(--surface-3);color:var(--muted)}
+.total-row td{background:var(--surface-2);font-weight:700;border-top:2px solid var(--orange)}
+.total-row .area-name{color:var(--orange)}
+.insight-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:4px}
+.insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.insight-emoji{font-size:22px;margin-bottom:8px}
+.insight-title{font-weight:700;font-size:14.5px;margin-bottom:6px;color:var(--text)}
+.insight-body{font-size:12.5px;color:var(--muted);line-height:1.6}
+.insight-num{color:var(--orange);font-weight:700}
+.footnote{font-size:11px;color:var(--subtle);line-height:1.7;margin-top:18px;padding:16px;border:1px solid var(--border-soft);border-radius:12px;background:var(--surface-2)}
+.footnote strong{color:var(--muted)}
+@media(max-width:768px){.kpi-row{grid-template-columns:repeat(3,1fr)}.insight-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.kpi-row{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -45,14 +92,153 @@
   </div>
 </header>
 <main>
-  <section class="hero container">
-    <h1 class="display">Market Intelligence</h1>
-    <div class="tagline">The Indonesian Padel Scene, Measured</div>
-    <p class="lead">A public view into the growth of padel across Indonesia — players, venues, regions, and competitive trends, powered by the Trekkr network.</p>
-  </section>
-  <section class="sec container">
-    <div class="note">Dashboard market intelligence sedang disiapkan dengan tampilan brand baru. Sementara ini, data ranking nasional bisa dilihat di <a class="lnk" style="color:var(--orange);font-weight:700" href="https://trekkr.online/rankings">Rankings</a>.</div>
-  </section>
+  <div class="container">
+    <section class="hero">
+      <span class="eyebrow">Indonesia Padel Market Intelligence · 2026</span>
+      <h1 class="display">Market Intelligence</h1>
+      <div class="tagline">Indonesia's Padel Landscape, Mapped</div>
+      <p class="lead">Courts, players, density, and spending power across 19 regions and 32 sub-areas of the Indonesian padel market — the data behind where the game is growing fastest.</p>
+      <div class="cta-wrap"><a href="https://sportsactvd.com/trekkr" class="cta-button" target="_blank" rel="noopener">Court Owner Solution →</a></div>
+    </section>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val">1,415</div><div class="kpi-label">Total Padel Courts</div></div>
+      <div class="kpi"><div class="kpi-val">490,235</div><div class="kpi-label">Reclub Players (Top 6)</div></div>
+      <div class="kpi"><div class="kpi-val">19</div><div class="kpi-label">Regions Mapped</div></div>
+      <div class="kpi"><div class="kpi-val">32</div><div class="kpi-label">Sub-Areas</div></div>
+      <div class="kpi"><div class="kpi-val">~52M</div><div class="kpi-label">Total Population</div></div>
+    </div>
+
+    <section class="sec">
+      <div class="sec-title">Complete breakdown by region &amp; sub-area</div>
+<div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--lime)"></div>Courts</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--sky)"></div>Reclub Players</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--coral)"></div>Court Density (courts/100km²)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>PDRB per kapita (juta Rp)</div>
+    </div>
+<div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Region / Sub-Area</th>
+          <th class="num">Courts</th>
+          <th class="bar-cell">Courts</th>
+          <th class="num">Populasi</th>
+          <th class="num">Luas (km²)</th>
+          <th class="num">PDRB/cap (jt Rp)</th>
+          <th class="num">Courts/100km²</th>
+          <th class="num">Courts/100k pop</th>
+          <th class="num">Reclub Players</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="region-header"><td class="area-name">Jakarta</td><td class="num">368</td><td class="bar-cell"><div class="bar bar-lime" style="width:100%"></div></td><td class="num">10,678,000</td><td class="num">662</td><td class="num">344</td><td class="num">55.6</td><td class="num">3.4</td><td class="num">239,089</td><td><span class="tier-tag tt-1">Tier 1</span></td></tr>
+        <tr class="sub-area"><td class="area-name">Jakarta Selatan</td><td class="num">155</td><td class="bar-cell"><div class="bar bar-lime" style="width:42%"></div></td><td class="num">2,219,000</td><td class="num">141</td><td class="num">397</td><td class="num">109.9</td><td class="num">7.0</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Jakarta Barat</td><td class="num">99</td><td class="bar-cell"><div class="bar bar-lime" style="width:27%"></div></td><td class="num">2,487,000</td><td class="num">130</td><td class="num">266</td><td class="num">76.2</td><td class="num">4.0</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Jakarta Utara</td><td class="num">58</td><td class="bar-cell"><div class="bar bar-lime" style="width:16%"></div></td><td class="num">1,819,000</td><td class="num">147</td><td class="num">369</td><td class="num">39.5</td><td class="num">3.2</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Jakarta Timur</td><td class="num">35</td><td class="bar-cell"><div class="bar bar-lime" style="width:10%"></div></td><td class="num">3,085,000</td><td class="num">188</td><td class="num">204</td><td class="num">18.6</td><td class="num">1.1</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Jakarta Pusat</td><td class="num">21</td><td class="bar-cell"><div class="bar bar-lime" style="width:6%"></div></td><td class="num">1,038,000</td><td class="num">48</td><td class="num">935</td><td class="num">43.8</td><td class="num">2.0</td><td class="num">—</td><td></td></tr>
+
+        <tr class="region-header"><td class="area-name">Tangerang (Raya)</td><td class="num">243</td><td class="bar-cell"><div class="bar bar-lime" style="width:66%"></div></td><td class="num">5,580,000</td><td class="num">1,309</td><td class="num">88</td><td class="num">18.6</td><td class="num">4.4</td><td class="num">101,893</td><td><span class="tier-tag tt-1">Tier 1</span></td></tr>
+        <tr class="sub-area"><td class="area-name">Kota Tangerang</td><td class="num">102</td><td class="bar-cell"><div class="bar bar-lime" style="width:28%"></div></td><td class="num">1,900,000</td><td class="num">184</td><td class="num">110</td><td class="num">55.4</td><td class="num">5.4</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Tangerang Selatan</td><td class="num">85</td><td class="bar-cell"><div class="bar bar-lime" style="width:23%"></div></td><td class="num">1,474,000</td><td class="num">147</td><td class="num">95</td><td class="num">57.8</td><td class="num">5.8</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Kab. Tangerang</td><td class="num">56</td><td class="bar-cell"><div class="bar bar-lime" style="width:15%"></div></td><td class="num">2,206,000</td><td class="num">960</td><td class="num">68</td><td class="num">5.8</td><td class="num">2.5</td><td class="num">—</td><td></td></tr>
+
+        <tr class="region-header"><td class="area-name">Bandung (Raya)</td><td class="num">140</td><td class="bar-cell"><div class="bar bar-lime" style="width:38%"></div></td><td class="num">4,000,000</td><td class="num">1,945</td><td class="num">75</td><td class="num">7.2</td><td class="num">3.5</td><td class="num">57,212</td><td><span class="tier-tag tt-1">Tier 1</span></td></tr>
+        <tr class="sub-area"><td class="area-name">Kota Bandung</td><td class="num">125</td><td class="bar-cell"><div class="bar bar-lime" style="width:34%"></div></td><td class="num">2,530,000</td><td class="num">168</td><td class="num">97</td><td class="num">74.4</td><td class="num">4.9</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Kab. Bandung</td><td class="num">12</td><td class="bar-cell"><div class="bar bar-lime" style="width:3%"></div></td><td class="num">1,200,000</td><td class="num">1,762</td><td class="num">42</td><td class="num">0.7</td><td class="num">1.0</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Bandung Barat</td><td class="num">3</td><td class="bar-cell"><div class="bar bar-lime" style="width:1%"></div></td><td class="num">270,000</td><td class="num">1,306</td><td class="num">34</td><td class="num">0.2</td><td class="num">1.1</td><td class="num">—</td><td></td></tr>
+
+        <tr class="region-header"><td class="area-name">Surabaya</td><td class="num">74</td><td class="bar-cell"><div class="bar bar-lime" style="width:20%"></div></td><td class="num">2,900,000</td><td class="num">351</td><td class="num">185</td><td class="num">21.1</td><td class="num">2.6</td><td class="num">33,481</td><td><span class="tier-tag tt-2">Tier 2</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Bekasi (Raya)</td><td class="num">58</td><td class="bar-cell"><div class="bar bar-lime" style="width:16%"></div></td><td class="num">5,950,000</td><td class="num">1,485</td><td class="num">75</td><td class="num">3.9</td><td class="num">1.0</td><td class="num">36,755</td><td><span class="tier-tag tt-2">Tier 2</span></td></tr>
+        <tr class="sub-area"><td class="area-name">Kota Bekasi</td><td class="num">45</td><td class="bar-cell"><div class="bar bar-lime" style="width:12%"></div></td><td class="num">2,580,000</td><td class="num">210</td><td class="num">72</td><td class="num">21.4</td><td class="num">1.7</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Kab. Bekasi</td><td class="num">13</td><td class="bar-cell"><div class="bar bar-lime" style="width:4%"></div></td><td class="num">3,370,000</td><td class="num">1,275</td><td class="num">78</td><td class="num">1.0</td><td class="num">0.4</td><td class="num">—</td><td></td></tr>
+
+        <tr class="region-header"><td class="area-name">Bogor (Raya)</td><td class="num">56</td><td class="bar-cell"><div class="bar bar-lime" style="width:15%"></div></td><td class="num">6,200,000</td><td class="num">3,285</td><td class="num">48</td><td class="num">1.7</td><td class="num">0.9</td><td class="num">21,805</td><td><span class="tier-tag tt-2">Tier 2</span></td></tr>
+        <tr class="sub-area"><td class="area-name">Kota Bogor</td><td class="num">28</td><td class="bar-cell"><div class="bar bar-lime" style="width:8%"></div></td><td class="num">1,080,000</td><td class="num">119</td><td class="num">65</td><td class="num">23.5</td><td class="num">2.6</td><td class="num">—</td><td></td></tr>
+        <tr class="sub-area"><td class="area-name">Kab. Bogor</td><td class="num">28</td><td class="bar-cell"><div class="bar bar-lime" style="width:8%"></div></td><td class="num">5,120,000</td><td class="num">3,166</td><td class="num">42</td><td class="num">0.9</td><td class="num">0.5</td><td class="num">—</td><td></td></tr>
+
+        <tr class="region-header"><td class="area-name">Bali</td><td class="num">44</td><td class="bar-cell"><div class="bar bar-lime" style="width:12%"></div></td><td class="num">4,320,000</td><td class="num">5,780</td><td class="num">67</td><td class="num">0.8</td><td class="num">1.0</td><td class="num">—</td><td><span class="tier-tag tt-2">Tier 2</span></td></tr>
+        
+        <tr class="region-header"><td class="area-name">Makassar</td><td class="num">40</td><td class="bar-cell"><div class="bar bar-lime" style="width:11%"></div></td><td class="num">1,474,000</td><td class="num">176</td><td class="num">156</td><td class="num">22.7</td><td class="num">2.7</td><td class="num">—</td><td><span class="tier-tag tt-2">Tier 2</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Yogyakarta</td><td class="num">33</td><td class="bar-cell"><div class="bar bar-lime" style="width:9%"></div></td><td class="num">3,670,000</td><td class="num">3,186</td><td class="num">37</td><td class="num">1.0</td><td class="num">0.9</td><td class="num">—</td><td><span class="tier-tag tt-3">Tier 3</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Depok</td><td class="num">32</td><td class="bar-cell"><div class="bar bar-lime" style="width:9%"></div></td><td class="num">2,130,000</td><td class="num">200</td><td class="num">45</td><td class="num">16.0</td><td class="num">1.5</td><td class="num">—</td><td><span class="tier-tag tt-3">Tier 3</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Semarang</td><td class="num">24</td><td class="bar-cell"><div class="bar bar-lime" style="width:7%"></div></td><td class="num">1,840,000</td><td class="num">374</td><td class="num">102</td><td class="num">6.4</td><td class="num">1.3</td><td class="num">—</td><td><span class="tier-tag tt-3">Tier 3</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Medan</td><td class="num">17</td><td class="bar-cell"><div class="bar bar-lime" style="width:5%"></div></td><td class="num">2,480,000</td><td class="num">265</td><td class="num">88</td><td class="num">6.4</td><td class="num">0.7</td><td class="num">—</td><td><span class="tier-tag tt-3">Tier 3</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Palembang</td><td class="num">13</td><td class="bar-cell"><div class="bar bar-lime" style="width:4%"></div></td><td class="num">1,690,000</td><td class="num">400</td><td class="num">62</td><td class="num">3.3</td><td class="num">0.8</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Samarinda</td><td class="num">12</td><td class="bar-cell"><div class="bar bar-lime" style="width:3%"></div></td><td class="num">880,000</td><td class="num">718</td><td class="num">98</td><td class="num">1.7</td><td class="num">1.4</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Balikpapan</td><td class="num">10</td><td class="bar-cell"><div class="bar bar-lime" style="width:3%"></div></td><td class="num">670,000</td><td class="num">503</td><td class="num">138</td><td class="num">2.0</td><td class="num">1.5</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Jambi</td><td class="num">7</td><td class="bar-cell"><div class="bar bar-lime" style="width:2%"></div></td><td class="num">620,000</td><td class="num">205</td><td class="num">72</td><td class="num">3.4</td><td class="num">1.1</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Pontianak</td><td class="num">6</td><td class="bar-cell"><div class="bar bar-lime" style="width:2%"></div></td><td class="num">660,000</td><td class="num">108</td><td class="num">68</td><td class="num">5.6</td><td class="num">0.9</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="region-header"><td class="area-name">Padang</td><td class="num">6</td><td class="bar-cell"><div class="bar bar-lime" style="width:2%"></div></td><td class="num">960,000</td><td class="num">695</td><td class="num">58</td><td class="num">0.9</td><td class="num">0.6</td><td class="num">—</td><td><span class="tier-tag tt-4">Tier 4</span></td></tr>
+
+        <tr class="total-row"><td class="area-name">TOTAL INDONESIA (MAPPED)</td><td class="num">1,183</td><td class="bar-cell"></td><td class="num">~52,000,000</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">2.2 avg</td><td class="num">490,235</td><td></td></tr>
+      </tbody>
+    </table>
+    </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-title">Top insights</div>
+<div class="insight-grid">
+      <div class="insight">
+        <div class="insight-emoji">🔥</div>
+        <div class="insight-title">Jakarta Selatan = padel capital</div>
+        <div class="insight-body"><span class="insight-num">110 courts/100km²</span> — density tertinggi di Indonesia. <span class="insight-num">7.0 courts/100k pop</span> juga tertinggi. PDRB/cap <span class="insight-num">Rp 397 jt</span> = daya beli tertinggi.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">💎</div>
+        <div class="insight-title">Tangsel = runner-up premium</div>
+        <div class="insight-body"><span class="insight-num">57.8 courts/100km²</span> dengan <span class="insight-num">5.8 courts/100k pop</span>. Area Bintaro-BSD = cluster padel terbesar di luar Jakarta. PDRB <span class="insight-num">Rp 95 jt</span> — upper-middle class dengan spending power tinggi.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">📈</div>
+        <div class="insight-title">Bekasi = underserved demand</div>
+        <div class="insight-body"><span class="insight-num">36,755</span> Reclub players tapi hanya <span class="insight-num">58 courts</span>. Ratio <span class="insight-num">634 players/court</span>. Market demand tinggi, supply rendah —</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">🏙️</div>
+        <div class="insight-title">Jakarta Pusat = pusat uang dengan sedikit court</div>
+        <div class="insight-body">PDRB/cap <span class="insight-num">Rp 935 jt</span> (tertinggi!) tapi hanya <span class="insight-num">21 courts</span>. Hanya <span class="insight-num">2.0 per 100k pop</span>. Potensi premium venue & corporate liga. Lahan mahal = barrier.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">🌴</div>
+        <div class="insight-title">Bali = Data cluttered</div>
+        <div class="insight-body"><span class="insight-num">ada 44</span> courts tapi dominasi pemain ada di expat yang tidak terdeteksi. Konsentrasi areanya tinngi.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">🎓</div>
+        <div class="insight-title">Bandung = youth market</div>
+        <div class="insight-body"><span class="insight-num">125 courts</span> di kota — hampir setara Jaksel. <span class="insight-num">57K</span> Reclub players. Kota universitas = demografik muda. Potensi liga antar-kampus & community-driven growth.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-emoji">🚀</div>
+        <div class="insight-title">Makassar = gateway Indonesia Timur</div>
+        <div class="insight-body"><span class="insight-num">40 courts</span> dengan density <span class="insight-num">22.7/100km²</span> — lebih tinggi dari Surabaya! PDRB <span class="insight-num">Rp 156 jt</span> solid. Pusat pertumbuhan utama Bappenas. </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="sec">
+<div class="footnote">
+    <strong>Sumber data:</strong> Courts — Ayo Indonesia, Courtside, Playtomic (manual count, combined). Players — Reclub (top 6 cities only). Populasi — BPS 2025 projection. Luas — BPS & wikipedia. PDRB per kapita — BPS 2024 (ADHB, ribu rupiah, converted to juta). Beberapa angka populasi dan PDRB untuk sub-area menggunakan estimasi berbasis data BPS terdekat. Data Reclub hanya tersedia untuk 6 kota: Jakarta, Tangerang, Bandung, Bekasi, Surabaya, Bogor.
+  </div>
+      <div class="cta-wrap" style="margin-top:22px"><a href="https://sportsactvd.com/trekkr" class="cta-button" target="_blank" rel="noopener">Court Owner Solution →</a></div>
+    </section>
+  </div>
 </main>
 <footer class="site-footer">
   <div class="container footer-inner">
