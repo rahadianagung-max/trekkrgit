@@ -36,12 +36,18 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .container{width:min(1280px,calc(100% - 80px));margin:0 auto}
 
 /* ── HEADER ── */
-.site-header{position:sticky;top:0;z-index:50;background:rgba(248,249,255,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,.1)}
-.site-header__inner{display:flex;align-items:center;justify-content:space-between;min-height:80px}
-.brand{font-family:'Saira Condensed',sans-serif;font-size:32px;font-weight:800;letter-spacing:-.03em;text-transform:uppercase;color:var(--pr)}
-.nav-links{display:flex;gap:6px}
-.nav-link{border-radius:var(--r-pill);padding:9px 18px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);transition:all var(--t) var(--ease)}
-.nav-link:hover{background:var(--sur-ct)}
+.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,.12)}
+.site-header__inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
+.brand{display:inline-block;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;font-size:26px;letter-spacing:0;text-transform:uppercase;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .32em .04em .02em;line-height:1.2;overflow:visible}
+.nav-links{display:flex;gap:4px}
+.nav-link{font-size:13px;font-weight:600;color:var(--on-v);padding:8px 14px;border-radius:var(--r-pill);transition:color .2s,background .2s}
+.nav-link:hover{color:var(--on);background:var(--sur-lo)}
+.nav-link.active{color:var(--pr)}
+.menu-toggle{display:none;background:transparent;border:1px solid var(--sur-hi);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--on);font-size:20px;cursor:pointer}
+.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 16px;border-top:1px solid rgba(115,118,136,.1)}
+.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:600;color:var(--on-v)}
+.mobile-nav a:hover{background:var(--sur-lo);color:var(--on)}
+.mobile-nav.open{display:flex}
 .hdr-actions{display:flex;align-items:center;gap:12px}
 
 /* ── BUTTONS ── */
@@ -273,7 +279,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .footer-copy{font-size:12px;color:var(--on-v)}
 
 /* RESPONSIVE */
-@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.form-grid{grid-template-columns:1fr}}
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.menu-toggle{display:flex}.form-grid{grid-template-columns:1fr}}
 @media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.login-card{padding:32px 24px}.tab-btn{padding:12px 16px;font-size:11px}}
 .brand{font-style:italic!important;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent!important;letter-spacing:-.02em!important}
 </style>
@@ -283,16 +289,28 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 <!-- ── HEADER ── -->
 <header class="site-header">
   <div class="container site-header__inner">
-    <a href="https://trekkr.online" class="brand">Trekkr</a>
-    <nav class="nav-links">
-      <a class="nav-link" href="https://trekkr.online">National Ranking</a>
-      <a class="nav-link" href="https://venue.trekkr.online">Venues</a>
-      <a class="nav-link" href="https://trekkr.online#how-it-works">How It Works</a>
+    <a href="https://trekkr.online/" class="brand">Trekkr</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="https://trekkr.online/">Home</a>
+      <a class="nav-link" href="https://trekkr.online/rankings">Rankings</a>
+      <a class="nav-link" href="https://trekkr.online/playrank">PlayRank</a>
+      <a class="nav-link" href="https://trekkr.online/tournament">Tournament</a>
+      <a class="nav-link" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
     <div class="hdr-actions">
       <span id="hdrVenue" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pr);display:none"></span>
       <button class="btn btn-danger btn-sm" id="hdrLogout" style="display:none" onclick="doLogout()">Sign Out</button>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
     </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tournament</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+    </nav>
   </div>
 </header>
 
@@ -1857,5 +1875,6 @@ function rmDismissRestore(){
    ══════════════════════════════════════════════════════════════════════ */
 window.addEventListener('load', () => { checkAuth(); });
 </script>
+<script>(function(){var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');if(mt&&mn)mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});})();</script>
 </body>
 </html>
