@@ -41,6 +41,19 @@
 .s-live{background:#E7F6EC;color:#15803D}.s-up{background:#EAF0FB;color:#185FA5}
 .lnk{color:var(--orange);font-weight:700;font-size:13px}
 .empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ev-card{display:block;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);transition:border-color .2s}
+.ev-card:hover{border-color:var(--orange)}
+.ev-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-bottom:8px}
+.ev-playrank{background:var(--warm);color:#C2410C}
+.ev-tournament{background:#EEF0FF;color:#534AB7}
+.ev-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);line-height:1.05}
+.ev-meta{font-size:12.5px;color:var(--muted);margin-top:6px}
+.ev-sub{font-size:11.5px;color:var(--subtle);margin-top:4px}
+.ev-status{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.ev-status.live,.ev-status.active{background:rgba(34,160,82,.12);color:#0F6E56}
+.ev-status.upcoming{background:#E6F1FB;color:#185FA5}
+@media(max-width:640px){.ev-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -137,6 +150,23 @@
 (function(){
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
+})();
+</script>
+<script>
+(function(){
+  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  var el=document.getElementById('prActive'); if(!el) return;
+  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
+    var list=(d&&d.activePlayrank)||[]; if(!list.length) return;
+    el.innerHTML='<div class="ev-grid">'+list.map(function(p){
+      var sub=[p.level,p.gender,p.format].filter(Boolean).join(' · ');
+      var wk=[p.weekStart,p.weekEnd].filter(Boolean).join(' – ');
+      var st=p.status?'<span class="ev-status '+esc(p.status)+'">'+esc(p.status)+'</span>':'';
+      var lead=p.leader?'<div class="ev-sub">Leader: '+esc(p.leader)+(p.players?' · '+esc(p.players)+' players':'')+'</div>':'';
+      return '<a class="ev-card" href="'+(p.url?esc(p.url):'#')+'"><span class="ev-type ev-playrank">Active</span><div class="ev-title">'+esc(p.title||p.venue||'PlayRank')+'</div><div class="ev-meta">'+esc(p.venue||'')+(sub?' · '+esc(sub):'')+'</div>'+(wk?'<div class="ev-sub">'+esc(wk)+'</div>':'')+lead+st+'</a>';
+    }).join('')+'</div>';
+  }).catch(function(){});
 })();
 </script>
 </body>
