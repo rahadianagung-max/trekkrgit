@@ -46,6 +46,19 @@
 .ecocard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
 .lnk{color:var(--orange);font-weight:700;font-size:13px}
 @media(max-width:680px){.stats{grid-template-columns:1fr}.cols2{grid-template-columns:1fr}.eco{grid-template-columns:1fr}}
+.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ev-card{display:block;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);transition:border-color .2s}
+.ev-card:hover{border-color:var(--orange)}
+.ev-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-bottom:8px}
+.ev-playrank{background:var(--warm);color:#C2410C}
+.ev-tournament{background:#EEF0FF;color:#534AB7}
+.ev-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);line-height:1.05}
+.ev-meta{font-size:12.5px;color:var(--muted);margin-top:6px}
+.ev-sub{font-size:11.5px;color:var(--subtle);margin-top:4px}
+.ev-status{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.ev-status.live,.ev-status.active{background:rgba(34,160,82,.12);color:#0F6E56}
+.ev-status.upcoming{background:#E6F1FB;color:#185FA5}
+@media(max-width:640px){.ev-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -202,6 +215,21 @@
   inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
   btn&&btn.addEventListener('click',search);
   inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
+})();
+</script>
+<script>
+(function(){
+  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  var el=document.getElementById('homeEvent'); if(!el) return;
+  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
+    var hi=(d&&d.highlight)||[]; if(!hi.length) return;
+    el.innerHTML='<div class="ev-grid">'+hi.slice(0,2).map(function(x){
+      var label=x.type==='playrank'?'PlayRank':'Tournament';
+      var st=x.status?'<span class="ev-status '+esc(x.status)+'">'+esc(x.status)+'</span>':'';
+      return '<a class="ev-card" href="'+(x.url?esc(x.url):'#')+'"><span class="ev-type ev-'+esc(x.type)+'">'+label+'</span><div class="ev-title">'+esc(x.title)+'</div><div class="ev-meta">'+esc(x.venue||'')+(x.date?' · '+esc(x.date):'')+'</div>'+st+'</a>';
+    }).join('')+'</div>';
+  }).catch(function(){});
 })();
 </script>
 </body>
