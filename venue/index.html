@@ -11,16 +11,20 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-.page-head{padding:26px 0 0}
-.page-head h1{font-size:clamp(28px,5vw,42px);margin:8px 0 0}
-.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:600px}
+/* ── SHARED ── */
+.page-head{padding:22px 0 0}
 .back{font-size:12px;font-weight:600;color:var(--subtle);display:inline-flex;align-items:center;gap:5px}
 .back:hover{color:var(--orange)}
+.state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
+.skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sec-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin-bottom:10px}
+.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
 
+/* ── DIRECTORY ── */
 .searchbar{margin-top:16px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 12px;max-width:360px}
 .searchbar i{color:var(--orange);font-size:16px}
 .searchbar input{flex:1;border:0;outline:0;background:transparent;font-family:inherit;font-size:14px;padding:11px 0;color:var(--text)}
-
 .grid{margin-top:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .vcard{display:block;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s,transform .2s}
 .vcard:hover{border-color:var(--orange);transform:translateY(-2px)}
@@ -31,42 +35,106 @@
 .vcard .vmeta i{color:var(--subtle);font-size:13px}
 .vcard .vgo{font-size:12px;font-weight:600;color:var(--orange);margin-top:14px;display:inline-flex;align-items:center;gap:5px}
 
-/* Detail */
-.vhero{margin-top:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.vhero .vlogo{width:72px;height:72px;border-radius:16px;font-size:28px}
-.vhero .vinfo{flex:1;min-width:200px}
-.vhero h2{font-size:clamp(24px,4.5vw,34px);margin:0}
-.vtags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-.vtag{font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 12px;display:inline-flex;align-items:center;gap:5px}
-.vtag i{color:var(--orange);font-size:13px}
-.lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
-.lb-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-soft);transition:background .2s}
+/* ── DETAIL: VENUE HEADER ── */
+.vhero{margin-top:14px;padding-bottom:20px;border-bottom:1px solid var(--border-soft)}
+.vhero-top{display:flex;align-items:center;gap:14px}
+.vhero-logo{width:52px;height:52px;border-radius:13px;background:#FFE3CC;color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;flex-shrink:0;overflow:hidden}
+.vhero-logo img{width:100%;height:100%;object-fit:cover}
+.vname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(34px,8vw,52px);line-height:.92;color:var(--orange);padding:.02em .04em}
+.vmeta-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.vmeta-row{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.vmeta-row i{color:var(--subtle);font-size:13px;flex-shrink:0}
+.vmeta-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--orange);margin-top:4px}
+.vmeta-link i{font-size:12px}
+
+/* ── WEEK TABS ── */
+.week-section{margin-top:18px;padding-bottom:16px;border-bottom:1px solid var(--border-soft)}
+.week-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.week-tabs::-webkit-scrollbar{display:none}
+.wtab{flex-shrink:0;font-family:var(--display);font-style:italic;font-weight:800;font-size:13px;padding:5px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--subtle);cursor:pointer;letter-spacing:.02em;transition:background .15s,color .15s,border-color .15s}
+.wtab:hover{border-color:var(--orange);color:var(--orange)}
+.wtab.active{background:var(--text);color:#fff;border-color:var(--text)}
+.latest-date{margin-top:8px;font-size:12px;color:var(--subtle)}
+
+/* ── LEADERBOARD CONTROLS ── */
+.lb-section{margin-top:20px}
+.lb-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.toggle-group{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.tgl-btn{font-family:var(--body);font-size:12px;font-weight:700;padding:6px 14px;background:transparent;color:var(--subtle);cursor:pointer;border:0;border-right:1px solid var(--border)}
+.tgl-btn:last-child{border-right:0}
+.tgl-btn.active{background:var(--text);color:#fff}
+
+/* ── PODIUM TOP 3 ── */
+.podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;margin-bottom:12px}
+.podium-card{border:1px solid var(--border);border-radius:14px;padding:14px 10px 16px;background:var(--surface);text-align:center;position:relative}
+.podium-card.rank1{border-color:#E8C84A;background:linear-gradient(180deg,#FFFBEB 0%,#fff 60%)}
+.podium-rank{font-family:var(--display);font-style:italic;font-weight:800;font-size:13px;color:var(--subtle);margin-bottom:8px}
+.podium-rank.r1{color:#B8960A}
+.podium-rank.r2{color:#7A7A88}
+.podium-rank.r3{color:#A0622A}
+.crown{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:18px;line-height:1}
+.pod-photo{width:56px;height:56px;border-radius:12px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--muted);margin:0 auto 10px;overflow:hidden}
+.pod-photo img{width:100%;height:100%;object-fit:cover}
+.rank1 .pod-photo{width:68px;height:68px;font-size:22px;border:2px solid #E8C84A}
+.pod-name{font-weight:700;font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.rank1 .pod-name{font-size:15px}
+.pod-wl{font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;margin-top:7px;line-height:1}
+.rank1 .pod-wl{font-size:26px}
+.wl-w{color:var(--green)}.wl-sep{color:var(--faint);font-size:14px;margin:0 2px}.wl-l{color:var(--red)}
+.pod-wl-cap{font-size:9px;color:var(--subtle);font-weight:600;letter-spacing:.08em;margin-top:2px}
+.pod-divider{width:24px;height:1px;background:var(--border);margin:8px auto}
+.pod-elo{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)}
+.rank1 .pod-elo{font-size:19px}
+.pod-level{font-size:9.5px;color:var(--subtle);font-weight:600;margin-top:2px}
+
+/* ── RANK LIST (4+) ── */
+.lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;background:var(--surface)}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-soft);transition:background .15s;text-decoration:none;color:inherit}
 .lb-row:last-child{border-bottom:0}
 .lb-row:hover{background:var(--surface-2)}
-.lb-row .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--subtle);width:20px;text-align:center;flex-shrink:0}
-.lb-row.top .rk{color:var(--orange)}
-.lb-photo{width:54px;height:54px;border-radius:12px;background:var(--surface-3);color:var(--muted);font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;object-fit:cover;overflow:hidden}
-.lb-name{flex:1;min-width:0;font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-name .lb-sub{display:block;font-size:11px;color:var(--subtle);font-weight:500;margin-top:3px}
-.lb-wl{flex-shrink:0;text-align:center;min-width:62px}
-.lb-wl .n{font-size:14px;font-weight:700}
-.lb-wl .n .w{color:var(--green)}.lb-wl .n .l{color:var(--red)}.lb-wl .n .sep{color:var(--faint);font-weight:600;margin:0 3px}
-.lb-wl .cap,.lb-elo .cap{display:block;font-size:9px;letter-spacing:.12em;color:var(--faint);font-weight:700;margin-top:3px}
-.lb-elo{flex-shrink:0;text-align:right;min-width:60px}
-.lb-elo .v{font-family:var(--display);font-style:italic;font-weight:800;font-size:24px;color:var(--orange);line-height:1}
-@media(max-width:520px){.lb-photo{width:46px;height:46px;font-size:17px}.lb-row{gap:10px;padding:12px}.lb-wl{min-width:50px}.lb-elo .v{font-size:20px}}
+.lb-rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:14px;color:var(--subtle);width:22px;text-align:center;flex-shrink:0}
+.lb-photo{width:46px;height:46px;border-radius:11px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--muted);flex-shrink:0;overflow:hidden}
+.lb-photo img{width:100%;height:100%;object-fit:cover}
+.lb-name{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-name .lb-sub{display:block;font-size:11px;color:var(--subtle);font-weight:500;margin-top:2px}
+.lb-wl{flex-shrink:0;text-align:center;min-width:56px}
+.lb-wl .n{font-size:13px;font-weight:700}
+.lb-wl .n .w{color:var(--green)}.lb-wl .n .sep{color:var(--faint)}.lb-wl .n .l{color:var(--red)}
+.lb-wl .cap{display:block;font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:2px}
+.lb-elo{flex-shrink:0;text-align:right;min-width:56px}
+.lb-elo .v{font-family:var(--display);font-style:italic;font-weight:800;font-size:22px;color:var(--orange);line-height:1}
+.lb-elo .cap{display:block;font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:2px}
+.view-more-btn{width:100%;padding:10px;font-size:12.5px;font-weight:600;color:var(--orange);background:var(--surface);border:0;border-top:1px solid var(--border-soft);cursor:pointer;font-family:inherit;border-radius:0 0 12px 12px}
+.view-more-btn:hover{background:var(--surface-2)}
 
-.state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
-.skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
-@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* ── MATCH HISTORY ── */
+.match-section{margin-top:28px;padding-bottom:40px}
+.mdate{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.mdate::after{content:'';flex:1;height:1px;background:var(--border)}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:6px}
+.mrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.mteam{display:flex;flex-direction:column;gap:1px}
+.mteam.right{text-align:right}
+.mplayer{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.4}
+.mteam.winner .mplayer{color:var(--green)}
+.mscore{display:flex;align-items:center;gap:5px;justify-content:center}
+.ms{font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;line-height:1;color:var(--text);min-width:18px;text-align:center}
+.ms.mw{color:var(--green)}.ms.ml{color:var(--red)}
+.msdash{font-size:14px;color:var(--faint);font-weight:600}
+.mfooter{margin-top:8px}
+.mbadge{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:2px 8px;display:inline-block}
 
+@media(max-width:520px){
+  .lb-photo{width:40px;height:40px;font-size:14px}
+  .lb-row{gap:10px;padding:10px 12px}
+  .lb-elo .v{font-size:19px}
+}
 @media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
 </style>
 </head>
 <body>
-
 <header class="site-header">
   <div class="container header-inner">
     <a href="https://trekkr.online/" class="brand">Trekkr</a>
@@ -78,7 +146,7 @@
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
     <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#9776;</button>
     </div>
   </div>
   <div class="container">
@@ -91,11 +159,9 @@
     </nav>
   </div>
 </header>
-
 <main class="container" id="main">
   <div id="content"><div class="skeleton" style="margin-top:26px"></div></div>
 </main>
-
 <footer class="site-footer">
   <div class="container footer-inner">
     <span class="footer-brand">Trekkr</span>
@@ -104,21 +170,32 @@
       <a href="https://trekkr.online/market">Market Intelligence</a>
       <a href="https://trekkr.online/about">About</a>
     </nav>
-    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
+    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
   </div>
 </footer>
-
 <script>
 (function(){
-  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
+  var BASE='https://trekkr.online/api';
+  var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
   function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
-  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function initials(n){var p=String(n||'').trim().split(/\s+/);return((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
+  function tierName(e){e=e||0;if(e>=3000)return'Platinum';if(e>=2500)return'Gold';if(e>=2100)return'Silver';if(e>=1800)return'Upper Bronze';if(e>=1500)return'Bronze';if(e>=1200)return'Lower Bronze';if(e>=900)return'Upper Beginner';return'Beginner';}
+  var DAYS=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var MONTHS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  function fmtDate(s){if(!s)return'';var d=new Date(s+'T00:00:00');return DAYS[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
+  function sortWeeks(arr){return arr.slice().sort(function(a,b){return(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0);});}
+  function normName(n){return String(n||'').trim().toLowerCase();}
+
+  function photoEl(p,size){
+    var u=p.photoUrl||p.photo||'';
+    var r=Math.round(size*0.22);
+    if(u)return'<div class="lb-photo" style="width:'+size+'px;height:'+size+'px;border-radius:'+r+'px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>';
+    return'<div class="lb-photo" style="width:'+size+'px;height:'+size+'px;border-radius:'+r+'px;font-size:'+Math.round(size*.34)+'px">'+esc(initials(p.displayName||p.name))+'</div>';
+  }
+
   var content=document.getElementById('content');
 
   function selected(){
@@ -127,68 +204,272 @@
     return new URLSearchParams(location.search).get('v')||null;
   }
 
-  /* ---- Directory ---- */
+  /* ── DIRECTORY ── */
   function renderDirectory(venues){
+    function vlogo(v){if(v.logoUrl)return'<span class="vlogo"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return'<span class="vlogo">'+esc(initials(v.name))+'</span>';}
     var cards=venues.filter(function(v){return v.name;}).map(function(v){
       var loc=v.region||v.location||'';
-      return '<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
+      return'<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
         +'<div class="vname">'+esc(v.name)+'</div>'
         +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
         +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
         +'<div class="vgo">View leaderboard <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
     }).join('');
-    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display">Venues</h1>'
-      +'<p>Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
+    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display" style="font-size:clamp(28px,5vw,42px);margin:8px 0 0">Venues</h1>'
+      +'<p style="color:var(--muted);font-size:14px;margin:10px 0 0;max-width:600px">Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
       +'<div class="searchbar"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search venues…" aria-label="Search venues"/></div>'
       +'<div class="grid" id="vgrid">'+cards+'</div>';
-    var inp=document.getElementById('vsearch'), grid=document.getElementById('vgrid');
+    var inp=document.getElementById('vsearch'),grid=document.getElementById('vgrid');
     inp.addEventListener('input',function(){
       var q=inp.value.toLowerCase();
-      Array.prototype.forEach.call(grid.children,function(c){
-        c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
-      });
+      Array.prototype.forEach.call(grid.children,function(c){c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';});
     });
   }
 
-  /* ---- Detail ---- */
-  function renderDetail(v, players){
-    var loc=v.region||v.location||'';
-    var tags='';
-    if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
-    if(v.schedule)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(v.schedule)+'</span>';
-    if(v.prizePool)tags+='<span class="vtag"><i class="ti ti-trophy"></i>'+esc(v.prizePool)+'</span>';
-    if(v.contact)tags+='<span class="vtag"><i class="ti ti-phone"></i>'+esc(v.contact)+'</span>';
-    var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
+  /* ── DETAIL STATE ── */
+  var S={
+    venue:null, allMatches:[], weeks:[], week:null,
+    mode:'weekly', gender:'M',
+    rankCache:{}, eloMap:{}, lbShown:10
+  };
 
-    var rows=players.length?players.map(function(p,i){
-      var meta=[p.level,(p.gender==='F'?'Women':'Men')].filter(Boolean).join(' · ');
-      var w=(p.totalW!=null?p.totalW:0), l=(p.totalL!=null?p.totalL:0);
-      return '<a class="lb-row'+(i===0?' top':'')+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
-        +'<span class="rk">'+(i+1)+'</span>'+photo(p)
-        +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(meta)+'</span></span>'
-        +'<span class="lb-wl"><span class="n"><span class="w">'+w+'</span><span class="sep">/</span><span class="l">'+l+'</span></span><span class="cap">W / L</span></span>'
-        +'<span class="lb-elo"><span class="v">'+p.elo+'</span><span class="cap">ELO</span></span></a>';
-    }).join(''):'<div class="state">No ranked players at this venue yet.</div>';
-
-    content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
-      +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="display">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>'
-      +'<div class="sec-label">Venue leaderboard</div><div class="lb">'+rows+'</div>';
+  /* ── PODIUM ── */
+  function podCard(p, rank){
+    var u=p.photoUrl||p.photo||'';
+    var sz=rank===1?68:56;
+    var fsz=rank===1?22:18;
+    var photoHtml=u
+      ?'<div class="pod-photo" style="width:'+sz+'px;height:'+sz+'px'+(rank===1?';border:2px solid #E8C84A':'')+';font-size:'+fsz+'px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>'
+      :'<div class="pod-photo" style="width:'+sz+'px;height:'+sz+'px'+(rank===1?';border:2px solid #E8C84A':'')+';font-size:'+fsz+'px">'+esc(initials(p.displayName||p.name))+'</div>';
+    var level=p.level||tierName(p.elo||0);
+    return'<div class="podium-card rank'+rank+'">'
+      +(rank===1?'<div class="crown">🏆</div>':'')
+      +'<div class="podium-rank r'+rank+'">'+rank+'</div>'
+      +photoHtml
+      +'<div class="pod-name">'+esc(p.displayName||p.name)+'</div>'
+      +'<div class="pod-wl"><span class="wl-w">'+(p.w||0)+'</span><span class="wl-sep">/</span><span class="wl-l">'+(p.l||0)+'</span></div>'
+      +'<div class="pod-wl-cap">W / L</div>'
+      +'<div class="pod-divider"></div>'
+      +'<div class="pod-elo">'+(p.elo||0)+'</div>'
+      +'<div class="pod-level">'+esc(level)+'</div>'
+      +'</div>';
   }
 
-  /* ---- Load ---- */
+  /* ── RENDER LEADERBOARD BODY ── */
+  function renderLbBody(ranking){
+    var el=document.getElementById('lb-body');
+    if(!el)return;
+    if(!ranking.length){el.innerHTML='<div class="empty">Belum ada data.</div>';return;}
+    var top3=ranking.slice(0,3);
+    var rest=ranking.slice(3,3+S.lbShown);
+    var more=ranking.slice(3).length-rest.length;
+
+    // podium: order = [#2, #1, #3]
+    var pod='<div class="podium">';
+    if(top3[1])pod+=podCard(top3[1],2); else pod+='<div></div>';
+    if(top3[0])pod+=podCard(top3[0],1); else pod+='<div></div>';
+    if(top3[2])pod+=podCard(top3[2],3); else pod+='<div></div>';
+    pod+='</div>';
+
+    var rows='';
+    if(rest.length){
+      rows='<div class="lb">';
+      rest.forEach(function(p,i){
+        var level=p.level||tierName(p.elo||0);
+        var meta=[level,(p.region||'')].filter(Boolean).join(' · ');
+        rows+='<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
+          +'<span class="lb-rk">'+(i+4)+'</span>'
+          +photoEl(p,46)
+          +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(meta)+'</span></span>'
+          +'<span class="lb-wl"><span class="n"><span class="w">'+(p.w||0)+'</span><span class="sep"> / </span><span class="l">'+(p.l||0)+'</span></span><span class="cap">W / L</span></span>'
+          +'<span class="lb-elo"><span class="v">'+(p.elo||0)+'</span><span class="cap">ELO</span></span>'
+          +'</a>';
+      });
+      rows+='</div>';
+      if(more>0)rows+='<button class="view-more-btn" id="lbMore">View more ('+more+' players)</button>';
+    }
+    el.innerHTML=pod+rows;
+    var btn=document.getElementById('lbMore');
+    if(btn)btn.onclick=function(){S.lbShown+=10;renderLbBody(ranking);};
+  }
+
+  /* ── MATCH HISTORY ── */
+  function renderMatchHistory(){
+    var el=document.getElementById('match-history');
+    if(!el)return;
+    var weekMatches=S.allMatches.filter(function(m){return m.week===S.week;});
+    if(!weekMatches.length){el.innerHTML='<div class="empty">Belum ada match di '+esc(S.week)+'.</div>';return;}
+    var byDate={};
+    weekMatches.forEach(function(m){if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
+    var dates=Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
+    var html='';
+    dates.forEach(function(d){
+      html+='<div class="mdate">'+esc(fmtDate(d))+'</div>';
+      byDate[d].forEach(function(m){
+        var win1=m.scoreT1>m.scoreT2,win2=m.scoreT2>m.scoreT1;
+        var t1=[m.p1t1,m.p2t1].filter(Boolean);
+        var t2=[m.p1t2,m.p2t2].filter(Boolean);
+        var g=m.gender==='F'?'Putri':'Putra';
+        html+='<div class="mcard"><div class="mrow">'
+          +'<div class="mteam'+(win1?' winner':'')+'">'+t1.map(function(n){return'<span class="mplayer">'+esc(n)+'</span>';}).join('')+'</div>'
+          +'<div class="mscore"><span class="ms'+(win1?' mw':win2?' ml':'')+'">'+m.scoreT1+'</span><span class="msdash">&ndash;</span><span class="ms'+(win2?' mw':win1?' ml':'')+'">'+m.scoreT2+'</span></div>'
+          +'<div class="mteam right'+(win2?' winner':'')+'">'+t2.map(function(n){return'<span class="mplayer">'+esc(n)+'</span>';}).join('')+'</div>'
+          +'</div><div class="mfooter"><span class="mbadge">'+esc(g)+'</span></div></div>';
+      });
+    });
+    el.innerHTML=html;
+  }
+
+  /* ── LOAD RANKING ── */
+  function loadRanking(){
+    var el=document.getElementById('lb-body');
+    if(!el)return;
+    if(S.mode==='overall'){
+      // compute from allMatches
+      var stats={};
+      S.allMatches.filter(function(m){return m.gender===S.gender;}).forEach(function(m){
+        var t1=[m.p1t1,m.p2t1].filter(Boolean);
+        var t2=[m.p1t2,m.p2t2].filter(Boolean);
+        var w1=m.scoreT1>m.scoreT2,w2=m.scoreT2>m.scoreT1;
+        t1.concat(t2).forEach(function(p){if(!stats[p])stats[p]={w:0,l:0,played:0};});
+        t1.forEach(function(p){stats[p].played++;if(w1)stats[p].w++;else if(w2)stats[p].l++;});
+        t2.forEach(function(p){stats[p].played++;if(w2)stats[p].w++;else if(w1)stats[p].l++;});
+      });
+      var overall=Object.keys(stats).map(function(name){
+        var ei=S.eloMap[normName(name)]||{};
+        return{name:name,displayName:ei.displayName||name,photoUrl:ei.photoUrl||'',elo:ei.elo||0,level:tierName(ei.elo||0),w:stats[name].w,l:stats[name].l,played:stats[name].played};
+      }).sort(function(a,b){return b.played-a.played||b.elo-a.elo;});
+      renderLbBody(overall);
+      return;
+    }
+    var key=S.week+':'+S.gender;
+    if(S.rankCache[key]){renderLbBody(S.rankCache[key]);return;}
+    el.innerHTML='<div class="skeleton" style="height:220px;margin-top:4px"></div>';
+    fetch(BASE+'/venues/'+encodeURIComponent(S.venue.name)+'/ranking?week='+encodeURIComponent(S.week)+'&gender='+S.gender)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var ranking=(d&&d.ranking)||[];
+        ranking.forEach(function(p){var k=normName(p.name);if(!S.eloMap[k])S.eloMap[k]={displayName:p.displayName,photoUrl:p.photoUrl,elo:p.elo,level:tierName(p.elo)};});
+        S.rankCache[key]=ranking;
+        renderLbBody(ranking);
+      })
+      .catch(function(){if(el)el.innerHTML='<div class="empty">Gagal memuat ranking.</div>';});
+  }
+
+  /* ── UPDATE LATEST DATE ── */
+  function updateLatestDate(){
+    var el=document.getElementById('latest-date');
+    if(!el)return;
+    var wm=S.allMatches.filter(function(m){return m.week===S.week;});
+    var latest=wm.reduce(function(max,m){return m.date>max?m.date:max;},'');
+    el.textContent=latest?'Terakhir: '+fmtDate(latest):'';
+  }
+
+  /* ── RENDER FULL DETAIL ── */
+  function renderDetail(){
+    var v=S.venue;
+    var logoHtml=v.logoUrl?'<img src="'+esc(v.logoUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover"/>':esc(initials(v.name));
+
+    var metaHtml='';
+    if(v.region)metaHtml+='<div class="vmeta-row"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(v.region)+'</div>';
+    if(v.location)metaHtml+='<div class="vmeta-row"><i class="ti ti-building-community" aria-hidden="true"></i>'+esc(v.location)+'</div>';
+    if(v.registerUrl)metaHtml+='<a class="vmeta-link" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-external-link" aria-hidden="true"></i>'+esc(v.registerUrl.replace(/^https?:\/\//,''))+'</a>';
+
+    var tabsHtml=S.weeks.map(function(w){return'<button class="wtab'+(w===S.week?' active':'')+'" data-w="'+esc(w)+'">'+esc(w)+'</button>';}).join('');
+
+    content.innerHTML=
+      '<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left" aria-hidden="true"></i>All venues</a></div>'
+      +'<div class="vhero">'
+      +  '<div class="vhero-top"><div class="vhero-logo">'+logoHtml+'</div></div>'
+      +  '<div class="vname">'+esc(v.name)+'</div>'
+      +  '<div class="vmeta-list">'+metaHtml+'</div>'
+      +'</div>'
+      +'<div class="week-section">'
+      +  '<div class="week-tabs" id="weekTabs">'+tabsHtml+'</div>'
+      +  '<div class="latest-date" id="latest-date"></div>'
+      +'</div>'
+      +'<div class="lb-section">'
+      +  '<div class="lb-controls">'
+      +    '<span class="sec-label" style="margin:0">Leaderboard</span>'
+      +    '<div style="display:flex;gap:7px">'
+      +      '<div class="toggle-group" id="modeToggle"><button class="tgl-btn'+(S.mode==='weekly'?' active':'')+'" data-m="weekly">Weekly</button><button class="tgl-btn'+(S.mode==='overall'?' active':'')+'" data-m="overall">Overall</button></div>'
+      +      '<div class="toggle-group" id="genderToggle"><button class="tgl-btn'+(S.gender==='M'?' active':'')+'" data-g="M">Putra</button><button class="tgl-btn'+(S.gender==='F'?' active':'')+'" data-g="F">Putri</button></div>'
+      +    '</div>'
+      +  '</div>'
+      +  '<div id="lb-body"></div>'
+      +'</div>'
+      +'<div class="match-section">'
+      +  '<div class="sec-label" id="match-section-label">Match History &middot; '+esc(S.week)+'</div>'
+      +  '<div id="match-history"></div>'
+      +'</div>';
+
+    updateLatestDate();
+
+    document.getElementById('weekTabs').addEventListener('click',function(e){
+      var btn=e.target.closest('.wtab');if(!btn)return;
+      S.week=btn.getAttribute('data-w');S.lbShown=10;
+      document.querySelectorAll('.wtab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-w')===S.week);});
+      updateLatestDate();
+      var lbl=document.getElementById('match-section-label');if(lbl)lbl.innerHTML='Match History &middot; '+esc(S.week);
+      loadRanking();
+      renderMatchHistory();
+    });
+
+    document.getElementById('modeToggle').addEventListener('click',function(e){
+      var btn=e.target.closest('.tgl-btn');if(!btn)return;
+      S.mode=btn.getAttribute('data-m');S.lbShown=10;
+      document.querySelectorAll('#modeToggle .tgl-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-m')===S.mode);});
+      loadRanking();
+    });
+
+    document.getElementById('genderToggle').addEventListener('click',function(e){
+      var btn=e.target.closest('.tgl-btn');if(!btn)return;
+      S.gender=btn.getAttribute('data-g');S.lbShown=10;
+      document.querySelectorAll('#genderToggle .tgl-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-g')===S.gender);});
+      loadRanking();
+    });
+
+    loadRanking();
+    renderMatchHistory();
+  }
+
+  /* ── LOAD DETAIL ── */
+  function loadDetail(venueSlug){
+    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+      var venues=(d&&d.venues)||[];
+      var key=venueSlug.toLowerCase();
+      var v=venues.filter(function(x){return slug(x.name)===key||normName(x.name)===key;})[0];
+      if(!v){
+        content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';
+        return;
+      }
+      S.venue=v;
+      document.title=esc(v.name)+' — Trekkr';
+      fetch(BASE+'/venues/'+encodeURIComponent(v.name)+'/matches')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          S.allMatches=(d&&d.matches)||[];
+          var weekSet={};
+          S.allMatches.forEach(function(m){if(m.week)weekSet[m.week]=true;});
+          S.weeks=sortWeeks(Object.keys(weekSet));
+          S.week=S.weeks.length?S.weeks[S.weeks.length-1]:'W1';
+          renderDetail();
+        })
+        .catch(function(){
+          S.weeks=[];S.week='W1';
+          renderDetail();
+        });
+    }).catch(function(){
+      content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
+    });
+  }
+
+  /* ── INIT ── */
   var sel=selected();
-  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-    var venues=(d&&d.venues)||[];
-    if(!sel){renderDirectory(venues);return;}
-    var key=slug(sel);
-    var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
-    if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
-    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:v.name,limit:50}).toString())
-      .then(function(r){return r.json();}).then(function(ld){renderDetail(v,(ld&&ld.leaderboard)||[]);})
-      .catch(function(){renderDetail(v,[]);});
-  }).catch(function(){
-    content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
-  });
+  if(sel){loadDetail(sel);}
+  else{
+    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){renderDirectory((d&&d.venues)||[]);}).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';});
+  }
 })();
 </script>
 </body>
