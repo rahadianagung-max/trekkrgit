@@ -390,7 +390,6 @@
   /* ── RENDER FULL DETAIL ── */
   function renderDetail(){
     var v=S.venue;
-    var logoHtml=v.logoUrl?'<img src="'+esc(v.logoUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover"/>':esc(initials(v.name));
     var metaHtml='';
     if(v.region)metaHtml+='<div class="vmeta-row"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(v.region)+'</div>';
     if(v.location)metaHtml+='<div class="vmeta-row"><i class="ti ti-building-community" aria-hidden="true"></i>'+esc(v.location)+'</div>';
@@ -400,7 +399,6 @@
     content.innerHTML=
       '<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left" aria-hidden="true"></i>All venues</a></div>'
       +'<div class="vhero">'
-      +  '<div class="vhero-logo">'+logoHtml+'</div>'
       +  '<div class="vname">'+esc(v.name)+'</div>'
       +  '<div class="vmeta-list">'+metaHtml+'</div>'
       +'</div>'
