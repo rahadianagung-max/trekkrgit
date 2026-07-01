@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trekkr Padel — TV Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --blue:#FF6A00;--green:#22A052;--orange:#FFB000;--purple:#885CF6;
+  --bg:#F5F5F7;--card:#FFFFFF;--card2:#F5F5F7;--border:#E4E4E7;
+  --text:#0D0D0D;--sub:#52525B;--dim:#9A9AA2;
+}
+html,body{
+  width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden;
+}
+
+/* 16:9 wrapper — fills screen, letterboxes if needed */
+.stage{
+  width:100vw;height:100vh;
+  display:flex;flex-direction:column;
+  background:var(--bg);
+  position:relative;overflow:hidden;
+}
+
+/* Ambient court grid */
+.stage::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(#4af 1px,transparent 1px),linear-gradient(90deg,#4af 1px,transparent 1px);
+  background-size:80px 80px;opacity:0.025;pointer-events:none;
+}
+
+/* HEADER BAR */
+.tv-hdr{
+  background:var(--card);border-bottom:3px solid #FF6A0022;
+  padding:0 40px;height:80px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;position:relative;z-index:2;
+}
+.tv-logo{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:38px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.tv-tname{font-size:13px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:2px;}
+.tv-clock{font-family:'Saira Condensed',sans-serif;font-size:52px;font-weight:700;color:var(--text);letter-spacing:2px;}
+.tv-right{text-align:right;}
+.tv-date{font-size:13px;color:var(--dim);margin-top:4px;}
+
+/* NAV BAR */
+.tv-nav{
+  background:var(--card2);border-bottom:1px solid var(--border);
+  padding:0 40px;height:52px;
+  display:flex;align-items:center;gap:6px;
+  flex-shrink:0;position:relative;z-index:2;
+}
+.tv-tab{
+  padding:7px 22px;border-radius:7px;font-size:12px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  border:1.5px solid var(--border);background:transparent;color:var(--dim);
+  font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;
+}
+.tv-tab:hover{color:var(--sub);border-color:var(--dim);}
+.tv-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.tv-live{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.live-pill{
+  display:flex;align-items:center;gap:6px;
+  background:#22A05211;border:1px solid #22A05233;
+  border-radius:20px;padding:4px 14px;font-size:11px;color:var(--green);font-weight:700;letter-spacing:2px;
+}
+.live-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.tv-refresh-info{font-size:11px;color:var(--dim);}
+
+/* CONTENT AREA */
+.tv-content{
+  flex:1;padding:20px 40px 16px;overflow:hidden;
+  display:flex;flex-direction:column;
+  position:relative;z-index:1;
+}
+.tv-view{display:none;height:100%;}
+.tv-view.active{display:flex;flex-direction:column;}
+
+/* GROUPS VIEW — 2x2 grid */
+.groups-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
+  gap:14px;flex:1;
+}
+.group-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+.group-head{padding:10px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.group-letter{font-family:'Saira Condensed',sans-serif;font-size:48px;font-weight:900;line-height:1;}
+.group-head-info{flex:1;}
+.group-head-name{font-size:15px;font-weight:600;color:var(--text);}
+.group-head-meta{font-size:11px;color:var(--dim);margin-top:1px;}
+.court-pill{font-size:12px;font-weight:700;padding:4px 14px;border-radius:6px;}
+
+/* STANDINGS TABLE — bigger for TV */
+.tv-st{width:100%;border-collapse:collapse;flex:1;}
+.tv-st th{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:6px 16px;text-align:left;font-weight:600;}
+.tv-st th:not(:first-child){text-align:center;}
+.tv-st td{padding:8px 16px;font-size:15px;border-top:1px solid #00000007;}
+.tv-st td:not(:first-child){text-align:center;color:var(--dim);}
+.tv-st tr.q td{background:#FF6A0007;}
+.tv-st tr.q td:nth-child(2){color:var(--text);font-weight:500;}
+
+/* SCHEDULE VIEW */
+.schedule-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;overflow:hidden;}
+.schedule-col{display:flex;flex-direction:column;gap:6px;overflow:hidden;}
+.schedule-col-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:4px;flex-shrink:0;}
+.match-row{
+  display:grid;grid-template-columns:80px 70px 60px 1fr 90px;
+  align-items:center;gap:10px;
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:9px;padding:8px 14px;flex-shrink:0;
+}
+.match-row.done{border-left:3px solid #22A05255;opacity:0.7;}
+.match-time{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);}
+.match-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px;text-align:center;}
+.match-teams-tv{font-size:13px;color:var(--sub);}
+.match-teams-tv b{color:var(--text);font-weight:600;}
+.match-score-tv{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--blue);text-align:right;}
+.match-score-tv.pending{color:var(--dim);font-size:16px;}
+
+/* BRACKET VIEW */
+.bracket-outer{display:flex;gap:0;flex:1;overflow-x:auto;align-items:flex-start;}
+.bracket-round-col{display:flex;flex-direction:column;justify-content:space-around;flex:1;padding:0 8px;min-width:200px;}
+.brc-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;padding:0 0 12px;font-weight:700;}
+.tv-bm{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin:6px 0;}
+.tv-bm.wd{border-left:3px solid #FF6A0066;}
+.tv-bms{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px;}
+.tv-bms:first-child{border-bottom:1px solid #EDEDF0;}
+.tv-bmt{font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);}
+.tv-bmt.w{color:var(--text);font-weight:700;}
+.tv-bmt.tbd{color:var(--border);font-style:italic;}
+.tv-bmsc{font-family:'Saira Condensed',sans-serif;font-size:18px;font-weight:700;color:#9A9AA2;}
+.tv-bmsc.w{color:var(--blue);}
+.tv-seed{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-right:5px;font-family:'Saira Condensed',sans-serif;flex-shrink:0;}
+
+/* PODIUM TV */
+.podium-tv{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  margin-top:14px;flex-shrink:0;
+}
+.podium-card-tv{border-radius:12px;padding:14px 10px;text-align:center;}
+.podium-emoji{font-size:22px;margin-bottom:4px;}
+.podium-rank-tv{font-family:'Saira Condensed',sans-serif;font-size:36px;font-weight:900;line-height:1;}
+.podium-name-tv{font-size:13px;margin-top:6px;line-height:1.3;color:var(--text);}
+
+/* BOTTOM BAR */
+.tv-bottom{
+  background:var(--card2);border-top:1px solid var(--border);
+  height:36px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;flex-shrink:0;
+}
+.tv-bottom-left{font-size:11px;color:var(--dim);}
+.tv-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:200px;}
+.tv-progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 1s linear;}
+.tv-bottom-right{font-size:11px;color:var(--dim);}
+/* TREKKR avatars + elo (TV sized) */
+.avt{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#EDEDF0;border:2px solid var(--border);flex-shrink:0;}
+.avt.sm{width:24px;height:24px;}
+.avt-ph{width:30px;height:30px;border-radius:50%;background:#EDEDF0;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--dim);flex-shrink:0;font-family:'Saira Condensed',sans-serif;}
+.avt-ph.sm{width:24px;height:24px;font-size:11px;}
+.avt-stack{display:inline-flex;align-items:center;}
+.avt-stack .avt,.avt-stack .avt-ph{margin-right:-8px;box-shadow:0 0 0 2px var(--card);}
+.elo{font-family:'Saira Condensed',sans-serif;font-size:14px;font-weight:700;color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;border-radius:5px;padding:1px 8px;letter-spacing:.5px;flex-shrink:0;}
+.elo.sm{font-size:12px;padding:0 6px;}
+.teamline{display:flex;align-items:center;gap:9px;min-width:0;}
+.teamline .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.split-title-tv{font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px;display:flex;align-items:center;gap:10px;}
+.split-title-tv .pill{font-size:12px;padding:3px 12px;border-radius:20px;letter-spacing:1px;font-weight:700;}
+.hdr-logo{background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent;}
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="tv-hdr">
+    <div>
+      <div class="tv-logo">Trekkr PADEL</div>
+      <div class="tv-tname" id="tv-tname">Tournament Manager</div>
+    </div>
+    <div class="tv-right">
+      <div class="tv-clock" id="tv-clock">--:--:--</div>
+      <div class="tv-date" id="tv-date"></div>
+    </div>
+  </div>
+
+  <div class="tv-nav">
+    <button class="tv-tab active" onclick="showView('groups',this)">Grup & Standings</button>
+    <button class="tv-tab" onclick="showView('schedule',this)">Jadwal</button>
+    <button class="tv-tab" onclick="showView('bracket',this)">Bracket</button>
+    <div class="tv-live">
+      <div class="live-pill">LIVE</div>
+      <span class="tv-refresh-info" id="refresh-label">Refresh dalam <span id="countdown">120</span>s</span>
+    </div>
+  </div>
+
+  <div class="tv-content">
+    <div class="tv-view active" id="view-groups"></div>
+    <div class="tv-view" id="view-schedule"></div>
+    <div class="tv-view" id="view-bracket"></div>
+  </div>
+
+  <div class="tv-bottom">
+    <div class="tv-bottom-left" id="bottom-stats">Menunggu data turnamen...</div>
+    <div class="tv-progress"><div class="tv-progress-fill" id="prog" style="width:100%"></div></div>
+    <div class="tv-bottom-right" id="bottom-right">Auto-refresh tiap 2 menit</div>
+  </div>
+
+</div>
+
+<script src="shared.js"></script>
+<script>
+let T=null, groups={}, sched=[], playoff=null;
+
+/* TREKKR render helpers */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function avatar(p,cls=''){
+  const ini=(p&&p.name)?esc(p.name.trim()[0].toUpperCase()):'?';
+  if(p&&p.photo) return `<img class="avt ${cls}" src="${esc(p.photo)}" alt="${ini}" onerror="this.outerHTML='<span class=&quot;avt-ph ${cls}&quot;>'+this.alt+'</span>'">`;
+  return `<span class="avt-ph ${cls}">${ini}</span>`;
+}
+function teamAvatars(arr,cls=''){ return (!arr||!arr.length)?'':`<span class="avt-stack">${arr.map(p=>avatar(p,cls)).join('')}</span>`; }
+function teamByName(name){ for(const g of GL.slice(0,T?.numGroups||0)){const t=(groups[g]||[]).find(x=>x.name===name);if(t)return t;} return null; }
+let countdownVal=120, progInt=null, activeView='groups';
+
+function load(){
+  const raw = spLoad();
+  if(!raw||!raw.tournament){
+    showEmpty(); return;
+  }
+  T=raw.tournament; groups=raw.groups||{}; sched=raw.schedule||[]; playoff=raw.playoff||null;
+  const sc=raw.scores||{};
+  sched.forEach(m=>{if(sc[m.id]){m.scoreHome=sc[m.id].h;m.scoreAway=sc[m.id].a;m.done=true;}});
+  computeStandings(groups,sched,T.numGroups);
+  document.getElementById('tv-tname').textContent=T.name;
+  document.getElementById('tv-date').textContent=T.date;
+  const done=sched.filter(m=>m.done).length;
+  document.getElementById('bottom-stats').textContent=`${T.numTeams} pasangan · ${T.numGroups} grup · ${done}/${sched.length} match selesai`;
+  renderAll();
+}
+
+function showEmpty(){
+  ['groups','schedule','bracket'].forEach(v=>{
+    document.getElementById('view-'+v).innerHTML=`<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;"><div style="font-family:'Saira Condensed',sans-serif;font-size:28px;color:#E4E4E7;">Menunggu Data Turnamen</div><div style="font-size:14px;color:#E4E4E7;">Admin belum memulai turnamen</div></div>`;
+  });
+}
+
+function renderAll(){renderGroups();renderSchedule();renderBracket();}
+
+function renderGroups(){
+  const el=document.getElementById('view-groups');
+  if(!T){return;}
+  const adv=T.advanceCount, nc=T.numCourts;
+  let h='<div class="groups-grid">';
+  GL.slice(0,T.numGroups).forEach(g=>{
+    const ct=(GL.indexOf(g)%nc)+1, col=GC[g], cc=CC[ct];
+    h+=`<div class="group-card">
+      <div class="group-head">
+        <div class="group-letter" style="color:${col};">${g}</div>
+        <div class="group-head-info">
+          <div class="group-head-name">GRUP ${g}</div>
+          <div class="group-head-meta">${T.gsScoring?.toUpperCase()} · ${(groups[g]||[]).length} pasangan</div>
+        </div>
+        <div class="court-pill" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${ct}</div>
+      </div>
+      <table class="tv-st">
+        <tr><th>#</th><th>Pasangan</th><th>M</th><th>W</th><th>L</th><th>GD</th><th>Pts</th></tr>`;
+    (groups[g]||[]).forEach((t,i)=>{
+      const q=i<adv, gd=t.GF-t.GA, p=t.W+t.L;
+      h+=`<tr class="${q?'q':''}">
+        <td style="color:${col};font-weight:700;font-family:'Saira Condensed',sans-serif;font-size:20px;">${i+1}</td>
+        <td><div class="teamline">${teamAvatars(t.players)}<span class="nm" style="color:${q?'#0D0D0D':'#52525B'};font-weight:${q?600:400};font-size:16px;">${esc(t.name)}</span>${t.elo?`<span class="elo sm">${t.elo}</span>`:''}</div></td>
+        <td>${p}</td><td>${t.W}</td><td>${t.L}</td>
+        <td style="color:${gd>0?'#22A052':gd<0?'#FF2D55':'#9A9AA2'}">${gd>0?'+':''}${gd}</td>
+        <td style="color:${q?col:'#9A9AA2'};font-weight:${q?700:400}">${t.pts}</td>
+      </tr>`;
+    });
+    h+='</table></div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function renderSchedule(){
+  const el=document.getElementById('view-schedule');
+  if(!sched.length){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#E4E4E7;font-size:20px;font-family:\'Saira Condensed\',sans-serif;">Jadwal belum tersedia</div>';return;}
+  const upcoming=sched.filter(m=>!m.done);
+  const done=sched.filter(m=>m.done).slice(-8).reverse();
+  let h='<div class="schedule-cols">';
+  // Left: upcoming
+  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#FF6A00;">Akan Bermain</div>';
+  if(upcoming.length){upcoming.slice(0,8).forEach(m=>h+=schedRow(m));}
+  else h+='<div style="font-size:13px;color:#E4E4E7;padding:10px 0;">Semua match selesai ✓</div>';
+  h+='</div>';
+  // Right: recent results
+  h+='<div class="schedule-col"><div class="schedule-col-title" style="color:#22A052;">Hasil Terakhir</div>';
+  if(done.length){done.forEach(m=>h+=schedRow(m));}
+  else h+='<div style="font-size:13px;color:#E4E4E7;padding:10px 0;">Belum ada hasil</div>';
+  h+='</div>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function schedRow(m){
+  const gc=GC[m.group]||'#FF6A00', cc=CC[m.court]||'#FF6A00';
+  const score=m.done?`<div class="match-score-tv">${m.scoreHome} : ${m.scoreAway}</div>`:`<div class="match-score-tv pending">— : —</div>`;
+  return `<div class="match-row${m.done?' done':''}">
+    <div class="match-time">${m.startTime}</div>
+    <div class="match-badge" style="color:${cc};background:${cc}11;border:1px solid ${cc}33;">Court ${m.court}</div>
+    <div class="match-badge" style="color:${gc};background:${gc}11;border:1px solid ${gc}33;">Grp ${m.group}</div>
+    <div class="match-teams-tv" style="display:flex;align-items:center;gap:8px;"><span class="teamline">${teamAvatars(teamByName(m.home)?.players,'sm')}<b class="nm">${esc(m.home)}</b></span><span style="color:#E4E4E7;">vs</span><span class="teamline">${teamAvatars(teamByName(m.away)?.players,'sm')}<b class="nm">${esc(m.away)}</b></span></div>
+    ${score}
+  </div>`;
+}
+
+function tvBmTeam(side,m){
+  const t=side==='A'?m.teamA:m.teamB, sc=side==='A'?m.scoreA:m.scoreB;
+  const won=m.done&&m.winner?.team===t.team, tbd=t.team==='TBD';
+  const c=t.group?GC[t.group]:'#9A9AA2';
+  const seed=t.seed?`<span class="tv-seed" style="color:${c};background:${c}11;">#${t.seed}</span>`:'';
+  const av=(t.players&&t.players.length)?teamAvatars(t.players,'sm'):'';
+  const label=t.isBye?'BYE':esc(t.team);
+  return `<div class="tv-bms">${seed}<span class="teamline" style="flex:1;">${av}<span class="tv-bmt${won?' w':tbd?' tbd':''} nm">${label}</span></span><span class="tv-bmsc${won?' w':''}">${sc??''}</span></div>`;
+}
+function tvBracket(struct){
+  const totalR=struct.rounds.length;let h='<div class="bracket-outer">';
+  struct.rounds.forEach((round,ri)=>{
+    h+=`<div class="bracket-round-col"><div class="brc-title">${getRoundLabel(ri,totalR)}</div>`;
+    round.matches.forEach(m=>{h+=`<div class="tv-bm${m.done?' wd':''}">${tvBmTeam('A',m)}${tvBmTeam('B',m)}</div>`;});
+    h+='</div>';
+  });
+  const tm=struct.thirdMatch;
+  if(tm){h+=`<div class="bracket-round-col" style="flex:0 0 auto;min-width:190px;"><div class="brc-title" style="color:#FFB000;">Juara 3</div><div class="tv-bm${tm.done?' wd':''}">${tvBmTeam('A',tm)}${tvBmTeam('B',tm)}</div></div>`;}
+  return h+'</div>';
+}
+function tvPodium(struct){
+  const fr=struct.rounds[struct.rounds.length-1],fm=fr?.matches[0];
+  const champ=fm?.winner,ru=fm?.done?(fm.teamA.team===champ?.team?fm.teamB:fm.teamA):null;
+  const tm=struct.thirdMatch,third=tm?.winner,fourth=tm?.done?(tm.teamA.team===third?.team?tm.teamB:tm.teamA):null;
+  if(!champ)return '';
+  const pl=[{r:1,t:champ?.team,c:'#FFB000',e:'🥇'},{r:2,t:ru?.team||'—',c:'#E4E4E7',e:'🥈'},{r:3,t:third?.team||'—',c:'#cd7f32',e:'🥉'},{r:4,t:fourth?.team||'—',c:'#9A9AA2',e:'4th'}];
+  let h='<div class="podium-tv">';
+  pl.forEach(p=>h+=`<div class="podium-card-tv" style="background:${p.c}11;border:1.5px solid ${p.c}33;"><div class="podium-emoji">${p.e}</div><div class="podium-rank-tv" style="color:${p.c};">${p.r}</div><div class="podium-name-tv">${esc(p.t)}</div></div>`);
+  return h+'</div>';
+}
+function renderBracket(){
+  const el=document.getElementById('view-bracket');
+  if(!playoff){el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#E4E4E7;font-size:22px;font-family:\'Saira Condensed\',sans-serif;">Bracket playoff belum dibuat</div>';return;}
+  if(playoff.mode==='split'){
+    let h=`<div class="split-title-tv" style="color:#FFB000;">🏆 Upper Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat atas</span></div>`;
+    h+=tvBracket(playoff.upper)+tvPodium(playoff.upper);
+    h+=`<div class="split-title-tv" style="color:#FFB000;margin-top:14px;">🛡 Lower Bracket <span class="pill" style="color:#FFB000;background:#FFB00014;border:1px solid #FFB00033;">peringkat bawah</span></div>`;
+    h+=tvBracket(playoff.lower)+tvPodium(playoff.lower);
+    el.innerHTML=h;return;
+  }
+  el.innerHTML=tvBracket(playoff)+tvPodium(playoff);
+}
+
+function showView(v,el){
+  document.querySelectorAll('.tv-view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.tv-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeView=v;
+}
+
+// Clock
+function tick(){
+  const n=new Date(), h=n.getHours(), m=n.getMinutes(), s=n.getSeconds();
+  document.getElementById('tv-clock').textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+setInterval(tick,1000); tick();
+
+// Countdown
+function startCountdown(){
+  countdownVal=120;
+  clearInterval(progInt);
+  progInt=setInterval(()=>{
+    countdownVal--;
+    document.getElementById('countdown').textContent=countdownVal;
+    document.getElementById('prog').style.width=(countdownVal/120*100)+'%';
+    if(countdownVal<=0){load();startCountdown();}
+  },1000);
+}
+
+load();
+startCountdown();
+
+// Auto rotate views every 30s when no interaction
+let autoRotateInt=null;
+const views=['groups','schedule','bracket'];
+let viewIdx=0;
+function startAutoRotate(){
+  autoRotateInt=setInterval(()=>{
+    viewIdx=(viewIdx+1)%views.length;
+    const v=views[viewIdx];
+    document.querySelectorAll('.tv-view').forEach(x=>x.classList.remove('active'));
+    document.getElementById('view-'+v).classList.add('active');
+    document.querySelectorAll('.tv-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tv-tab')[viewIdx].classList.add('active');
+  },30000);
+}
+startAutoRotate();
+// Stop auto rotate on manual click
+document.querySelectorAll('.tv-tab').forEach(t=>t.addEventListener('click',()=>{clearInterval(autoRotateInt);setTimeout(startAutoRotate,60000);}));
+</script>
+</body>
+</html>
