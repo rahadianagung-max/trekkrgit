@@ -63,7 +63,7 @@
 .tgl-btn:last-child{border-right:0}
 .tgl-btn.active{background:var(--text);color:#fff}
 
-/* ── WEEKLY TOP 3 (vertical stack) ── */
+/* ── WEEKLY TOP 3 (vertical stack, stats inside info) ── */
 .top3{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .tc{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:14px;padding:13px 14px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .15s}
 .tc:hover{border-color:var(--orange)}
@@ -74,24 +74,25 @@
 .tc.r1 .tc-rk{color:#B8960A;font-size:18px}
 .tc.r2 .tc-rk{color:#787888}
 .tc.r3 .tc-rk{color:#A06028}
-.tc-photo{width:44px;height:44px;border-radius:11px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--muted);flex-shrink:0;overflow:hidden}
+.tc-photo{width:52px;height:52px;border-radius:13px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:17px;color:var(--muted);flex-shrink:0;overflow:hidden}
 .tc-photo img{width:100%;height:100%;object-fit:cover}
-.tc.r1 .tc-photo{width:54px;height:54px;font-size:18px;border:2px solid #E8C84A}
-.tc-info{flex:1;min-width:0}
-.tc-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc.r1 .tc-name{font-size:16px}
-.tc-level{font-size:11px;color:var(--subtle);margin-top:2px}
-.tc-stat{flex-shrink:0;text-align:right;min-width:36px}
-.tc-stat .sv{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;line-height:1;color:var(--text)}
-.tc.r1 .tc-stat .sv{font-size:22px}
-.tc-stat .sc{display:block;font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:2px;text-transform:uppercase}
+.tc.r1 .tc-photo{width:64px;height:64px;font-size:22px;border:2px solid #E8C84A}
+.tc-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.tc-name{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.tc.r1 .tc-name{font-size:15px}
+.tc-level{font-size:11px;color:var(--subtle);margin-top:1px}
+.tc-stats{display:flex;gap:10px;align-items:flex-start;margin-top:5px}
+.tc-stat{display:flex;flex-direction:column;align-items:center}
+.tc-stat .sv{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;line-height:1;color:var(--text)}
+.tc.r1 .tc-stat .sv{font-size:17px}
+.tc-stat .sc{font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:1px;text-transform:uppercase;text-align:center}
 .tc-stat .sv.green{color:var(--green)}.tc-stat .sv.red{color:var(--red)}.tc-stat .sv.muted{color:var(--muted)}
-.tc-wl-pair{display:flex;align-items:baseline;gap:2px}
-.tc-wl-w{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--green);line-height:1}
-.tc.r1 .tc-wl-w{font-size:22px}
-.tc-wl-sep{font-size:12px;color:var(--faint);margin:0 2px}
-.tc-wl-l{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--red);line-height:1}
-.tc.r1 .tc-wl-l{font-size:22px}
+.tc-wl{display:flex;align-items:baseline;gap:1px}
+.tc-wl-w{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--green);line-height:1}
+.tc.r1 .tc-wl-w{font-size:17px}
+.tc-wl-sep{font-size:11px;color:var(--faint);margin:0 1px}
+.tc-wl-l{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--red);line-height:1}
+.tc.r1 .tc-wl-l{font-size:17px}
 
 /* ── STANDARD ROWS (rank 4+ and all Overall) ── */
 .lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;background:var(--surface)}
@@ -260,7 +261,7 @@
     }).sort(function(a,b){return b.w-a.w||b.pd-a.pd||b.elo-a.elo;});
   }
 
-  /* ── RENDER WEEKLY TOP 3 (vertical stack) ── */
+  /* ── RENDER WEEKLY TOP 3 (vertical stack, stats inside info) ── */
   function renderTop3(top3){
     if(!top3.length)return'';
     var rkClass=['r1','r2','r3'];
@@ -268,19 +269,25 @@
     top3.forEach(function(p,i){
       var rk=i+1,cls=rkClass[i];
       var u=p.photoUrl||'';
-      var sz=rk===1?54:44;
-      var fsz=rk===1?18:15;
+      var sz=rk===1?64:52;
+      var fsz=rk===1?22:17;
+      var border=rk===1?';border:2px solid #E8C84A':'';
       var photoHtml=u
-        ?'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+(rk===1?';border:2px solid #E8C84A':'')+'"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>'
-        :'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+(rk===1?';border:2px solid #E8C84A':'')+'">'+esc(initials(p.displayName||p.name))+'</div>';
+        ?'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+border+'"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>'
+        :'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+border+'">'+esc(initials(p.displayName||p.name))+'</div>';
       var pdCls=p.pd>0?'green':p.pd<0?'red':'muted';
       html+='<a class="tc '+cls+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
         +'<span class="tc-rk">'+rk+'</span>'
         +photoHtml
-        +'<span class="tc-info"><span class="tc-name">'+esc(p.displayName||p.name)+'</span><span class="tc-level">'+esc(p.level)+'</span></span>'
-        +'<span class="tc-stat"><span class="tc-wl-pair"><span class="tc-wl-w">'+(p.w||0)+'</span><span class="tc-wl-sep">/</span><span class="tc-wl-l">'+(p.l||0)+'</span></span><span class="sc">W / L</span></span>'
-        +'<span class="tc-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>'
-        +'<span class="tc-stat"><span class="sv" style="color:var(--orange)">'+(p.elo||0)+'</span><span class="sc">ELO</span></span>'
+        +'<span class="tc-info">'
+        +  '<span class="tc-name">'+esc(p.displayName||p.name)+'</span>'
+        +  '<span class="tc-level">'+esc(p.level)+'</span>'
+        +  '<span class="tc-stats">'
+        +    '<span class="tc-stat"><span class="tc-wl"><span class="tc-wl-w">'+(p.w||0)+'</span><span class="tc-wl-sep">/</span><span class="tc-wl-l">'+(p.l||0)+'</span></span><span class="sc">W/L</span></span>'
+        +    '<span class="tc-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>'
+        +    '<span class="tc-stat"><span class="sv" style="color:var(--orange)">'+(p.elo||0)+'</span><span class="sc">ELO</span></span>'
+        +  '</span>'
+        +'</span>'
         +'</a>';
     });
     html+='</div>';
@@ -288,7 +295,8 @@
   }
 
   /* ── RENDER STANDARD ROWS ── */
-  function renderRows(players,startRank){
+  function renderRows(players,startRank,showPD){
+    if(showPD===undefined)showPD=true;
     if(!players.length)return'';
     var html='<div class="lb">';
     players.forEach(function(p,i){
@@ -298,7 +306,7 @@
         +photoEl(p,44)
         +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(p.level)+'</span></span>'
         +'<span class="lb-stat"><span class="lb-wl-pair"><span class="lb-wl-w">'+(p.w||0)+'</span><span class="lb-wl-sep">/</span><span class="lb-wl-l">'+(p.l||0)+'</span></span><span class="sc">W / L</span></span>'
-        +'<span class="lb-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>'
+        +(showPD?'<span class="lb-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>':'')
         +'<span class="lb-stat"><span class="sv orange">'+(p.elo||0)+'</span><span class="sc">ELO</span></span>'
         +'</a>';
     });
@@ -322,10 +330,10 @@
       if(rest.length)html+=renderRows(rest,4);
       if(more>0)html+='<button class="view-more-btn" id="lbMore">View more ('+more+' players)</button>';
     } else {
-      // Overall: all same standard rows, no special top 3
+      // Overall: all same standard rows, no PD column
       var shown=ranking.slice(0,S.lbShown);
       var moreO=ranking.length-shown.length;
-      html+=renderRows(shown,1);
+      html+=renderRows(shown,1,false);
       if(moreO>0)html+='<button class="view-more-btn" id="lbMore">View more ('+moreO+' players)</button>';
     }
     el.innerHTML=html;
@@ -410,7 +418,7 @@
       +  '</div>'
       +  '<div id="lb-body"></div>'
       +'</div>'
-      +'<div class="match-section">'
+      +'<div class="match-section" id="match-section">'
       +  '<div class="sec-label" id="mhlabel">Match History &middot; '+esc(S.week)+'</div>'
       +  '<div id="match-history"></div>'
       +'</div>';
@@ -429,6 +437,8 @@
       var btn=e.target.closest('.tgl-btn');if(!btn)return;
       S.mode=btn.getAttribute('data-m');S.lbShown=10;
       document.querySelectorAll('#modeToggle .tgl-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-m')===S.mode);});
+      var ms=document.getElementById('match-section');
+      if(ms)ms.style.display=S.mode==='overall'?'none':'';
       loadRanking();
     });
     document.getElementById('genderToggle').addEventListener('click',function(e){
