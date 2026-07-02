@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TurnamenPadel — Platform Manajemen Turnamen Padel Indonesia</title>
+<meta name="description" content="Platform manajemen turnamen padel terlengkap. Scoreboard TV real-time, live score mobile, dan sistem ELO otomatis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#000000;--panel:#141210;--panel2:#1c1917;--line:#332a24;
+  --text:#fdf4ee;--muted:#bfa091;--faint:#856a5d;
+  --accent:#ff7a1a;--accent2:#ffab40;--press:#e05800;
+  --grad:linear-gradient(115deg,#ff3d2e 0%,#ff7a18 55%,#ffb347 100%);
+  --r:16px;--r-sm:10px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Hanken Grotesk',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 5vw;height:64px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.nav-logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.25rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;letter-spacing:-.02em}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{background:var(--accent);color:#000;font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:.875rem;padding:.5rem 1.25rem;border-radius:8px;text-decoration:none;transition:background .2s}
+.nav-cta:hover{background:var(--accent2)}
+
+/* HERO */
+.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 5vw 60px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,122,26,.12) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,122,26,.12);border:1px solid rgba(255,122,26,.3);border-radius:999px;padding:.35rem 1rem;font-size:.8rem;font-weight:600;color:var(--accent2);font-family:'Space Mono',monospace;letter-spacing:.04em;margin-bottom:2rem}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2.8rem,8vw,6rem);font-weight:800;line-height:1.05;letter-spacing:-.03em;max-width:14ch;margin:0 auto .5rem}
+.h1-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(1rem,2.5vw,1.3rem);color:var(--muted);max-width:52ch;margin:1.25rem auto 2.5rem;font-weight:400;line-height:1.7}
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn-primary{background:var(--grad);color:#000;font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:1rem;padding:.875rem 2rem;border-radius:var(--r-sm);text-decoration:none;transition:opacity .2s,transform .1s}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--text);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1rem;padding:.875rem 2rem;border-radius:var(--r-sm);border:1px solid var(--line);text-decoration:none;transition:border-color .2s,background .2s}
+.btn-secondary:hover{border-color:var(--faint);background:var(--panel)}
+.hero-screens{margin-top:5rem;width:100%;max-width:960px;position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:end}
+.screen-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:transform .3s,border-color .3s}
+.screen-card:hover{transform:translateY(-6px);border-color:var(--faint)}
+.screen-card.center{transform:scale(1.06)}
+.screen-card.center:hover{transform:scale(1.06) translateY(-6px)}
+.screen-label{background:var(--panel2);padding:.6rem 1rem;font-family:'Space Mono',monospace;font-size:.7rem;color:var(--faint);letter-spacing:.06em;border-bottom:1px solid var(--line)}
+.screen-preview{padding:1.25rem;min-height:140px;display:flex;flex-direction:column;gap:.6rem}
+.sp-row{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:var(--panel2);border-radius:8px;font-size:.8rem}
+.sp-score{font-family:'Space Mono',monospace;font-weight:700;font-size:1rem;color:var(--accent)}
+.sp-name{font-size:.75rem;color:var(--muted)}
+.sp-badge{font-family:'Space Mono',monospace;font-size:.65rem;padding:.2rem .5rem;border-radius:4px;background:rgba(255,122,26,.15);color:var(--accent2)}
+
+/* STATS */
+.stats{padding:4rem 5vw;display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{text-align:center}
+.stat-num{font-family:'Bricolage Grotesque',sans-serif;font-size:2.5rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+.stat-label{font-size:.85rem;color:var(--muted);margin-top:.25rem}
+
+/* FEATURES */
+.section{padding:6rem 5vw;max-width:1200px;margin:0 auto}
+.section-tag{font-family:'Space Mono',monospace;font-size:.75rem;letter-spacing:.1em;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:1rem}
+.section-title{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:1rem}
+.section-sub{color:var(--muted);font-size:1.05rem;max-width:52ch;line-height:1.7}
+.features-grid{margin-top:3.5rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem}
+.feat-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:1.75rem;transition:border-color .25s,transform .25s}
+.feat-card:hover{border-color:var(--faint);transform:translateY(-3px)}
+.feat-icon{width:44px;height:44px;border-radius:10px;background:rgba(255,122,26,.12);display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;font-size:1.4rem}
+.feat-title{font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+.feat-desc{font-size:.9rem;color:var(--muted);line-height:1.6}
+
+/* HOW IT WORKS */
+.how-section{background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6rem 5vw}
+.how-inner{max-width:1200px;margin:0 auto}
+.steps{margin-top:3.5rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;counter-reset:steps}
+.step{counter-increment:steps;position:relative;padding-left:1rem}
+.step::before{content:counter(steps,'0'counter(steps));font-family:'Space Mono',monospace;font-size:2.5rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;display:block;margin-bottom:.75rem}
+.step-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.4rem}
+.step-desc{font-size:.875rem;color:var(--muted);line-height:1.6}
+
+/* SCREENS SECTION */
+.screens-section{padding:6rem 5vw;max-width:1200px;margin:0 auto}
+.screens-tabs{display:flex;gap:.5rem;margin-top:2.5rem;border-bottom:1px solid var(--line);padding-bottom:0}
+.stab{font-family:'Hanken Grotesk',sans-serif;font-size:.875rem;font-weight:600;color:var(--faint);padding:.6rem 1rem;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s}
+.stab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.screen-showcase{margin-top:2rem;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.showcase-bar{background:var(--panel2);padding:.75rem 1.25rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--line)}
+.dot-red{width:10px;height:10px;border-radius:50%;background:#ff5f57}
+.dot-yel{width:10px;height:10px;border-radius:50%;background:#febc2e}
+.dot-grn{width:10px;height:10px;border-radius:50%;background:#28c840}
+.showcase-url{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--faint);margin-left:.5rem}
+.showcase-body{padding:2rem;min-height:320px;display:flex;flex-direction:column;gap:1rem}
+.tv-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;background:var(--panel2);border-radius:var(--r-sm);border:1px solid var(--line)}
+.tv-title{font-family:'Bricolage Grotesque',sans-serif;font-size:1.4rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tv-live{font-family:'Space Mono',monospace;font-size:.7rem;padding:.3rem .8rem;border-radius:999px;background:rgba(255,90,77,.2);color:#ff5a4d;border:1px solid rgba(255,90,77,.3)}
+.tv-match{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.tv-team{flex:1;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.1rem}
+.tv-team.right{text-align:right}
+.tv-scores{display:flex;gap:.5rem;align-items:center}
+.tv-s{font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;color:var(--accent);width:2.5rem;text-align:center}
+.tv-sep{color:var(--faint);font-size:1rem}
+
+/* CTA */
+.cta-section{padding:8rem 5vw;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 50%,rgba(255,122,26,.1) 0%,transparent 70%);pointer-events:none}
+.cta-title{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.03em;margin-bottom:1.25rem;line-height:1.1}
+.cta-sub{color:var(--muted);font-size:1.05rem;margin-bottom:2.5rem;max-width:44ch;margin-left:auto;margin-right:auto}
+
+/* FOOTER */
+footer{background:var(--panel);border-top:1px solid var(--line);padding:2.5rem 5vw;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer-logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-links{display:flex;gap:1.5rem;list-style:none}
+.footer-links a{color:var(--faint);font-size:.85rem;text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--muted)}
+.footer-copy{font-size:.8rem;color:var(--faint)}
+
+/* MOBILE */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hero-screens{grid-template-columns:1fr;max-width:360px}
+  .screen-card.center{transform:none}
+  .stats{gap:2rem}
+  .steps{grid-template-columns:1fr}
+  footer{flex-direction:column;text-align:center}
+  .footer-links{justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">TurnamenPadel</a>
+  <ul class="nav-links">
+    <li><a href="#fitur">Fitur</a></li>
+    <li><a href="#cara-kerja">Cara Kerja</a></li>
+    <li><a href="#tampilan">Tampilan</a></li>
+  </ul>
+  <a class="nav-cta" href="admin.html">Masuk Admin</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⚡ Real-time · ELO Rating · Indonesia</div>
+  <h1>Turnamen Padel<br><span class="h1-grad">Profesional</span></h1>
+  <p class="hero-sub">Platform manajemen turnamen padel lengkap — scoreboard TV real-time, live score di HP, dan sistem peringkat ELO otomatis untuk setiap event.</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="admin.html">Mulai Turnamen</a>
+    <a class="btn-secondary" href="#fitur">Lihat Fitur</a>
+  </div>
+
+  <div class="hero-screens">
+    <div class="screen-card">
+      <div class="screen-label">📱 MOBILE LIVE</div>
+      <div class="screen-preview">
+        <div class="sp-row"><span class="sp-name">Budi / Andi</span><span class="sp-score">6</span></div>
+        <div class="sp-row"><span class="sp-name">Reza / Doni</span><span class="sp-score">4</span></div>
+        <div style="margin-top:.5rem;font-size:.7rem;color:var(--faint);font-family:'Space Mono',monospace;text-align:center">SET 2 · BERLANGSUNG</div>
+      </div>
+    </div>
+    <div class="screen-card center">
+      <div class="screen-label">🖥️ TV SCOREBOARD</div>
+      <div class="screen-preview">
+        <div class="sp-row"><span class="sp-name">Court A</span><span class="sp-badge">LIVE</span></div>
+        <div class="sp-row" style="flex-direction:column;gap:.5rem;align-items:stretch">
+          <div style="display:flex;justify-content:space-between"><span>Hendra / Rio</span><span class="sp-score">6 3</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Fajar / Alvin</span><span class="sp-score" style="color:var(--muted)">4 1</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-label">⚙️ ADMIN PANEL</div>
+      <div class="screen-preview">
+        <div class="sp-row" style="justify-content:space-between"><span class="sp-badge">GRUP A</span><span style="font-size:.7rem;color:var(--faint)">4 Tim</span></div>
+        <div style="display:flex;flex-direction:column;gap:.3rem">
+          <div class="sp-row" style="font-size:.75rem"><span>1. Budi / Andi</span><span class="sp-score" style="font-size:.85rem">9</span></div>
+          <div class="sp-row" style="font-size:.75rem"><span>2. Reza / Doni</span><span class="sp-score" style="font-size:.85rem">6</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">Layar Tersinkron</div></div>
+  <div class="stat"><div class="stat-num">Real-time</div><div class="stat-label">Update Skor</div></div>
+  <div class="stat"><div class="stat-num">ELO</div><div class="stat-label">Rating Otomatis</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-label">Install Diperlukan</div></div>
+</div>
+
+<!-- FEATURES -->
+<div id="fitur">
+  <div class="section">
+    <div class="section-tag">Fitur Unggulan</div>
+    <div class="section-title">Semua yang dibutuhkan<br>untuk turnamen profesional</div>
+    <p class="section-sub">Dari pendaftaran hingga podium — kelola seluruh turnamen padel kamu dalam satu platform terintegrasi.</p>
+
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🖥️</div>
+        <div class="feat-title">Scoreboard TV Real-time</div>
+        <div class="feat-desc">Tampilkan skor langsung di layar TV LED besar. Auto-update tanpa perlu refresh, layout landscape yang bersih dan mudah dibaca dari jauh.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📱</div>
+        <div class="feat-title">Live Score di HP</div>
+        <div class="feat-desc">Penonton scan QR code langsung dapat live score di HP masing-masing. Semua pertandingan dalam satu halaman mobile-friendly.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚙️</div>
+        <div class="feat-title">Admin Panel Lengkap</div>
+        <div class="feat-desc">Input skor, atur grup, jadwal pertandingan, dan update hasil langsung dari panel admin. Tidak perlu aplikasi khusus — cukup browser.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Sistem ELO Otomatis</div>
+        <div class="feat-desc">Rating pemain dihitung otomatis setiap selesai turnamen menggunakan algoritma ELO. Rekam jejak performa tersimpan permanen.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🏆</div>
+        <div class="feat-title">Format Grup & Knockout</div>
+        <div class="feat-desc">Dukung format round-robin grup dan babak gugur. Klasemen otomatis berdasarkan poin, set, dan game.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">☁️</div>
+        <div class="feat-title">Cloud-based, Zero Install</div>
+        <div class="feat-desc">Berjalan 100% di browser. Data tersimpan di Google Sheets — mudah di-backup, export, dan audit kapan saja.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div id="cara-kerja" class="how-section">
+  <div class="how-inner">
+    <div class="section-tag">Cara Kerja</div>
+    <div class="section-title">Siap dalam hitungan menit</div>
+    <p class="section-sub">Setup turnamen cepat, tidak perlu instalasi, langsung bisa digunakan di hari H.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Buat Event Baru</div>
+        <div class="step-desc">Buka admin.html, masukkan nama event dan daftar peserta. Sistem langsung generate jadwal pertandingan.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Tampilkan di TV</div>
+        <div class="step-desc">Buka tv.html di browser TV atau laptop yang terhubung ke proyektor. Scoreboard tampil otomatis real-time.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Penonton Scan QR</div>
+        <div class="step-desc">QR code muncul di layar TV. Penonton scan dan langsung lihat semua skor live di HP masing-masing.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Input Skor</div>
+        <div class="step-desc">Admin input hasil setiap pertandingan. Semua layar (TV + HP) update otomatis dalam hitungan detik.</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Selesai & Rating Update</div>
+        <div class="step-desc">Setelah turnamen selesai, rating ELO semua pemain otomatis dihitung dan diperbarui di database global.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREENS SHOWCASE -->
+<div id="tampilan">
+  <div class="screens-section">
+    <div class="section-tag">Tampilan Layar</div>
+    <div class="section-title">Dirancang untuk setiap layar</div>
+    <p class="section-sub">TV LED, smartphone, hingga tablet — semua tampil optimal dengan tema gelap yang elegan.</p>
+
+    <div class="screen-showcase" style="margin-top:2.5rem">
+      <div class="showcase-bar">
+        <div class="dot-red"></div><div class="dot-yel"></div><div class="dot-grn"></div>
+        <span class="showcase-url">turnamenpadel.com/tv.html · TV SCOREBOARD</span>
+      </div>
+      <div class="showcase-body">
+        <div class="tv-header">
+          <div class="tv-title">TurnamenPadel</div>
+          <div style="display:flex;gap:.75rem;align-items:center">
+            <span style="font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted)">GRAND SLAM JAKARTA 2025</span>
+            <span class="tv-live">● LIVE</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="tv-match">
+            <div class="tv-team">Budi<br>Andi</div>
+            <div class="tv-scores">
+              <span class="tv-s">6</span>
+              <span class="tv-sep">·</span>
+              <span class="tv-s" style="color:var(--faint)">3</span>
+            </div>
+            <div class="tv-team right">Reza<br>Doni</div>
+          </div>
+          <div class="tv-match">
+            <div class="tv-team">Hendra<br>Rio</div>
+            <div class="tv-scores">
+              <span class="tv-s">4</span>
+              <span class="tv-sep">·</span>
+              <span class="tv-s" style="color:var(--faint)">2</span>
+            </div>
+            <div class="tv-team right">Fajar<br>Alvin</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem">
+          <div style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:1rem">
+            <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--faint);margin-bottom:.75rem;letter-spacing:.06em">KLASEMEN GRUP A</div>
+            <div style="display:flex;flex-direction:column;gap:.4rem">
+              <div style="display:flex;justify-content:space-between;font-size:.8rem"><span style="color:var(--accent2)">1. Budi / Andi</span><span style="font-family:'Space Mono',monospace">3 — 9pts</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>2. Hendra / Rio</span><span style="font-family:'Space Mono',monospace;color:var(--muted)">2 — 6pts</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>3. Reza / Doni</span><span style="font-family:'Space Mono',monospace;color:var(--muted)">1 — 3pts</span></div>
+            </div>
+          </div>
+          <div style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem">
+            <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--faint);letter-spacing:.06em">SCAN LIVE SCORE</div>
+            <div style="width:80px;height:80px;background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:8px">
+              <!-- QR code placeholder -->
+              <div style="grid-column:1/3;grid-row:1/3;background:var(--text);border-radius:2px"></div>
+              <div style="background:var(--bg)"></div>
+              <div style="grid-column:4/6;grid-row:1/3;background:var(--text);border-radius:2px"></div>
+              <div style="background:var(--text)"></div>
+              <div style="background:var(--bg)"></div>
+              <div style="background:var(--text)"></div>
+              <div style="background:var(--bg)"></div>
+              <div style="grid-column:1/3;grid-row:4/6;background:var(--text);border-radius:2px"></div>
+              <div style="background:var(--text)"></div>
+              <div style="background:var(--bg)"></div>
+              <div style="background:var(--text)"></div>
+            </div>
+            <div style="font-size:.65rem;color:var(--faint)">mobile.html</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="section-title cta-title">Siap menggelar<br>turnamen padel kamu?</div>
+  <p class="cta-sub">Tidak perlu daftar, tidak perlu bayar. Mulai langsung dari panel admin.</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="admin.html">Buka Admin Panel</a>
+    <a class="btn-secondary" href="tv.html" target="_blank">Preview TV Board</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">TurnamenPadel</span>
+  <ul class="footer-links">
+    <li><a href="admin.html">Admin</a></li>
+    <li><a href="tv.html">TV Board</a></li>
+    <li><a href="mobile.html">Live Score</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 TurnamenPadel · Powered by Trekkr ELO</span>
+</footer>
+
+</body>
+</html>
