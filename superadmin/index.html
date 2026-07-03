@@ -62,6 +62,7 @@ footer span{color:var(--lime)}
     <div class="logout-bar"><span class="user-info" id="userLabel">—</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
     <div class="admin-tabs">
       <button class="a-tab active" onclick="switchTab('players')">Players</button>
+      <button class="a-tab" onclick="switchTab('record')">Record Match</button>
       <button class="a-tab" onclick="switchTab('venues')">Venues</button>
       <button class="a-tab" onclick="switchTab('admins')">Admins</button>
       <button class="a-tab" onclick="switchTab('sessions')">Sessions</button>
@@ -81,6 +82,24 @@ footer span{color:var(--lime)}
       <div class="section"><div class="section-title">ALL PLAYERS</div><div style="margin-bottom:12px"><input class="field-input" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()"></div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Photo</th><th>Name</th><th>Gender</th><th>ELO</th><th>IG</th><th>Region</th><th>Actions</th></tr></thead><tbody id="playersTbody"></tbody></table></div></div>
     </div>
     <!-- VENUES -->
+    <div class="tab-pane" id="tab-record">
+      <div class="section">
+        <div class="section-title">RECORD MATCH · MANUAL INPUT</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Tentukan venue/community, isi 4 pemain &amp; skor. Nama pemain dicek ke database; pemain baru diberi level manual. Skor langsung direkam &amp; ELO dihitung.</p>
+        <div class="field-row">
+          <div class="field"><label class="field-label">Venue / Community *</label><input class="field-input" id="rm-venue" list="rm-venue-list" placeholder="Pilih atau ketik baru..." autocomplete="off"><datalist id="rm-venue-list"></datalist></div>
+          <div class="field"><label class="field-label">Gender</label><select class="field-select" id="rm-gender"><option value="M">Putra (M)</option><option value="F">Putri (F)</option></select></div>
+        </div>
+        <div class="field-row">
+          <div style="border:1px solid var(--border2);border-radius:8px;padding:14px"><div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">TEAM 1</div><div class="field"><label class="field-label">Pemain 1 *</label><input class="field-input" id="rm-p1t1" list="rm-player-list" placeholder="Nama pemain..." autocomplete="off" oninput="onPlayerInput('rm-p1t1')"><div id="rm-p1t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p1t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Pemain 2 *</label><input class="field-input" id="rm-p2t1" list="rm-player-list" placeholder="Nama pemain..." autocomplete="off" oninput="onPlayerInput('rm-p2t1')"><div id="rm-p2t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p2t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Skor Team 1 *</label><input class="field-input" id="rm-sT1" type="number" min="0" placeholder="0"></div></div>
+          <div style="border:1px solid var(--border2);border-radius:8px;padding:14px"><div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">TEAM 2</div><div class="field"><label class="field-label">Pemain 1 *</label><input class="field-input" id="rm-p1t2" list="rm-player-list" placeholder="Nama pemain..." autocomplete="off" oninput="onPlayerInput('rm-p1t2')"><div id="rm-p1t2-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p1t2-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Pemain 2 *</label><input class="field-input" id="rm-p2t2" list="rm-player-list" placeholder="Nama pemain..." autocomplete="off" oninput="onPlayerInput('rm-p2t2')"><div id="rm-p2t2-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p2t2-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Skor Team 2 *</label><input class="field-input" id="rm-sT2" type="number" min="0" placeholder="0"></div></div>
+        </div>
+        <button class="btn btn-primary" onclick="recordMatch()" style="margin-top:6px">Record Match &amp; Compute ELO</button>
+        <div class="status-msg" id="rm-status"></div>
+        <div id="rm-result" style="margin-top:14px;overflow-x:auto"></div>
+      </div>
+    </div>
+
     <div class="tab-pane" id="tab-venues">
       <div class="section">
         <div class="section-title">ADD VENUE</div>
@@ -140,7 +159,7 @@ footer span{color:var(--lime)}
 <script src="trekkr-api.js"></script>
 <script>
 const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2130'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%232a3045'/%3E%3Cpath d='M6 28c0-6 4-10 10-10s10 4 10 10' fill='%232a3045'/%3E%3C/svg%3E";
-let allPC=[];
+let allPC=[];let allVenues=[];
 
 function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&s.role==='superadmin')showDash(s)}
 async function doLogin(){const u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value,st=document.getElementById('loginStatus');try{const d=await TrekkrAPI.login(u,p);if(d.role!=='superadmin'){st.className='status-msg error';st.textContent='Superadmin only';return}showDash(d)}catch(e){st.className='status-msg error';st.textContent=e.message||'Login failed'}}
@@ -152,7 +171,7 @@ async function loadAll(){await Promise.all([loadPlayers(),loadVenues(),loadAdmin
 
 async function loadPlayers(){
   try{const d=await TrekkrAPI.getPlayers(),e=await TrekkrAPI.getLatestElo();
-    allPC=d.players.map(p=>({...p,elo:e.players?.[p.name]?.elo||1350}));renderPlayers(allPC)}catch(e){console.warn(e)}
+    allPC=d.players.map(p=>({...p,elo:e.players?.[p.name]?.elo||1350}));renderPlayers(allPC);populatePlayerList()}catch(e){console.warn(e)}
 }
 function renderPlayers(pl){document.getElementById('playersTbody').innerHTML=pl.map(p=>`<tr><td class="photo-cell"><img src="${p.photoUrl||DA}" onerror="this.src='${DA}'"></td><td><strong>${p.displayName||p.name}</strong></td><td><span class="badge ${p.gender==='F'?'badge-lime':'badge-muted'}">${p.gender}</span></td><td>${p.elo}</td><td>${p.ig||'—'}</td><td>${p.region||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editPlayer('${p.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('')}
 function filterPlayers(){const q=document.getElementById('playerSearch').value.toLowerCase();renderPlayers(allPC.filter(p=>p.name.toLowerCase().includes(q)||(p.displayName||'').toLowerCase().includes(q)||(p.ig||'').toLowerCase().includes(q)))}
@@ -179,7 +198,7 @@ async function loadVenues(){
   try{const d=await TrekkrAPI.getVenues();
     document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>`<tr><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editVenue('${v.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('');
     const s=document.getElementById('aa-venue');while(s.options.length>1)s.remove(1);
-    d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});
+    d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});allVenues=d.venues;populateVenueList();
   }catch(e){console.warn(e)}
 }
 
@@ -234,6 +253,39 @@ async function saveSettings(){
 }
 
 window.addEventListener('load',checkAuth);
+
+const RM_IDS=['rm-p1t1','rm-p2t1','rm-p1t2','rm-p2t2'];
+function populatePlayerList(){const dl=document.getElementById('rm-player-list');if(!dl)return;dl.innerHTML=allPC.map(p=>`<option value="${String(p.name||'').replace(/"/g,'&quot;')}">`).join('');RM_IDS.forEach(onPlayerInput);}
+function populateVenueList(){const dl=document.getElementById('rm-venue-list');if(!dl)return;dl.innerHTML=allVenues.map(v=>`<option value="${String(v.name||'').replace(/"/g,'&quot;')}">`).join('');}
+function isExistingPlayer(name){const n=String(name||'').trim().toLowerCase();return !!n&&allPC.some(p=>String(p.name||'').toLowerCase()===n);}
+function onPlayerInput(id){const inp=document.getElementById(id);if(!inp)return;const box=document.getElementById(id+'-new');if(!box)return;const v=inp.value.trim();box.style.display=(v&&!isExistingPlayer(v))?'block':'none';}
+async function recordMatch(){
+  const st=document.getElementById('rm-status'),res=document.getElementById('rm-result');res.innerHTML='';
+  const show=(cls,msg)=>{st.className='status-msg'+(cls?' '+cls:'');st.style.display='block';st.textContent=msg;};
+  const venue=document.getElementById('rm-venue').value.trim();
+  const gender=document.getElementById('rm-gender').value;
+  const p1t1=document.getElementById('rm-p1t1').value.trim(),p2t1=document.getElementById('rm-p2t1').value.trim(),p1t2=document.getElementById('rm-p1t2').value.trim(),p2t2=document.getElementById('rm-p2t2').value.trim();
+  const scoreT1=document.getElementById('rm-sT1').value,scoreT2=document.getElementById('rm-sT2').value;
+  if(!venue){show('error','Venue / community wajib diisi.');return;}
+  const arr=[p1t1,p2t1,p1t2,p2t2];
+  if(arr.some(n=>!n)){show('error','Keempat pemain wajib diisi.');return;}
+  if(new Set(arr.map(n=>n.toLowerCase())).size!==4){show('error','Keempat pemain harus berbeda.');return;}
+  if(scoreT1===''||scoreT2===''){show('error','Kedua skor wajib diisi.');return;}
+  const levels={};
+  RM_IDS.forEach(id=>{const inp=document.getElementById(id);const v=inp.value.trim();if(v&&!isExistingPlayer(v)){const ls=document.getElementById(id+'-level');if(ls)levels[v]=ls.value;}});
+  show('','Menyimpan & menghitung ELO...');
+  try{
+    const r=await fetch('https://trekkr.online/api/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
+    const d=await r.json();
+    if(!r.ok||!d.success){show('error',d.error||'Gagal menyimpan match.');return;}
+    show('success',`✓ Match direkam di "${d.venue}". ELO diperbarui.`);
+    res.innerHTML='<table class="data-table"><thead><tr><th>Player</th><th>New ELO</th><th>Δ</th><th>W</th><th>L</th></tr></thead><tbody>'+d.results.map(x=>`<tr><td><strong>${x.name}</strong></td><td>${x.newElo}</td><td style="color:${x.delta>=0?'var(--lime)':'var(--coral)'}">${x.delta>=0?'+':''}${x.delta}</td><td>${x.w}</td><td>${x.l}</td></tr>`).join('')+'</tbody></table>';
+    ['rm-p1t1','rm-p2t1','rm-p1t2','rm-p2t2','rm-sT1','rm-sT2'].forEach(id=>document.getElementById(id).value='');
+    RM_IDS.forEach(onPlayerInput);
+    loadPlayers();
+  }catch(e){show('error','Error: '+(e.message||e));}
+}
+
 </script>
 </body>
 </html>
