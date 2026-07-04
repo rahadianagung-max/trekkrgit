@@ -629,6 +629,9 @@ canvas#shareCanvas{display:none}
 .share-opt-sub{font-size:11px;color:var(--on-surface-variant);margin-top:1px}
 
 .menu-toggle{display:none;background:transparent;border:1px solid var(--surface-high);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--on-surface);font-size:20px;cursor:pointer}.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 14px}.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:700;font-size:13px;color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif}.mobile-nav a:hover{background:var(--surface-container);color:var(--on-surface)}.mobile-nav.open{display:flex}@media(max-width:1023px){.menu-toggle{display:flex}}
+.pp-edit-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,106,0,.4);color:var(--primary);background:transparent;border-radius:var(--radius-pill);padding:7px 15px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--motion-base)}
+.pp-edit-btn:hover{background:rgba(255,106,0,.08)}
+.edit-in{width:100%;border:1px solid rgba(115,118,136,.22);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;background:#F9FAFC;color:var(--on-surface)}
 </style>
 </head>
 <body>
@@ -890,7 +893,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   document.title=`${p.displayName} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E'">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
-  <div><h2 class="pp-name">${(p.displayName||p.name).toUpperCase()}</h2>
+  <div><h2 class="pp-name">${(p.displayName||p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
     <div><p class="pp-meta-label">Level</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
@@ -1862,6 +1865,57 @@ function downloadNightCard(){
   </div>
 </div>
 
-<script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();</script>
+<script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();
+var _editPhotoData="";
+var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";
+function openEditModal(){
+  if(!playerData)return; var p=playerData.player;
+  document.getElementById('editName').value=p.displayName||p.name||'';
+  document.getElementById('editIg').value=(p.ig||'').replace(/^@+/,'');
+  document.getElementById('editPhotoPrev').src=p.photoUrl||_EDIT_PH;
+  _editPhotoData=''; var m=document.getElementById('editMsg'); m.textContent='';
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
+function onEditPhoto(e){
+  var f=e.target.files&&e.target.files[0]; if(!f)return; var m=document.getElementById('editMsg');
+  if(f.size>3.5*1024*1024){m.style.color='var(--danger)';m.textContent='Foto terlalu besar (maks ~2-3 MB).';return;}
+  var r=new FileReader(); r.onload=function(){_editPhotoData=r.result;document.getElementById('editPhotoPrev').src=r.result;m.textContent='';}; r.readAsDataURL(f);
+}
+function submitEdit(){
+  if(!playerData)return; var p=playerData.player;
+  var btn=document.getElementById('editSubmitBtn'), m=document.getElementById('editMsg');
+  var body={name:p.name, displayName:(document.getElementById('editName').value||'').trim(), ig:(document.getElementById('editIg').value||'').trim().replace(/^@+/,'')};
+  if(_editPhotoData) body.photo=_editPhotoData;
+  btn.disabled=true; btn.textContent='Submitting…'; m.style.color='var(--on-surface-variant)'; m.textContent='';
+  fetch('https://trekkr.online/api/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json();}).then(function(d){
+      btn.disabled=false; btn.textContent='Submit for review';
+      if(d&&d.success){ m.style.color='var(--ok)'; m.textContent='✓ Terkirim! Menunggu persetujuan admin.'; setTimeout(closeEditModal,1700); }
+      else { m.style.color='var(--danger)'; m.textContent=(d&&d.error)||'Gagal mengirim.'; }
+    }).catch(function(){ btn.disabled=false; btn.textContent='Submit for review'; m.style.color='var(--danger)'; m.textContent='Error jaringan.'; });
+}
+</script>
+
+<div class="share-modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="share-modal">
+    <div class="share-modal-handle"></div>
+    <div class="share-modal-head"><div class="share-modal-title">Edit profile</div><button class="share-modal-close" onclick="closeEditModal()">&times;</button></div>
+    <p class="share-modal-sub">Changes are reviewed by an admin before they go live. Your ELO and match history never change.</p>
+    <div style="display:flex;align-items:center;gap:14px;margin:6px 0 16px">
+      <img id="editPhotoPrev" alt="" style="width:66px;height:66px;border-radius:14px;object-fit:cover;background:#EFEFF1"/>
+      <div>
+        <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Change photo<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
+        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Square image, JPG/PNG, max ~2 MB.</div>
+      </div>
+    </div>
+    <label class="pp-info-label" style="display:block;margin-bottom:6px">Display name</label>
+    <input id="editName" class="edit-in" placeholder="Your name">
+    <label class="pp-info-label" style="display:block;margin:14px 0 6px">Instagram</label>
+    <input id="editIg" class="edit-in" placeholder="username (without @)">
+    <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Submit for review</button>
+    <div id="editMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+  </div>
+</div>
 </body>
 </html>
