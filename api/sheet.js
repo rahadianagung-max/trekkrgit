@@ -64,6 +64,7 @@ const TABS = {
   t_form: "Form_Responses",
   reg_forms: "RegForms",
   registrations: "Registrations",
+  edit_requests: "Edit_Requests",
 };
 
 const headers = {
@@ -196,6 +197,9 @@ const netlifyHandler = async (event) => {
     if (path === "players/update" && method === "PUT") return await updatePlayer(body);
     if (path === "players/claim" && method === "POST") return await claimProfile(body);
     if (path === "players/sync-clubs" && method === "POST") return await syncPlayerClubs();
+    if (path === "players/edit-request" && method === "POST") return await submitEditRequest(body);
+    if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
+    if (path === "players/edit-requests/resolve" && method === "POST") return await resolveEditRequest(body);
     if (path.startsWith("players/") && method === "GET") {
       const name = decodeURIComponent(path.replace("players/", ""));
       return await getPlayerDetail(name);
@@ -510,6 +514,68 @@ async function claimProfile({ name, ig_handle, session_id }) {
     });
   }
   return respond(200, { success: true });
+}
+
+// ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
+async function submitEditRequest(body) {
+  const { name } = body;
+  if (!name) return respond(400, { error: "name required" });
+  const sheets = getSheets();
+  const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+  const prows = pres.data.values || [];
+  if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
+  let photoUrl = "";
+  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || ""); }
+  catch (e) { console.error("edit photo upload:", e.message); }
+  const reqId = "ER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const now = new Date().toISOString();
+  const displayName = String(body.displayName || "").trim();
+  const ig = String(body.ig || "").trim().replace(/^@+/, "");
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, ""]] },
+  });
+  return respond(200, { success: true, reqId, photoUrl });
+}
+async function listEditRequests(params) {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const want = String(params.status || "PENDING").toUpperCase();
+  const requests = rows
+    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: r[4] || "", status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
+    .filter((x) => x.reqId && (want === "ALL" || x.status === want))
+    .reverse();
+  return respond(200, { requests });
+}
+async function resolveEditRequest(body) {
+  const { reqId, action } = body;
+  if (!reqId || !action) return respond(400, { error: "reqId and action required" });
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` });
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((r) => r[0] === reqId);
+  if (ri === -1) return respond(404, { error: "Request not found" });
+  const r = rows[ri], sr = ri + 2, now = new Date().toISOString();
+  if (String(r[5] || "").toUpperCase() !== "PENDING") return respond(400, { error: "Already resolved" });
+  if (action === "approve") {
+    const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+    const prows = pres.data.values || [];
+    const pi = prows.findIndex((x) => x[0]?.toLowerCase() === String(r[1] || "").toLowerCase());
+    if (pi !== -1) {
+      const psr = pi + 2, c = prows[pi];
+      const dn = String(r[2] || "").trim(), ig = String(r[3] || "").trim(), ph = String(r[4] || "").trim();
+      const updated = [
+        c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
+        dn || c[3] || c[0] || "", c[4] || "M", c[5] || "", ph || c[6] || "", c[7] || "", c[8] || "", c[9] || "",
+      ];
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+    }
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["APPROVED", r[6] || "", now]] } });
+    return respond(200, { success: true, applied: true });
+  }
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["REJECTED", r[6] || "", now]] } });
+  return respond(200, { success: true, applied: false });
 }
 
 // ── VENUES ──
