@@ -223,6 +223,7 @@ const netlifyHandler = async (event) => {
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
     if (path === "elo/leaderboard" && method === "GET") return await getNationalLeaderboard(params);
+    if (path === "elo/record-match" && method === "POST") return await recordManualMatch(body);
 
     if (path === "parse" && method === "POST") return await parseAmericanoUrl(body);
 
@@ -870,6 +871,72 @@ async function listSessions(params) {
   }));
   if (params.venue) sessions = sessions.filter((s) => s.venue.toLowerCase().includes(params.venue.toLowerCase()));
   return respond(200, { sessions });
+}
+
+async function recordManualMatch(body) {
+  const { venue, gender, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, levels } = body || {};
+  const names = [p1t1, p2t1, p1t2, p2t2].map((n) => String(n || "").trim());
+  if (names.some((n) => !n)) return respond(400, { error: "All four players are required" });
+  if (new Set(names.map((n) => n.toLowerCase())).size !== 4) return respond(400, { error: "The four players must be distinct" });
+  const s1 = parseInt(scoreT1, 10), s2 = parseInt(scoreT2, 10);
+  if (isNaN(s1) || isNaN(s2)) return respond(400, { error: "Both scores are required" });
+  if (!venue || !String(venue).trim()) return respond(400, { error: "Venue / community is required" });
+  const venueName = String(venue).trim();
+  const g = (gender || "M").toUpperCase();
+  const lv = levels || {};
+  const sheets = getSheets();
+
+  // current ELO + match count per player (latest row per player wins)
+  let eloRows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
+  const latest = {}, mcount = {};
+  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = nm.toLowerCase(); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + 1; });
+  const mk = (name) => { const k = name.toLowerCase(); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(lv[name]), matchCount: 0 }; };
+  const P = names.map(mk);
+  const results = rmCalcElo(P[0], P[1], P[2], P[3], s1, s2);
+
+  // create brand-new players in the Players tab
+  try {
+    const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
+    const have = new Set((pr.data.values || []).map((r) => (r[0] || "").toLowerCase()));
+    const isoNow = new Date().toISOString();
+    for (const name of names) {
+      if (!have.has(name.toLowerCase())) {
+        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[name, "", "FALSE", name, g, "", "", venueName, isoNow]] } });
+        have.add(name.toLowerCase());
+      }
+    }
+  } catch (e) { console.error("record-match players:", e); }
+
+  // register venue + ensure its match-log tab, then append the match
+  try {
+    const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` });
+    const has = (vr.data.values || []).some((r) => (r[0] || "").trim().toLowerCase() === venueName.toLowerCase());
+    if (!has) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[venueName, "Community", "", "", "", "", "", new Date().toISOString(), ""]] } });
+  } catch (e) {}
+  const tab = venueTabName(venueName);
+  try {
+    const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    if (!ss.data.sheets.some((s) => s.properties.title === tab)) {
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: tab } } }] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED", requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] } });
+    }
+  } catch (e) { console.error("record-match tab:", e); }
+  const dateStr = new Date().toISOString().split("T")[0];
+  const matchRow = [`W${getWeekNumber(new Date())}`, dateStr, p1t1, p2t1, p1t2, p2t2, s1, s2, g, "superadmin"];
+  try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: [matchRow] } }); }
+  catch (e) { return respond(500, { error: "Failed to write match to venue tab" }); }
+
+  // write ELO to ELO_Log via a session so the leaderboard updates
+  const sessionId = `SES_${Date.now()}`;
+  const tsNow = new Date().toISOString();
+  try {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[sessionId, "Manual Match (Superadmin)", "", "Manual", "N/A", venueName, 4, 1, tsNow]] } });
+    const logRows = results.map((r) => [sessionId, r.name, r.newElo, r.delta, r.w, r.l, tsNow]);
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: logRows } });
+  } catch (e) { return respond(500, { error: "Match saved but ELO write failed: " + e.message }); }
+
+  return respond(200, { success: true, sessionId, venue: venueName, results: results.map((r) => ({ name: r.name, newElo: r.newElo, delta: r.delta, w: r.w, l: r.l })) });
 }
 
 // ── ELO / LEADERBOARD ──
@@ -1534,7 +1601,8 @@ function patternPenalty(order, ids) {
 function otherEnd(e, t) { return e.a === t ? e.b : e.a; }
 // Greedy sequencer: keep carrying a team through consecutive matches until its run
 // reaches 2-3, then switch to fresh teams. Produces 2-3 blocks, minimal singles.
-function greedyCluster(edges, ids, startIdx) {
+function greedyCluster(edges, ids, startIdx, target) {
+  target = target || 3;
   const M = edges.length; const used = new Array(M).fill(false);
   const deg = {}; ids.forEach((id) => (deg[id] = 0)); edges.forEach((e) => { deg[e.a]++; deg[e.b]++; });
   const order = []; const trail = {}; ids.forEach((id) => (trail[id] = 0));
@@ -1549,10 +1617,10 @@ function greedyCluster(edges, ids, startIdx) {
   place(startIdx);
   while (order.length < M) {
     const prev = order[order.length - 1], p = prev.a, q = prev.b, tp = trail[p], tq = trail[q];
-    const canCarry = (t, tr) => tr < 3 && incident(t).length > 0;
+    const canCarry = (t, tr) => tr < target && incident(t).length > 0;
     const cp = canCarry(p, tp), cq = canCarry(q, tq);
     let carry = null;
-    if (tp >= 2 && tq >= 2) carry = null;
+    if (tp >= target && tq >= target) carry = null;
     else if (cp && cq) {
       if (tp === 1 && tq !== 1) carry = p;
       else if (tq === 1 && tp !== 1) carry = q;
@@ -1575,12 +1643,12 @@ function greedyCluster(edges, ids, startIdx) {
   }
   return order;
 }
-function buildClusteredOrderings(rounds, ids) {
+function buildClusteredOrderings(rounds, ids, target) {
   const edges = []; rounds.forEach((r, ri) => r.forEach(([a, b]) => edges.push({ a, b, round: ri + 1 })));
   if (edges.length <= 1) return [edges.slice()];
   const out = [], seen = new Set();
   for (let s = 0; s < edges.length; s++) {
-    const o = greedyCluster(edges, ids, s);
+    const o = greedyCluster(edges, ids, s, target);
     if (o && o.length === edges.length) { const sig = o.map((m) => m.a + "-" + m.b).join("|"); if (!seen.has(sig)) { seen.add(sig); out.push(o); } }
   }
   if (!out.length) out.push(edges.slice());
@@ -1611,6 +1679,24 @@ function spreadCost(order, ids) {
   return f.over3 * 1e9 + f.singles * 1e5 + f.maxGap * 1e3 + f.worstStay;
 }
 function spreadTotal(groups) { let s = 0; for (const g of groups) s += spreadCost(g.orderings[g.oi] || [], g.entrantIds); return s; }
+// ---- Block-play objective: each team plays in consecutive blocks of `target`
+//      (2 for groups of <=5, 3 for groups of >=6), never more than target, rest >=1 between blocks. ----
+function blockTargetFor(n) { return n <= 5 ? 2 : 3; }
+function blockCost(order, ids, target) {
+  const slotsOf = {}; ids.forEach((id) => (slotsOf[id] = []));
+  order.forEach((m, idx) => { if (slotsOf[m.a]) slotsOf[m.a].push(idx); if (slotsOf[m.b]) slotsOf[m.b].push(idx); });
+  let cost = 0;
+  for (const id of ids) {
+    const s = slotsOf[id]; if (!s.length) continue;
+    const runs = []; let cur = 1, worstGap = 0;
+    for (let i = 1; i < s.length; i++) { const gap = s[i] - s[i - 1] - 1; if (gap > worstGap) worstGap = gap; if (gap === 0) cur++; else { runs.push(cur); cur = 1; } }
+    runs.push(cur);
+    for (const L of runs) { if (L > target) cost += (L - target) * 1e6; else if (L < target) cost += (target - L) * 200; }
+    cost += worstGap * 40; // keep the rest between blocks short (>=1 match)
+  }
+  return cost;
+}
+function blockTotal(groups) { let s = 0; for (const g of groups) s += blockCost(g.orderings[g.oi] || [], g.entrantIds, g.target || blockTargetFor(g.entrantIds.length)); return s; }
 // Local search (simulated annealing, swap + insertion moves) over the match order.
 function evenSpreadOrderings(rounds, ids) {
   const edges = []; rounds.forEach((r, ri) => r.forEach(([a, b]) => edges.push({ a, b, round: ri + 1 })));
@@ -1639,7 +1725,7 @@ function evenSpreadOrderings(rounds, ids) {
 }
 // Choose orderings to (1) avoid cross-court player clashes, then (2) keep good play patterns.
 function optimizeOrderings(groups, namesMap) {
-  const cost = () => totalClashes(groups, namesMap).clashes * 1e12 + spreadTotal(groups);
+  const cost = () => totalClashes(groups, namesMap).clashes * 1e12 + blockTotal(groups);
   let best = cost();
   for (let pass = 0; pass < 5; pass++) {
     let improved = false;
@@ -1827,9 +1913,14 @@ async function tScheduleEvent(eventId, body) {
   const groups = [...gmap.values()];
   for (const g of groups) {
     g.rounds = roundRobinRounds(g.entrantIds);
-    g.orderings = evenSpreadOrderings(g.rounds, g.entrantIds);
+    g.target = blockTargetFor(g.entrantIds.length); // 2 for groups <=5, 3 for groups >=6
+    const blk = buildClusteredOrderings(g.rounds, g.entrantIds, g.target);
+    const spr = evenSpreadOrderings(g.rounds, g.entrantIds).slice(0, 4);
+    const seen = new Set(); g.orderings = [];
+    for (const o of blk.concat(spr)) { const sig = o.map((m) => m.a + "-" + m.b).join("|"); if (!seen.has(sig)) { seen.add(sig); g.orderings.push(o); } }
+    if (!g.orderings.length) g.orderings = [g.rounds.reduce((acc, r, ri) => acc.concat(r.map(([a, b]) => ({ a, b, round: ri + 1 }))), [])];
     let bo = 0, bp = Infinity;
-    g.orderings.forEach((o, i) => { const p = spreadCost(o, g.entrantIds); if (p < bp) { bp = p; bo = i; } });
+    g.orderings.forEach((o, i) => { const p = blockCost(o, g.entrantIds, g.target); if (p < bp) { bp = p; bo = i; } });
     g.oi = bo;
     g.length = (g.orderings[0] || []).length;
   }
@@ -1858,7 +1949,7 @@ async function tScheduleEvent(eventId, body) {
 
   await rewriteEventGroupMatches(sheets, tids, newRows);
   return respond(200, {
-    success: true, engine: "even-spread-v1", scheduledMatches: count, groups: groups.length, numCourts, courts: courtNums, startTime, matchMinutes,
+    success: true, engine: "block-play-v1", scheduledMatches: count, groups: groups.length, numCourts, courts: courtNums, startTime, matchMinutes,
     clashes, clashCount: clashes.length,
   });
 }
@@ -2028,7 +2119,29 @@ function bracketFromRound1(round1, tier) {
   return { matches, numRounds, bronze, size: 2 * m1, nQual };
 }
 // Performance seeding: place a flat seeded list (best first) into standard bracket slots.
-function buildBracket(seeded, tier) {
+// Avoid same-group pairings in the play-in (round 1). Only reshuffles the non-bye teams,
+// so the top seeds keep their byes; two teams from the same group won't meet in round 1.
+function avoidSameGroup(round1, groupOf) {
+  if (!groupOf) return round1;
+  const grp = (id) => (id ? (groupOf[id] || "") : "\u0000");
+  const real = []; round1.forEach((m, i) => { if (m[0] && m[1]) real.push(i); });
+  for (let pass = 0; pass < 6; pass++) {
+    let changed = false;
+    for (const i of real) {
+      const m = round1[i];
+      if (grp(m[0]) !== grp(m[1])) continue; // no clash
+      for (const j of real) {
+        if (j === i) continue;
+        const n = round1[j];
+        if (grp(m[0]) !== grp(n[1]) && grp(n[0]) !== grp(m[1])) { const t = m[1]; m[1] = n[1]; n[1] = t; changed = true; break; }
+        if (grp(m[0]) !== grp(n[0]) && grp(n[1]) !== grp(m[1])) { const t = m[1]; m[1] = n[0]; n[0] = t; changed = true; break; }
+      }
+    }
+    if (!changed) break;
+  }
+  return round1;
+}
+function buildBracket(seeded, tier, groupOf) {
   const nQual = seeded.length;
   if (nQual < 2) return { matches: [], numRounds: 0, bronze: false, nQual, soleWinner: nQual === 1 ? seeded[0] : null };
   const size = nextPow2(nQual);
@@ -2036,6 +2149,7 @@ function buildBracket(seeded, tier) {
   const pos = order.map((sn) => (sn <= nQual ? seeded[sn - 1] : null));
   const round1 = [];
   for (let i = 0; i < size / 2; i++) round1.push([pos[2 * i] || null, pos[2 * i + 1] || null]);
+  avoidSameGroup(round1, groupOf);
   return bracketFromRound1(round1, tier);
 }
 // World Cup style fixed cross by group position. groupsQual = per-group entrantIds in rank order.
@@ -2125,9 +2239,10 @@ async function tGeneratePlayoff(id, body) {
     if (cross) { b = bracketFromRound1(cross, tier); method = "cross"; }
     else {
       const flat = [];
-      groups.forEach((g) => g.standings.filter(predicate).forEach((s) => flat.push(s)));
+      const groupOf = {};
+      groups.forEach((g) => g.standings.filter(predicate).forEach((s) => { flat.push(s); groupOf[s.entrantId] = g.label; }));
       flat.sort(seedSort);
-      b = buildBracket(flat.map((s) => s.entrantId), tier);
+      b = buildBracket(flat.map((s) => s.entrantId), tier, groupOf);
       method = "seed";
     }
     built.push({ tier, b });
