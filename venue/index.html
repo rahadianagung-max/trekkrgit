@@ -11,20 +11,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <style>
-/* ── SHARED ── */
-.page-head{padding:22px 0 0}
+.page-head{padding:26px 0 0}
+.page-head h1{font-size:clamp(28px,5vw,42px);margin:8px 0 0}
+.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:600px}
 .back{font-size:12px;font-weight:600;color:var(--subtle);display:inline-flex;align-items:center;gap:5px}
 .back:hover{color:var(--orange)}
-.state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
-.skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
-@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.sec-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin-bottom:10px}
-.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
 
-/* ── DIRECTORY ── */
 .searchbar{margin-top:16px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 12px;max-width:360px}
 .searchbar i{color:var(--orange);font-size:16px}
 .searchbar input{flex:1;border:0;outline:0;background:transparent;font-family:inherit;font-size:14px;padding:11px 0;color:var(--text)}
+
 .grid{margin-top:18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .vcard{display:block;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s,transform .2s}
 .vcard:hover{border-color:var(--orange);transform:translateY(-2px)}
@@ -35,114 +31,50 @@
 .vcard .vmeta i{color:var(--subtle);font-size:13px}
 .vcard .vgo{font-size:12px;font-weight:600;color:var(--orange);margin-top:14px;display:inline-flex;align-items:center;gap:5px}
 
-/* ── DETAIL: VENUE HEADER ── */
-.vhero{margin-top:14px;padding-bottom:20px;border-bottom:1px solid var(--border-soft)}
-.vhero-logo{width:52px;height:52px;border-radius:13px;background:#FFE3CC;color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;flex-shrink:0;overflow:hidden;margin-bottom:10px}
-.vhero-logo img{width:100%;height:100%;object-fit:cover}
-.vname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(34px,8vw,52px);line-height:.92;color:var(--orange);padding:.02em .04em}
-.vmeta-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
-.vmeta-row{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
-.vmeta-row i{color:var(--subtle);font-size:13px;flex-shrink:0}
-.vmeta-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--orange);margin-top:4px}
-.vmeta-link i{font-size:12px}
-
-/* ── WEEK TABS ── */
-.week-section{margin-top:18px;padding-bottom:16px;border-bottom:1px solid var(--border-soft)}
-.week-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.week-tabs::-webkit-scrollbar{display:none}
-.wtab{flex-shrink:0;font-family:var(--display);font-style:italic;font-weight:800;font-size:13px;padding:5px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--subtle);cursor:pointer;letter-spacing:.02em;transition:background .15s,color .15s,border-color .15s}
-.wtab:hover{border-color:var(--orange);color:var(--orange)}
-.wtab.active{background:var(--text);color:#fff;border-color:var(--text)}
-.latest-date{margin-top:8px;font-size:12px;color:var(--subtle)}
-
-/* ── LEADERBOARD CONTROLS ── */
-.lb-section{margin-top:20px}
-.lb-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.toggle-group{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.tgl-btn{font-family:var(--body);font-size:12px;font-weight:700;padding:6px 14px;background:transparent;color:var(--subtle);cursor:pointer;border:0;border-right:1px solid var(--border)}
-.tgl-btn:last-child{border-right:0}
-.tgl-btn.active{background:var(--text);color:#fff}
-
-/* ── WEEKLY TOP 3 (vertical stack, stats inside info) ── */
-.top3{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.tc{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:14px;padding:13px 14px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .15s}
-.tc:hover{border-color:var(--orange)}
-.tc.r1{border-color:#E8C84A;background:linear-gradient(135deg,#FFFBEB,#fff)}
-.tc.r2{border-color:#C8C8D0}
-.tc.r3{border-color:#DEB888}
-.tc-rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--subtle);width:22px;text-align:center;flex-shrink:0}
-.tc.r1 .tc-rk{color:#B8960A;font-size:18px}
-.tc.r2 .tc-rk{color:#787888}
-.tc.r3 .tc-rk{color:#A06028}
-.tc-photo{width:52px;height:52px;border-radius:13px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:17px;color:var(--muted);flex-shrink:0;overflow:hidden}
-.tc-photo img{width:100%;height:100%;object-fit:cover}
-.tc.r1 .tc-photo{width:64px;height:64px;font-size:22px;border:2px solid #E8C84A}
-.tc-info{flex:1;min-width:0;display:flex;flex-direction:column}
-.tc-name{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
-.tc.r1 .tc-name{font-size:15px}
-.tc-level{font-size:11px;color:var(--subtle);margin-top:1px}
-.tc-stats{display:flex;gap:10px;align-items:flex-start;margin-top:5px}
-.tc-stat{display:flex;flex-direction:column;align-items:center}
-.tc-stat .sv{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;line-height:1;color:var(--text)}
-.tc.r1 .tc-stat .sv{font-size:17px}
-.tc-stat .sc{font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:1px;text-transform:uppercase;text-align:center}
-.tc-stat .sv.green{color:var(--green)}.tc-stat .sv.red{color:var(--red)}.tc-stat .sv.muted{color:var(--muted)}
-.tc-wl{display:flex;align-items:baseline;gap:1px}
-.tc-wl-w{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--green);line-height:1}
-.tc.r1 .tc-wl-w{font-size:17px}
-.tc-wl-sep{font-size:11px;color:var(--faint);margin:0 1px}
-.tc-wl-l{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--red);line-height:1}
-.tc.r1 .tc-wl-l{font-size:17px}
-
-/* ── STANDARD ROWS (rank 4+ and all Overall) ── */
-.lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;background:var(--surface)}
-.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-soft);transition:background .15s;text-decoration:none;color:inherit}
+/* Detail */
+.vhero{margin-top:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.vhero .vlogo{width:72px;height:72px;border-radius:16px;font-size:28px}
+.vhero .vinfo{flex:1;min-width:200px}
+.vhero h2{font-size:clamp(24px,4.5vw,34px);margin:0}
+.vtags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.vtag{font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius-pill);padding:5px 12px;display:inline-flex;align-items:center;gap:5px}
+.vtag i{color:var(--orange);font-size:13px}
+.lb{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-soft);transition:background .2s}
 .lb-row:last-child{border-bottom:0}
 .lb-row:hover{background:var(--surface-2)}
-.lb-rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:14px;color:var(--subtle);width:22px;text-align:center;flex-shrink:0}
-.lb-photo{width:44px;height:44px;border-radius:11px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--muted);flex-shrink:0;overflow:hidden}
-.lb-photo img{width:100%;height:100%;object-fit:cover}
-.lb-name{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-name .lb-sub{display:block;font-size:11px;color:var(--subtle);font-weight:500;margin-top:2px}
-.lb-stat{flex-shrink:0;text-align:right;min-width:42px}
-.lb-stat .sv{font-family:var(--display);font-style:italic;font-weight:800;font-size:19px;color:var(--text);line-height:1}
-.lb-stat .sc{display:block;font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-top:2px;text-transform:uppercase}
-.lb-stat .sv.green{color:var(--green)}.lb-stat .sv.red{color:var(--red)}.lb-stat .sv.muted{color:var(--muted)}
-.lb-stat .sv.orange{color:var(--orange)}
-.lb-wl-pair{display:flex;align-items:baseline;gap:1px}
-.lb-wl-w{font-family:var(--display);font-style:italic;font-weight:800;font-size:19px;color:var(--green);line-height:1}
-.lb-wl-sep{font-size:11px;color:var(--faint);margin:0 2px}
-.lb-wl-l{font-family:var(--display);font-style:italic;font-weight:800;font-size:19px;color:var(--red);line-height:1}
-.view-more-btn{width:100%;padding:10px;font-size:12.5px;font-weight:600;color:var(--orange);background:var(--surface);border:0;border-top:1px solid var(--border-soft);cursor:pointer;font-family:inherit;border-radius:0 0 12px 12px}
-.view-more-btn:hover{background:var(--surface-2)}
+.lb-row .rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--subtle);width:20px;text-align:center;flex-shrink:0}
+.lb-row.top .rk{color:var(--orange)}
+.lb-photo{width:54px;height:54px;border-radius:12px;background:var(--surface-3);color:var(--muted);font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;object-fit:cover;overflow:hidden}
+.lb-name{flex:1;min-width:0;font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-name .lb-sub{display:block;font-size:11px;color:var(--subtle);font-weight:500;margin-top:3px}
+.lb-wl{flex-shrink:0;text-align:center;min-width:62px}
+.lb-wl .n{font-size:14px;font-weight:700}
+.lb-wl .n .w{color:var(--green)}.lb-wl .n .l{color:var(--red)}.lb-wl .n .sep{color:var(--faint);font-weight:600;margin:0 3px}
+.lb-wl .cap,.lb-elo .cap{display:block;font-size:9px;letter-spacing:.12em;color:var(--faint);font-weight:700;margin-top:3px}
+.lb-elo{flex-shrink:0;text-align:right;min-width:60px}
+.lb-elo .v{font-family:var(--display);font-style:italic;font-weight:800;font-size:24px;color:var(--orange);line-height:1}
+@media(max-width:520px){.lb-photo{width:46px;height:46px;font-size:17px}.lb-row{gap:10px;padding:12px}.lb-wl{min-width:50px}.lb-elo .v{font-size:20px}}
 
-/* ── MATCH HISTORY ── */
-.match-section{margin-top:28px;padding-bottom:40px}
-.mdate{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
-.mdate::after{content:'';flex:1;height:1px;background:var(--border)}
-.mcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:6px}
-.mrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
-.mteam{display:flex;flex-direction:column;gap:1px}
-.mteam.right{text-align:right}
-.mplayer{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.4}
-.mteam.winner .mplayer{color:var(--green)}
-.mscore{display:flex;align-items:center;gap:5px;justify-content:center}
-.ms{font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;line-height:1;color:var(--text);min-width:18px;text-align:center}
-.ms.mw{color:var(--green)}.ms.ml{color:var(--red)}
-.msdash{font-size:14px;color:var(--faint);font-weight:600}
-.mfooter{margin-top:8px}
-.mbadge{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:2px 8px;display:inline-block}
+.state{padding:40px 20px;text-align:center;color:var(--subtle);font-size:13px}
+.skeleton{height:90px;border-radius:14px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-@media(max-width:480px){
-  .lb-row{gap:9px;padding:10px 12px}
-  .lb-photo{width:38px;height:38px;font-size:13px}
-}
 @media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+  .pp-nudge{display:flex;align-items:center;gap:13px;background:linear-gradient(100deg,#FFF3EA,#FFFBF7);border:1px solid #FFD9BF;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .pp-nudge .pp-ic{width:40px;height:40px;border-radius:11px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;animation:ppPulse 2.4s ease-in-out infinite}
+  @keyframes ppPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,106,0,.38)}50%{box-shadow:0 0 0 7px rgba(255,106,0,0)}}
+  .pp-nudge .pp-tx{display:flex;flex-direction:column;gap:2px}
+  .pp-nudge .pp-tx b{font-size:14px;color:var(--text)}
+  .pp-nudge .pp-tx span{font-size:12px;color:var(--muted);line-height:1.45}
+  .lb-go{flex-shrink:0;color:var(--faint);font-size:18px;display:flex;align-items:center;transition:color .2s,transform .2s}
+  .lb-row:hover .lb-go{color:var(--orange);transform:translateX(2px)}
 </style>
 </head>
 <body>
+
 <header class="site-header">
   <div class="container header-inner">
     <a href="https://trekkr.online/" class="brand">Trekkr</a>
@@ -154,7 +86,7 @@
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
     <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#9776;</button>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
     </div>
   </div>
   <div class="container">
@@ -167,9 +99,11 @@
     </nav>
   </div>
 </header>
+
 <main class="container" id="main">
   <div id="content"><div class="skeleton" style="margin-top:26px"></div></div>
 </main>
+
 <footer class="site-footer">
   <div class="container footer-inner">
     <span class="footer-brand">Trekkr</span>
@@ -178,33 +112,21 @@
       <a href="https://trekkr.online/market">Market Intelligence</a>
       <a href="https://trekkr.online/about">About</a>
     </nav>
-    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
+    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
   </div>
 </footer>
+
 <script>
 (function(){
-  var BASE='https://trekkr.online/api';
-  var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');
+  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
+  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
   function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function initials(n){var p=String(n||'').trim().split(/\s+/);return((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
-  function normName(n){return String(n||'').trim().toLowerCase();}
-  function tierName(e){e=e||0;if(e>=3000)return'Platinum';if(e>=2500)return'Gold';if(e>=2100)return'Silver';if(e>=1800)return'Upper Bronze';if(e>=1500)return'Bronze';if(e>=1200)return'Lower Bronze';if(e>=900)return'Upper Beginner';return'Beginner';}
-  function fmtPD(n){return(n>0?'+':'')+n;}
-  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function fmtDate(s){if(!s)return'';var d=new Date(s+'T00:00:00');return DAYS[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
-  function sortWeeks(arr){return arr.slice().sort(function(a,b){return(parseInt(a.replace(/\D/g,''))||0)-(parseInt(b.replace(/\D/g,''))||0);});}
-
-  function photoEl(p,size){
-    var u=p.photoUrl||p.photo||'';
-    var r=Math.round(size*0.25);
-    if(u)return'<div class="lb-photo" style="width:'+size+'px;height:'+size+'px;border-radius:'+r+'px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>';
-    return'<div class="lb-photo" style="width:'+size+'px;height:'+size+'px;border-radius:'+r+'px;font-size:'+Math.round(size*.34)+'px">'+esc(initials(p.displayName||p.name))+'</div>';
-  }
-
+  function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
+  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
   var content=document.getElementById('content');
 
   function selected(){
@@ -213,273 +135,68 @@
     return new URLSearchParams(location.search).get('v')||null;
   }
 
-  /* ── DIRECTORY ── */
+  /* ---- Directory ---- */
   function renderDirectory(venues){
-    function vlogo(v){if(v.logoUrl)return'<span class="vlogo"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return'<span class="vlogo">'+esc(initials(v.name))+'</span>';}
     var cards=venues.filter(function(v){return v.name;}).map(function(v){
       var loc=v.region||v.location||'';
-      return'<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
+      return '<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
         +'<div class="vname">'+esc(v.name)+'</div>'
         +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
         +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
         +'<div class="vgo">View leaderboard <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
     }).join('');
-    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display" style="font-size:clamp(28px,5vw,42px);margin:8px 0 0">Venues</h1>'
-      +'<p style="color:var(--muted);font-size:14px;margin:10px 0 0;max-width:600px">Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
+    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display">Venues</h1>'
+      +'<p>Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
       +'<div class="searchbar"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search venues…" aria-label="Search venues"/></div>'
       +'<div class="grid" id="vgrid">'+cards+'</div>';
-    var inp=document.getElementById('vsearch'),grid=document.getElementById('vgrid');
+    var inp=document.getElementById('vsearch'), grid=document.getElementById('vgrid');
     inp.addEventListener('input',function(){
       var q=inp.value.toLowerCase();
-      Array.prototype.forEach.call(grid.children,function(c){c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';});
-    });
-  }
-
-  /* ── DETAIL STATE ── */
-  var S={venue:null,allMatches:[],weeks:[],week:null,mode:'weekly',gender:'M',eloMap:{},lbShown:10};
-
-  /* ── COMPUTE STATS FROM MATCHES ── */
-  function computeStats(matches,gender){
-    var stats={};
-    matches.filter(function(m){return!gender||m.gender===gender;}).forEach(function(m){
-      var t1=[m.p1t1,m.p2t1].filter(Boolean);
-      var t2=[m.p1t2,m.p2t2].filter(Boolean);
-      var s1=parseInt(m.scoreT1)||0,s2=parseInt(m.scoreT2)||0;
-      var w1=s1>s2,w2=s2>s1;
-      t1.concat(t2).forEach(function(p){if(!stats[p])stats[p]={w:0,l:0,played:0,pd:0};});
-      t1.forEach(function(p){stats[p].played++;stats[p].pd+=(s1-s2);if(w1)stats[p].w++;else if(w2)stats[p].l++;});
-      t2.forEach(function(p){stats[p].played++;stats[p].pd+=(s2-s1);if(w2)stats[p].w++;else if(w1)stats[p].l++;});
-    });
-    return stats;
-  }
-
-  function buildRanking(matches,gender){
-    var stats=computeStats(matches,gender);
-    return Object.keys(stats).map(function(name){
-      var ei=S.eloMap[normName(name)]||{};
-      return{name:name,displayName:ei.displayName||name,photoUrl:ei.photoUrl||'',elo:ei.elo||0,level:tierName(ei.elo||0),w:stats[name].w,l:stats[name].l,pd:stats[name].pd,played:stats[name].played};
-    }).sort(function(a,b){return b.w-a.w||b.pd-a.pd||b.elo-a.elo;});
-  }
-
-  /* ── RENDER WEEKLY TOP 3 (vertical stack, stats inside info) ── */
-  function renderTop3(top3){
-    if(!top3.length)return'';
-    var rkClass=['r1','r2','r3'];
-    var html='<div class="top3">';
-    top3.forEach(function(p,i){
-      var rk=i+1,cls=rkClass[i];
-      var u=p.photoUrl||'';
-      var sz=rk===1?64:52;
-      var fsz=rk===1?22:17;
-      var border=rk===1?';border:2px solid #E8C84A':'';
-      var photoHtml=u
-        ?'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+border+'"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy"/></div>'
-        :'<div class="tc-photo" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fsz+'px'+border+'">'+esc(initials(p.displayName||p.name))+'</div>';
-      var pdCls=p.pd>0?'green':p.pd<0?'red':'muted';
-      html+='<a class="tc '+cls+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
-        +'<span class="tc-rk">'+rk+'</span>'
-        +photoHtml
-        +'<span class="tc-info">'
-        +  '<span class="tc-name">'+esc(p.displayName||p.name)+'</span>'
-        +  '<span class="tc-level">'+esc(p.level)+'</span>'
-        +  '<span class="tc-stats">'
-        +    '<span class="tc-stat"><span class="tc-wl"><span class="tc-wl-w">'+(p.w||0)+'</span><span class="tc-wl-sep">/</span><span class="tc-wl-l">'+(p.l||0)+'</span></span><span class="sc">W/L</span></span>'
-        +    '<span class="tc-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>'
-        +    '<span class="tc-stat"><span class="sv" style="color:var(--orange)">'+(p.elo||0)+'</span><span class="sc">ELO</span></span>'
-        +  '</span>'
-        +'</span>'
-        +'</a>';
-    });
-    html+='</div>';
-    return html;
-  }
-
-  /* ── RENDER STANDARD ROWS ── */
-  function renderRows(players,startRank,showPD){
-    if(showPD===undefined)showPD=true;
-    if(!players.length)return'';
-    var html='<div class="lb">';
-    players.forEach(function(p,i){
-      var pdCls=p.pd>0?'green':p.pd<0?'red':'muted';
-      html+='<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
-        +'<span class="lb-rk">'+(startRank+i)+'</span>'
-        +photoEl(p,44)
-        +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(p.level)+'</span></span>'
-        +'<span class="lb-stat"><span class="lb-wl-pair"><span class="lb-wl-w">'+(p.w||0)+'</span><span class="lb-wl-sep">/</span><span class="lb-wl-l">'+(p.l||0)+'</span></span><span class="sc">W / L</span></span>'
-        +(showPD?'<span class="lb-stat"><span class="sv '+pdCls+'">'+esc(fmtPD(p.pd||0))+'</span><span class="sc">PD</span></span>':'')
-        +'<span class="lb-stat"><span class="sv orange">'+(p.elo||0)+'</span><span class="sc">ELO</span></span>'
-        +'</a>';
-    });
-    html+='</div>';
-    return html;
-  }
-
-  /* ── RENDER LEADERBOARD BODY ── */
-  function renderLbBody(ranking){
-    var el=document.getElementById('lb-body');
-    if(!el)return;
-    if(!ranking.length){el.innerHTML='<div class="empty">No data yet.</div>';return;}
-
-    var html='';
-    if(S.mode==='weekly'){
-      // Top 3 as vertical stack, rest as standard rows
-      var top3=ranking.slice(0,3);
-      var rest=ranking.slice(3,3+S.lbShown);
-      var more=ranking.length-3-rest.length;
-      html+=renderTop3(top3);
-      if(rest.length)html+=renderRows(rest,4);
-      if(more>0)html+='<button class="view-more-btn" id="lbMore">View more ('+more+' players)</button>';
-    } else {
-      // Overall: all same standard rows, no PD column
-      var shown=ranking.slice(0,S.lbShown);
-      var moreO=ranking.length-shown.length;
-      html+=renderRows(shown,1,false);
-      if(moreO>0)html+='<button class="view-more-btn" id="lbMore">View more ('+moreO+' players)</button>';
-    }
-    el.innerHTML=html;
-    var btn=document.getElementById('lbMore');
-    if(btn)btn.onclick=function(){S.lbShown+=10;renderLbBody(ranking);};
-  }
-
-  /* ── MATCH HISTORY ── */
-  function renderMatchHistory(){
-    var el=document.getElementById('match-history');
-    if(!el)return;
-    var wm=S.allMatches.filter(function(m){return m.week===S.week;});
-    if(!wm.length){el.innerHTML='<div class="empty">No matches in '+esc(S.week)+'.</div>';return;}
-    var byDate={};
-    wm.forEach(function(m){if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
-    var dates=Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
-    var html='';
-    dates.forEach(function(d){
-      html+='<div class="mdate">'+esc(fmtDate(d))+'</div>';
-      byDate[d].forEach(function(m){
-        var w1=m.scoreT1>m.scoreT2,w2=m.scoreT2>m.scoreT1;
-        var t1=[m.p1t1,m.p2t1].filter(Boolean);
-        var t2=[m.p1t2,m.p2t2].filter(Boolean);
-        var g=m.gender==='F'?'Women':'Men';
-        html+='<div class="mcard"><div class="mrow">'
-          +'<div class="mteam'+(w1?' winner':'')+'">'+t1.map(function(n){return'<span class="mplayer">'+esc(n)+'</span>';}).join('')+'</div>'
-          +'<div class="mscore"><span class="ms'+(w1?' mw':w2?' ml':'')+'">'+m.scoreT1+'</span><span class="msdash">&ndash;</span><span class="ms'+(w2?' mw':w1?' ml':'')+'">'+m.scoreT2+'</span></div>'
-          +'<div class="mteam right'+(w2?' winner':'')+'">'+t2.map(function(n){return'<span class="mplayer">'+esc(n)+'</span>';}).join('')+'</div>'
-          +'</div><div class="mfooter"><span class="mbadge">'+esc(g)+'</span></div></div>';
+      Array.prototype.forEach.call(grid.children,function(c){
+        c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
       });
     });
-    el.innerHTML=html;
   }
 
-  /* ── LOAD & RENDER LEADERBOARD ── */
-  function loadRanking(){
-    var matches=S.mode==='weekly'
-      ?S.allMatches.filter(function(m){return m.week===S.week;})
-      :S.allMatches;
-    var ranking=buildRanking(matches,S.gender);
-    S.lbShown=S.lbShown; // keep current paging
-    renderLbBody(ranking);
+  /* ---- Detail ---- */
+  function renderDetail(v, players){
+    var loc=v.region||v.location||'';
+    var tags='';
+    if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
+    if(v.schedule)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(v.schedule)+'</span>';
+    if(v.prizePool)tags+='<span class="vtag"><i class="ti ti-trophy"></i>'+esc(v.prizePool)+'</span>';
+    if(v.contact)tags+='<span class="vtag"><i class="ti ti-phone"></i>'+esc(v.contact)+'</span>';
+    var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
+
+    var rows=players.length?players.map(function(p,i){
+      var meta=[p.level,(p.gender==='F'?'Women':'Men')].filter(Boolean).join(' · ');
+      var w=(p.totalW!=null?p.totalW:0), l=(p.totalL!=null?p.totalL:0);
+      return '<a class="lb-row'+(i===0?' top':'')+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
+        +'<span class="rk">'+(i+1)+'</span>'+photo(p)
+        +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(meta)+'</span></span>'
+        +'<span class="lb-wl"><span class="n"><span class="w">'+w+'</span><span class="sep">/</span><span class="l">'+l+'</span></span><span class="cap">W / L</span></span>'
+        +'<span class="lb-elo"><span class="v">'+p.elo+'</span><span class="cap">ELO</span></span><span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
+    }).join(''):'<div class="state">No ranked players at this venue yet.</div>';
+
+    content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
+      +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="display">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>'
+      +'<div class="sec-label">Venue leaderboard</div>'+(players.length?'<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport — your rating, tier, match history &amp; badges.</span></div></div>':'')+'<div class="lb">'+rows+'</div>';
   }
 
-  /* ── UPDATE LATEST DATE ── */
-  function updateLatestDate(){
-    var el=document.getElementById('latest-date');
-    if(!el)return;
-    var wm=S.allMatches.filter(function(m){return m.week===S.week;});
-    var latest=wm.reduce(function(max,m){return m.date>max?m.date:max;},'');
-    el.textContent=latest?'Last match: '+fmtDate(latest):'';
-  }
-
-  /* ── RENDER FULL DETAIL ── */
-  function renderDetail(){
-    var v=S.venue;
-    var metaHtml='';
-    if(v.region)metaHtml+='<div class="vmeta-row"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(v.region)+'</div>';
-    if(v.location)metaHtml+='<div class="vmeta-row"><i class="ti ti-building-community" aria-hidden="true"></i>'+esc(v.location)+'</div>';
-    if(v.registerUrl)metaHtml+='<a class="vmeta-link" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-external-link" aria-hidden="true"></i>'+esc(v.registerUrl.replace(/^https?:\/\//,''))+'</a>';
-    var tabsHtml=S.weeks.map(function(w){return'<button class="wtab'+(w===S.week?' active':'')+'" data-w="'+esc(w)+'">'+esc(w)+'</button>';}).join('');
-
-    content.innerHTML=
-      '<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left" aria-hidden="true"></i>All venues</a></div>'
-      +'<div class="vhero">'
-      +  '<div class="vname">'+esc(v.name)+'</div>'
-      +  '<div class="vmeta-list">'+metaHtml+'</div>'
-      +'</div>'
-      +'<div class="week-section">'
-      +  '<div class="week-tabs" id="weekTabs">'+tabsHtml+'</div>'
-      +  '<div class="latest-date" id="latest-date"></div>'
-      +'</div>'
-      +'<div class="lb-section">'
-      +  '<div class="lb-controls">'
-      +    '<span class="sec-label" style="margin:0">Leaderboard</span>'
-      +    '<div style="display:flex;gap:7px">'
-      +      '<div class="toggle-group" id="modeToggle"><button class="tgl-btn'+(S.mode==='weekly'?' active':'')+'" data-m="weekly">Weekly</button><button class="tgl-btn'+(S.mode==='overall'?' active':'')+'" data-m="overall">Overall</button></div>'
-      +      '<div class="toggle-group" id="genderToggle"><button class="tgl-btn'+(S.gender==='M'?' active':'')+'" data-g="M">Men</button><button class="tgl-btn'+(S.gender==='F'?' active':'')+'" data-g="F">Women</button></div>'
-      +    '</div>'
-      +  '</div>'
-      +  '<div id="lb-body"></div>'
-      +'</div>'
-      +'<div class="match-section" id="match-section">'
-      +  '<div class="sec-label" id="mhlabel">Match History &middot; '+esc(S.week)+'</div>'
-      +  '<div id="match-history"></div>'
-      +'</div>';
-
-    updateLatestDate();
-
-    document.getElementById('weekTabs').addEventListener('click',function(e){
-      var btn=e.target.closest('.wtab');if(!btn)return;
-      S.week=btn.getAttribute('data-w');S.lbShown=10;
-      document.querySelectorAll('.wtab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-w')===S.week);});
-      updateLatestDate();
-      var lbl=document.getElementById('mhlabel');if(lbl)lbl.innerHTML='Match History &middot; '+esc(S.week);
-      loadRanking();renderMatchHistory();
-    });
-    document.getElementById('modeToggle').addEventListener('click',function(e){
-      var btn=e.target.closest('.tgl-btn');if(!btn)return;
-      S.mode=btn.getAttribute('data-m');S.lbShown=10;
-      document.querySelectorAll('#modeToggle .tgl-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-m')===S.mode);});
-      var ms=document.getElementById('match-section');
-      if(ms)ms.style.display=S.mode==='overall'?'none':'';
-      loadRanking();
-    });
-    document.getElementById('genderToggle').addEventListener('click',function(e){
-      var btn=e.target.closest('.tgl-btn');if(!btn)return;
-      S.gender=btn.getAttribute('data-g');S.lbShown=10;
-      document.querySelectorAll('#genderToggle .tgl-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-g')===S.gender);});
-      loadRanking();
-    });
-
-    loadRanking();renderMatchHistory();
-  }
-
-  /* ── LOAD DETAIL ── */
-  function loadDetail(venueSlug){
-    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-      var venues=(d&&d.venues)||[];
-      var key=venueSlug.toLowerCase();
-      var v=venues.filter(function(x){return slug(x.name)===key||normName(x.name)===key;})[0];
-      if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
-      S.venue=v;
-      document.title=v.name+' — Trekkr';
-      Promise.all([
-        fetch(BASE+'/venues/'+encodeURIComponent(v.name)+'/matches').then(function(r){return r.json();}).catch(function(){return{};}),
-        fetch(BASE+'/elo/leaderboard?venue='+encodeURIComponent(v.name)+'&limit=500').then(function(r){return r.json();}).catch(function(){return{};})
-      ]).then(function(res){
-        S.allMatches=(res[0]&&res[0].matches)||[];
-        var lb=(res[1]&&res[1].leaderboard)||[];
-        lb.forEach(function(p){S.eloMap[normName(p.name)]={displayName:p.displayName||p.name,photoUrl:p.photoUrl||'',elo:p.elo||0,level:tierName(p.elo||0)};});
-        var weekSet={};
-        S.allMatches.forEach(function(m){if(m.week)weekSet[m.week]=true;});
-        S.weeks=sortWeeks(Object.keys(weekSet));
-        S.week=S.weeks.length?S.weeks[S.weeks.length-1]:'W1';
-        renderDetail();
-      });
-    }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Could not load venues. Please try again.</div>';});
-  }
-
-  /* ── INIT ── */
+  /* ---- Load ---- */
   var sel=selected();
-  if(sel){loadDetail(sel);}
-  else{
-    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){renderDirectory((d&&d.venues)||[]);}).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Could not load venues. Please try again.</div>';});
-  }
+  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+    var venues=(d&&d.venues)||[];
+    if(!sel){renderDirectory(venues);return;}
+    var key=slug(sel);
+    var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
+    if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
+    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:v.name,limit:50}).toString())
+      .then(function(r){return r.json();}).then(function(ld){renderDetail(v,(ld&&ld.leaderboard)||[]);})
+      .catch(function(){renderDetail(v,[]);});
+  }).catch(function(){
+    content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
+  });
 })();
 </script>
 </body>
