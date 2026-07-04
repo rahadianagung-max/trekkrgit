@@ -781,11 +781,14 @@ async function syncPlayerClubs() {
 }
 
 async function getVenueWeeklyRanking(venueName, params) {
-  const week = params.week || `W${getWeekNumber(new Date())}`;
   const sheets = getSheets();
   const tab = venueTabName(venueName);
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:I` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
+  const wkNum = (w) => parseInt(String(w || "").replace(/\D/g, ""), 10) || 0;
+  const allWeeks = [...new Set(rows.map((r) => r[0]).filter(Boolean))].sort((a, b) => wkNum(b) - wkNum(a));
+  const lastWeek = (rows.filter((r) => r[0]).slice(-1)[0] || [])[0];
+  const week = params.week || lastWeek || allWeeks[0] || `W${getWeekNumber(new Date())}`;
   const weekMatches = rows.filter((r) => r[0] === week);
   const stats = {};
   
@@ -833,7 +836,8 @@ async function getVenueWeeklyRanking(venueName, params) {
 
   ranking.sort((a, b) => b.w - a.w || b.elo - a.elo);
   if (params.gender) ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
-  return respond(200, { week, venue: venueName, ranking });
+  const matches = weekMatches.map((r) => ({ t1: [r[2], r[3]].filter(Boolean), t2: [r[4], r[5]].filter(Boolean), s1: parseInt(r[6]) || 0, s2: parseInt(r[7]) || 0, gender: (r[8] || "M").toUpperCase(), ts: r[1] || "" }));
+  return respond(200, { week, weeks: allWeeks, venue: venueName, ranking, matches });
 }
 
 // ── SESSIONS ──
