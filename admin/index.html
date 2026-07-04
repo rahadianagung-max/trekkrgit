@@ -282,6 +282,23 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 @media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.menu-toggle{display:flex}.form-grid{grid-template-columns:1fr}}
 @media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.login-card{padding:32px 24px}.tab-btn{padding:12px 16px;font-size:11px}}
 .brand{font-style:italic!important;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent!important;letter-spacing:-.02em!important}
+#apanel-edits .er-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-bottom:12px;color:#fff}
+#apanel-edits .er-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#apanel-edits .er-pend{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#FFC24D;background:rgba(255,176,0,.15);border:1px solid rgba(255,176,0,.35);border-radius:99px;padding:4px 10px}
+#apanel-edits .er-body{border-top:1px solid rgba(255,255,255,.1);padding-top:12px}
+#apanel-edits .er-row{display:grid;grid-template-columns:96px 1fr auto 1fr;gap:10px;align-items:center;font-size:13px;padding:5px 0}
+#apanel-edits .er-k{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+#apanel-edits .er-old{color:rgba(255,255,255,.45);text-decoration:line-through;overflow:hidden;text-overflow:ellipsis}
+#apanel-edits .er-new{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+#apanel-edits .er-ar{color:#FF8A3D}
+#apanel-edits .er-photos{display:flex;align-items:center;gap:12px;padding:10px 0 2px}
+#apanel-edits .er-ph{text-align:center}
+#apanel-edits .er-ph img{width:52px;height:52px;border-radius:11px;object-fit:cover;background:rgba(255,255,255,.08)}
+#apanel-edits .er-ph img.new{border:2px solid #FF8A3D}
+#apanel-edits .er-ph small{display:block;font-size:9px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:3px}
+#apanel-edits .er-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+#apanel-edits .er-rej{border:1px solid rgba(255,80,72,.5);color:#ff8078;background:transparent;border-radius:99px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer}
+#apanel-edits .er-app{background:#22A052;color:#fff;border:0;border-radius:99px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -348,6 +365,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       <nav class="tab-nav">
         <button class="tab-btn is-active" onclick="switchTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
         <button class="tab-btn" onclick="switchTab('venue-info')" id="atab-venue-info">Venue Info</button>
+        <button class="tab-btn" onclick="switchTab('edits')" id="atab-edits">Edit Requests</button>
       </nav>
     </div>
   </div>
@@ -382,6 +400,13 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
   </div>
 
   <!-- TAB: RANKED MATCH -->
+  <div class="dash-panel" id="apanel-edits">
+    <div style="max-width:720px;margin:0 auto">
+      <h2 style="font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;font-size:26px;margin:0 0 4px">Edit Requests</h2>
+      <p style="color:rgba(255,255,255,.55);font-size:13px;margin:0 0 20px">Permintaan pemain mengubah display name / Instagram / foto. Approve untuk menerapkan, reject untuk menolak.</p>
+      <div id="er-list"><p style="color:rgba(255,255,255,.5);font-size:12px">Memuat…</p></div>
+    </div>
+  </div>
   <div class="dash-panel is-active" id="apanel-ranked-match">
     <div class="container">
       <div id="rm-root">
@@ -817,6 +842,7 @@ function switchTab(id) {
     RM._inited = true;
     rmInit();
   }
+  if (id === 'edits') loadEditRequests();
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1875,6 +1901,31 @@ function rmDismissRestore(){
    ══════════════════════════════════════════════════════════════════════ */
 window.addEventListener('load', () => { checkAuth(); });
 </script>
-<script>(function(){var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');if(mt&&mn)mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});})();</script>
+<script>(function(){var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');if(mt&&mn)mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});})();
+var _erPlayers={};
+function erEsc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function erDiff(k,o,n){ if(!n||String(o||"")===String(n))return ""; return '<div class="er-row"><span class="er-k">'+k+'</span><span class="er-old">'+(erEsc(o)||"—")+'</span><span class="er-ar">→</span><span class="er-new">'+erEsc(n)+'</span></div>'; }
+function renderER(x){
+  var cur=_erPlayers[String(x.name||"").toLowerCase()]||{};
+  var diffs=erDiff("Display name",cur.displayName||cur.name,x.displayName)+erDiff("Instagram",(cur.ig||"").replace(/^@+/,""),x.ig);
+  var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="this.style.visibility=\'hidden\'"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'"/><small>New</small></div></div>'):"";
+  if(!diffs&&!photo)diffs='<div class="er-row" style="color:rgba(255,255,255,.5)">Tidak ada perubahan.</div>';
+  return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(x.displayName||x.name)+'</b><div style="font-size:11px;color:rgba(255,255,255,.5)">'+erEsc(x.name)+' · '+erEsc((x.createdAt||"").slice(0,10))+'</div></div><span class="er-pend">Pending</span></div><div class="er-body">'+diffs+photo+'</div><div class="er-btns"><button class="er-rej" onclick="resolveEdit(\''+x.reqId+'\',\'reject\')">Reject</button><button class="er-app" onclick="resolveEdit(\''+x.reqId+'\',\'approve\')">Approve</button></div></div>';
+}
+async function loadEditRequests(){
+  var box=document.getElementById("er-list"); if(!box)return; box.innerHTML='<p style="color:rgba(255,255,255,.5);font-size:12px">Memuat…</p>';
+  try{
+    var pr=await fetch(API_BASE+"/players"); var pd=await pr.json(); _erPlayers={}; ((pd&&pd.players)||[]).forEach(function(pp){_erPlayers[String(pp.name||"").toLowerCase()]=pp;});
+    var r=await fetch(API_BASE+"/players/edit-requests?status=PENDING"); var d=await r.json(); var reqs=(d&&d.requests)||[];
+    box.innerHTML=reqs.length?reqs.map(renderER).join(""):'<p style="color:rgba(255,255,255,.5);font-size:13px">Tidak ada permintaan pending.</p>';
+  }catch(e){ box.innerHTML='<p style="color:#ff8078;font-size:12px">Gagal memuat.</p>'; }
+}
+async function resolveEdit(reqId,action){
+  try{ var r=await fetch(API_BASE+"/players/edit-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action})});
+    var d=await r.json(); if(d&&d.success){ loadEditRequests(); } else alert((d&&d.error)||"Gagal.");
+  }catch(e){ alert("Error jaringan."); }
+}
+</script>
+
 </body>
 </html>
