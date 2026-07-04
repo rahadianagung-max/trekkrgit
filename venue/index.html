@@ -71,6 +71,40 @@
   .pp-nudge .pp-tx span{font-size:12px;color:var(--muted);line-height:1.45}
   .lb-go{flex-shrink:0;color:var(--faint);font-size:18px;display:flex;align-items:center;transition:color .2s,transform .2s}
   .lb-row:hover .lb-go{color:var(--orange);transform:translateX(2px)}
+  .vhero{align-items:flex-start}
+  .vhero .vname{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(30px,6.4vw,52px);margin:0;line-height:1.02;letter-spacing:-.01em}
+  .vmode{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .vmode-b{padding:9px 16px;border:1px solid var(--border);background:#fff;border-radius:999px;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+  .vmode-b.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  .vmode-b:hover:not(.on){border-color:var(--orange);color:var(--orange)}
+  .wsel{margin-top:16px;display:flex;align-items:center;gap:10px}
+  .wsel label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle)}
+  .wsel select{font-family:inherit;font-size:13px;font-weight:600;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer}
+  .gblk{margin-top:22px}
+  .podium{display:flex;gap:10px;justify-content:center;align-items:flex-end;margin:8px 0 4px;flex-wrap:wrap}
+  .pod{flex:1 1 0;min-width:96px;max-width:150px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px 10px 14px;text-align:center;transition:border-color .2s,transform .2s;position:relative}
+  .pod:hover{border-color:var(--orange);transform:translateY(-3px)}
+  .pod-rk{position:absolute;top:8px;left:11px;font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle)}
+  .pod1 .pod-rk{color:var(--orange)}
+  .pod-photo{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--surface-3);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:22px;border:2px solid var(--border)}
+  .pod1{transform:scale(1.05)}
+  .pod1 .pod-photo{width:84px;height:84px;font-size:28px;border-color:var(--orange)}
+  .pod-nm{font-weight:700;font-size:14px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod-el{font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:20px;margin-top:2px}
+  .pod-el span{font-size:9px;color:var(--faint);letter-spacing:.08em;margin-left:3px;font-style:normal}
+  .pod-wl{font-size:11px;color:var(--muted);margin-top:2px}
+  .sortbar{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap}
+  .sortb{padding:8px 14px;border:1px solid var(--border);background:#fff;border-radius:999px;font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+  .sortb.on{background:var(--text);border-color:var(--text);color:#fff}
+  .sortb:hover:not(.on){border-color:var(--orange);color:var(--orange)}
+  .mh{border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
+  .mh-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border-soft);font-size:13px}
+  .mh-row:last-child{border-bottom:0}
+  .mh-team{flex:1;font-weight:600;color:var(--muted);text-align:right;min-width:0}
+  .mh-team.r{text-align:left}
+  .mh-team.win{color:var(--text);font-weight:700}
+  .mh-sc{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--text);flex-shrink:0;min-width:58px;text-align:center}
+  .mh-sc span{color:var(--faint);margin:0 4px;font-size:13px}
 </style>
 </head>
 <body>
@@ -159,29 +193,122 @@
   }
 
   /* ---- Detail ---- */
-  function renderDetail(v, players){
-    var loc=v.region||v.location||'';
-    var tags='';
+  function firstName(n){var t=String(n||'').trim();return t?t.split(/\s+/)[0]:'';}
+  function bigphoto(p){if(p.photoUrl)return '<img class="pod-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="pod-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function weekLabel(w){return String(w||'').replace(/^W/,'Week ');}
+  var CUR=null,CURWEEK=null,ALLCACHE=null;
+
+  function hdr(v){
+    var loc=v.region||v.location||'';var tags='';
     if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
     if(v.schedule)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(v.schedule)+'</span>';
     if(v.prizePool)tags+='<span class="vtag"><i class="ti ti-trophy"></i>'+esc(v.prizePool)+'</span>';
     if(v.contact)tags+='<span class="vtag"><i class="ti ti-phone"></i>'+esc(v.contact)+'</span>';
     var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
-
-    var rows=players.length?players.map(function(p,i){
-      var meta=[p.level,(p.gender==='F'?'Women':'Men')].filter(Boolean).join(' · ');
-      var w=(p.totalW!=null?p.totalW:0), l=(p.totalL!=null?p.totalL:0);
-      return '<a class="lb-row'+(i===0?' top':'')+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
-        +'<span class="rk">'+(i+1)+'</span>'+photo(p)
-        +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(meta)+'</span></span>'
-        +'<span class="lb-wl"><span class="n"><span class="w">'+w+'</span><span class="sep">/</span><span class="l">'+l+'</span></span><span class="cap">W / L</span></span>'
-        +'<span class="lb-elo"><span class="v">'+p.elo+'</span><span class="cap">ELO</span></span><span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
-    }).join(''):'<div class="state">No ranked players at this venue yet.</div>';
-
-    content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
-      +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="display">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>'
-      +'<div class="sec-label">Venue leaderboard</div>'+(players.length?'<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport — your rating, tier, match history &amp; badges.</span></div></div>':'')+'<div class="lb">'+rows+'</div>';
+    return '<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
+      +'<div class="vhero"><div class="vinfo"><h2 class="vname">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>';
   }
+  function modeTabs(mode){
+    return '<div class="vmode">'
+      +'<button class="vmode-b'+(mode==='week'?' on':'')+'" onclick="showWeekly()">Weekly ranking</button>'
+      +'<button class="vmode-b'+(mode==='all'?' on':'')+'" onclick="showAll()">All venue players</button></div>';
+  }
+  function ppNudge(){return '<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport &mdash; rating, tier, match history &amp; badges.</span></div></div>';}
+  function podRow(p,rank){
+    return '<a class="pod pod'+rank+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
+      +'<div class="pod-rk">'+rank+'</div>'+bigphoto(p)
+      +'<div class="pod-nm">'+esc(firstName(p.displayName||p.name))+'</div>'
+      +'<div class="pod-el">'+(p.elo||'')+'<span>ELO</span></div>'
+      +'<div class="pod-wl">'+(p.w!=null?p.w:0)+'W &middot; '+(p.l!=null?p.l:0)+'L</div></a>';
+  }
+  function podium(list){
+    var top=list.slice(0,3);if(!top.length)return '';
+    var order=top.length>=3?[top[1],top[0],top[2]]:top;
+    return '<div class="podium">'+order.map(function(p){return podRow(p,top.indexOf(p)+1);}).join('')+'</div>';
+  }
+  function wkRow(p,i){
+    return '<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
+      +'<span class="rk">'+(i+1)+'</span>'+photo(p)
+      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+'</span></span>'
+      +'<span class="lb-wl"><span class="n"><span class="w">'+(p.w||0)+'</span><span class="sep">/</span><span class="l">'+(p.l||0)+'</span></span><span class="cap">W / L</span></span>'
+      +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
+      +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
+  }
+  function genderBlock(title,list){
+    if(!list||!list.length)return '<div class="gblk"><div class="sec-label">'+title+'</div><div class="state">No matches this week.</div></div>';
+    var rest=list.slice(3);
+    var restHtml=rest.length?'<div class="lb">'+rest.map(function(p,i){return wkRow(p,i+3);}).join('')+'</div>':'';
+    return '<div class="gblk"><div class="sec-label">'+title+'</div>'+podium(list)+restHtml+'</div>';
+  }
+  function matchHist(matches){
+    if(!matches||!matches.length)return '';
+    var rows=matches.map(function(m){
+      var t1=(m.t1||[]).map(firstName).join(' & '),t2=(m.t2||[]).map(firstName).join(' & ');
+      return '<div class="mh-row"><span class="mh-team'+(m.s1>m.s2?' win':'')+'">'+esc(t1)+'</span>'
+        +'<span class="mh-sc">'+m.s1+'<span>&ndash;</span>'+m.s2+'</span>'
+        +'<span class="mh-team r'+(m.s2>m.s1?' win':'')+'">'+esc(t2)+'</span></div>';
+    }).join('');
+    return '<div class="sec-label" style="margin-top:24px">Match history &middot; this week</div><div class="mh">'+rows+'</div>';
+  }
+  function weekSelect(weeks,cur){
+    if(!weeks||!weeks.length)return '';
+    var opts=weeks.map(function(w){return '<option value="'+esc(w)+'"'+(w===cur?' selected':'')+'>'+esc(weekLabel(w))+'</option>';}).join('');
+    return '<div class="wsel"><label>Game week</label><select onchange="pickWeek(this.value)">'+opts+'</select></div>';
+  }
+  function renderWeekly(v,d){
+    var rk=d.ranking||[];
+    var males=rk.filter(function(p){return p.gender!=='F';});
+    var females=rk.filter(function(p){return p.gender==='F';});
+    content.innerHTML=hdr(v)+modeTabs('week')+weekSelect(d.weeks,d.week)+ppNudge()
+      +genderBlock('Men &middot; '+weekLabel(d.week),males)
+      +genderBlock('Women &middot; '+weekLabel(d.week),females)
+      +matchHist(d.matches);
+  }
+  function loadWeekly(v,week){
+    CUR=v;CURWEEK=week||null;
+    content.innerHTML=hdr(v)+modeTabs('week')+'<div class="state" style="margin-top:24px">Loading week&hellip;</div>';
+    var u=BASE+'/venues/'+encodeURIComponent(v.name)+'/ranking'+(week?('?week='+encodeURIComponent(week)):'');
+    fetch(u).then(function(r){return r.json();}).then(function(d){CURWEEK=d.week;renderWeekly(v,d);})
+      .catch(function(){content.innerHTML=hdr(v)+modeTabs('week')+'<div class="state">Couldn\'t load week.</div>';});
+  }
+  function pickWeek(w){loadWeekly(CUR,w);}
+  function showWeekly(){loadWeekly(CUR,CURWEEK);}
+  function openVenue(v){CUR=v;ALLCACHE=null;loadWeekly(v,null);}
+
+  function sortAll(list,mode){
+    var a=list.slice();
+    if(mode==='wins')a.sort(function(x,y){return (y.totalW||0)-(x.totalW||0)||(y.elo||0)-(x.elo||0);});
+    else if(mode==='elo')a.sort(function(x,y){return (y.elo||0)-(x.elo||0);});
+    else a.sort(function(x,y){return (y.totalMatches||0)-(x.totalMatches||0)||(y.totalW||0)-(x.totalW||0);});
+    return a;
+  }
+  function allRow(p,i,mode){
+    var metric=mode==='wins'?((p.totalW||0)+' wins'):mode==='elo'?((p.elo||0)+' ELO'):((p.totalMatches||0)+' matches');
+    return '<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
+      +'<span class="rk">'+(i+1)+'</span>'+photo(p)
+      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(metric)+'</span></span>'
+      +'<span class="lb-wl"><span class="n"><span class="w">'+(p.totalW||0)+'</span><span class="sep">/</span><span class="l">'+(p.totalL||0)+'</span></span><span class="cap">W / L</span></span>'
+      +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
+      +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
+  }
+  function renderAll(v,players,mode){
+    var sorted=sortAll(players,mode);
+    var tabs='<div class="sortbar">'
+      +'<button class="sortb'+(mode==='loyal'?' on':'')+'" onclick="setSort(\'loyal\')">Most loyal</button>'
+      +'<button class="sortb'+(mode==='wins'?' on':'')+'" onclick="setSort(\'wins\')">Most wins</button>'
+      +'<button class="sortb'+(mode==='elo'?' on':'')+'" onclick="setSort(\'elo\')">Highest ELO</button></div>';
+    var rows=sorted.length?('<div class="lb">'+sorted.map(function(p,i){return allRow(p,i,mode);}).join('')+'</div>'):'<div class="state">No players yet.</div>';
+    content.innerHTML=hdr(v)+modeTabs('all')+'<div class="sec-label" style="margin-top:18px">All venue players</div>'+ppNudge()+tabs+rows;
+  }
+  function showAll(){
+    if(ALLCACHE){renderAll(CUR,ALLCACHE,'loyal');return;}
+    content.innerHTML=hdr(CUR)+modeTabs('all')+'<div class="state" style="margin-top:24px">Loading players&hellip;</div>';
+    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:CUR.name,limit:200}).toString()).then(function(r){return r.json();})
+      .then(function(ld){ALLCACHE=(ld&&ld.leaderboard)||[];renderAll(CUR,ALLCACHE,'loyal');})
+      .catch(function(){content.innerHTML=hdr(CUR)+modeTabs('all')+'<div class="state">Couldn\'t load players.</div>';});
+  }
+  function setSort(m){renderAll(CUR,ALLCACHE||[],m);}
+  window.showWeekly=showWeekly;window.showAll=showAll;window.pickWeek=pickWeek;window.setSort=setSort;
 
   /* ---- Load ---- */
   var sel=selected();
@@ -191,9 +318,7 @@
     var key=slug(sel);
     var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
     if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
-    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:v.name,limit:50}).toString())
-      .then(function(r){return r.json();}).then(function(ld){renderDetail(v,(ld&&ld.leaderboard)||[]);})
-      .catch(function(){renderDetail(v,[]);});
+    openVenue(v);
   }).catch(function(){
     content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
   });
