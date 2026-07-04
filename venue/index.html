@@ -105,6 +105,25 @@
   .mh-team.win{color:var(--text);font-weight:700}
   .mh-sc{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--text);flex-shrink:0;min-width:58px;text-align:center}
   .mh-sc span{color:var(--faint);margin:0 4px;font-size:13px}
+  .champs{display:flex;flex-direction:column;gap:10px;margin:8px 0 4px}
+  .champ{display:flex;align-items:center;gap:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;transition:border-color .2s,transform .2s}
+  .champ:hover{border-color:var(--orange);transform:translateY(-2px)}
+  .champ-rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:34px;color:var(--subtle);width:34px;text-align:center;flex-shrink:0}
+  .champ1{background:linear-gradient(100deg,#FFF6EC,#FFFBF7);border-color:#FFCFA8}
+  .champ1 .champ-rk{color:var(--orange)}
+  .champ-photo{width:84px;height:84px;border-radius:50%;object-fit:cover;background:var(--surface-3);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:30px;border:2px solid var(--border);flex-shrink:0}
+  .champ1 .champ-photo{width:104px;height:104px;font-size:38px;border-color:var(--orange)}
+  .champ-info{flex:1;min-width:0}
+  .champ-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange)}
+  .champ-nm{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(22px,4.4vw,34px);line-height:1.04;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .champ1 .champ-nm{font-size:clamp(26px,5.4vw,42px)}
+  .champ-stats{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+  .champ-stats .cs{font-size:12px;color:var(--muted)}
+  .champ-stats .cs b{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--text);margin-right:2px}
+  .champ-stats .cs-pd b{color:var(--orange)}
+  .champ .lb-go{color:var(--faint);font-size:20px;flex-shrink:0}
+  .champ:hover .lb-go{color:var(--orange)}
+  @media(max-width:520px){.champ-photo{width:64px;height:64px;font-size:24px}.champ1 .champ-photo{width:78px;height:78px;font-size:30px}.champ-rk{font-size:26px;width:24px}.champ{gap:12px;padding:14px}}
 </style>
 </head>
 <body>
@@ -214,22 +233,22 @@
       +'<button class="vmode-b'+(mode==='all'?' on':'')+'" onclick="showAll()">All venue players</button></div>';
   }
   function ppNudge(){return '<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport &mdash; rating, tier, match history &amp; badges.</span></div></div>';}
-  function podRow(p,rank){
-    return '<a class="pod pod'+rank+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
-      +'<div class="pod-rk">'+rank+'</div>'+bigphoto(p)
-      +'<div class="pod-nm">'+esc(firstName(p.displayName||p.name))+'</div>'
-      +'<div class="pod-el">'+(p.elo||'')+'<span>ELO</span></div>'
-      +'<div class="pod-wl">'+(p.w!=null?p.w:0)+'W &middot; '+(p.l!=null?p.l:0)+'L</div></a>';
+  function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="champ-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function pdText(v){v=(v==null?0:v);return (v>0?'+':'')+v;}
+  function champCard(p,rank){
+    var label=rank===1?'Weekly Champion':(rank===2?'Runner-up':'3rd place');
+    return '<a class="champ champ'+rank+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
+      +'<div class="champ-rk">'+rank+'</div>'+bigphoto2(p)
+      +'<div class="champ-info"><div class="champ-lbl">'+label+'</div>'
+      +'<div class="champ-nm">'+esc(p.displayName||p.name)+'</div>'
+      +'<div class="champ-stats"><span class="cs"><b>'+(p.w||0)+'</b>W</span><span class="cs"><b>'+(p.l||0)+'</b>L</span><span class="cs cs-pd"><b>'+pdText(p.pd)+'</b> diff</span><span class="cs"><b>'+(p.elo||'')+'</b> ELO</span></div></div>'
+      +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
   }
-  function podium(list){
-    var top=list.slice(0,3);if(!top.length)return '';
-    var order=top.length>=3?[top[1],top[0],top[2]]:top;
-    return '<div class="podium">'+order.map(function(p){return podRow(p,top.indexOf(p)+1);}).join('')+'</div>';
-  }
+  function podium(list){var top=list.slice(0,3);if(!top.length)return '';return '<div class="champs">'+top.map(function(p,i){return champCard(p,i+1);}).join('')+'</div>';}
   function wkRow(p,i){
     return '<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
       +'<span class="rk">'+(i+1)+'</span>'+photo(p)
-      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+'</span></span>'
+      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+' &middot; '+pdText(p.pd)+' diff</span></span>'
       +'<span class="lb-wl"><span class="n"><span class="w">'+(p.w||0)+'</span><span class="sep">/</span><span class="l">'+(p.l||0)+'</span></span><span class="cap">W / L</span></span>'
       +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
