@@ -799,7 +799,9 @@ async function getVenueWeeklyRanking(venueName, params) {
     const s2 = parseInt(r[7]) || 0;
     const gender = (r[8] || "M").toUpperCase();
     
-    [...t1, ...t2].forEach((p) => { if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, gender }; });
+    [...t1, ...t2].forEach((p) => { if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, pd: 0, gender }; });
+    t1.forEach((p) => { stats[p].pd += (s1 - s2); });
+    t2.forEach((p) => { stats[p].pd += (s2 - s1); });
     if (s1 > s2) {
       t1.forEach((p) => { stats[p].w++; stats[p].played++; });
       t2.forEach((p) => { stats[p].l++; stats[p].played++; });
@@ -828,13 +830,13 @@ async function getVenueWeeklyRanking(venueName, params) {
   let ranking = Object.keys(stats).map((p) => {
     const gi = info[normName(p)] || {};
     return {
-      name: p, displayName: gi.displayName || p, w: stats[p].w, l: stats[p].l, played: stats[p].played,
+      name: p, displayName: gi.displayName || p, w: stats[p].w, l: stats[p].l, pd: stats[p].pd, played: stats[p].played,
       gender: stats[p].gender, elo: latestElo[p.toLowerCase()] || 1350,
       photoUrl: gi.photoUrl || "", verified: !!gi.verified, region: gi.region || "",
     };
   });
 
-  ranking.sort((a, b) => b.w - a.w || b.elo - a.elo);
+  ranking.sort((a, b) => b.w - a.w || b.pd - a.pd || b.elo - a.elo);
   if (params.gender) ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
   const matches = weekMatches.map((r) => ({ t1: [r[2], r[3]].filter(Boolean), t2: [r[4], r[5]].filter(Boolean), s1: parseInt(r[6]) || 0, s2: parseInt(r[7]) || 0, gender: (r[8] || "M").toUpperCase(), ts: r[1] || "" }));
   return respond(200, { week, weeks: allWeeks, venue: venueName, ranking, matches });
