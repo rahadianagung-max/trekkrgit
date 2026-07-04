@@ -1680,9 +1680,11 @@ function downloadNightCard(){
     ctx.fillStyle='#FFB000';roundRect(ctx,W-240,56,180,54,27);ctx.fill();
     ctx.fillStyle='#1a1000';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(ti.current.toUpperCase(),W-150,93);
 
-    // Name + venue over gradient
-    ctx.fillStyle='#fff';ctx.font='700 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-36);
-    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='400 34px Plus Jakarta Sans,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);
+    // Name + URL + venue over gradient
+    var purl='trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+    ctx.fillStyle='#fff';ctx.font='700 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-78);
+    ctx.fillStyle='#FF8A3D';ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(purl,60,PHOTO_H-38);
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='400 30px Plus Jakarta Sans,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);
 
     // Divider line
     ctx.strokeStyle='#1e1e1e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,CONTENT_Y);ctx.lineTo(W-60,CONTENT_Y);ctx.stroke();
@@ -1702,21 +1704,21 @@ function downloadNightCard(){
       ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText(st.l,bX+i*(bW+bGap)+bW/2,bY+bH-16);
     });
 
-    // Badges
-    var bdY=bY+bH+46,bdX=60;
-    ctx.font='600 28px Plus Jakarta Sans,sans-serif';
-    var bdList=[];
-    if(p.winnerAt&&p.winnerAt!=='N/A'){p.winnerAt.split(',').slice(0,1).forEach(function(w){bdList.push({txt:'★ '+w.trim().slice(0,24),bg:'#1e1700',col:'#FFB000'});});}
-    var colMap={rated:'#FFD9BF',hot_streak:'#46C58A',win_machine:'#FFB000',first_win:'#B7A6F2',consistent:'#46C58A',veteran:'#FFD9BF'};
-    var bgMap={rated:'#03122d',hot_streak:'#071d15',win_machine:'#1e1700',first_win:'#16143a',consistent:'#071d15',veteran:'#03122d'};
-    badges.filter(function(b){return b.earned;}).slice(0,3).forEach(function(b){bdList.push({txt:b.name,bg:bgMap[b.id]||'#1a1a1a',col:colMap[b.id]||'#aaa'});});
-    bdList.forEach(function(bd){
-      var tw=ctx.measureText(bd.txt).width,pw=tw+44,ph=58,pr=10;
-      if(bdX+pw>W-60){bdX=60;bdY+=ph+18;}
-      ctx.fillStyle=bd.bg;roundRect(ctx,bdX,bdY,pw,ph,pr);ctx.fill();
-      ctx.fillStyle=bd.col;ctx.textAlign='center';ctx.fillText(bd.txt,bdX+pw/2,bdY+38);
-      bdX+=pw+18;
-    });
+    // Best performing partner (single — matches passport format)
+    var bp=playerData.bestPartner;
+    if(bp&&bp.name&&bp.name!=='No Data'){
+      var pY=bY+bH+40,pH=150;
+      ctx.fillStyle='#141414';roundRect(ctx,60,pY,W-120,pH,18);ctx.fill();
+      ctx.textAlign='left';
+      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('BEST PERFORMING PARTNER',96,pY+50);
+      var pn=String(bp.name);ctx.font='800 46px Saira Condensed,sans-serif';
+      while(pn.length>3&&ctx.measureText(pn).width>W-120-370){pn=pn.slice(0,-1);}
+      if(pn!==bp.name)pn=pn.trim()+'…';
+      ctx.fillStyle='#fff';ctx.fillText(pn,96,pY+108);
+      ctx.textAlign='right';
+      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('RECORD TOGETHER',W-96,pY+50);
+      ctx.fillStyle='#4ADE80';ctx.font='800 42px Saira Condensed,sans-serif';ctx.fillText(String(bp.score||''),W-96,pY+106);
+    }
 
     // Footer — FIXED: white text, "Visit trekkr.online"
     var footerY=H-100;
