@@ -517,6 +517,23 @@ async function claimProfile({ name, ig_handle, session_id }) {
 }
 
 // ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
+const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At"];
+// Create the Edit_Requests tab (with header row) if it does not exist yet, so the
+// feature is self-bootstrapping and the first submitted edit doesn't fail with
+// "Unable to parse range: Edit_Requests!A:H".
+async function ensureEditRequestsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.edit_requests)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.edit_requests } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [EDIT_REQUESTS_HEADER] },
+  });
+}
 async function submitEditRequest(body) {
   const { name } = body;
   if (!name) return respond(400, { error: "name required" });
@@ -524,6 +541,7 @@ async function submitEditRequest(body) {
   const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const prows = pres.data.values || [];
   if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
+  await ensureEditRequestsTab(sheets);
   let photoUrl = "";
   try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || ""); }
   catch (e) { console.error("edit photo upload:", e.message); }
