@@ -24,9 +24,12 @@ function getSheets() {
 // with "Service Accounts do not have storage quota". OAuth uploads are owned by
 // the real user account (15 GB free quota) and just work.
 function getDriveAuth() {
-  const cid = process.env.GOOGLE_OAUTH_CLIENT_ID;
-  const csec = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  const rtok = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  // Trim + strip accidental surrounding quotes/whitespace that can sneak in when
+  // pasting these values into env settings (a common cause of "invalid_grant").
+  const clean = (v) => String(v || "").trim().replace(/^["']|["']$/g, "");
+  const cid = clean(process.env.GOOGLE_OAUTH_CLIENT_ID);
+  const csec = clean(process.env.GOOGLE_OAUTH_CLIENT_SECRET);
+  const rtok = clean(process.env.GOOGLE_OAUTH_REFRESH_TOKEN);
   if (cid && csec && rtok) {
     const oauth = new google.auth.OAuth2(cid, csec);
     oauth.setCredentials({ refresh_token: rtok });
