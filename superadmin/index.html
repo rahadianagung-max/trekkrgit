@@ -61,9 +61,10 @@ footer span{color:var(--lime)}
   .er-ar{color:var(--lime)}
   .er-photos{display:flex;align-items:center;gap:12px;padding:10px 0 2px}
   .er-ph{text-align:center}
-  .er-ph img{width:52px;height:52px;border-radius:11px;object-fit:cover;background:var(--s3)}
-  .er-ph img.new{border:2px solid var(--lime)}
-  .er-ph small{display:block;font-size:9px;text-transform:uppercase;color:var(--muted2);margin-top:3px}
+  .er-ph img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:var(--s3);border:1px solid var(--border)}
+  .er-ph img.new{width:72px;height:72px;border:3px solid var(--lime)}
+  .er-ph small{display:block;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted2);margin-top:3px}
+  .er-ph small.new{color:var(--lime)}
   .er-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
   .er-rej{border:1px solid rgba(255,56,48,.4);color:#e03b30;background:#fff;border-radius:99px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer}
   .er-app{background:#22A052;color:#fff;border:0;border-radius:99px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer}
@@ -340,7 +341,7 @@ function erDiff(k,o,n){ if(!n||String(o||"")===String(n))return ""; return '<div
 function renderER(x){
   var cur=erCur(x.name);
   var diffs=erDiff("Display name",cur.displayName||cur.name,x.displayName)+erDiff("Instagram",(cur.ig||"").replace(/^@+/,""),x.ig);
-  var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="this.style.visibility=\'hidden\'"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'"/><small>New</small></div></div>'):"";
+  var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="this.style.visibility=\'hidden\'"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'"/><small class="new">New</small></div></div>'):"";
   if(!diffs&&!photo)diffs='<div class="er-row" style="color:var(--muted2)">Tidak ada perubahan.</div>';
   return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(x.displayName||x.name)+'</b><div style="font-size:11px;color:var(--muted2)">'+erEsc(x.name)+' · '+erEsc((x.createdAt||"").slice(0,10))+'</div></div><span class="er-pend">Pending</span></div><div class="er-body">'+diffs+photo+'</div><div class="er-btns"><button class="er-rej" onclick="resolveEdit(\''+x.reqId+'\',\'reject\')">Reject</button><button class="er-app" onclick="resolveEdit(\''+x.reqId+'\',\'approve\')">Approve</button></div></div>';
 }
