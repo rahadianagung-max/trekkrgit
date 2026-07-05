@@ -19,7 +19,21 @@ function getSheets() {
 }
 
 // Drive auth (adds drive scope) + image upload for registration photos / payment proofs.
+// Prefer OAuth user credentials when configured: a service account has no Drive
+// storage quota of its own, so on a personal Gmail (no Shared Drive) uploads fail
+// with "Service Accounts do not have storage quota". OAuth uploads are owned by
+// the real user account (15 GB free quota) and just work.
 function getDriveAuth() {
+  const cid = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const csec = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const rtok = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  if (cid && csec && rtok) {
+    const oauth = new google.auth.OAuth2(cid, csec);
+    oauth.setCredentials({ refresh_token: rtok });
+    return oauth;
+  }
+  // Fallback: service account. Note this only works for Drive uploads when the
+  // target folder lives in a Shared Drive the service account is a member of.
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let key = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/^"|"$/g, "").replace(/\\n/g, "\n");
   return new google.auth.JWT(email, null, key, [
