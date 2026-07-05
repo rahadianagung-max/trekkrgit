@@ -557,12 +557,15 @@ async function submitEditRequest(body) {
 }
 async function listEditRequests(params) {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` }).catch(() => ({ data: { values: [] } }));
+  // Read from row 1 (not A2:H) so requests are found whether or not a header
+  // row exists — a manually-created tab has no header, putting the first
+  // request in row 1. The header row itself is skipped by label below.
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
     .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: r[4] || "", status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
-    .filter((x) => x.reqId && (want === "ALL" || x.status === want))
+    .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
 }
@@ -570,11 +573,13 @@ async function resolveEditRequest(body) {
   const { reqId, action } = body;
   if (!reqId || !action) return respond(400, { error: "reqId and action required" });
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` });
+  // Read from row 1 so the sheet-row math (ri + 1) is correct regardless of
+  // whether the tab has a header row.
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0] === reqId);
   if (ri === -1) return respond(404, { error: "Request not found" });
-  const r = rows[ri], sr = ri + 2, now = new Date().toISOString();
+  const r = rows[ri], sr = ri + 1, now = new Date().toISOString();
   if (String(r[5] || "").toUpperCase() !== "PENDING") return respond(400, { error: "Already resolved" });
   if (action === "approve") {
     const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
