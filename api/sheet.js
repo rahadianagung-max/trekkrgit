@@ -542,9 +542,14 @@ async function submitEditRequest(body) {
   const prows = pres.data.values || [];
   if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
   await ensureEditRequestsTab(sheets);
-  let photoUrl = "";
-  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || ""); }
-  catch (e) { console.error("edit photo upload:", e.message); }
+  let photoUrl = "", photoError = "";
+  // A Google service account has no storage quota in its own "My Drive", so the
+  // upload only works when written into a real folder shared with the service
+  // account. Reuse the registration folder (known to work) if the dedicated
+  // GOOGLE_PHOTO_FOLDER_ID is not configured.
+  const photoFolderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, photoFolderId); }
+  catch (e) { photoError = e.message || "upload failed"; console.error("edit photo upload:", photoError); }
   const reqId = "ER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
   const now = new Date().toISOString();
   const displayName = String(body.displayName || "").trim();
@@ -553,7 +558,7 @@ async function submitEditRequest(body) {
     spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, ""]] },
   });
-  return respond(200, { success: true, reqId, photoUrl });
+  return respond(200, { success: true, reqId, photoUrl, photoError });
 }
 async function listEditRequests(params) {
   const sheets = getSheets();

@@ -1891,7 +1891,10 @@ function submitEdit(){
   fetch('https://trekkr.online/api/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(d){
       btn.disabled=false; btn.textContent='Submit for review';
-      if(d&&d.success){ m.style.color='var(--ok)'; m.textContent='✓ Terkirim! Menunggu persetujuan admin.'; setTimeout(closeEditModal,1700); }
+      if(d&&d.success){
+        if(body.photo && !d.photoUrl){ m.style.color='var(--danger)'; m.textContent='⚠ Data terkirim, tapi foto gagal diunggah. Coba lagi atau hubungi admin.'; }
+        else { m.style.color='var(--ok)'; m.textContent='✓ Terkirim! Menunggu persetujuan admin.'; setTimeout(closeEditModal,1700); }
+      }
       else { m.style.color='var(--danger)'; m.textContent=(d&&d.error)||'Gagal mengirim.'; }
     }).catch(function(){ btn.disabled=false; btn.textContent='Submit for review'; m.style.color='var(--danger)'; m.textContent='Error jaringan.'; });
 }
