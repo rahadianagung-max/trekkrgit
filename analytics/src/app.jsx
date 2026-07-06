@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
+import { loadLiveData } from "./live.js";
 
 /* Trekkr Sabermetrics v6 — responsive (desktop master-detail + mobile),
  * "Explore by club" / "Explore by players", full rosters, partner analysis
@@ -12,7 +13,9 @@ const T = {
   orange: "#FF6A00", orangeHi: "#FF7D1F", red: "#FF3830", amber: "#FFB000", green: "#22A052",
   warm: "#FFF4EA", warmBorder: "#F0D9C4", grad: "linear-gradient(90deg,#FF3830,#FFB000)",
 };
-const VENUES = ((typeof window !== "undefined" && window.__TREKKR_DATA__) || { venues: [] }).venues;
+// Populated live from the Trekkr API at boot (see loadLiveData / boot below),
+// so new venues and players appear without rebuilding this page.
+let VENUES = [];
 
 const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -21,6 +24,7 @@ const FONTS = `
 @keyframes decrypt { 0%,100%{opacity:1} 50%{opacity:.45} }
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important} }
 `;
 const body = { fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" };
@@ -97,6 +101,7 @@ function Header({ page, onBack, backLabel }) {
 
 /* ---------------- Overview ---------------- */
 function Intro({ go, onOpen, isDesktop }) {
+  const totalMatches = VENUES.reduce((s, v) => s + (v.rows || 0), 0);
   const feats = [
     { ic: "target", t: "Every player's real Impact", d: "How much each member adds per match — and where they truly rank, not where win rate puts them." },
     { ic: "link", t: "Best-fit partners", d: "For any player, a ranked shortlist of who lifts their game most, from strength and chemistry combined." },
@@ -115,7 +120,7 @@ function Intro({ go, onOpen, isDesktop }) {
     <div style={{ ...eyebrow, color: T.subtle, margin: "26px 0 12px" }}>What you get</div>
     <div style={{ display: isDesktop ? "grid" : "flex", gridTemplateColumns: isDesktop ? "1fr 1fr 1fr" : undefined, flexDirection: isDesktop ? undefined : "column", gap: 10 }}>{feats.map((f) => <div key={f.t} style={{ background: T.surf, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}><div style={{ width: 38, height: 38, borderRadius: 10, background: T.warm, border: `1px solid ${T.warmBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginBottom: 11 }}><Icon name={f.ic} /></div><div><div style={{ ...body, fontWeight: 700, fontSize: 15, color: T.text }}>{f.t}</div><div style={{ ...body, fontSize: 13, color: T.muted, lineHeight: 1.5, marginTop: 3 }}>{f.d}</div></div></div>)}</div>
     <div style={{ marginTop: 22, background: T.text, borderRadius: 14, padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}><span style={{ ...num, fontSize: 34, color: "#fff" }}>586</span><span style={{ ...body, fontSize: 13, color: "#C4C4C8" }}>real matches analyzed</span></div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}><span style={{ ...num, fontSize: 34, color: "#fff" }}>{totalMatches.toLocaleString()}</span><span style={{ ...body, fontSize: 13, color: "#C4C4C8" }}>real matches analyzed</span></div>
       <div style={{ ...body, fontSize: 13, color: "#C4C4C8", lineHeight: 1.55, marginTop: 8 }}>The model predicts about <b style={{ color: "#fff" }}>two-thirds of match outcomes</b> — earned, not guessed.<button onClick={() => onOpen("accuracy")} style={{ ...body, background: "transparent", border: "none", color: T.amber, fontWeight: 600, fontSize: 13, cursor: "pointer", padding: "0 0 0 4px" }}>How?</button></div>
     </div>
     <div style={{ ...eyebrow, color: T.subtle, margin: "26px 0 12px" }}>Start exploring</div>
@@ -350,4 +355,43 @@ export default function App() {
   </div>;
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+/* ---------------- boot / live data loading ---------------- */
+function Splash({ children }) {
+  return <div style={{ minHeight: "100vh", background: T.bg, color: T.text, ...body, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <style>{FONTS}</style>
+    <div style={{ textAlign: "center", maxWidth: 340 }}>
+      <div style={{ ...head, fontSize: 30, ...gradText, display: "inline-block" }}>Trekkr</div>
+      <div style={{ ...eyebrow, color: T.subtle, marginTop: 6 }}>Sabermetrics</div>
+      {children}
+    </div>
+  </div>;
+}
+function Booting() {
+  return <Splash>
+    <div style={{ ...body, fontSize: 13.5, color: T.muted, marginTop: 18 }}>Loading live club data…</div>
+    <div style={{ margin: "18px auto 0", width: 26, height: 26, border: `3px solid ${T.surf3}`, borderTopColor: T.orange, borderRadius: "50%", animation: "spin .8s linear infinite" }} />
+  </Splash>;
+}
+function LoadError({ onRetry, empty }) {
+  return <Splash>
+    <div style={{ ...body, fontSize: 15, fontWeight: 700, color: T.text, marginTop: 18 }}>{empty ? "No clubs found yet" : "Couldn’t load live data"}</div>
+    <div style={{ ...body, fontSize: 13, color: T.muted, marginTop: 8, lineHeight: 1.55 }}>{empty ? "Once a venue records its first matches on trekkr.online, it’ll appear here." : "We couldn’t reach trekkr.online. Check your connection and try again."}</div>
+    <button onClick={onRetry} style={{ ...body, marginTop: 18, padding: "11px 20px", borderRadius: 999, border: "none", cursor: "pointer", background: T.orange, color: "#fff", fontWeight: 700, fontSize: 14 }}>Retry</button>
+  </Splash>;
+}
+
+const root = createRoot(document.getElementById("root"));
+function boot() {
+  root.render(<Booting />);
+  loadLiveData()
+    .then((venues) => {
+      VENUES = venues || [];
+      if (!VENUES.length) { root.render(<LoadError onRetry={boot} empty />); return; }
+      root.render(<App />);
+    })
+    .catch((err) => {
+      console.error("[Trekkr] live load failed:", err);
+      root.render(<LoadError onRetry={boot} />);
+    });
+}
+boot();

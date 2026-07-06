@@ -6,7 +6,6 @@ await build({
   bundle: true, minify: true, format: "iife", outfile: "app.js",
 });
 
-const datajs = readFileSync("data.js", "utf8");
 const app = readFileSync("app.js", "utf8");
 const html = `<!doctype html>
 <html lang="en">
@@ -21,7 +20,6 @@ const html = `<!doctype html>
 </head>
 <body>
   <div id="root"></div>
-  <script>${datajs}</script>
   <script>${app}</script>
 </body>
 </html>
