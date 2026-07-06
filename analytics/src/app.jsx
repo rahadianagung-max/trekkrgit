@@ -15,7 +15,10 @@ const T = {
 };
 // Populated live from the Trekkr API at boot (see loadLiveData / boot below),
 // so new venues and players appear without rebuilding this page.
+// VENUES groups players by club; GLOBAL_PLAYERS is the cross-venue player list
+// used by "By players" (impact & best-fit computed over all matches at once).
 let VENUES = [];
+let GLOBAL_PLAYERS = [];
 
 const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -300,13 +303,12 @@ function GlossaryBtn({ onOpen }) {
 function Analysis({ onOpen, mode, setMode, venueName, setVenueName, player, setPlayer, isDesktop }) {
   const [pro, setPro] = useState(false);
   const venue = VENUES.find((v) => v.name === venueName) || VENUES[0];
-  const globalPlayers = useMemo(() => {
-    const byName = {};
-    VENUES.forEach((v) => v.players.forEach((p) => { if (!byName[p.name] || p.apps > byName[p.name].apps) byName[p.name] = { ...p, venue: v.name, venueCount: v.count }; }));
-    return Object.values(byName).sort((a, b) => b.impact - a.impact);
-  }, []);
-  const scope = player ? (player.venue || venue.name) : "";
-  const count = player ? (player.venueCount || venue.count) : 0;
+  // Cross-venue player list, already ranked by (global) impact.
+  const globalPlayers = GLOBAL_PLAYERS;
+  // "By players" scopes the analysis to every club at once; "By club" scopes it
+  // to the selected venue's roster.
+  const scope = !player ? "" : mode === "players" ? "all clubs" : venue.name;
+  const count = !player ? 0 : mode === "players" ? globalPlayers.length : venue.count;
   const list = mode === "venue"
     ? <RosterView venue={venue} pro={pro} onPick={setPlayer} onOpen={onOpen} activeName={player && player.name} />
     : <PlayersView globalPlayers={globalPlayers} pro={pro} onPick={setPlayer} activeName={player && player.name} />;
@@ -384,8 +386,9 @@ const root = createRoot(document.getElementById("root"));
 function boot() {
   root.render(<Booting />);
   loadLiveData()
-    .then((venues) => {
+    .then(({ venues, players }) => {
       VENUES = venues || [];
+      GLOBAL_PLAYERS = players || [];
       if (!VENUES.length) { root.render(<LoadError onRetry={boot} empty />); return; }
       root.render(<App />);
     })

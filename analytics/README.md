@@ -44,12 +44,21 @@ from the nav. It already uses the same fonts/theme as trekkr.online.
   shape:
 
   ```js
-  { venues: [ { name, region, location, count, rows,
-      players: [ { name, gender, impact, se, winRate, apps, valueAdded,
-        impactRank, winRateRank,
-        bestFit: [ { partner, pairScore, partnerBeta, synergy, shared } ],
-        worstFit: { partner, synergy, shared } } ] } ] }
+  { venues:  [ { name, region, location, count, rows, players: [Player] } ],
+    players: [Player] }   // global, cross-venue list for "By players"
+  // Player = { name, gender, impact, se, winRate, apps, valueAdded,
+  //   impactRank, winRateRank,
+  //   bestFit: [ { partner, pairScore, partnerBeta, synergy, shared } ],
+  //   worstFit: { partner, synergy, shared } }
   ```
+
+  Player analysis is **global**: impact, confidence, value added and best-fit /
+  worst-fit partners come from one ridge regression over *all* matches across
+  every venue, so a player has a single rating and their best partner can be
+  from any club. Match count and win rate stay contextual — club-specific in a
+  venue roster, global in the cross-venue `players` list. (Because impact is
+  only comparable within a connected pool, cross-venue ranks are most meaningful
+  where players actually move between clubs.)
 
 After editing:
 
