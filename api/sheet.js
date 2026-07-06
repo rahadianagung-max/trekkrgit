@@ -19,24 +19,7 @@ function getSheets() {
 }
 
 // Drive auth (adds drive scope) + image upload for registration photos / payment proofs.
-// Prefer OAuth user credentials when configured: a service account has no Drive
-// storage quota of its own, so on a personal Gmail (no Shared Drive) uploads fail
-// with "Service Accounts do not have storage quota". OAuth uploads are owned by
-// the real user account (15 GB free quota) and just work.
 function getDriveAuth() {
-  // Trim + strip accidental surrounding quotes/whitespace that can sneak in when
-  // pasting these values into env settings (a common cause of "invalid_grant").
-  const clean = (v) => String(v || "").trim().replace(/^["']|["']$/g, "");
-  const cid = clean(process.env.GOOGLE_OAUTH_CLIENT_ID);
-  const csec = clean(process.env.GOOGLE_OAUTH_CLIENT_SECRET);
-  const rtok = clean(process.env.GOOGLE_OAUTH_REFRESH_TOKEN);
-  if (cid && csec && rtok) {
-    const oauth = new google.auth.OAuth2(cid, csec);
-    oauth.setCredentials({ refresh_token: rtok });
-    return oauth;
-  }
-  // Fallback: service account. Note this only works for Drive uploads when the
-  // target folder lives in a Shared Drive the service account is a member of.
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let key = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/^"|"$/g, "").replace(/\\n/g, "\n");
   return new google.auth.JWT(email, null, key, [
@@ -245,6 +228,7 @@ const netlifyHandler = async (event) => {
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
     if (path === "elo/leaderboard" && method === "GET") return await getNationalLeaderboard(params);
     if (path === "elo/record-match" && method === "POST") return await recordManualMatch(body);
+    if (path === "elo/import-matches" && method === "POST") return await importMatches(body);
 
     if (path === "parse" && method === "POST") return await parseAmericanoUrl(body);
 
@@ -534,23 +518,6 @@ async function claimProfile({ name, ig_handle, session_id }) {
 }
 
 // ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
-const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At"];
-// Create the Edit_Requests tab (with header row) if it does not exist yet, so the
-// feature is self-bootstrapping and the first submitted edit doesn't fail with
-// "Unable to parse range: Edit_Requests!A:H".
-async function ensureEditRequestsTab(sheets) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
-  if (existing.includes(TABS.edit_requests)) return;
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: SHEET_ID,
-    requestBody: { requests: [{ addSheet: { properties: { title: TABS.edit_requests } } }] },
-  });
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A1`, valueInputOption: "RAW",
-    requestBody: { values: [EDIT_REQUESTS_HEADER] },
-  });
-}
 async function submitEditRequest(body) {
   const { name } = body;
   if (!name) return respond(400, { error: "name required" });
@@ -558,15 +525,9 @@ async function submitEditRequest(body) {
   const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const prows = pres.data.values || [];
   if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
-  await ensureEditRequestsTab(sheets);
-  let photoUrl = "", photoError = "";
-  // A Google service account has no storage quota in its own "My Drive", so the
-  // upload only works when written into a real folder shared with the service
-  // account. Reuse the registration folder (known to work) if the dedicated
-  // GOOGLE_PHOTO_FOLDER_ID is not configured.
-  const photoFolderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
-  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, photoFolderId); }
-  catch (e) { photoError = e.message || "upload failed"; console.error("edit photo upload:", photoError); }
+  let photoUrl = "";
+  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || ""); }
+  catch (e) { console.error("edit photo upload:", e.message); }
   const reqId = "ER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
   const now = new Date().toISOString();
   const displayName = String(body.displayName || "").trim();
@@ -575,19 +536,16 @@ async function submitEditRequest(body) {
     spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, ""]] },
   });
-  return respond(200, { success: true, reqId, photoUrl, photoError });
+  return respond(200, { success: true, reqId, photoUrl });
 }
 async function listEditRequests(params) {
   const sheets = getSheets();
-  // Read from row 1 (not A2:H) so requests are found whether or not a header
-  // row exists — a manually-created tab has no header, putting the first
-  // request in row 1. The header row itself is skipped by label below.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
     .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: r[4] || "", status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
-    .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
+    .filter((x) => x.reqId && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
 }
@@ -595,13 +553,11 @@ async function resolveEditRequest(body) {
   const { reqId, action } = body;
   if (!reqId || !action) return respond(400, { error: "reqId and action required" });
   const sheets = getSheets();
-  // Read from row 1 so the sheet-row math (ri + 1) is correct regardless of
-  // whether the tab has a header row.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0] === reqId);
   if (ri === -1) return respond(404, { error: "Request not found" });
-  const r = rows[ri], sr = ri + 1, now = new Date().toISOString();
+  const r = rows[ri], sr = ri + 2, now = new Date().toISOString();
   if (String(r[5] || "").toUpperCase() !== "PENDING") return respond(400, { error: "Already resolved" });
   if (action === "approve") {
     const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
@@ -1054,6 +1010,89 @@ async function recordManualMatch(body) {
   } catch (e) { return respond(500, { error: "Match saved but ELO write failed: " + e.message }); }
 
   return respond(200, { success: true, sessionId, venue: venueName, results: results.map((r) => ({ name: r.name, newElo: r.newElo, delta: r.delta, w: r.w, l: r.l })) });
+}
+
+// Batch import: read ELO/state ONCE, compute ALL matches in memory in order (identical
+// to running record-match sequentially), then write in a few batched calls. Validates
+// everything up-front — nothing is written unless every row is valid (all-or-nothing).
+async function importMatches(body) {
+  const raw = (body && body.matches) || [];
+  const newPlayerLevel = String((body && body.newPlayerLevel) || "Lower Bronze");
+  if (!Array.isArray(raw) || !raw.length) return respond(400, { error: "No matches provided" });
+  const matches = [], errors = [];
+  raw.forEach((m, i) => {
+    const venue = String(m.venue || "").trim();
+    const g = String(m.gender || "M").toUpperCase().charAt(0) === "F" ? "F" : "M";
+    const names = [m.p1t1, m.p2t1, m.p1t2, m.p2t2].map((n) => String(n || "").trim());
+    const s1 = parseInt(m.scoreT1, 10), s2 = parseInt(m.scoreT2, 10);
+    const rowNo = m.row || i + 1;
+    if (!venue) errors.push(`Row ${rowNo}: venue missing`);
+    if (names.some((n) => !n)) errors.push(`Row ${rowNo}: four players required`);
+    else if (new Set(names.map((n) => n.toLowerCase())).size !== 4) errors.push(`Row ${rowNo}: players must be distinct`);
+    if (isNaN(s1) || isNaN(s2)) errors.push(`Row ${rowNo}: scores must be numbers`);
+    matches.push({ venue, g, names, s1, s2, rowNo });
+  });
+  if (errors.length) return respond(400, { error: "Validation failed", details: errors.slice(0, 50) });
+
+  const sheets = getSheets();
+  let eloRows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
+  const latest = {}, mcount = {};
+  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = nm.toLowerCase(); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + 1; });
+  const existingPlayers = new Set();
+  try { const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` }); (pr.data.values || []).forEach((r) => { if (r[0]) existingPlayers.add(r[0].toLowerCase()); }); } catch (e) {}
+  const existingVenues = new Set();
+  try { const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }); (vr.data.values || []).forEach((r) => { if (r[0]) existingVenues.add(String(r[0]).trim().toLowerCase()); }); } catch (e) {}
+  const sheetTitles = new Set();
+  try { const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }); ss.data.sheets.forEach((s) => sheetTitles.add(s.properties.title)); } catch (e) {}
+
+  const week = `W${getWeekNumber(new Date())}`, dateStr = new Date().toISOString().split("T")[0], tsNow = new Date().toISOString();
+  const sessionId = `SES_IMP_${Date.now()}`;
+  const eloLogRows = [], venueRows = {}, venueDisplay = {}, newPlayerRows = [], newVenueRows = [], stat = {};
+  const mk = (name) => { const k = name.toLowerCase(); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(newPlayerLevel), matchCount: 0 }; };
+
+  for (const m of matches) {
+    const [n1, n2, n3, n4] = m.names;
+    const results = rmCalcElo(mk(n1), mk(n2), mk(n3), mk(n4), m.s1, m.s2);
+    results.forEach((r) => {
+      const k = r.name.toLowerCase();
+      latest[k] = r.newElo; mcount[k] = (mcount[k] || 0) + 1;
+      eloLogRows.push([sessionId, r.name, r.newElo, r.delta, r.w, r.l, tsNow]);
+      if (!stat[r.name]) stat[r.name] = { w: 0, l: 0, played: 0, elo: r.newElo };
+      stat[r.name].w += r.w; stat[r.name].l += r.l; stat[r.name].played += 1; stat[r.name].elo = r.newElo;
+    });
+    m.names.forEach((n) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.g, "", "", m.venue, tsNow]); } });
+    const tab = venueTabName(m.venue);
+    if (!venueRows[tab]) { venueRows[tab] = []; venueDisplay[tab] = m.venue; }
+    venueRows[tab].push([week, dateStr, n1, n2, n3, n4, m.s1, m.s2, m.g, "import"]);
+    const vk = m.venue.toLowerCase();
+    if (!existingVenues.has(vk)) { existingVenues.add(vk); newVenueRows.push([m.venue, "Community", "", "", "", "", "", tsNow, ""]); }
+  }
+
+  const addReqs = [];
+  Object.keys(venueRows).forEach((tab) => { if (!sheetTitles.has(tab)) addReqs.push({ addSheet: { properties: { title: tab } } }); });
+  if (addReqs.length) {
+    try {
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: addReqs } });
+      for (const req of addReqs) {
+        const tab = req.addSheet.properties.title;
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED", requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] } });
+      }
+    } catch (e) { return respond(500, { error: "Failed creating venue tabs: " + e.message }); }
+  }
+  if (newVenueRows.length) { try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: newVenueRows } }); } catch (e) {} }
+  if (newPlayerRows.length) { try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: newPlayerRows } }); } catch (e) { return respond(500, { error: "Failed creating players: " + e.message }); } }
+  for (const tab of Object.keys(venueRows)) {
+    try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: venueRows[tab] } }); }
+    catch (e) { return respond(500, { error: `Failed writing venue ${venueDisplay[tab]}: ` + e.message }); }
+  }
+  try {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[sessionId, "Tournament Import", "", "Import", "N/A", Object.values(venueDisplay).join(", ").slice(0, 80), Object.keys(stat).length, matches.length, tsNow]] } });
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: eloLogRows } });
+  } catch (e) { return respond(500, { error: "ELO write failed: " + e.message }); }
+
+  const players = Object.keys(stat).map((n) => ({ name: n, elo: stat[n].elo, w: stat[n].w, l: stat[n].l, played: stat[n].played })).sort((a, b) => b.elo - a.elo);
+  return respond(200, { success: true, imported: matches.length, sessionId, players });
 }
 
 // ── ELO / LEADERBOARD ──
