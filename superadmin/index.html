@@ -463,20 +463,20 @@ async function impSubmit(){
   var valid=impState.matches.filter(function(m){return m.errors.length===0;});
   if(!valid.length)return;
   var btn=document.getElementById("imp-submit"); if(btn)btn.disabled=true;
-  var prog=document.getElementById("imp-progress"); var fail=0, fails=[];
-  prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i id="imp-bar-i" style="width:0%"></i></div><div class="imp-prog-t" id="imp-prog-t">Mulai…</div></div>';
-  for(var i=0;i<valid.length;i++){
-    var m=valid[i]; var levels={}; [m.p1t1,m.p2t1,m.p1t2,m.p2t2].forEach(function(n){levels[n]=impState.level;});
-    try{
-      var r=await fetch("https://trekkr.online/api/elo/record-match",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({venue:m.venue,gender:m.gender||"M",p1t1:m.p1t1,p2t1:m.p2t1,p1t2:m.p1t2,p2t2:m.p2t2,scoreT1:m.sa,scoreT2:m.sb,levels:levels})});
-      var d=await r.json(); if(!r.ok||!d.success){ fail++; fails.push("Baris "+m.row+": "+((d&&d.error)||"gagal")); }
-    }catch(e){ fail++; fails.push("Baris "+m.row+": error jaringan"); }
-    var pct=Math.round((i+1)/valid.length*100);
-    var bi=document.getElementById("imp-bar-i"); if(bi)bi.style.width=pct+"%";
-    var pt=document.getElementById("imp-prog-t"); if(pt)pt.textContent=(i+1)+" / "+valid.length+" selesai"+(fail?(" · "+fail+" gagal"):"");
-  }
-  prog.innerHTML='<div class="imp-done"><b>✓ Impor selesai.</b> '+(valid.length-fail)+' match masuk'+(fail?(", "+fail+" gagal"):"")+'. ELO diperbarui.'+(fails.length?('<div class="imp-fails">'+fails.map(function(x){return '<div>'+erEsc(x)+'</div>';}).join("")+'</div>'):"")+'</div>';
-  if(typeof loadPlayers==="function")loadPlayers();
+  var prog=document.getElementById("imp-progress");
+  prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i style="width:100%"></i></div><div class="imp-prog-t">Mengimpor '+valid.length+' match — batch (all-or-nothing, urutan dijaga)…</div></div>';
+  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,p1t1:m.p1t1,p2t1:m.p2t1,p1t2:m.p1t2,p2t2:m.p2t2,scoreT1:m.sa,scoreT2:m.sb};}) };
+  try{
+    var r=await fetch("https://trekkr.online/api/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    var d=await r.json();
+    if(!r.ok||!d.success){
+      prog.innerHTML='<div class="imp-note err" style="padding:14px;background:rgba(224,57,43,.06);border:1px solid rgba(224,57,43,.3);border-radius:12px"><b>Gagal (tidak ada yang tertulis):</b> '+erEsc((d&&d.error)||"error")+((d&&d.details)?('<div class="imp-fails">'+d.details.slice(0,20).map(function(x){return '<div>'+erEsc(x)+'</div>';}).join("")+'</div>'):"")+'</div>';
+      if(btn)btn.disabled=false; return;
+    }
+    var top=(d.players||[]).slice(0,10).map(function(pp){return '<tr><td><b>'+erEsc(pp.name)+'</b></td><td class="mono">'+pp.elo+'</td><td>'+pp.w+'</td><td>'+pp.l+'</td></tr>';}).join("");
+    prog.innerHTML='<div class="imp-done"><b>✓ '+d.imported+' match diimpor</b> — semua sekaligus, urutan benar. '+((d.players||[]).length)+' pemain diperbarui.'+(top?('<table class="imp-tbl" style="margin-top:10px"><thead><tr><th>Player</th><th>ELO</th><th>W</th><th>L</th></tr></thead><tbody>'+top+'</tbody></table>'):"")+'</div>';
+    if(typeof loadPlayers==="function")loadPlayers();
+  }catch(e){ prog.innerHTML='<div class="imp-note err">Error jaringan: '+erEsc(e.message||e)+'</div>'; if(btn)btn.disabled=false; }
 }
 </script>
 
