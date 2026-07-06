@@ -2,10 +2,10 @@
   "name": "trekkr-sabermetrics",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Trekkr Sabermetrics — WOWY contribution + partner-fit analysis for padel (prototype).",
   "scripts": {
-    "build": "esbuild src/app.jsx --bundle --minify --format=iife --outfile=app.js",
-    "dev": "esbuild src/app.jsx --bundle --format=iife --outfile=app.js --servedir=. --watch"
+    "build": "node build.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
