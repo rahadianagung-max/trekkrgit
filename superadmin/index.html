@@ -99,6 +99,17 @@ footer span{color:var(--lime)}
   .imp-prog-t{font-size:12px;color:var(--muted2)}
   .imp-done{background:rgba(34,160,82,.08);border:1px solid rgba(34,160,82,.3);border-radius:12px;padding:14px;margin-top:14px;font-size:13px}
   .imp-fails{margin-top:8px;font-size:12px;color:#e03b30}
+  .imp-sim{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .imp-sim.pend{border-color:rgba(255,176,0,.55);background:rgba(255,176,0,.07)}
+  .imp-sim.done{opacity:.7}
+  .imp-sim-n{font-size:13px}
+  .imp-sim-n .nn{font-weight:700}
+  .imp-sim-n .qq{color:var(--muted2);margin:0 5px}
+  .imp-sim-n .ee{color:var(--lime);font-weight:700}
+  .imp-sim-n .ss{font-size:11px;color:var(--muted2);margin-left:8px}
+  .imp-sim-b{display:flex;gap:8px}
+  .imp-sim-b button{border:1px solid var(--border);background:#fff;border-radius:99px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted2)}
+  .imp-sim-b button.on{background:var(--lime);border-color:var(--lime);color:#fff}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -399,7 +410,12 @@ async function resolveEdit(reqId,action){
 }
 
 var IMP_LEVELS=["Beginner","Upper Beginner","Lower Bronze","Bronze","Upper Bronze","Silver","Gold","Platinum"];
-var impState={matches:[],newPlayers:[],level:"Lower Bronze"};
+var impState={matches:[],newPlayers:[],level:"Lower Bronze",similar:[],decisions:{},mergeTarget:{}};
+function impLev(a,b){a=a.toLowerCase();b=b.toLowerCase();var m=a.length,n=b.length;if(!m)return n;if(!n)return m;var d=[];for(var i=0;i<=m;i++)d[i]=[i];for(var j=0;j<=n;j++)d[0][j]=j;for(var i2=1;i2<=m;i2++)for(var j2=1;j2<=n;j2++){var c=a[i2-1]===b[j2-1]?0:1;d[i2][j2]=Math.min(d[i2-1][j2]+1,d[i2][j2-1]+1,d[i2-1][j2-1]+c);}return d[m][n];}
+function impSim(a,b){var L=Math.max(a.length,b.length)||1;return 1-impLev(a,b)/L;}
+function impBest(name){var nl=String(name).toLowerCase().trim(),best=null,bs=0;(allPC||[]).forEach(function(pp){var pn=String(pp.name||""),pl=pn.toLowerCase().trim();if(!pl||pl===nl)return;var s=impSim(nl,pl);if(pl.indexOf(nl)===0||nl.indexOf(pl)===0)s=Math.max(s,0.9);if(s>bs){bs=s;best=pn;}});return bs>=0.80?{name:best,score:bs}:null;}
+function impDecide(enc,choice){var name=decodeURIComponent(enc);impState.decisions[name]=choice;impRender();}
+function impResolve(n){return impState.decisions[n]==="merge"?(impState.mergeTarget[n]||n):n;}
 function impNorm(s){return String(s==null?"":s).toLowerCase().replace(/[^a-z0-9]/g,"");}
 function impIsInt(v){var s=String(v==null?"":v).trim();return s!==""&&/^-?\d+$/.test(s);}
 function impClear(){["imp-summary","imp-newplayers","imp-preview","imp-actions","imp-progress"].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML="";});}
@@ -437,7 +453,10 @@ function impParse(rows){
     if(errors.length===0){ players.forEach(function(n){ if(!known[n.toLowerCase()]){newSet[n]=true;hasNew=true;} }); }
     matches.push({row:i+1,venue:venue,gender:gender,p1t1:p1t1,p2t1:p2t1,p1t2:p1t2,p2t2:p2t2,sa:sa,sb:sb,errors:errors,hasNew:hasNew});
   }
-  impState={matches:matches,newPlayers:Object.keys(newSet),level:"Lower Bronze"};
+  var np=Object.keys(newSet);
+  var similar=[],decisions={},mergeTarget={};
+  np.forEach(function(n){var b=impBest(n);if(b){similar.push({newName:n,match:b.name,score:b.score});mergeTarget[n]=b.name;}});
+  impState={matches:matches,newPlayers:np,level:"Lower Bronze",similar:similar,decisions:decisions,mergeTarget:mergeTarget};
   impRender();
 }
 function impRender(){
@@ -445,27 +464,38 @@ function impRender(){
   var valid=s.matches.filter(function(m){return m.errors.length===0;});
   var errs=s.matches.filter(function(m){return m.errors.length>0;});
   var venues=Array.from(new Set(s.matches.map(function(m){return m.venue;}).filter(Boolean)));
-  document.getElementById("imp-summary").innerHTML='<div class="imp-chips"><span class="imp-chip ok"><b>'+valid.length+'</b> valid</span><span class="imp-chip '+(errs.length?"warn":"")+'"><b>'+errs.length+'</b> perlu diperbaiki</span><span class="imp-chip new"><b>'+s.newPlayers.length+'</b> pemain baru</span><span class="imp-chip"><b>'+venues.length+'</b> venue</span></div>';
-  if(s.newPlayers.length){
+  var undecided=(s.similar||[]).filter(function(x){return !s.decisions[x.newName];});
+  var effNew=s.newPlayers.filter(function(n){return s.decisions[n]!=="merge";});
+  document.getElementById("imp-summary").innerHTML='<div class="imp-chips"><span class="imp-chip ok"><b>'+valid.length+'</b> valid</span><span class="imp-chip '+(errs.length?"warn":"")+'"><b>'+errs.length+'</b> perlu diperbaiki</span><span class="imp-chip '+(undecided.length?"warn":"")+'"><b>'+(s.similar||[]).length+'</b> nama mirip</span><span class="imp-chip new"><b>'+effNew.length+'</b> pemain baru</span><span class="imp-chip"><b>'+venues.length+'</b> venue</span></div>';
+  var html="";
+  if(s.similar&&s.similar.length){
+    html+='<div class="imp-card"><div class="imp-sec">Nama mirip — orang yang sama atau beda?</div><p style="font-size:12px;color:var(--muted2);margin:0 0 12px;line-height:1.5">Nama di file mirip dengan pemain yang sudah ada di database. Pilih <b>Sama</b> agar match masuk ke pemain lama (merge, ELO tidak terpecah), atau <b>Beda</b> untuk membuat pemain baru.</p>';
+    html+=s.similar.map(function(x){var dc=s.decisions[x.newName];var enc=encodeURIComponent(x.newName);return '<div class="imp-sim'+(dc?" done":" pend")+'"><div class="imp-sim-n"><span class="nn">'+erEsc(x.newName)+'</span> <span class="qq">↔</span> <span class="ee">'+erEsc(x.match)+'</span> <span class="ss">'+Math.round(x.score*100)+'% mirip</span></div><div class="imp-sim-b"><button class="'+(dc==="merge"?"on":"")+'" onclick="impDecide(\''+enc+'\',\'merge\')">Sama — merge</button><button class="'+(dc==="diff"?"on":"")+'" onclick="impDecide(\''+enc+'\',\'diff\')">Beda — baru</button></div></div>';}).join("");
+    html+='</div>';
+  }
+  if(effNew.length){
     var opts=IMP_LEVELS.map(function(l){return '<option'+(l==="Lower Bronze"?" selected":"")+'>'+l+'</option>';}).join("");
-    document.getElementById("imp-newplayers").innerHTML='<div class="imp-card"><div class="imp-sec">Pemain baru — satu level untuk seluruh turnamen</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><label style="font-size:13px;font-weight:700">Level semua pemain baru</label><select id="imp-level" class="imp-lvl" onchange="impState.level=this.value">'+opts+'</select><span style="font-size:12px;color:var(--muted2)">'+s.newPlayers.length+' pemain akan dibuat dengan level ini.</span></div><div class="imp-npchips">'+s.newPlayers.map(function(n){return '<span class="imp-npc">'+erEsc(n)+'</span>';}).join("")+'</div></div>';
-  } else document.getElementById("imp-newplayers").innerHTML="";
+    html+='<div class="imp-card"><div class="imp-sec">Pemain baru — satu level untuk seluruh turnamen</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><label style="font-size:13px;font-weight:700">Level semua pemain baru</label><select id="imp-level" class="imp-lvl" onchange="impState.level=this.value">'+opts+'</select><span style="font-size:12px;color:var(--muted2)">'+effNew.length+' pemain akan dibuat dengan level ini.</span></div><div class="imp-npchips">'+effNew.map(function(n){return '<span class="imp-npc">'+erEsc(n)+'</span>';}).join("")+'</div></div>';
+  }
+  document.getElementById("imp-newplayers").innerHTML=html;
   var body=s.matches.map(function(m){
     var st=m.errors.length?('<span class="imp-badge err">'+erEsc(m.errors[0])+'</span>'):(m.hasNew?'<span class="imp-badge newp">New players</span>':'<span class="imp-badge ok">OK</span>');
     return '<tr class="'+(m.errors.length?"bad":"")+'"><td>'+m.row+'</td><td>'+erEsc(m.venue)+'</td><td>'+erEsc(m.gender)+'</td><td>'+erEsc(m.p1t1)+' · '+erEsc(m.p2t1)+'</td><td>'+erEsc(m.p1t2)+' · '+erEsc(m.p2t2)+'</td><td class="mono">'+erEsc(m.sa)+'–'+erEsc(m.sb)+'</td><td>'+st+'</td></tr>';
   }).join("");
   document.getElementById("imp-preview").innerHTML=s.matches.length?('<div class="imp-sec">Preview — urutan atas→bawah = kronologis</div><div class="imp-tblwrap"><table class="imp-tbl"><thead><tr><th>#</th><th>Venue</th><th>G</th><th>Team A</th><th>Team B</th><th>Skor</th><th>Status</th></tr></thead><tbody>'+body+'</tbody></table></div>'):"";
-  var blocked=errs.length>0||valid.length===0;
-  document.getElementById("imp-actions").innerHTML='<div class="imp-foot">'+(errs.length?('<div class="imp-note err"><b>'+errs.length+' baris bermasalah</b> — perbaiki di file lalu upload ulang. Submit terkunci sampai 0 error.</div>'):('<div class="imp-note">Siap impor '+valid.length+' match.</div>'))+'<button class="imp-submit" id="imp-submit" '+(blocked?"disabled":"")+' onclick="impSubmit()">Import '+valid.length+' matches</button></div>';
+  var blocked=errs.length>0||valid.length===0||undecided.length>0;
+  var note=errs.length?('<div class="imp-note err"><b>'+errs.length+' baris bermasalah</b> — perbaiki di file lalu upload ulang. Submit terkunci sampai 0 error.</div>'):(undecided.length?('<div class="imp-note err"><b>'+undecided.length+' nama mirip</b> belum diputuskan — pilih Sama / Beda dulu.</div>'):('<div class="imp-note">Siap impor '+valid.length+' match.</div>'));
+  document.getElementById("imp-actions").innerHTML='<div class="imp-foot">'+note+'<button class="imp-submit" id="imp-submit" '+(blocked?"disabled":"")+' onclick="impSubmit()">Import '+valid.length+' matches</button></div>';
   document.getElementById("imp-progress").innerHTML="";
 }
+
 async function impSubmit(){
   var valid=impState.matches.filter(function(m){return m.errors.length===0;});
   if(!valid.length)return;
   var btn=document.getElementById("imp-submit"); if(btn)btn.disabled=true;
   var prog=document.getElementById("imp-progress");
   prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i style="width:100%"></i></div><div class="imp-prog-t">Mengimpor '+valid.length+' match — batch (all-or-nothing, urutan dijaga)…</div></div>';
-  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,p1t1:m.p1t1,p2t1:m.p2t1,p1t2:m.p1t2,p2t2:m.p2t2,scoreT1:m.sa,scoreT2:m.sb};}) };
+  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb};}) };
   try{
     var r=await fetch("https://trekkr.online/api/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     var d=await r.json();
