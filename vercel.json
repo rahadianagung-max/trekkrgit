@@ -1,1 +1,12 @@
-{ "cleanUrls": true, "trailingSlash": false }
+{
+  "rewrites": [
+    { 
+      "source": "/api/:match*", 
+      "destination": "/api/sheet" 
+    },
+    { 
+      "source": "/player/:match*", 
+      "destination": "/player/index.html" 
+    }
+  ]
+}
