@@ -1906,11 +1906,14 @@ window.addEventListener('load', () => { checkAuth(); });
 <script>(function(){var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');if(mt&&mn)mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});})();
 var _erPlayers={};
 function erEsc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+// imgbb serves images on both i.ibb.co and i.ibb.co.com; some networks reach only
+// one host. Retry the alternate imgbb host once on error before hiding the image.
+function erImg(el){var s=el.getAttribute('src')||'';if(!el.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){el.dataset.ibbAlt='1';el.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}el.style.visibility='hidden';}
 function erDiff(k,o,n){ if(!n||String(o||"")===String(n))return ""; return '<div class="er-row"><span class="er-k">'+k+'</span><span class="er-old">'+(erEsc(o)||"—")+'</span><span class="er-ar">→</span><span class="er-new">'+erEsc(n)+'</span></div>'; }
 function renderER(x){
   var cur=_erPlayers[String(x.name||"").toLowerCase()]||{};
   var diffs=erDiff("Display name",cur.displayName||cur.name,x.displayName)+erDiff("Instagram",(cur.ig||"").replace(/^@+/,""),x.ig);
-  var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="this.style.visibility=\'hidden\'"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'"/><small class="new">New</small></div></div>'):"";
+  var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="erImg(this)"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'" onerror="erImg(this)"/><small class="new">New</small></div></div>'):"";
   if(!diffs&&!photo)diffs='<div class="er-row" style="color:var(--txt3)">Tidak ada perubahan.</div>';
   return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(x.displayName||x.name)+'</b><div style="font-size:11px;color:rgba(255,255,255,.5)">'+erEsc(x.name)+' · '+erEsc((x.createdAt||"").slice(0,10))+'</div></div><span class="er-pend">Pending</span></div><div class="er-body">'+diffs+photo+'</div><div class="er-btns"><button class="er-rej" onclick="resolveEdit(\''+x.reqId+'\',\'reject\')">Reject</button><button class="er-app" onclick="resolveEdit(\''+x.reqId+'\',\'approve\')">Approve</button></div></div>';
 }
