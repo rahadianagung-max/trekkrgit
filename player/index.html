@@ -638,8 +638,17 @@ canvas#shareCanvas{display:none}
 <header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online/" class="brand">Trekkr</a><nav class="nav-links" aria-label="Primary"><a class="nav-link" href="https://trekkr.online/">Home</a><a class="nav-link" href="https://trekkr.online/rankings">Rankings</a><a class="nav-link" href="https://trekkr.online/playrank">PlayRank</a><a class="nav-link" href="https://trekkr.online/tournament">Tournament</a><a class="nav-link" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav><button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button></div><div class="container"><nav class="mobile-nav" id="mobileNav" aria-label="Mobile"><a href="https://trekkr.online/">Home</a><a href="https://trekkr.online/rankings">Rankings</a><a href="https://trekkr.online/playrank">PlayRank</a><a href="https://trekkr.online/tournament">Tournament</a><a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav></div></header>
 <main>
   <section class="pp-header"><div class="container"><span class="pp-label" id="ppLabel">Trekkr Passport</span><h1 class="pp-title" id="ppTitle">Player Passport</h1><p class="pp-intro">Your Player Passport is your padel identity on Trekkr. Every match you play is recorded and turned into a single rating that reflects your real level — no self-rating, no guesswork. It updates automatically after each match and follows you across every venue, league, and tournament powered by Trekkr.</p></div></section>
-  <section><div class="container" id="content"><div class="state-panel"><h2 class="state-title">Loading</h2><p class="state-copy">Fetching player data & calculating history...</p></div></div></section>
+  <section><div class="container" id="content"><div class="pp-loading"><div class="pp-spinner"></div><p class="pp-loading-text">Memuat passport…</p><p class="pp-loading-sub">Menyiapkan data & riwayat pertandingan</p></div></div></section>
 </main>
+<style>
+.pp-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:70px 20px;text-align:center}
+.pp-spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(255,106,0,0.18);border-top-color:#FF6A00;animation:ppspin .8s linear infinite}
+.pp-loading-text{color:var(--on-surface,#0D0D0D);font-size:15px;font-weight:700;letter-spacing:.2px;animation:pppulse 1.4s ease-in-out infinite}
+.pp-loading-sub{color:var(--on-surface-variant,#6b6b70);font-size:12px;margin-top:-6px}
+@keyframes ppspin{to{transform:rotate(360deg)}}
+@keyframes pppulse{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.pp-spinner{animation-duration:1.6s}.pp-loading-text{animation:none}}
+</style>
 <canvas id="shareCanvas" width="1080" height="1920"></canvas>
 <div class="toast" id="toast"></div>
 <footer class="site-footer"><div class="container site-footer__inner"><div class="footer-brand">Trekkr</div><div class="footer-links"><a href="https://admin.trekkr.online">Admin (Venue login)</a><a href="https://trekkr.online/market">Market Intelligence</a><a href="https://trekkr.online/about">About</a></div><div class="footer-copy">© 2026 Trekkr. All rights reserved.</div></div></footer>
@@ -754,28 +763,31 @@ async function loadPlayer(){
   }
   if(!d){ renderDemo(raw); return; }
   playerData = d;
+  // Fast first paint: show the core passport (identity, ELO, stats, chart) immediately.
+  // The history table / best partner / badges are enriched below and re-rendered.
+  renderPlayer(d);
 
   // ALGORITMA BARU: Tarik data history semua match untuk tabel dan kalkulasi Best Partner
   try {
+      // Kick off the ELO map fetch in parallel with the venue fetches.
+      const eloPromise = TrekkrAPI.getLatestElo().catch(()=>null);
       const vRes = await fetch('https://trekkr.online/api/venues');
       const vData = await vRes.json();
+      const venues = (vData && vData.venues) || [];
+      const tgt = name.toLowerCase().trim();
+      // Fetch every venue's matches in PARALLEL instead of one-by-one (the main slowdown).
+      const perVenue = await Promise.all(venues.map(v =>
+          fetch(`https://trekkr.online/api/venues/${encodeURIComponent(v.name)}/matches`)
+              .then(r=>r.json())
+              .then(md=>({venue:v.name, matches:(md&&md.matches)||[]}))
+              .catch(()=>({venue:v.name, matches:[]}))
+      ));
       let allMatches = [];
-      
       const playedVenueSet = new Set();
-      for (const v of vData.venues) {
-          try {
-              const mRes = await fetch(`https://trekkr.online/api/venues/${encodeURIComponent(v.name)}/matches`);
-              const mData = await mRes.json();
-              if (mData.matches) {
-                  allMatches = allMatches.concat(mData.matches);
-                  // Check if player appeared in any match at this venue
-                  const tgt = name.toLowerCase().trim();
-                  const appearedHere = mData.matches.some(m =>
-                      [m.p1t1,m.p2t1,m.p1t2,m.p2t2].some(n => (n||'').toLowerCase().trim() === tgt)
-                  );
-                  if (appearedHere) playedVenueSet.add(v.name);
-              }
-          } catch(err) {}
+      for (const res of perVenue) {
+          if (!res.matches.length) continue;
+          allMatches = allMatches.concat(res.matches);
+          if (res.matches.some(m => [m.p1t1,m.p2t1,m.p1t2,m.p2t2].some(n => (n||'').toLowerCase().trim() === tgt))) playedVenueSet.add(res.venue);
       }
       d.playedVenues = Array.from(playedVenueSet);
       
@@ -885,8 +897,8 @@ async function loadPlayer(){
       // Build a simple ELO map from elo/latest for enriching match data
       let eloMapForBadges = {};
       try {
-        const eloRes = await TrekkrAPI.getLatestElo();
-        Object.keys(eloRes.players||{}).forEach(k => {
+        const eloRes = await eloPromise;
+        if(eloRes) Object.keys(eloRes.players||{}).forEach(k => {
           eloMapForBadges[k.toLowerCase().trim()] = (eloRes.players[k].elo || 1350);
         });
       } catch(e) {}
@@ -1627,7 +1639,8 @@ function buildCalibBadge(totalMatches) {
   }
 }
 
-window.addEventListener('load',loadPlayer);
+// Start as soon as the DOM is ready (don't wait for fonts/images/all resources).
+if(document.readyState!=='loading')loadPlayer();else document.addEventListener('DOMContentLoaded',loadPlayer);
 
 function openUrlModal(){
   if(!playerData)return;
