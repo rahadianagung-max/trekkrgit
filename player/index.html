@@ -718,6 +718,19 @@ canvas#shareCanvas{display:none}
 
 <script>
 let playerData=null;
+var IBB_PH='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E';
+// imgbb serves the same image on both i.ibb.co and i.ibb.co.com; some networks
+// (e.g. certain Indonesian ISPs/DNS filters) can only reach one of the two hosts.
+// On image load error, retry the alternate imgbb host once before giving up.
+function ibbFallback(img){
+  var s=img.getAttribute('src')||'';
+  if(!img.dataset.ibbAlt && s.indexOf('i.ibb.co')>-1){
+    img.dataset.ibbAlt='1';
+    img.src = s.indexOf('i.ibb.co.com')>-1 ? s.replace('i.ibb.co.com/','i.ibb.co/') : s.replace('i.ibb.co/','i.ibb.co.com/');
+    return;
+  }
+  img.onerror=null; img.src=IBB_PH;
+}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
 function tcCls(e){if(e>=3000)return'Platinum';if(e>=2500)return'Gold';if(e>=2100)return'Silver';if(e>=1800)return'Upper Bronze';if(e>=1500)return'Bronze';if(e>=1200)return'Lower Bronze';if(e>=900)return'Upper Beginner';return'Beginner'}
 function tierProg(e){const t=[{name:'Beginner',min:0,max:899},{name:'Upper Beginner',min:900,max:1199},{name:'Lower Bronze',min:1200,max:1499},{name:'Bronze',min:1500,max:1799},{name:'Upper Bronze',min:1800,max:2099},{name:'Silver',min:2100,max:2399},{name:'Gold',min:2500,max:2999},{name:'Platinum',min:3000,max:9999}];const c=t.find(x=>e>=x.min&&e<=x.max)||t[0];const p=((e-c.min)/(c.max-c.min+1))*100;const ni=t.indexOf(c)+1;const n=ni<t.length?t[ni]:null;return{current:c.name,progress:Math.min(p,100),next:n,ptsAway:n?n.min-e:0}}
@@ -891,7 +904,7 @@ async function loadPlayer(){
 function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
   const ti=tierProg(s.currentElo);
   document.title=`${p.displayName} — Trekkr Passport`;
-  let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E'">
+  let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
   <div><h2 class="pp-name">${(p.displayName||p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
   <div class="pp-meta-grid">
@@ -1645,7 +1658,7 @@ function openResultModal(){
   document.getElementById('ncpWL').textContent=s.totalW+'W-'+s.totalL+'L';
   var photoEl=document.getElementById('ncpPhoto');
   var oldImg=photoEl.querySelector('.ncp-img');if(oldImg)oldImg.remove();
-  if(p.photoUrl){var img=document.createElement('img');img.className='ncp-img';img.src=p.photoUrl;img.alt='';img.onerror=function(){img.remove();};photoEl.insertBefore(img,photoEl.firstChild);}
+  if(p.photoUrl){var img=document.createElement('img');img.className='ncp-img';img.src=p.photoUrl;img.alt='';img.onerror=function(){var s=img.getAttribute('src')||'';if(!img.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){img.dataset.ibbAlt='1';img.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}img.remove();};photoEl.insertBefore(img,photoEl.firstChild);}
   var iparts=(p.displayName||p.name).trim().split(/\s+/);
   document.getElementById('ncpInitials').textContent=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'').slice(0,2).toUpperCase();
   var badgeMap={rated:{cls:'ncp-badge-blue',ico:'★'},hot_streak:{cls:'ncp-badge-teal',ico:'▲'},win_machine:{cls:'ncp-badge-gold',ico:'⚡'},first_win:{cls:'ncp-badge-purple',ico:'◆'},consistent:{cls:'ncp-badge-teal',ico:'●'},veteran:{cls:'ncp-badge-blue',ico:'◈'}};
@@ -1762,7 +1775,7 @@ function downloadNightCard(){
       ctx.fillStyle='#080808';ctx.fillRect(0,PHOTO_H,W,H-PHOTO_H);
       drawCard();
     };
-    imgEl.onerror=function(){drawCard();};
+    imgEl.onerror=function(){var s=imgEl.getAttribute('src')||'';if(!imgEl.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){imgEl.dataset.ibbAlt='1';imgEl.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}drawCard();};
     imgEl.src=p.photoUrl;
   } else {
     var iparts=(p.displayName||p.name).trim().split(/\s+/);
