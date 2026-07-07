@@ -553,5 +553,10 @@ else {
   document.getElementById("standWrap").innerHTML='<div class="center">Add ?event=EVENT_ID to the URL to display the board.</div>';
 }
 </script>
+
+<script type="module">
+  import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1/dist/index.js';
+  inject();
+</script>
 </body>
 </html>

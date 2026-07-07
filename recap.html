@@ -183,5 +183,10 @@ async function shareCard(){
 function copyCap(){const t=$('cap');t.select();navigator.clipboard.writeText(t.value).then(()=>toast('Caption disalin')).catch(()=>toast('Salin manual',1));}
 init();
 </script>
+
+<script type="module">
+  import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1/dist/index.js';
+  inject();
+</script>
 </body>
 </html>

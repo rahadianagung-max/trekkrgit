@@ -407,5 +407,10 @@ startAutoRotate();
 // Stop auto rotate on manual click
 document.querySelectorAll('.tv-tab').forEach(t=>t.addEventListener('click',()=>{clearInterval(autoRotateInt);setTimeout(startAutoRotate,60000);}));
 </script>
+
+<script type="module">
+  import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1/dist/index.js';
+  inject();
+</script>
 </body>
 </html>
