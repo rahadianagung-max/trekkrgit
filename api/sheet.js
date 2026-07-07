@@ -46,6 +46,36 @@ async function driveUploadImage(dataUrl, filename, folderId) {
   return `https://drive.google.com/uc?export=view&id=${id}`;
 }
 
+// Upload a base64 image to imgbb (https://api.imgbb.com). No service account,
+// no OAuth, no storage quota — just an API key. Returns a public image URL.
+async function imgbbUploadImage(dataUrl, filename) {
+  const key = String(process.env.IMGBB_API_KEY || "").trim();
+  if (!key || !dataUrl) return "";
+  const m = /^data:image\/[\w.+-]+;base64,([\s\S]+)$/.exec(String(dataUrl));
+  const b64 = m ? m[1] : String(dataUrl); // accept a raw base64 string too
+  const params = new URLSearchParams();
+  params.append("image", b64);
+  if (filename) params.append("name", String(filename).replace(/\.[^.]+$/, ""));
+  const resp = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(key)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  const json = await resp.json().catch(() => null);
+  if (!resp.ok || !json || !json.success) {
+    throw new Error((json && json.error && json.error.message) || `imgbb upload failed (HTTP ${resp.status})`);
+  }
+  return (json.data && (json.data.url || json.data.display_url)) || "";
+}
+
+// Unified image upload: prefer imgbb when IMGBB_API_KEY is set, otherwise fall
+// back to Google Drive. folderId is only used by the Drive path.
+async function uploadImage(dataUrl, filename, folderId) {
+  if (!dataUrl) return "";
+  if (String(process.env.IMGBB_API_KEY || "").trim()) return imgbbUploadImage(dataUrl, filename);
+  return driveUploadImage(dataUrl, filename, folderId);
+}
+
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
 const TABS = {
@@ -518,6 +548,23 @@ async function claimProfile({ name, ig_handle, session_id }) {
 }
 
 // ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
+const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At"];
+// Create the Edit_Requests tab (with header row) if it does not exist yet, so the
+// feature is self-bootstrapping and the first submitted edit doesn't fail with
+// "Unable to parse range: Edit_Requests!A:H".
+async function ensureEditRequestsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.edit_requests)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.edit_requests } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [EDIT_REQUESTS_HEADER] },
+  });
+}
 async function submitEditRequest(body) {
   const { name } = body;
   if (!name) return respond(400, { error: "name required" });
@@ -525,9 +572,11 @@ async function submitEditRequest(body) {
   const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
   const prows = pres.data.values || [];
   if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
-  let photoUrl = "";
-  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || ""); }
-  catch (e) { console.error("edit photo upload:", e.message); }
+  await ensureEditRequestsTab(sheets);
+  let photoUrl = "", photoError = "";
+  const photoFolderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+  try { if (body.photo) photoUrl = await uploadImage(body.photo, `pp_${String(name).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, photoFolderId); }
+  catch (e) { photoError = e.message || "upload failed"; console.error("edit photo upload:", photoError); }
   const reqId = "ER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
   const now = new Date().toISOString();
   const displayName = String(body.displayName || "").trim();
@@ -536,16 +585,19 @@ async function submitEditRequest(body) {
     spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, ""]] },
   });
-  return respond(200, { success: true, reqId, photoUrl });
+  return respond(200, { success: true, reqId, photoUrl, photoError });
 }
 async function listEditRequests(params) {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` }).catch(() => ({ data: { values: [] } }));
+  // Read from row 1 (not A2:H) so requests are found whether or not a header
+  // row exists — a manually-created tab has no header, putting the first
+  // request in row 1. The header row itself is skipped by label below.
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
     .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: r[4] || "", status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
-    .filter((x) => x.reqId && (want === "ALL" || x.status === want))
+    .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
 }
@@ -553,11 +605,13 @@ async function resolveEditRequest(body) {
   const { reqId, action } = body;
   if (!reqId || !action) return respond(400, { error: "reqId and action required" });
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A2:H` });
+  // Read from row 1 so the sheet-row math (ri + 1) is correct regardless of
+  // whether the tab has a header row.
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0] === reqId);
   if (ri === -1) return respond(404, { error: "Request not found" });
-  const r = rows[ri], sr = ri + 2, now = new Date().toISOString();
+  const r = rows[ri], sr = ri + 1, now = new Date().toISOString();
   if (String(r[5] || "").toUpperCase() !== "PENDING") return respond(400, { error: "Already resolved" });
   if (action === "approve") {
     const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
@@ -2970,8 +3024,8 @@ async function regSubmit(formId, body) {
   const safe = name.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_").slice(0, 40) || "player";
   const ts = Date.now();
   let photoUrl = "", payUrl = "";
-  try { if (body.photo) photoUrl = await driveUploadImage(body.photo, `photo_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("photo upload:", e.message); }
-  try { if (body.paymentProof) payUrl = await driveUploadImage(body.paymentProof, `pay_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("pay upload:", e.message); }
+  try { if (body.photo) photoUrl = await uploadImage(body.photo, `photo_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("photo upload:", e.message); }
+  try { if (body.paymentProof) payUrl = await uploadImage(body.paymentProof, `pay_${safe}_${ts}.jpg`, folderId); } catch (e) { console.error("pay upload:", e.message); }
   const regId = regGenId("reg");
   const now = new Date().toISOString();
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A:K`, valueInputOption: "USER_ENTERED",
