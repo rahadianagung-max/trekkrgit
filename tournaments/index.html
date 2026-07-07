@@ -259,5 +259,10 @@
   ['demoTop','demoBottom'].forEach(function(id){var a=document.getElementById(id);if(a)a.href=mailto;});
 })();
 </script>
+
+<script type="module">
+  import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1/dist/index.js';
+  inject();
+</script>
 </body>
 </html>

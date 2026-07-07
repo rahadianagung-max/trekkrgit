@@ -325,5 +325,10 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 const q=gp();
 if(q.e){openEvent(q.e);}else{showHome();}
 </script>
+
+<script type="module">
+  import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1/dist/index.js';
+  inject();
+</script>
 </body>
 </html>
