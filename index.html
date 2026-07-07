@@ -1,358 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Trekkr — Where Every Match Builds Your Journey</title>
-<meta name="description" content="Trekkr is the rating and competition platform for padel. National rankings, PlayRank, tournaments, and a player passport for every match you play."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
-<link rel="stylesheet" href="/trekkr-theme.css"/>
-<style>
-.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
-.band{padding:38px 0}
-.band--dark{background:var(--text);color:#fff}
-.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
-.p{color:var(--muted);font-size:14px;line-height:1.65}
-.secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
-.secname--dark{color:var(--text)}
-.lnk{color:var(--orange);font-weight:700;font-size:13px}
-.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/styles.css"/><title>Trekkr — Where every match builds your journey</title></head>
+<body data-page="/">
+<div id="site-header"></div>
 
-/* hero */
-.hero{padding:54px 0 30px;text-align:center}
-.hero-wm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(54px,12vw,104px);line-height:.92;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.02em .12em;display:inline-block}
-.hero-h{font-size:clamp(20px,3.6vw,30px);margin:6px 0 0}
-.hero-cta{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(18px,2.6vw,22px);margin-top:18px}
-
-/* region filter */
-.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
-.filter-tab{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);font-family:inherit}
-.filter-tab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
-
-/* venue list */
-.venue-list{display:flex;flex-direction:column;gap:8px}
-.venue-row{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .2s}
-.venue-row:hover{border-color:var(--orange)}
-.venue-av{width:40px;height:40px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:13px;flex-shrink:0}
-.venue-info{flex:1;min-width:0}
-.venue-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.venue-tags{font-size:12px;color:var(--muted);margin-top:2px}
-.venue-region-badge{font-size:10px;font-weight:700;color:var(--subtle);background:var(--surface-2);border-radius:999px;padding:2px 7px;white-space:nowrap;flex-shrink:0}
-.show-more-btn{width:100%;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--orange);background:none;border:1px solid var(--border);border-radius:10px;cursor:pointer;margin-top:8px;font-family:inherit}
-.show-more-btn:hover{background:var(--surface)}
-
-/* player rows */
-.prow{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface);margin-top:8px;text-decoration:none;color:inherit;transition:border-color .2s}
-.prow:hover{border-color:var(--orange)}
-.rk{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--subtle);width:20px;text-align:center;flex-shrink:0}
-.av{width:40px;height:40px;border-radius:10px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--muted);font-size:14px;flex-shrink:0;overflow:hidden}
-.pn{flex:1;min-width:0;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pm{font-size:12px;color:var(--muted);white-space:nowrap}
-
-/* new players */
-.np-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
-.np-card{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
-.np-info{flex:1;min-width:0}
-.np-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.np-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
-.np-new{font-size:10px;font-weight:700;color:#0F6E56;background:rgba(34,160,82,.12);border-radius:999px;padding:2px 7px;flex-shrink:0}
-
-/* find */
-.find{display:flex;gap:8px;max-width:520px}
-.find input{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font:inherit;font-size:14px}
-.fres a{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border-soft);color:inherit;text-decoration:none}
-
-/* stats band */
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.stat{text-align:center}
-.stat .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(28px,5vw,40px);color:#fff;line-height:1}
-.stat .l{font-size:12px;color:#B4B4BC;margin-top:6px;font-weight:600}
-
-@media(max-width:680px){.np-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/" class="active">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tournament</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#9776;</button>
+<header class="hero"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow" style="color:var(--orange);margin-bottom:16px">Indonesia's padel ranking platform</div>
+    <h1 class="display">Every match<br/><span class="grad">counts.</span></h1>
+    <p class="lede">One ELO rating that follows you across every venue, league, and Mexicano night in Jabodetabek — and the tools clubs use to run them.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="/rankings">Find your ranking &rarr;</a>
+      <a class="btn btn-ghost" href="/clubs">Run your club on Trekkr</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="n grad" id="stat-players">&mdash;</div><div class="l">Players rated</div></div>
+      <div class="hstat"><div class="n grad" id="stat-matches">&mdash;</div><div class="l">Matches recorded</div></div>
+      <div class="hstat"><div class="n grad" id="stat-venues">&mdash;</div><div class="l">Venues &amp; communities</div></div>
     </div>
   </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/" class="active">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tournament</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
+  <div class="hero-card">
+    <div class="hd"><span class="pulse"><i></i> Live &middot; Trekkr rankings</span><a href="/rankings" style="font-size:11.5px;color:var(--subtle);font-weight:600">Top 5 &rarr;</a></div>
+    <div id="hero-leaders"><div class="loading">Loading live rankings&hellip;</div></div>
+    <div class="ft"><span>Updated after every session</span><a href="/rankings" style="color:var(--orange);font-weight:700">View all &rarr;</a></div>
   </div>
-</header>
-<main>
+</div></header>
 
-  <section class="hero container">
-    <div class="hero-wm">Trekkr</div>
-    <h1 class="display hero-h">Where Every Match Builds Your Journey</h1>
-    <div class="hero-cta">Every Match Counts.</div>
-  </section>
+<section id="audiences" style="background:var(--surf2)"><div class="wrap">
+  <div class="aud-head">
+    <div class="eyebrow" style="color:var(--orange);margin-bottom:12px">Built for everyone on court</div>
+    <h2 class="display">One platform,<br/>three journeys</h2>
+    <p>Whether you chase a ranking, run a venue, or hold a community together — Trekkr is built around you.</p>
+  </div>
+  <div class="aud-tabs">
+    <button class="aud-tab on" data-t="players">&#127934; I'm a player</button>
+    <button class="aud-tab" data-t="clubs">&#127967; I run a club / venue</button>
+    <button class="aud-tab" data-t="community">&#129309; I lead a community</button>
+  </div>
 
-  <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span class="secname">Weekly PlayRank</span>
-      <a class="lnk" href="https://trekkr.online/playrank">learn more &rarr;</a>
+  <div class="aud-panel on" id="p-players"><div class="aud-grid">
+    <div>
+      <div class="eyebrow" style="color:var(--orange)">For players</div>
+      <h3 class="display">Your journey,<br/>on the record</h3>
+      <p class="sub">Every match you play — league night, tournament, casual Mexicano — feeds one rating that travels with you.</p>
+      <div class="feat"><div class="ic">&#128200;</div><div><b>One ELO across every venue</b><span>No more "jago di venue sendiri". Your rating means the same thing everywhere.</span></div></div>
+      <div class="feat"><div class="ic">&#129706;</div><div><b>Player passport</b><span>Your history, badges, win streaks and share cards — one link to prove your level.</span></div></div>
+      <div class="feat"><div class="ic">&#129504;</div><div><b>Know your real impact</b><span>Advanced analytics reveal what win rate hides — and who your best partner is.</span></div></div>
+      <div class="aud-cta"><a class="btn btn-primary" href="/rankings">Find your name &rarr;</a><a class="btn btn-ghost" href="/players">Learn more</a></div>
     </div>
-    <div class="filter-tabs" id="prFilter"></div>
-    <div id="prVenues"><div class="empty">Loading&hellip;</div></div>
-    <button class="show-more-btn" id="prShowMore" style="display:none">Show more</button>
-  </section>
+    <div class="mockshot"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="ms-body">
+      <div style="font-weight:800;font-size:15px;margin-bottom:2px">Player passport</div>
+      <div style="font-size:11px;color:var(--subtle);margin-bottom:12px">ELO &middot; history &middot; badges &middot; share card</div>
+      <div class="ms-row"><span class="rk">&#9650;</span><span class="nm">Moved up 3 spots this week</span><span class="badge up">+24 ELO</span></div>
+      <div class="ms-row"><span class="rk">&#127942;</span><span class="nm">Tournament semifinalist</span></div>
+      <div class="ms-row"><span class="rk">&#129504;</span><span class="nm">Best partner found</span><span class="badge orange">PRO</span></div>
+    </div></div>
+  </div></div>
 
-  <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-      <span class="secname secname--dark">Most Active Players</span>
-      <a class="lnk" href="https://trekkr.online/rankings">View all &rarr;</a>
+  <div class="aud-panel" id="p-clubs"><div class="aud-grid">
+    <div>
+      <div class="eyebrow" style="color:var(--orange)">For clubs &amp; venues</div>
+      <h3 class="display">Run nights people<br/>come back for</h3>
+      <p class="sub">From 8-player Mexicanos to 36-player tiered events — set up in minutes, results on the TV, ratings updated before players leave the court.</p>
+      <div class="feat"><div class="ic">&#9889;</div><div><b>Tournament &amp; Mexicano engine</b><span>Brackets, rotations, late arrivals, dropouts — handled. TV display included.</span></div></div>
+      <div class="feat"><div class="ic">&#127967;</div><div><b>Your own venue page &amp; leaderboard</b><span>A branded home your members check every week — and share.</span></div></div>
+      <div class="feat"><div class="ic">&#128202;</div><div><b>Roster analytics (Pro)</b><span>See who's underrated, who carries whom, and the strongest duo in your club.</span></div></div>
+      <div class="aud-cta"><a class="btn btn-dark" href="/clubs">Get your venue on Trekkr &rarr;</a><a class="btn btn-ghost" href="/analytics">See club analytics</a></div>
     </div>
-    <div id="activePlayersEl"><div class="empty" style="margin-top:8px">Loading&hellip;</div></div>
-  </section>
+    <div class="mockshot"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="ms-body">
+      <div style="font-weight:800;font-size:15px;margin-bottom:10px">Tonight &middot; Mexicano — Round 3 of 6</div>
+      <div class="bracket"><div class="bx">Court 1<small>Rizal + Bayu</small></div><div style="text-align:center;font-weight:800;color:var(--orange)">vs</div><div class="bx">Sonida + Arif<small>4 &ndash; 3</small></div>
+      <div class="bx">Court 2<small>Otto + Sebastian</small></div><div style="text-align:center;font-weight:800;color:var(--orange)">vs</div><div class="bx">Rezki + Fadel<small>2 &ndash; 4</small></div></div>
+      <div class="ms-row" style="margin-top:12px"><span class="rk">&#128250;</span><span class="nm">Live on venue TV display</span><span class="badge up">AUTO</span></div>
+    </div></div>
+  </div></div>
 
-  <section class="sec container">
-    <span class="secname secname--dark">New Players</span>
-    <div id="newPlayersEl"><div class="empty mt8">Loading&hellip;</div></div>
-  </section>
-
-  <section class="sec container">
-    <div style="font-weight:700;font-size:15px;margin-bottom:10px">Find Your Name</div>
-    <div class="find">
-      <input id="homeFind" type="search" placeholder="Search player name&hellip;" autocomplete="off" aria-label="Search players"/>
-      <button class="btn btn--primary" id="homeFindBtn">Search</button>
+  <div class="aud-panel" id="p-community"><div class="aud-grid">
+    <div>
+      <div class="eyebrow" style="color:var(--orange)">For communities</div>
+      <h3 class="display">Break the<br/>closed circles</h3>
+      <p class="sub">Padel communities cluster into small groups that never mix. A shared ranking gives strangers a reason to play each other — and a fair way to match levels.</p>
+      <div class="feat"><div class="ic">&#128256;</div><div><b>Fair matchmaking, instantly</b><span>Level-based seeding means newcomers slot into balanced games from day one.</span></div></div>
+      <div class="feat"><div class="ic">&#127941;</div><div><b>Your community leaderboard</b><span>Weekly PlayRank turns casual sessions into a season your members follow.</span></div></div>
+      <div class="feat"><div class="ic">&#128227;</div><div><b>Share-ready moments</b><span>Player cards and weekly risers made for the group chat and Instagram.</span></div></div>
+      <div class="aud-cta"><a class="btn btn-primary" href="/communities">Start a community leaderboard &rarr;</a></div>
     </div>
-    <div class="fres" id="homeFindRes" aria-live="polite"></div>
-  </section>
-
-  <section class="band band--dark">
-    <div class="container" style="text-align:center">
-      <div style="font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:#B4B4BC;font-size:13px;letter-spacing:.08em;margin-bottom:20px">The Numbers</div>
-      <div class="stats">
-        <div class="stat"><div class="n" id="statPlayers">&mdash;</div><div class="l">Players Rated</div></div>
-        <div class="stat"><div class="n" id="statMatches">&mdash;</div><div class="l">Matches Recorded</div></div>
-        <div class="stat"><div class="n" id="statAvg">&mdash;</div><div class="l">Avg Matches / Player</div></div>
+    <div class="mockshot"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="ms-body" style="display:flex;gap:16px;align-items:center">
+      <div class="qr"></div><div style="flex:1">
+        <div style="font-weight:800;font-size:14.5px">Sunday Social</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 10px;line-height:1.5">Players scan to join tonight's session — seeded by level automatically.</div>
+        <div class="ms-row" style="margin-bottom:0"><span class="rk">&#128101;</span><span class="nm">18 joined &middot; 3 first-timers</span><span class="badge up">MIXED</span></div>
       </div>
-    </div>
-  </section>
+    </div></div>
+  </div></div>
+</div></section>
 
-</main>
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <span class="footer-brand">Trekkr</span>
-    <nav class="footer-links" aria-label="Footer">
-      <a href="https://admin.trekkr.online">Admin (Venue login)</a>
-      <a href="https://trekkr.online/market">Market Intelligence</a>
-      <a href="https://trekkr.online/about">About</a>
-    </nav>
-    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
+<section id="pulse"><div class="wrap"><div class="pulse-wrap">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px">
+    <div><div class="eyebrow" style="color:var(--amber);margin-bottom:10px">This week on Trekkr</div><h2 class="display" style="font-size:clamp(34px,4.4vw,52px);color:#fff">The pulse</h2></div>
+    <a class="btn" style="background:rgba(255,255,255,.12);color:#fff;font-size:13px;padding:10px 18px" href="/rankings">Full rankings &rarr;</a>
   </div>
-</footer>
+  <div class="pulse-grid">
+    <div class="pcard"><div class="t"><span>&#11088; Top rated</span><span>ELO</span></div><div id="pulse-top"><div class="loading" style="color:#8A8E97">Loading&hellip;</div></div></div>
+    <div class="pcard"><div class="t"><span>&#127934; Most active</span><span>Matches</span></div><div id="pulse-active"><div class="loading" style="color:#8A8E97">Loading&hellip;</div></div></div>
+    <div class="pcard"><div class="t"><span>&#10024; New players</span><span>Welcome</span></div><div id="pulse-new"><div class="loading" style="color:#8A8E97">Loading&hellip;</div></div></div>
+  </div>
+</div></div></section>
+
+<section id="analytics-teaser" style="background:var(--surf2)"><div class="wrap an-grid">
+  <div class="an-card">
+    <div class="eyebrow" style="color:var(--orange);display:flex;justify-content:space-between"><span>The reveal</span><span class="badge orange">PRO</span></div>
+    <div class="an-reveal" style="margin-top:10px"><span style="color:var(--muted);font-size:13.5px">By win rate, ranks</span><span class="display" style="font-size:30px;color:var(--subtle)">#59</span></div>
+    <div class="an-line"></div>
+    <div class="an-reveal"><span style="font-weight:700;font-size:13.5px">By real impact, ranks</span><span class="display grad" style="font-size:44px">#11</span></div>
+    <div style="font-size:11.5px;color:var(--subtle);margin-top:6px">partner &amp; opponent effects removed</div>
+    <div class="locknote">Best-fit partner found — projected <b style="color:var(--orange)">+3.1 pts/match</b> together. Unlock to see who.</div>
+  </div>
+  <div>
+    <div class="eyebrow" style="color:var(--orange)">Trekkr Analytics</div>
+    <h2 class="display" style="font-size:clamp(34px,4.6vw,52px);margin-top:10px">See what<br/>win rate <span class="grad">hides</span></h2>
+    <p style="color:var(--muted);font-size:15.5px;line-height:1.65;margin-top:14px;max-width:460px">Sabermetrics for padel. Because doubles blends your skill with your partner's, we isolate what <i>you</i> alone contribute — then find the partner who lifts you most.</p>
+    <div class="aud-cta"><a class="btn btn-primary" href="/analytics">Explore analytics &rarr;</a></div>
+  </div>
+</div></section>
+
+<section class="final"><div class="wrap">
+  <div class="eyebrow" style="color:var(--orange);margin-bottom:14px">Free for players &middot; Tools for clubs</div>
+  <h2 class="display">Your journey<br/>starts <span class="grad">tonight</span></h2>
+  <p>Search your name if you've played on Trekkr — or bring your club and community on board in one conversation.</p>
+  <div class="final-ctas"><a class="btn btn-primary" href="/rankings">Find your name &rarr;</a><a class="btn btn-dark" href="/clubs">Talk to us about your venue</a></div>
+</div></section>
+
+<div id="site-footer"></div>
 <script>
-(function(){
-  var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
-})();
+document.querySelectorAll('.aud-tab').forEach(function(btn){btn.addEventListener('click',function(){
+  document.querySelectorAll('.aud-tab').forEach(function(b){b.classList.remove('on')});
+  document.querySelectorAll('.aud-panel').forEach(function(p){p.classList.remove('on')});
+  btn.classList.add('on');document.getElementById('p-'+btn.dataset.t).classList.add('on');
+});});
 </script>
-<script>
-(function(){
-  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function normName(n){return String(n||'').trim().toLowerCase();}
-  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  function av(p){
-    var u=p.photoUrl||p.photo||'';
-    if(u)return'<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.textContent=\''+esc(initials(p.displayName||p.name))+'\'"/></div>';
-    return'<div class="av">'+esc(initials(p.displayName||p.name))+'</div>';
-  }
-  function fmt(n){return(n||0).toLocaleString('en-US');}
-
-  Promise.all([
-    fetch(BASE+'/public/feed').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};})
-  ]).then(function(results){
-    var feedData=results[0],venuesData=results[1],lbData=results[2],playersData=results[3];
-    var activePlayrank=(feedData&&feedData.activePlayrank)||[];
-    var venues=(venuesData&&venuesData.venues)||[];
-    var leaderboard=(lbData&&lbData.leaderboard)||[];
-    var players=(playersData&&playersData.players)||[];
-
-    // --- PlayRank Venues ---
-    var venueRegionMap={};
-    venues.forEach(function(v){if(v.name)venueRegionMap[normName(v.name)]=v.region||'';});
-
-    var venueMap={};
-    activePlayrank.forEach(function(p){
-      var vn=(p.venue||'').trim();
-      if(!vn)return;
-      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||''};
-      venueMap[vn].sessions.push(p);
-    });
-    var venueList=Object.keys(venueMap).map(function(k){return venueMap[k];});
-
-    var regions=[];
-    venueList.forEach(function(v){if(v.region&&regions.indexOf(v.region)===-1)regions.push(v.region);});
-    regions.sort();
-
-    var filterEl=document.getElementById('prFilter');
-    var listEl=document.getElementById('prVenues');
-    var moreBtn=document.getElementById('prShowMore');
-    var showCount=4;
-    var currentRegion='All';
-
-    function venueInits(name){return String(name).trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()||'?';}
-    function sessionTags(sessions){
-      var levels=[],genders=[];
-      sessions.forEach(function(s){
-        if(s.level&&levels.indexOf(s.level)===-1)levels.push(s.level);
-        var g=s.gender==='M'||s.gender==='Putra'?'Putra':s.gender==='F'||s.gender==='Putri'?'Putri':s.gender;
-        if(g&&genders.indexOf(g)===-1)genders.push(g);
-      });
-      var parts=[];
-      if(levels.length)parts.push(levels.join(' · '));
-      if(genders.length)parts.push(genders.join(' · '));
-      return parts.join(' · ');
-    }
-
-    function renderVenues(){
-      var filtered=currentRegion==='All'?venueList:venueList.filter(function(v){return v.region===currentRegion;});
-      if(!filtered.length){
-        listEl.innerHTML='<div class="empty">Tidak ada sesi PlayRank aktif saat ini. <a class="lnk" href="https://trekkr.online/playrank">View PlayRank &rarr;</a></div>';
-        moreBtn.style.display='none';
-        return;
-      }
-      var shown=filtered.slice(0,showCount);
-      var html='<div class="venue-list">';
-      shown.forEach(function(v){
-        var s=slug(v.name);
-        var tags=sessionTags(v.sessions);
-        html+='<a class="venue-row" href="https://venue.trekkr.online/'+s+'">';
-        html+='<div class="venue-av">'+esc(venueInits(v.name))+'</div>';
-        html+='<div class="venue-info"><div class="venue-name">'+esc(v.name)+'</div>';
-        if(tags)html+='<div class="venue-tags">'+esc(tags)+'</div>';
-        html+='</div>';
-        if(v.region)html+='<span class="venue-region-badge">'+esc(v.region)+'</span>';
-        html+='<i class="ti ti-chevron-right" style="color:var(--muted);flex-shrink:0" aria-hidden="true"></i>';
-        html+='</a>';
-      });
-      html+='</div>';
-      listEl.innerHTML=html;
-      if(filtered.length>showCount){
-        moreBtn.style.display='block';
-        moreBtn.onclick=function(){showCount+=4;renderVenues();};
-      }else{
-        moreBtn.style.display='none';
-      }
-    }
-
-    if(filterEl&&regions.length){
-      var tabs=['All'].concat(regions);
-      filterEl.innerHTML=tabs.map(function(r){
-        return'<button class="filter-tab'+(r===currentRegion?' active':'')+'" data-r="'+esc(r)+'">'+esc(r)+'</button>';
-      }).join('');
-      filterEl.addEventListener('click',function(e){
-        var btn=e.target.closest('.filter-tab');
-        if(!btn)return;
-        currentRegion=btn.getAttribute('data-r');
-        showCount=4;
-        filterEl.querySelectorAll('.filter-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-r')===currentRegion);});
-        renderVenues();
-      });
-    }
-    renderVenues();
-
-    // --- Most Active Players ---
-    var activeEl=document.getElementById('activePlayersEl');
-    if(activeEl){
-      var sorted=leaderboard.slice().sort(function(a,b){return(b.totalMatches||0)-(a.totalMatches||0);}).slice(0,5);
-      activeEl.innerHTML=sorted.length?sorted.map(function(p,i){
-        return'<a class="prow" href="/player/'+slug(p.name)+'">'
-          +'<span class="rk">'+(i+1)+'</span>'
-          +av(p)
-          +'<span class="pn">'+esc(p.displayName||p.name)+'</span>'
-          +'<span class="pm">'+fmt(p.totalMatches||0)+' matches</span>'
-          +'</a>';
-      }).join(''):'<div class="empty" style="margin-top:8px">No data yet.</div>';
-    }
-
-    // --- New Players ---
-    var newEl=document.getElementById('newPlayersEl');
-    if(newEl){
-      var lbMap={};
-      leaderboard.forEach(function(p){lbMap[normName(p.name)]=p;});
-      var newPlayers=players.slice(-4).reverse();
-      newEl.innerHTML=newPlayers.length?'<div class="np-grid">'+newPlayers.map(function(p){
-        var lb=lbMap[normName(p.name)]||{};
-        var level=lb.level||'Unrated';
-        var region=p.region||lb.region||'';
-        var meta=[region,level].filter(Boolean).join(' · ');
-        return'<div class="np-card">'
-          +av({displayName:p.displayName||p.name,name:p.name,photoUrl:p.photoUrl||''})
-          +'<div class="np-info"><div class="np-name">'+esc(p.displayName||p.name)+'</div>'
-          +(meta?'<div class="np-meta">'+esc(meta)+'</div>':'')
-          +'</div><span class="np-new">New</span></div>';
-      }).join('')+'</div>':'<div class="empty mt8">No new players yet.</div>';
-    }
-
-    // --- The Numbers ---
-    var total=leaderboard.reduce(function(s,p){return s+(p.totalMatches||0);},0);
-    var sp=document.getElementById('statPlayers');
-    var sm=document.getElementById('statMatches');
-    var sa=document.getElementById('statAvg');
-    if(sp)sp.textContent=fmt(leaderboard.length);
-    if(sm)sm.textContent=fmt(total);
-    if(sa)sa.textContent=leaderboard.length?Math.round(total/leaderboard.length):0;
-
-  }).catch(function(){
-    var listEl=document.getElementById('prVenues');
-    if(listEl)listEl.innerHTML='<div class="empty">Gagal memuat data.</div>';
-  });
-})();
-</script>
-<script>
-(function(){
-  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  function av(p){
-    var u=p.photoUrl||'';
-    if(u)return'<div class="av" style="width:36px;height:36px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover"/></div>';
-    return'<div class="av" style="width:36px;height:36px">'+esc(initials(p.displayName||p.name))+'</div>';
-  }
-  var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
-  function search(){
-    var q=(inp.value||'').trim();
-    if(q.length<2){res.innerHTML='';return;}
-    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:8}).toString()).then(function(r){return r.json();}).then(function(d){
-      var list=(d&&d.leaderboard)||[];
-      if(!list.length){res.innerHTML='<p style="padding:8px 4px;font-size:13px;color:var(--muted)">No players found.</p>';return;}
-      res.innerHTML=list.map(function(p){
-        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.displayName||p.name)+'</span><span style="font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)">'+(p.elo||0)+'</span></a>';
-      }).join('');
-    }).catch(function(){res.innerHTML='';});
-  }
-  inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
-  btn&&btn.addEventListener('click',search);
-  inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
-})();
-</script>
-</body>
-</html>
+<script src="/site.js"></script>
+</body></html>
