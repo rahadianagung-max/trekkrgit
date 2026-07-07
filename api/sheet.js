@@ -230,6 +230,9 @@ const netlifyHandler = async (event) => {
     if (path === "players/edit-request" && method === "POST") return await submitEditRequest(body);
     if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
     if (path === "players/edit-requests/resolve" && method === "POST") return await resolveEditRequest(body);
+    if (path.startsWith("players/") && path.endsWith("/matches") && method === "GET") {
+      return await getPlayerMatches(decodeURIComponent(path.replace("players/", "").replace("/matches", "")));
+    }
     if (path.startsWith("players/") && method === "GET") {
       const name = decodeURIComponent(path.replace("players/", ""));
       return await getPlayerDetail(name);
@@ -480,6 +483,49 @@ async function getPlayerDetail(name) {
   }
 
   return respond(200, { player, stats: { currentElo, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history });
+}
+
+// Return a single player's matches across all venue tabs, de-duplicated, in ONE
+// batchGet (instead of the browser fetching every venue's full match list). Also
+// returns the venues the player has appeared in. Match order is venue-order then
+// row-order — the same order the client used to build, so ELO-delta alignment holds.
+async function getPlayerMatches(name) {
+  const sheets = getSheets();
+  const target = normName(name);
+  // Venue display names (ordered) + the set of tabs that actually exist, so a venue
+  // whose Venue_ tab is missing doesn't make the whole batchGet fail.
+  const [vRes, meta] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }),
+    sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }),
+  ]);
+  const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
+  const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
+  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
+  const ranges = venueNames.map((v) => `${venueTabName(v)}!A2:J`);
+  const bRes = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges });
+  const valueRanges = bRes.data.valueRanges || [];
+  const matches = [];
+  const playedVenueSet = new Set();
+  const seen = new Set();
+  valueRanges.forEach((vr, i) => {
+    const venue = venueNames[i];
+    let appeared = false;
+    for (const r of (vr.values || [])) {
+      const p1t1 = r[2] || "", p2t1 = r[3] || "", p1t2 = r[4] || "", p2t2 = r[5] || "";
+      if (![p1t1, p2t1, p1t2, p2t2].some((n) => normName(n) === target)) continue;
+      appeared = true;
+      const week = r[0] || "", date = r[1] || "";
+      const scoreT1 = parseInt(r[6]) || 0, scoreT2 = parseInt(r[7]) || 0;
+      // Same fingerprint the client used, so a match stored in multiple venue tabs
+      // is counted once.
+      const key = [String(week).trim(), String(date).trim(), p1t1.toLowerCase().trim(), p2t1.toLowerCase().trim(), p1t2.toLowerCase().trim(), p2t2.toLowerCase().trim(), String(scoreT1), String(scoreT2)].join("__");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      matches.push({ week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, gender: (r[8] || "M").toUpperCase(), sourceUrl: r[9] || "", venue });
+    }
+    if (appeared) playedVenueSet.add(venue);
+  });
+  return respond(200, { matches, playedVenues: Array.from(playedVenueSet) });
 }
 
 async function addPlayer(body) {

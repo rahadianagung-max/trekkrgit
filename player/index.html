@@ -769,58 +769,19 @@ async function loadPlayer(){
 
   // ALGORITMA BARU: Tarik data history semua match untuk tabel dan kalkulasi Best Partner
   try {
-      // Kick off the ELO map fetch in parallel with the venue fetches.
+      // Kick off the ELO map fetch in parallel with the player-matches fetch.
       const eloPromise = TrekkrAPI.getLatestElo().catch(()=>null);
-      const vRes = await fetch('https://trekkr.online/api/venues');
-      const vData = await vRes.json();
-      const venues = (vData && vData.venues) || [];
-      const tgt = name.toLowerCase().trim();
-      // Fetch every venue's matches in PARALLEL instead of one-by-one (the main slowdown).
-      const perVenue = await Promise.all(venues.map(v =>
-          fetch(`https://trekkr.online/api/venues/${encodeURIComponent(v.name)}/matches`)
-              .then(r=>r.json())
-              .then(md=>({venue:v.name, matches:(md&&md.matches)||[]}))
-              .catch(()=>({venue:v.name, matches:[]}))
-      ));
-      let allMatches = [];
-      const playedVenueSet = new Set();
-      for (const res of perVenue) {
-          if (!res.matches.length) continue;
-          allMatches = allMatches.concat(res.matches);
-          if (res.matches.some(m => [m.p1t1,m.p2t1,m.p1t2,m.p2t2].some(n => (n||'').toLowerCase().trim() === tgt))) playedVenueSet.add(res.venue);
-      }
-      d.playedVenues = Array.from(playedVenueSet);
-      
+      // Single backend call: returns just this player's matches (already filtered to
+      // this player and de-duplicated across all venue tabs) plus the venues they
+      // played at. Replaces fetching every venue's full match list in the browser.
+      let myMatches = [];
+      try {
+          const pmRes = await fetch(`https://trekkr.online/api/players/${encodeURIComponent(name)}/matches`);
+          const pmData = await pmRes.json();
+          myMatches = (pmData && pmData.matches) || [];
+          d.playedVenues = (pmData && pmData.playedVenues) || [];
+      } catch(e) { myMatches = []; d.playedVenues = []; }
       const targetName = name.toLowerCase().trim();
-      const myMatchesRaw = allMatches.filter(m => 
-          (m.p1t1 || "").toLowerCase().trim() === targetName || 
-          (m.p2t1 || "").toLowerCase().trim() === targetName || 
-          (m.p1t2 || "").toLowerCase().trim() === targetName || 
-          (m.p2t2 || "").toLowerCase().trim() === targetName
-      );
-
-      // De-duplicate: only remove exact duplicates where ALL fields match
-      // (same players + same scores + same date + same week)
-      // This handles the case where a match is stored in multiple venue tabs
-      // but preserves valid matches that happen to have same score on same day
-      const seenKeys = new Set();
-      const myMatches = myMatchesRaw.filter(m => {
-          // Use ALL four player names in original order (not sorted) + scores + date + week
-          // to create a truly unique fingerprint
-          const key = [
-              (m.week||'').trim(),
-              (m.date||'').trim(),
-              (m.p1t1||'').toLowerCase().trim(),
-              (m.p2t1||'').toLowerCase().trim(),
-              (m.p1t2||'').toLowerCase().trim(),
-              (m.p2t2||'').toLowerCase().trim(),
-              String(m.scoreT1),
-              String(m.scoreT2),
-          ].join('__');
-          if (seenKeys.has(key)) return false;
-          seenKeys.add(key);
-          return true;
-      });
       
       // urutan kronologis dipertahankan untuk sejajarkan delta ELO; dibalik saat render
 
@@ -902,7 +863,7 @@ async function loadPlayer(){
           eloMapForBadges[k.toLowerCase().trim()] = (eloRes.players[k].elo || 1350);
         });
       } catch(e) {}
-      d.badges = computeBadges(d, myMatches, allMatches, [eloMapForBadges]);
+      d.badges = computeBadges(d, myMatches, myMatches, [eloMapForBadges]);
 
   } catch(err) {
       console.warn("Gagal menarik data histori venue", err);
