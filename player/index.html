@@ -1890,10 +1890,66 @@ function openEditModal(){
   document.getElementById('editModal').classList.add('open');
 }
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
+// ── Square photo cropper (mugshot): pan + zoom, exports a 512×512 compressed JPEG ──
+var _crop={img:null,iw:0,ih:0,scale:1,min:1,x:0,y:0,drag:false,lx:0,ly:0,STAGE:300,OUT:512};
 function onEditPhoto(e){
   var f=e.target.files&&e.target.files[0]; if(!f)return; var m=document.getElementById('editMsg');
-  if(f.size>3.5*1024*1024){m.style.color='var(--danger)';m.textContent='Foto terlalu besar (maks ~2-3 MB).';return;}
-  var r=new FileReader(); r.onload=function(){_editPhotoData=r.result;document.getElementById('editPhotoPrev').src=r.result;m.textContent='';}; r.readAsDataURL(f);
+  if(!/^image\//.test(f.type)){m.style.color='var(--danger)';m.textContent='File harus berupa gambar.';return;}
+  if(f.size>25*1024*1024){m.style.color='var(--danger)';m.textContent='Foto terlalu besar (maks ~25 MB).';return;}
+  m.textContent='';
+  var open=function(img){ cropOpen(img); };
+  var fallback=function(){ var r=new FileReader(); r.onload=function(){var im=new Image(); im.onload=function(){open(im);}; im.onerror=function(){m.style.color='var(--danger)';m.textContent='Gagal membaca gambar.';}; im.src=r.result;}; r.readAsDataURL(f); };
+  if(window.createImageBitmap){ createImageBitmap(f,{imageOrientation:'from-image'}).then(open).catch(fallback); }
+  else { fallback(); }
+  e.target.value=''; // allow re-selecting the same file
+}
+function cropOpen(img){
+  _crop.img=img;
+  _crop.iw=img.naturalWidth||img.width; _crop.ih=img.naturalHeight||img.height;
+  _crop.min=Math.max(_crop.STAGE/_crop.iw,_crop.STAGE/_crop.ih);
+  _crop.scale=_crop.min;
+  _crop.x=(_crop.STAGE-_crop.iw*_crop.scale)/2;
+  _crop.y=(_crop.STAGE-_crop.ih*_crop.scale)/2;
+  var z=document.getElementById('cropZoom'); if(z)z.value=1;
+  cropInitEvents();
+  document.getElementById('cropModal').classList.add('open');
+  cropDraw();
+}
+function cropClamp(){
+  var w=_crop.iw*_crop.scale,h=_crop.ih*_crop.scale;
+  if(_crop.x>0)_crop.x=0; if(_crop.x<_crop.STAGE-w)_crop.x=_crop.STAGE-w;
+  if(_crop.y>0)_crop.y=0; if(_crop.y<_crop.STAGE-h)_crop.y=_crop.STAGE-h;
+}
+function cropDraw(){
+  var c=document.getElementById('cropCanvas'); if(!c)return; var ctx=c.getContext('2d');
+  cropClamp();
+  ctx.clearRect(0,0,_crop.STAGE,_crop.STAGE);
+  ctx.drawImage(_crop.img,_crop.x,_crop.y,_crop.iw*_crop.scale,_crop.ih*_crop.scale);
+}
+function cropSetZoom(v){
+  var old=_crop.scale,ns=_crop.min*parseFloat(v),cx=_crop.STAGE/2,cy=_crop.STAGE/2;
+  _crop.x=cx-(cx-_crop.x)*(ns/old); _crop.y=cy-(cy-_crop.y)*(ns/old);
+  _crop.scale=ns; cropDraw();
+}
+function cropInitEvents(){
+  var c=document.getElementById('cropCanvas'); if(!c||c._cropInit)return; c._cropInit=1;
+  var toLocal=function(ev){var r=c.getBoundingClientRect(),sx=_crop.STAGE/r.width;return {x:(ev.clientX-r.left)*sx,y:(ev.clientY-r.top)*sx};};
+  c.addEventListener('pointerdown',function(ev){_crop.drag=true;try{c.setPointerCapture(ev.pointerId);}catch(e){}var p=toLocal(ev);_crop.lx=p.x;_crop.ly=p.y;c.style.cursor='grabbing';});
+  c.addEventListener('pointermove',function(ev){if(!_crop.drag)return;var p=toLocal(ev);_crop.x+=p.x-_crop.lx;_crop.y+=p.y-_crop.ly;_crop.lx=p.x;_crop.ly=p.y;cropDraw();});
+  var end=function(){_crop.drag=false;c.style.cursor='grab';};
+  c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end);
+  c.addEventListener('wheel',function(ev){ev.preventDefault();var z=document.getElementById('cropZoom');var nv=Math.min(3,Math.max(1,parseFloat(z.value)+(ev.deltaY<0?0.12:-0.12)));z.value=nv.toFixed(2);cropSetZoom(nv);},{passive:false});
+}
+function cropCancel(){ document.getElementById('cropModal').classList.remove('open'); }
+function cropApply(){
+  var out=document.createElement('canvas'); out.width=_crop.OUT; out.height=_crop.OUT;
+  var octx=out.getContext('2d'); octx.fillStyle='#ffffff'; octx.fillRect(0,0,_crop.OUT,_crop.OUT);
+  var f=_crop.OUT/_crop.STAGE;
+  octx.drawImage(_crop.img,_crop.x*f,_crop.y*f,_crop.iw*_crop.scale*f,_crop.ih*_crop.scale*f);
+  _editPhotoData=out.toDataURL('image/jpeg',0.85);
+  document.getElementById('editPhotoPrev').src=_editPhotoData;
+  document.getElementById('cropModal').classList.remove('open');
+  var m=document.getElementById('editMsg'); if(m){m.style.color='var(--ok)';m.textContent='✓ Foto siap. Klik "Submit for review".';}
 }
 function submitEdit(){
   if(!playerData)return; var p=playerData.player;
@@ -1922,7 +1978,7 @@ function submitEdit(){
       <img id="editPhotoPrev" alt="" style="width:66px;height:66px;border-radius:14px;object-fit:cover;background:#EFEFF1"/>
       <div>
         <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Change photo<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
-        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Square image, JPG/PNG, max ~2 MB.</div>
+        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — akan dipotong kotak & dikecilkan otomatis.</div>
       </div>
     </div>
     <label class="pp-info-label" style="display:block;margin-bottom:6px">Display name</label>
@@ -1931,6 +1987,25 @@ function submitEdit(){
     <input id="editIg" class="edit-in" placeholder="username (without @)">
     <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Submit for review</button>
     <div id="editMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+  </div>
+</div>
+
+<div class="share-modal-overlay" id="cropModal" onclick="if(event.target===this)cropCancel()">
+  <div class="share-modal" style="max-width:360px">
+    <div class="share-modal-handle"></div>
+    <div class="share-modal-head"><div class="share-modal-title">Atur foto wajah</div><button class="share-modal-close" onclick="cropCancel()">&times;</button></div>
+    <p class="share-modal-sub">Geser dan zoom untuk menempatkan wajah di dalam kotak.</p>
+    <div style="display:flex;justify-content:center;margin:8px 0 14px">
+      <canvas id="cropCanvas" width="300" height="300" style="touch-action:none;border-radius:16px;background:#EFEFF1;cursor:grab;width:300px;max-width:100%;aspect-ratio:1/1"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:12px;color:var(--on-surface-variant)">Zoom</span>
+      <input id="cropZoom" type="range" min="1" max="3" step="0.01" value="1" style="flex:1" oninput="cropSetZoom(this.value)">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn--ghost" style="flex:1" onclick="cropCancel()">Batal</button>
+      <button class="btn btn--primary" style="flex:1" onclick="cropApply()">Gunakan foto</button>
+    </div>
   </div>
 </div>
 </body>
