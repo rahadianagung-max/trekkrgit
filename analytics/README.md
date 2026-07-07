@@ -38,7 +38,9 @@ from the nav. It already uses the same fonts/theme as trekkr.online.
 
 ## Editing it later (optional)
 
-- `src/app.jsx` — the UI.
+- `src/app.jsx` — the UI. Bilingual (English + Indonesian); the EN/ID switch
+  sits in the header and the choice is remembered in `localStorage`.
+- `src/i18n.js` — all user-facing strings for both languages (keys match 1:1).
 - `src/live.js` — the live data layer: fetches the Trekkr API and computes the
   sabermetrics (ridge-regression impact, win rate, best-fit partner) into this
   shape:
