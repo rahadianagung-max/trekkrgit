@@ -501,7 +501,7 @@ async function getPlayerMatches(name) {
   const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
   const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
   if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
-  const ranges = venueNames.map((v) => `${venueTabName(v)}!A2:J`);
+  const ranges = venueNames.map((v) => `${venueTabName(v)}!${VENUE_READ_RANGE}`);
   const bRes = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges });
   const valueRanges = bRes.data.valueRanges || [];
   const matches = [];
@@ -521,7 +521,17 @@ async function getPlayerMatches(name) {
       const key = [String(week).trim(), String(date).trim(), p1t1.toLowerCase().trim(), p2t1.toLowerCase().trim(), p1t2.toLowerCase().trim(), p2t2.toLowerCase().trim(), String(scoreT1), String(scoreT2)].join("__");
       if (seen.has(key)) continue;
       seen.add(key);
-      matches.push({ week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, gender: (r[8] || "M").toUpperCase(), sourceUrl: r[9] || "", venue });
+      const [g1, g2, g3, g4] = venueRowGenders(r);
+      // `gender` = this player's own gender in the match (falls back to the row's
+      // category when the slot is blank); `category` = M / F / MIXED for the whole match.
+      const slots = { [normName(p1t1)]: g1, [normName(p2t1)]: g2, [normName(p1t2)]: g3, [normName(p2t2)]: g4 };
+      const category = matchCategory([g1, g2, g3, g4]);
+      matches.push({
+        week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2,
+        gender: toGender(slots[target], category === "MIXED" ? "M" : category),
+        genders: { p1t1: g1, p2t1: g2, p1t2: g3, p2t2: g4 }, category,
+        sourceUrl: venueRowSource(r), venue,
+      });
     }
     if (appeared) playedVenueSet.add(venue);
   });
@@ -684,6 +694,100 @@ function venueTabName(name) {
   return `Venue_${name.replace(/[^a-zA-Z0-9]/g, "_")}`;
 }
 
+// ── VENUE TAB SCHEMA (per-player gender) ──────────────────────────────────────
+// Each venue match row holds a gender for EVERY player slot so Mixed Doubles
+// (one man + one woman per team) is represented exactly. 13 columns:
+//   0 Week | 1 Date | 2 P1_Team1 | 3 P2_Team1 | 4 P1_Team2 | 5 P2_Team2 |
+//   6 Score_T1 | 7 Score_T2 |
+//   8 P1_Team1_Gender | 9 P2_Team1_Gender | 10 P1_Team2_Gender | 11 P2_Team2_Gender |
+//   12 Source_URL
+// Legacy rows (pre-migration) had a single Gender in col 8 and Source_URL in col 9.
+const VENUE_HEADER = [
+  "Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2",
+  "Score_T1", "Score_T2",
+  "P1_Team1_Gender", "P2_Team1_Gender", "P1_Team2_Gender", "P2_Team2_Gender",
+  "Source_URL",
+];
+const VENUE_READ_RANGE = "A2:M"; // full data range for the 13-col layout
+
+// Normalise any gender-ish value to "M" / "F". Returns `fallback` when unknown
+// (empty when no fallback given, so callers can defer to the Players tab).
+function toGender(v, fallback = "") {
+  const s = String(v == null ? "" : v).toUpperCase().trim();
+  if (s.startsWith("F")) return "F";
+  if (s.startsWith("M")) return "M";
+  return fallback;
+}
+
+// True when a venue row is in the legacy 10-col layout — none of the columns that
+// only exist in the new layout (idx 10/11/12) carry data.
+function isLegacyVenueRow(r) {
+  return !String(r[10] || "").trim() && !String(r[11] || "").trim() && !String(r[12] || "").trim();
+}
+
+// Four per-player genders [P1_Team1, P2_Team1, P1_Team2, P2_Team2] from a venue row,
+// transparently handling both the new and legacy layouts. Legacy rows apply their
+// single gender to all four players (those matches were all-male or all-female).
+function venueRowGenders(r) {
+  if (isLegacyVenueRow(r)) {
+    const g = toGender(r[8], "M");
+    return [g, g, g, g];
+  }
+  return [toGender(r[8], ""), toGender(r[9], ""), toGender(r[10], ""), toGender(r[11], "")];
+}
+
+// Source_URL from col M (new layout) or col J (legacy row).
+function venueRowSource(r) {
+  return isLegacyVenueRow(r) ? (r[9] || "") : (r[12] || "");
+}
+
+// Derive the match category from four per-player genders:
+//   all M -> "M" (Men's Doubles), all F -> "F" (Women's Doubles), otherwise "MIXED".
+function matchCategory(genders) {
+  const gs = genders.map((g) => toGender(g, "")).filter(Boolean);
+  if (!gs.length) return "M";
+  if (gs.every((g) => g === "M")) return "M";
+  if (gs.every((g) => g === "F")) return "F";
+  return "MIXED";
+}
+
+// Pull four per-player genders out of a client-supplied match object, accepting every
+// shape a caller might send: a `genders` array/object, per-slot fields
+// (p1t1Gender / p1t1_gender), or a single `gender` applied to the whole match (legacy).
+// Unknown slots come back as "" so downstream code can fall back to the Players tab.
+function extractMatchGenders(m) {
+  if (m && Array.isArray(m.genders)) return m.genders.slice(0, 4).map((g) => toGender(g, ""));
+  if (m && m.genders && typeof m.genders === "object") {
+    return [m.genders.p1t1, m.genders.p2t1, m.genders.p1t2, m.genders.p2t2].map((g) => toGender(g, ""));
+  }
+  const perSlot = [
+    m.p1t1Gender != null ? m.p1t1Gender : m.p1t1_gender,
+    m.p2t1Gender != null ? m.p2t1Gender : m.p2t1_gender,
+    m.p1t2Gender != null ? m.p1t2Gender : m.p1t2_gender,
+    m.p2t2Gender != null ? m.p2t2Gender : m.p2t2_gender,
+  ];
+  if (perSlot.some((g) => g != null && String(g).trim() !== "")) return perSlot.map((g) => toGender(g, ""));
+  const single = toGender(m.gender, "");
+  return [single, single, single, single];
+}
+
+// Build a 13-col venue match row from names + per-player genders. `genders` may be an
+// array [g1,g2,g3,g4], an object {p1t1,p2t1,p1t2,p2t2}, or a single string that is
+// applied to all four slots (backward-compatible with single-gender callers). Any slot
+// that can't be resolved to M/F falls back to "M".
+function buildVenueRow({ week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, genders, source }) {
+  let g;
+  if (Array.isArray(genders)) g = genders;
+  else if (genders && typeof genders === "object") g = [genders.p1t1, genders.p2t1, genders.p1t2, genders.p2t2];
+  else g = [genders, genders, genders, genders];
+  return [
+    week, date, p1t1 || "", p2t1 || "", p1t2 || "", p2t2 || "",
+    scoreT1, scoreT2,
+    toGender(g[0], "M"), toGender(g[1], "M"), toGender(g[2], "M"), toGender(g[3], "M"),
+    source || "",
+  ];
+}
+
 async function getVenues() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:I` });
@@ -713,8 +817,8 @@ async function addVenue(body) {
         spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: tabName } } }] },
       });
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID, range: `${tabName}!A1:J1`, valueInputOption: "USER_ENTERED",
-        requestBody: { values: [[ "Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL" ]] },
+        spreadsheetId: SHEET_ID, range: `${tabName}!A1:M1`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [VENUE_HEADER] },
       });
     }
   } catch (e) { console.error("Error creating venue tab:", e); }
@@ -752,12 +856,19 @@ function getWeekNumber(d) {
 async function getVenueMatches(venueName, params) {
   const sheets = getSheets();
   const tab = venueTabName(venueName);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:J` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${VENUE_READ_RANGE}` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
-  let matches = rows.map((r) => ({
-    week: r[0] || "", date: r[1] || "", p1t1: r[2] || "", p2t1: r[3] || "", p1t2: r[4] || "", p2t2: r[5] || "",
-    scoreT1: parseInt(r[6]) || 0, scoreT2: parseInt(r[7]) || 0, gender: (r[8] || "M").toUpperCase(), sourceUrl: r[9] || "",
-  }));
+  let matches = rows.map((r) => {
+    const [g1, g2, g3, g4] = venueRowGenders(r);
+    return {
+      week: r[0] || "", date: r[1] || "", p1t1: r[2] || "", p2t1: r[3] || "", p1t2: r[4] || "", p2t2: r[5] || "",
+      scoreT1: parseInt(r[6]) || 0, scoreT2: parseInt(r[7]) || 0,
+      // `gender` stays the match category (M / F / MIXED) for backward compatibility.
+      gender: matchCategory([g1, g2, g3, g4]),
+      genders: { p1t1: g1, p2t1: g2, p1t2: g3, p2t2: g4 },
+      sourceUrl: venueRowSource(r),
+    };
+  });
   if (params.week) matches = matches.filter((m) => m.week === params.week);
   if (params.gender) matches = matches.filter((m) => m.gender === params.gender.toUpperCase());
   return respond(200, { matches, venue: venueName });
@@ -771,19 +882,34 @@ async function addVenueMatch(venueName, body) {
   const now = new Date().toISOString().split("T")[0];
   const weekNum = getWeekNumber(new Date());
   
-  const rows = matches.map((m) => [
-    m.week || `W${weekNum}`, m.date || now, m.p1t1 || "", m.p2t1 || "", m.p1t2 || "", m.p2t2 || "",
-    m.scoreT1 || 0, m.scoreT2 || 0, (m.gender || "M").toUpperCase(), m.sourceUrl || ""
-  ]);
+  // Per-player gender for each match, so Mixed Doubles is written slot-by-slot.
+  const matchGenders = matches.map((m) => extractMatchGenders(m));
+  const rows = matches.map((m, i) => buildVenueRow({
+    week: m.week || `W${weekNum}`, date: m.date || now,
+    p1t1: m.p1t1, p2t1: m.p2t1, p1t2: m.p1t2, p2t2: m.p2t2,
+    scoreT1: m.scoreT1 || 0, scoreT2: m.scoreT2 || 0,
+    genders: matchGenders[i], source: m.sourceUrl || "",
+  }));
 
   try {
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID, range: `${tab}!A:J`, valueInputOption: "USER_ENTERED",
+      spreadsheetId: SHEET_ID, range: `${tab}!A:M`, valueInputOption: "USER_ENTERED",
       requestBody: { values: rows },
     });
   } catch (err) {
     return respond(500, { error: `Failed to write to venue tab. Make sure tab ${tab} exists.` });
   }
+
+  // Map each player name to their own gender (first non-blank slot seen) so a newly
+  // auto-created female player in a Mixed match gets "F", not the old hardcoded "M".
+  const genderByName = {};
+  matches.forEach((m, i) => {
+    const g = matchGenders[i];
+    [m.p1t1, m.p2t1, m.p1t2, m.p2t2].forEach((nm, s) => {
+      const key = String(nm || "").toLowerCase();
+      if (key && !genderByName[key] && g[s]) genderByName[key] = g[s];
+    });
+  });
 
   // Create new players if they don't exist + keep every player's clubs list current
   const newPlayers = [];
@@ -807,7 +933,7 @@ async function addVenueMatch(venueName, body) {
         newPlayers.push(p);
         await sheets.spreadsheets.values.append({
           spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
-          requestBody: { values: [[ p, "", "FALSE", p, "M", "", "", venueName, isoNow ]] },
+          requestBody: { values: [[ p, "", "FALSE", p, genderByName[key] || "M", "", "", venueName, isoNow ]] },
         });
         await sheets.spreadsheets.values.append({
           spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
@@ -950,7 +1076,7 @@ async function syncPlayerClubs() {
 async function getVenueWeeklyRanking(venueName, params) {
   const sheets = getSheets();
   const tab = venueTabName(venueName);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:I` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${VENUE_READ_RANGE}` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const wkNum = (w) => parseInt(String(w || "").replace(/\D/g, ""), 10) || 0;
   const allWeeks = [...new Set(rows.map((r) => r[0]).filter(Boolean))].sort((a, b) => wkNum(b) - wkNum(a));
@@ -958,15 +1084,22 @@ async function getVenueWeeklyRanking(venueName, params) {
   const week = params.week || lastWeek || allWeeks[0] || `W${getWeekNumber(new Date())}`;
   const weekMatches = rows.filter((r) => r[0] === week);
   const stats = {};
-  
+
   weekMatches.forEach((r) => {
     const t1 = [r[2], r[3]].filter(Boolean);
     const t2 = [r[4], r[5]].filter(Boolean);
     const s1 = parseInt(r[6]) || 0;
     const s2 = parseInt(r[7]) || 0;
-    const gender = (r[8] || "M").toUpperCase();
-    
-    [...t1, ...t2].forEach((p) => { if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, pd: 0, gender }; });
+    // Each player is bucketed by their OWN gender (their slot's cell), so a woman in a
+    // Mixed Doubles match still ranks on the Women's leaderboard. Blank cells are
+    // resolved from the Players tab below.
+    const [g1, g2, g3, g4] = venueRowGenders(r);
+    const slotGender = { [r[2]]: g1, [r[3]]: g2, [r[4]]: g3, [r[5]]: g4 };
+
+    [...t1, ...t2].forEach((p) => {
+      if (!stats[p]) stats[p] = { w: 0, l: 0, played: 0, pd: 0, gender: "" };
+      if (!stats[p].gender) stats[p].gender = toGender(slotGender[p], "");
+    });
     t1.forEach((p) => { stats[p].pd += (s1 - s2); });
     t2.forEach((p) => { stats[p].pd += (s2 - s1); });
     if (s1 > s2) {
@@ -991,21 +1124,31 @@ async function getVenueWeeklyRanking(venueName, params) {
   const info = {};
   (pRes.data.values || []).forEach((r) => {
     if (!r[0]) return;
-    info[normName(r[0])] = { displayName: r[3] || r[0], verified: r[2] === "TRUE", photoUrl: r[6] || "", region: r[5] || "" };
+    info[normName(r[0])] = { displayName: r[3] || r[0], verified: r[2] === "TRUE", photoUrl: r[6] || "", region: r[5] || "", gender: toGender(r[4], "") };
   });
 
   let ranking = Object.keys(stats).map((p) => {
     const gi = info[normName(p)] || {};
     return {
       name: p, displayName: gi.displayName || p, w: stats[p].w, l: stats[p].l, pd: stats[p].pd, played: stats[p].played,
-      gender: stats[p].gender, elo: latestElo[p.toLowerCase()] || 1350,
+      // Prefer the gender from the match row; fall back to the player's profile, then "M".
+      gender: stats[p].gender || gi.gender || "M", elo: latestElo[p.toLowerCase()] || 1350,
       photoUrl: gi.photoUrl || "", verified: !!gi.verified, region: gi.region || "",
     };
   });
 
   ranking.sort((a, b) => b.w - a.w || b.pd - a.pd || b.elo - a.elo);
   if (params.gender) ranking = ranking.filter((p) => p.gender === params.gender.toUpperCase());
-  const matches = weekMatches.map((r) => ({ t1: [r[2], r[3]].filter(Boolean), t2: [r[4], r[5]].filter(Boolean), s1: parseInt(r[6]) || 0, s2: parseInt(r[7]) || 0, gender: (r[8] || "M").toUpperCase(), ts: r[1] || "" }));
+  const matches = weekMatches.map((r) => {
+    const [g1, g2, g3, g4] = venueRowGenders(r);
+    return {
+      t1: [r[2], r[3]].filter(Boolean), t2: [r[4], r[5]].filter(Boolean),
+      s1: parseInt(r[6]) || 0, s2: parseInt(r[7]) || 0,
+      gender: matchCategory([g1, g2, g3, g4]),
+      genders: { p1t1: g1, p2t1: g2, p1t2: g3, p2t2: g4 },
+      ts: r[1] || "",
+    };
+  });
   return respond(200, { week, weeks: allWeeks, venue: venueName, ranking, matches });
 }
 
@@ -1055,7 +1198,8 @@ async function recordManualMatch(body) {
   if (isNaN(s1) || isNaN(s2)) return respond(400, { error: "Both scores are required" });
   if (!venue || !String(venue).trim()) return respond(400, { error: "Venue / community is required" });
   const venueName = String(venue).trim();
-  const g = (gender || "M").toUpperCase();
+  // Per-player genders (Mixed Doubles aware). `pg[i]` aligns with `names[i]`.
+  const pg = extractMatchGenders(body);
   const lv = levels || {};
   const sheets = getSheets();
 
@@ -1073,9 +1217,10 @@ async function recordManualMatch(body) {
     const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
     const have = new Set((pr.data.values || []).map((r) => (r[0] || "").toLowerCase()));
     const isoNow = new Date().toISOString();
-    for (const name of names) {
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
       if (!have.has(name.toLowerCase())) {
-        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[name, "", "FALSE", name, g, "", "", venueName, isoNow]] } });
+        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[name, "", "FALSE", name, pg[i] || "M", "", "", venueName, isoNow]] } });
         have.add(name.toLowerCase());
       }
     }
@@ -1092,12 +1237,12 @@ async function recordManualMatch(body) {
     const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
     if (!ss.data.sheets.some((s) => s.properties.title === tab)) {
       await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: tab } } }] } });
-      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED", requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:M1`, valueInputOption: "USER_ENTERED", requestBody: { values: [VENUE_HEADER] } });
     }
   } catch (e) { console.error("record-match tab:", e); }
   const dateStr = new Date().toISOString().split("T")[0];
-  const matchRow = [`W${getWeekNumber(new Date())}`, dateStr, p1t1, p2t1, p1t2, p2t2, s1, s2, g, "superadmin"];
-  try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: [matchRow] } }); }
+  const matchRow = buildVenueRow({ week: `W${getWeekNumber(new Date())}`, date: dateStr, p1t1, p2t1, p1t2, p2t2, scoreT1: s1, scoreT2: s2, genders: pg, source: "superadmin" });
+  try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:M`, valueInputOption: "USER_ENTERED", requestBody: { values: [matchRow] } }); }
   catch (e) { return respond(500, { error: "Failed to write match to venue tab" }); }
 
   // write ELO to ELO_Log via a session so the leaderboard updates
@@ -1122,7 +1267,8 @@ async function importMatches(body) {
   const matches = [], errors = [];
   raw.forEach((m, i) => {
     const venue = String(m.venue || "").trim();
-    const g = String(m.gender || "M").toUpperCase().charAt(0) === "F" ? "F" : "M";
+    // Per-player genders (Mixed Doubles aware); each defaults to "M" when unknown.
+    const pg = extractMatchGenders(m).map((x) => x || "M");
     const names = [m.p1t1, m.p2t1, m.p1t2, m.p2t2].map((n) => String(n || "").trim());
     const s1 = parseInt(m.scoreT1, 10), s2 = parseInt(m.scoreT2, 10);
     const rowNo = m.row || i + 1;
@@ -1130,7 +1276,7 @@ async function importMatches(body) {
     if (names.some((n) => !n)) errors.push(`Row ${rowNo}: four players required`);
     else if (new Set(names.map((n) => n.toLowerCase())).size !== 4) errors.push(`Row ${rowNo}: players must be distinct`);
     if (isNaN(s1) || isNaN(s2)) errors.push(`Row ${rowNo}: scores must be numbers`);
-    matches.push({ venue, g, names, s1, s2, rowNo });
+    matches.push({ venue, pg, names, s1, s2, rowNo });
   });
   if (errors.length) return respond(400, { error: "Validation failed", details: errors.slice(0, 50) });
 
@@ -1161,10 +1307,10 @@ async function importMatches(body) {
       if (!stat[r.name]) stat[r.name] = { w: 0, l: 0, played: 0, elo: r.newElo };
       stat[r.name].w += r.w; stat[r.name].l += r.l; stat[r.name].played += 1; stat[r.name].elo = r.newElo;
     });
-    m.names.forEach((n) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.g, "", "", m.venue, tsNow]); } });
+    m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", "", "", m.venue, tsNow]); } });
     const tab = venueTabName(m.venue);
     if (!venueRows[tab]) { venueRows[tab] = []; venueDisplay[tab] = m.venue; }
-    venueRows[tab].push([week, dateStr, n1, n2, n3, n4, m.s1, m.s2, m.g, "import"]);
+    venueRows[tab].push(buildVenueRow({ week, date: dateStr, p1t1: n1, p2t1: n2, p1t2: n3, p2t2: n4, scoreT1: m.s1, scoreT2: m.s2, genders: m.pg, source: "import" }));
     const vk = m.venue.toLowerCase();
     if (!existingVenues.has(vk)) { existingVenues.add(vk); newVenueRows.push([m.venue, "Community", "", "", "", "", "", tsNow, ""]); }
   }
@@ -1176,14 +1322,14 @@ async function importMatches(body) {
       await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: addReqs } });
       for (const req of addReqs) {
         const tab = req.addSheet.properties.title;
-        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED", requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] } });
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!A1:M1`, valueInputOption: "USER_ENTERED", requestBody: { values: [VENUE_HEADER] } });
       }
     } catch (e) { return respond(500, { error: "Failed creating venue tabs: " + e.message }); }
   }
   if (newVenueRows.length) { try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: newVenueRows } }); } catch (e) {} }
   if (newPlayerRows.length) { try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: newPlayerRows } }); } catch (e) { return respond(500, { error: "Failed creating players: " + e.message }); } }
   for (const tab of Object.keys(venueRows)) {
-    try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:J`, valueInputOption: "USER_ENTERED", requestBody: { values: venueRows[tab] } }); }
+    try { await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${tab}!A:M`, valueInputOption: "USER_ENTERED", requestBody: { values: venueRows[tab] } }); }
     catch (e) { return respond(500, { error: `Failed writing venue ${venueDisplay[tab]}: ` + e.message }); }
   }
   try {
@@ -2844,18 +2990,19 @@ async function writeTournamentVenueRows(sheets, venueName, rows, sourceTag) {
         spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: tab } } }] },
       });
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID, range: `${tab}!A1:J1`, valueInputOption: "USER_ENTERED",
-        requestBody: { values: [["Week", "Date", "P1_Team1", "P2_Team1", "P1_Team2", "P2_Team2", "Score_T1", "Score_T2", "Gender", "Source_URL"]] },
+        spreadsheetId: SHEET_ID, range: `${tab}!A1:M1`, valueInputOption: "USER_ENTERED",
+        requestBody: { values: [VENUE_HEADER] },
       });
     }
   } catch (e) { console.error("venue tab create:", e); }
-  // 3) replace only this tournament's prior rows (idempotent), keep everything else
+  // 3) replace only this tournament's prior rows (idempotent), keep everything else.
+  //    Read/clear the full 13-col range so migrated per-player gender columns survive.
   try {
     let existing = [];
-    try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:J` }); existing = er.data.values || []; } catch (e) {}
-    const kept = existing.filter((r) => (r[9] || "") !== sourceTag);
+    try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${VENUE_READ_RANGE}` }); existing = er.data.values || []; } catch (e) {}
+    const kept = existing.filter((r) => venueRowSource(r) !== sourceTag);
     const final = kept.concat(rows);
-    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${tab}!A2:J` });
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: `${tab}!${VENUE_READ_RANGE}` });
     if (final.length) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID, range: `${tab}!A2`, valueInputOption: "USER_ENTERED", requestBody: { values: final },
@@ -2956,13 +3103,30 @@ async function tFinalizeElo(eventId, force) {
       const vWeek = `W${getWeekNumber(new Date(vDate))}`;
       const catByTid = {};
       for (const t of (trR.data.values || [])) if (t[1] === eventId) catByTid[t[0]] = String(t[2] || "");
-      const genderOf = (tid) => ((catByTid[tid] || "").toUpperCase().startsWith("W") ? "F" : "M");
+      // Per-player gender: Men's Doubles -> all M, Women's Doubles -> all F, Mixed ->
+      // resolve each entrant's own gender from the Players tab (so both halves of a
+      // mixed pair are written correctly instead of defaulting the whole row to M).
+      const genderByName = {};
+      try {
+        const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:E` });
+        (pr.data.values || []).forEach((r) => { if (r[0]) genderByName[normName(r[0])] = toGender(r[4], ""); });
+      } catch (e) {}
+      const genderFor = (name, cat) => {
+        if (cat === "WD") return "F";
+        if (cat === "MD") return "M";
+        return genderByName[normName(name)] || "M"; // MIXED / unknown -> profile gender
+      };
       const srcTag = `Trekkr Tournament ${eventId}`;
       const venueRows = [];
       for (const m of ordered) {
         const A = entMap[m.entrantA], B = entMap[m.entrantB];
         if (!A || !B || !A[0] || !B[0]) continue;
-        venueRows.push([vWeek, vDate, A[0], A[1] || "", B[0], B[1] || "", Number(m.scoreA), Number(m.scoreB), genderOf(m.tournamentId), srcTag]);
+        const cat = catCode(catByTid[m.tournamentId]);
+        const genders = [genderFor(A[0], cat), genderFor(A[1], cat), genderFor(B[0], cat), genderFor(B[1], cat)];
+        venueRows.push(buildVenueRow({
+          week: vWeek, date: vDate, p1t1: A[0], p2t1: A[1] || "", p1t2: B[0], p2t2: B[1] || "",
+          scoreT1: Number(m.scoreA), scoreT2: Number(m.scoreB), genders, source: srcTag,
+        }));
       }
       await writeTournamentVenueRows(sheets, venueName, venueRows, srcTag);
     }
@@ -4115,8 +4279,7 @@ async function reSubmitScore(eventId, body) {
   return respond(200, { ok: true, matchId, scoreA, scoreB, waveComplete, eventDone });
 }
 
-// Build venue weekly-log rows from finished event matches.
-// Columns: [Week, Date, P1_T1, P2_T1, P1_T2, P2_T2, Score_T1, Score_T2, Gender, Source_URL]
+// Build venue weekly-log rows (13-col per-player-gender layout) from finished event matches.
 function reVenueRows(event, players, matches) {
   const nameById = {}, genderById = {};
   players.forEach((p) => { nameById[p.id] = p.name; genderById[p.id] = p.gender || "M"; });
@@ -4127,9 +4290,13 @@ function reVenueRows(event, players, matches) {
   matches.forEach((m) => {
     if (m.status !== "done" || m.scoreA == null || m.scoreB == null) return;
     if (seen.has(m.matchId)) return; seen.add(m.matchId);
-    const gs = [...m.a, ...m.b].map((id) => genderById[id] || "M");
-    const g = gs.every((x) => x === gs[0]) ? gs[0] : "X";
-    out.push([wk, date, nameById[m.a[0]] || "", nameById[m.a[1]] || "", nameById[m.b[0]] || "", nameById[m.b[1]] || "", m.scoreA, m.scoreB, g, "RE_" + event.id]);
+    // Per-player genders straight from the roster — Mixed events are now written slot-by-slot.
+    const genders = [m.a[0], m.a[1], m.b[0], m.b[1]].map((id) => toGender(genderById[id], "M"));
+    out.push(buildVenueRow({
+      week: wk, date, p1t1: nameById[m.a[0]] || "", p2t1: nameById[m.a[1]] || "",
+      p1t2: nameById[m.b[0]] || "", p2t2: nameById[m.b[1]] || "",
+      scoreT1: m.scoreA, scoreT2: m.scoreB, genders, source: "RE_" + event.id,
+    }));
   });
   return out;
 }

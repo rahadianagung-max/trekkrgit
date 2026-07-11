@@ -1751,11 +1751,22 @@ async function submitRound() {
 
     // ── SUBMIT KE TREKKR ─────────────────────────────────────────────────────
     if (state.venue && state.token) {
+      // Resolve a single player's own gender (same source detectMatchGender uses).
+      const playerGender = p => {
+        const st = state.playerStats[p.name] || {};
+        const sel = state.selectedPlayers.find(s => s.name === p.name);
+        return String(st.gender || sel?.gender || "M").toUpperCase();
+      };
       const apiMatches = round.matches.map(m => ({
         p1t1: m.team1[0].name.trim(), p2t1: m.team1[1].name.trim(),
         p1t2: m.team2[0].name.trim(), p2t2: m.team2[1].name.trim(),
         scoreT1: Number(m.score1),    scoreT2: Number(m.score2),
-        // Auto-detect gender from player composition (M / F / X for mixed)
+        // Per-player genders so Mixed Doubles is stored slot-by-slot.
+        genders: {
+          p1t1: playerGender(m.team1[0]), p2t1: playerGender(m.team1[1]),
+          p1t2: playerGender(m.team2[0]), p2t2: playerGender(m.team2[1]),
+        },
+        // Category label (M / F / X for mixed) kept for backward compatibility.
         gender: detectMatchGender(m.team1, m.team2),
         sourceUrl: "Trekkr Mexicano Daily Match",
       }));
