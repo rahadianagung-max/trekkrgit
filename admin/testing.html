@@ -1319,6 +1319,11 @@ async function rmSubmitRound() {
       p1t1:m.team1[0].name, p2t1:m.team1[1].name,
       p1t2:m.team2[0].name, p2t2:m.team2[1].name,
       scoreT1:Number(m.score1), scoreT2:Number(m.score2),
+      // Per-player genders (fall back to the session category when a player has none).
+      genders:{
+        p1t1:(m.team1[0].gender||RM.gender||'M').toUpperCase(), p2t1:(m.team1[1].gender||RM.gender||'M').toUpperCase(),
+        p1t2:(m.team2[0].gender||RM.gender||'M').toUpperCase(), p2t2:(m.team2[1].gender||RM.gender||'M').toUpperCase(),
+      },
       gender:RM.gender,
       sourceUrl:'Trekkr Ranked Match',
     }));

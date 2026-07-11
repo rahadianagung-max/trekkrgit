@@ -159,7 +159,18 @@ footer span{color:var(--lime)}
         <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Tentukan venue/community, isi 4 pemain &amp; skor. Nama pemain diambil dari database (klik dari daftar agar tidak salah tulis); pemain baru diberi level manual. Skor langsung direkam &amp; ELO dihitung.</p>
         <div class="field-row">
           <div class="field"><label class="field-label">Venue / Community *</label><input class="field-input" id="rm-venue" list="rm-venue-list" placeholder="Pilih atau ketik baru..." autocomplete="off"><datalist id="rm-venue-list"></datalist></div>
-          <div class="field"><label class="field-label">Gender</label><select class="field-select" id="rm-gender"><option value="M">Putra (M)</option><option value="F">Putri (F)</option></select></div>
+          <div class="field"><label class="field-label">Kategori</label><select class="field-select" id="rm-gender" onchange="rmGenderChange()"><option value="M">Men's Doubles (Putra)</option><option value="F">Women's Doubles (Putri)</option><option value="MIXED">Mixed Doubles (Campuran)</option></select></div>
+        </div>
+        <div class="field-row" id="rm-mixed-genders" style="display:none">
+          <div style="border:1px solid var(--border2);border-radius:8px;padding:12px;width:100%">
+            <div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">GENDER PER PEMAIN (Mixed Doubles)</div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+              <div class="field"><label class="field-label">T1 · Pemain 1</label><select class="field-select" id="rm-g-p1t1"><option value="M">Male</option><option value="F">Female</option></select></div>
+              <div class="field"><label class="field-label">T1 · Pemain 2</label><select class="field-select" id="rm-g-p2t1"><option value="F">Female</option><option value="M">Male</option></select></div>
+              <div class="field"><label class="field-label">T2 · Pemain 1</label><select class="field-select" id="rm-g-p1t2"><option value="M">Male</option><option value="F">Female</option></select></div>
+              <div class="field"><label class="field-label">T2 · Pemain 2</label><select class="field-select" id="rm-g-p2t2"><option value="F">Female</option><option value="M">Male</option></select></div>
+            </div>
+          </div>
         </div>
         <div class="field-row">
           <div style="border:1px solid var(--border2);border-radius:8px;padding:14px"><div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">TEAM 1</div><div class="field"><label class="field-label">Pemain 1 *</label><div class="rm-pf"><input class="field-input" id="rm-p1t1" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p1t1')" onfocus="rmSug('rm-p1t1')"><div class="rm-sug" id="rm-p1t1-sug"></div></div><div id="rm-p1t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p1t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Pemain 2 *</label><div class="rm-pf"><input class="field-input" id="rm-p2t1" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p2t1')" onfocus="rmSug('rm-p2t1')"><div class="rm-sug" id="rm-p2t1-sug"></div></div><div id="rm-p2t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p2t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Skor Team 1 *</label><input class="field-input" id="rm-sT1" type="number" min="0" placeholder="0"></div></div>
@@ -360,11 +371,20 @@ function rmCloseSug(){RM_IDS.forEach(id=>{const b=document.getElementById(id+'-s
 document.addEventListener('click',function(e){if(!e.target.closest('.rm-pf'))rmCloseSug();});
 function populatePlayerList(){RM_IDS.forEach(id=>{const inp=document.getElementById(id);if(inp&&inp.value.trim())rmSug(id);});}
 function populateVenueList(){const dl=document.getElementById('rm-venue-list');if(!dl)return;dl.innerHTML=allVenues.map(v=>`<option value="${String(v.name||'').replace(/"/g,'&quot;')}">`).join('');}
+// Show the per-player gender selectors only for Mixed Doubles.
+function rmGenderChange(){
+  const box=document.getElementById('rm-mixed-genders');
+  if(box)box.style.display=document.getElementById('rm-gender').value==='MIXED'?'':'none';
+}
 async function recordMatch(){
   const st=document.getElementById('rm-status'),res=document.getElementById('rm-result');res.innerHTML='';
   const show=(cls,msg)=>{st.className='status-msg'+(cls?' '+cls:'');st.style.display='block';st.textContent=msg;};
   const venue=document.getElementById('rm-venue').value.trim();
   const gender=document.getElementById('rm-gender').value;
+  // Per-player genders: for Mixed, read each slot's select; otherwise apply the category to all four.
+  const genders = gender==='MIXED'
+    ? {p1t1:document.getElementById('rm-g-p1t1').value, p2t1:document.getElementById('rm-g-p2t1').value, p1t2:document.getElementById('rm-g-p1t2').value, p2t2:document.getElementById('rm-g-p2t2').value}
+    : {p1t1:gender, p2t1:gender, p1t2:gender, p2t2:gender};
   const p1t1=document.getElementById('rm-p1t1').value.trim(),p2t1=document.getElementById('rm-p2t1').value.trim(),p1t2=document.getElementById('rm-p1t2').value.trim(),p2t2=document.getElementById('rm-p2t2').value.trim();
   const scoreT1=document.getElementById('rm-sT1').value,scoreT2=document.getElementById('rm-sT2').value;
   if(!venue){show('error','Venue / community wajib diisi.');return;}
@@ -376,7 +396,7 @@ async function recordMatch(){
   RM_IDS.forEach(id=>{const v=document.getElementById(id).value.trim();if(v&&!isExistingPlayer(v)){const ls=document.getElementById(id+'-level');if(ls)levels[v]=ls.value;}});
   show('','Menyimpan & menghitung ELO...');
   try{
-    const r=await fetch('https://trekkr.online/api/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
+    const r=await fetch('https://trekkr.online/api/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,genders,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
     const d=await r.json();
     if(!r.ok||!d.success){show('error',d.error||'Gagal menyimpan match.');return;}
     show('success',`✓ Match direkam di "${d.venue}". ELO diperbarui.`);
@@ -438,16 +458,29 @@ function impParse(rows){
   if(!rows||!rows.length){document.getElementById("imp-summary").innerHTML='<p style="color:#e03b30">File kosong.</p>';return;}
   var H=(rows[0]||[]).map(impNorm);
   function col(){for(var a=0;a<arguments.length;a++){for(var j=0;j<H.length;j++){if(H[j].indexOf(arguments[a])!==-1)return j;}}return -1;}
-  var c={venue:col("venue","community"),gender:col("gender"),a1:col("teamaplayer1","teama1"),a2:col("teamaplayer2","teama2"),b1:col("teambplayer1","teamb1"),b2:col("teambplayer2","teamb2"),sa:col("scorea"),sb:col("scoreb")};
+  // Per-player gender columns are optional; when present they enable Mixed Doubles.
+  // Detect them BEFORE the generic single "gender" column so the loose match doesn't
+  // grab a per-player header.
+  var c={venue:col("venue","community"),
+    g1:col("teamaplayer1gender","teama1gender","player1gender"),
+    g2:col("teamaplayer2gender","teama2gender","player2gender"),
+    g3:col("teambplayer1gender","teamb1gender","player3gender"),
+    g4:col("teambplayer2gender","teamb2gender","player4gender"),
+    gender:col("gender"),
+    a1:col("teamaplayer1","teama1"),a2:col("teamaplayer2","teama2"),b1:col("teambplayer1","teamb1"),b2:col("teambplayer2","teamb2"),sa:col("scorea"),sb:col("scoreb")};
   if(c.venue<0||c.a1<0||c.a2<0||c.b1<0||c.b2<0||c.sa<0||c.sb<0){document.getElementById("imp-summary").innerHTML='<p style="color:#e03b30;font-size:13px">Header tidak dikenali. Gunakan template baku (Venue, Team A/B Player 1/2, Score A/B).</p>';return;}
+  var gnorm=function(v){v=String(v||"").toUpperCase().trim();return v.charAt(0)==="F"?"F":v.charAt(0)==="M"?"M":"";};
   var known={}; (allPC||[]).forEach(function(p){known[String(p.name||"").toLowerCase()]=true;});
   var matches=[], newSet={};
   for(var i=1;i<rows.length;i++){
     var r=rows[i]||[]; var g=function(idx){return idx>=0?String(r[idx]==null?"":r[idx]).trim():"";};
-    var venue=g(c.venue),gender=g(c.gender).toUpperCase().charAt(0),p1t1=g(c.a1),p2t1=g(c.a2),p1t2=g(c.b1),p2t2=g(c.b2),sa=g(c.sa),sb=g(c.sb);
+    var venue=g(c.venue),single=gnorm(g(c.gender)),p1t1=g(c.a1),p2t1=g(c.a2),p1t2=g(c.b1),p2t2=g(c.b2),sa=g(c.sa),sb=g(c.sb);
     var players=[p1t1,p2t1,p1t2,p2t2].filter(Boolean);
     if(players.length===0) continue;
-    if(gender!=="M"&&gender!=="F") gender="M";
+    // Resolve each slot: its own gender column, else the single category column, else M.
+    var genders={p1t1:gnorm(g(c.g1))||single||"M",p2t1:gnorm(g(c.g2))||single||"M",p1t2:gnorm(g(c.g3))||single||"M",p2t2:gnorm(g(c.g4))||single||"M"};
+    var gv=[genders.p1t1,genders.p2t1,genders.p1t2,genders.p2t2];
+    var category=gv.every(function(x){return x==="M";})?"M":gv.every(function(x){return x==="F";})?"F":"MIXED";
     var errors=[];
     if(!venue)errors.push("Venue kosong");
     if(players.length<4)errors.push("Pemain kurang");
@@ -455,7 +488,7 @@ function impParse(rows){
     if(!impIsInt(sa)||!impIsInt(sb))errors.push("Skor bukan angka");
     var hasNew=false;
     if(errors.length===0){ players.forEach(function(n){ if(!known[n.toLowerCase()]){newSet[n]=true;hasNew=true;} }); }
-    matches.push({row:i+1,venue:venue,gender:gender,p1t1:p1t1,p2t1:p2t1,p1t2:p1t2,p2t2:p2t2,sa:sa,sb:sb,errors:errors,hasNew:hasNew});
+    matches.push({row:i+1,venue:venue,gender:category,genders:genders,p1t1:p1t1,p2t1:p2t1,p1t2:p1t2,p2t2:p2t2,sa:sa,sb:sb,errors:errors,hasNew:hasNew});
   }
   var np=Object.keys(newSet);
   var similar=[],decisions={},mergeTarget={};
@@ -499,7 +532,7 @@ async function impSubmit(){
   var btn=document.getElementById("imp-submit"); if(btn)btn.disabled=true;
   var prog=document.getElementById("imp-progress");
   prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i style="width:100%"></i></div><div class="imp-prog-t">Mengimpor '+valid.length+' match — batch (all-or-nothing, urutan dijaga)…</div></div>';
-  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb};}) };
+  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,genders:m.genders,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb};}) };
   try{
     var r=await fetch("https://trekkr.online/api/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     var d=await r.json();

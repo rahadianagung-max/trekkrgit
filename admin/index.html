@@ -1640,6 +1640,12 @@ async function rmSubmitRound() {
       p1t1:m.team1[0].name, p2t1:m.team1[1].name,
       p1t2:m.team2[0].name, p2t2:m.team2[1].name,
       scoreT1:Number(m.score1), scoreT2:Number(m.score2),
+      // Per-player genders so Mixed Doubles is stored slot-by-slot; `gender` (category)
+      // kept for backward compatibility with older engine builds.
+      genders:{
+        p1t1:(m.team1[0].gender||'M').toUpperCase(), p2t1:(m.team1[1].gender||'M').toUpperCase(),
+        p1t2:(m.team2[0].gender||'M').toUpperCase(), p2t2:(m.team2[1].gender||'M').toUpperCase(),
+      },
       gender:rmMatchGender([...m.team1,...m.team2]),
       sourceUrl:'Trekkr Ranked Match',
     }));
