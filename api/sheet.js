@@ -831,6 +831,17 @@ async function updateVenue(body) {
   const { name, updates } = body;
   if (!name || !updates) return respond(400, { error: "name and updates required" });
   const sheets = getSheets();
+  // A new logo may arrive as a base64 data URL. Upload it through the same image
+  // pipeline the rest of the app uses (imgbb when IMGBB_API_KEY is set, else Drive)
+  // and store the returned public URL in the Logo_URL column.
+  let logoUrl = updates.logoUrl;
+  if (updates.logo) {
+    try {
+      const safe = String(name).replace(/[^a-z0-9]/gi, "_");
+      const folderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+      logoUrl = await uploadImage(updates.logo, `venuelogo_${safe}_${Date.now()}.jpg`, folderId);
+    } catch (e) { return respond(500, { error: "Logo upload failed: " + (e.message || e) }); }
+  }
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:I` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
@@ -839,13 +850,13 @@ async function updateVenue(body) {
   const updated = [
     updates.name || c[0] || "", updates.location || c[1] || "", updates.region || c[2] || "",
     updates.schedule || c[3] || "", updates.prizePool || c[4] || "", updates.contact || c[5] || "",
-    updates.logoUrl || c[6] || "", c[7] || "", updates.registerUrl || c[8] || "",
+    logoUrl || c[6] || "", c[7] || "", updates.registerUrl || c[8] || "",
   ];
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID, range: `${TABS.venues}!A${sr}:I${sr}`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [updated] },
   });
-  return respond(200, { success: true });
+  return respond(200, { success: true, logoUrl: logoUrl || c[6] || "" });
 }
 
 function getWeekNumber(d) {

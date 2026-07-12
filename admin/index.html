@@ -127,6 +127,12 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 
 /* ── VENUE INFO FORM ── */
 .section-card{background:var(--sur-0);border-radius:var(--r-xl);padding:28px;margin-bottom:20px;border:1px solid rgba(115,118,136,.1)}
+/* Venue logo uploader */
+.vlogo-uploader{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.vlogo-preview{width:92px;height:92px;border-radius:16px;background:var(--sur-lo);border:1.5px dashed var(--sur-hi);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--on-v);font-size:11px;text-align:center;padding:6px}
+.vlogo-preview img{width:100%;height:100%;object-fit:cover}
+.vlogo-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.vlogo-hint{font-size:11px;color:var(--on-v);margin:0;max-width:280px;line-height:1.5}
 .sc-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
 .sc-dot{width:8px;height:8px;border-radius:50%;background:var(--pr)}
 .sc-label{font-family:'Saira Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase}
@@ -560,6 +566,18 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <div class="container">
       <div class="section-card">
         <div class="sc-title"><span class="sc-dot"></span><span class="sc-label">Venue Information</span></div>
+        <div class="f-group" style="margin-bottom:20px">
+          <label class="f-label">Venue / Community Logo</label>
+          <div class="vlogo-uploader">
+            <div class="vlogo-preview" id="venueLogoPreview"><span id="venueLogoPlaceholder">No logo yet</span></div>
+            <div class="vlogo-actions">
+              <input type="file" id="venueLogoInput" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="onVenueLogoPick(event)"/>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('venueLogoInput').click()">Upload Logo</button>
+              <button type="button" class="btn btn-danger btn-sm" id="venueLogoCancel" style="display:none" onclick="cancelVenueLogo()">Cancel new logo</button>
+              <p class="vlogo-hint">Square image recommended (PNG/JPG/WebP, max 5 MB). Displayed as a large logo at the top of your public venue page.</p>
+            </div>
+          </div>
+        </div>
         <div class="form-grid">
           <div class="f-group">
             <label class="f-label" for="venueSchedule">Playing Schedule</label>
@@ -1042,6 +1060,37 @@ function switchTab(id) {
 /* ══════════════════════════════════════════════════════════════════════
    VENUE INFO
    ══════════════════════════════════════════════════════════════════════ */
+let venueCurrentLogo = '';   // last-saved logo URL
+let venueLogoData = null;    // base64 data URL of a newly picked logo (null = no change)
+
+function renderVenueLogo(src){
+  const box=document.getElementById('venueLogoPreview');
+  if(!box) return;
+  box.innerHTML = src
+    ? `<img src="${src}" alt="Venue logo"/>`
+    : '<span id="venueLogoPlaceholder">No logo yet</span>';
+}
+function onVenueLogoPick(e){
+  const file=e.target.files && e.target.files[0];
+  const st=document.getElementById('venueStatus');
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ tStatus(st,'error','Please choose an image file.'); return; }
+  if(file.size > 5*1024*1024){ tStatus(st,'error','Image is too large (max 5 MB).'); e.target.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=function(){
+    venueLogoData=reader.result;               // data URL, sent to the API on save
+    renderVenueLogo(venueLogoData);
+    document.getElementById('venueLogoCancel').style.display='inline-flex';
+  };
+  reader.readAsDataURL(file);
+}
+function cancelVenueLogo(){
+  venueLogoData=null;
+  document.getElementById('venueLogoInput').value='';
+  document.getElementById('venueLogoCancel').style.display='none';
+  renderVenueLogo(venueCurrentLogo);
+}
+
 async function loadVenueInfo() {
   if (!RM.venue) return;
   try {
@@ -1052,6 +1101,11 @@ async function loadVenueInfo() {
       document.getElementById('venuePrize').value    = v.prizePool || '';
       document.getElementById('venueContact').value  = v.contact || '';
       document.getElementById('venueLocation').value = v.location || '';
+      venueCurrentLogo = v.logoUrl || '';
+      venueLogoData = null;
+      document.getElementById('venueLogoInput').value='';
+      document.getElementById('venueLogoCancel').style.display='none';
+      renderVenueLogo(venueCurrentLogo);
     }
   } catch(e) { console.warn('Venue info load failed'); }
 }
@@ -1059,13 +1113,23 @@ async function loadVenueInfo() {
 async function saveVenueInfo() {
   const st = document.getElementById('venueStatus');
   if (!RM.venue) { tStatus(st,'error','No venue assigned.'); return; }
+  const updates = {
+    schedule: document.getElementById('venueSchedule').value,
+    prizePool: document.getElementById('venuePrize').value,
+    contact:   document.getElementById('venueContact').value,
+    location:  document.getElementById('venueLocation').value,
+  };
+  if (venueLogoData) updates.logo = venueLogoData;  // base64 -> imgbb server-side
   try {
-    await TrekkrAPI.updateVenue(RM.venue, {
-      schedule: document.getElementById('venueSchedule').value,
-      prizePool: document.getElementById('venuePrize').value,
-      contact:   document.getElementById('venueContact').value,
-      location:  document.getElementById('venueLocation').value,
-    });
+    tStatus(st, '', venueLogoData ? 'Uploading logo & saving…' : 'Saving…');
+    const resp = await TrekkrAPI.updateVenue(RM.venue, updates);
+    if (resp && resp.logoUrl !== undefined) {
+      venueCurrentLogo = resp.logoUrl || venueCurrentLogo;
+      renderVenueLogo(venueCurrentLogo);
+    }
+    venueLogoData = null;
+    document.getElementById('venueLogoInput').value='';
+    document.getElementById('venueLogoCancel').style.display='none';
     tStatus(st, 'success', 'Venue information saved.');
   } catch(e) { tStatus(st, 'error', e.message || 'Failed to save.'); }
 }

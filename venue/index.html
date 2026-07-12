@@ -33,7 +33,8 @@
 
 /* Detail */
 .vhero{margin-top:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.vhero .vlogo{width:72px;height:72px;border-radius:16px;font-size:28px}
+.vhero .vlogo{width:104px;height:104px;border-radius:20px;font-size:40px;flex-shrink:0}
+@media(max-width:560px){.vhero .vlogo{width:84px;height:84px;border-radius:16px;font-size:32px}}
 .vhero .vinfo{flex:1;min-width:200px}
 .vhero h2{font-size:clamp(24px,4.5vw,34px);margin:0}
 .vtags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
@@ -227,7 +228,7 @@
     if(v.contact)tags+='<span class="vtag"><i class="ti ti-phone"></i>'+esc(v.contact)+'</span>';
     var reg=v.registerUrl?'<a class="btn btn--primary" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener"><i class="ti ti-user-plus"></i>Register</a>':'';
     return '<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div>'
-      +'<div class="vhero"><div class="vinfo"><h2 class="vname">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>';
+      +'<div class="vhero">'+vlogo(v,true)+'<div class="vinfo"><h2 class="vname">'+esc(v.name)+'</h2><div class="vtags">'+tags+'</div></div>'+reg+'</div>';
   }
   function modeTabs(mode){
     return '<div class="vmode">'
