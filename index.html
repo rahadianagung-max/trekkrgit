@@ -36,7 +36,8 @@
 .venue-list{display:flex;flex-direction:column;gap:8px}
 .venue-row{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .2s}
 .venue-row:hover{border-color:var(--orange)}
-.venue-av{width:40px;height:40px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:13px;flex-shrink:0}
+.venue-av{position:relative;overflow:hidden;width:40px;height:40px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:13px;flex-shrink:0}
+.venue-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .venue-info{flex:1;min-width:0}
 .venue-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .venue-tags{font-size:12px;color:var(--muted);margin-top:2px}
@@ -197,14 +198,14 @@
     var players=(playersData&&playersData.players)||[];
 
     // --- PlayRank Venues ---
-    var venueRegionMap={};
-    venues.forEach(function(v){if(v.name)venueRegionMap[normName(v.name)]=v.region||'';});
+    var venueRegionMap={},venueLogoMap={};
+    venues.forEach(function(v){if(v.name){venueRegionMap[normName(v.name)]=v.region||'';venueLogoMap[normName(v.name)]=v.logoUrl||'';}});
 
     var venueMap={};
     activePlayrank.forEach(function(p){
       var vn=(p.venue||'').trim();
       if(!vn)return;
-      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||''};
+      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||'',logo:venueLogoMap[normName(vn)]||''};
       venueMap[vn].sessions.push(p);
     });
     var venueList=Object.keys(venueMap).map(function(k){return venueMap[k];});
@@ -246,7 +247,7 @@
         var s=slug(v.name);
         var tags=sessionTags(v.sessions);
         html+='<a class="venue-row" href="https://venue.trekkr.online/'+s+'">';
-        html+='<div class="venue-av">'+esc(venueInits(v.name))+'</div>';
+        html+='<div class="venue-av">'+esc(venueInits(v.name))+(v.logo?'<img src="'+esc(v.logo)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
         html+='<div class="venue-info"><div class="venue-name">'+esc(v.name)+'</div>';
         if(tags)html+='<div class="venue-tags">'+esc(tags)+'</div>';
         html+='</div>';
