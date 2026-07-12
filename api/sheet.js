@@ -65,7 +65,12 @@ async function imgbbUploadImage(dataUrl, filename) {
   if (!resp.ok || !json || !json.success) {
     throw new Error((json && json.error && json.error.message) || `imgbb upload failed (HTTP ${resp.status})`);
   }
-  return (json.data && (json.data.url || json.data.display_url)) || "";
+  const raw = (json.data && (json.data.url || json.data.display_url)) || "";
+  // Some networks/regions can resolve i.ibb.co.com but not i.ibb.co, so persist the
+  // .co.com host in the sheet — that's the variant that loads for our users. Clients
+  // still fall back to the other host on error. Idempotent: a URL already on .co.com
+  // (…/i.ibb.co.com/…) is not matched because ".co" there is followed by ".", not "/".
+  return raw.replace(/^(https?:\/\/i\.ibb\.co)\//i, "$1.com/");
 }
 
 // Unified image upload: prefer imgbb when IMGBB_API_KEY is set, otherwise fall
@@ -802,10 +807,19 @@ async function getVenues() {
 }
 
 async function addVenue(body) {
-  const { name, location, region, schedule, prizePool, contact, logoUrl, registerUrl } = body;
+  const { name, location, region, schedule, prizePool, contact, registerUrl } = body;
   if (!name) return respond(400, { error: "Venue name required" });
   const sheets = getSheets();
   const now = new Date().toISOString();
+  // A logo may arrive as a base64 data URL (same pipeline as updateVenue) or a plain URL.
+  let logoUrl = body.logoUrl || "";
+  if (body.logo) {
+    try {
+      const safe = String(name).replace(/[^a-z0-9]/gi, "_");
+      const folderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+      logoUrl = await uploadImage(body.logo, `venuelogo_${safe}_${Date.now()}.jpg`, folderId);
+    } catch (e) { return respond(500, { error: "Logo upload failed: " + (e.message || e) }); }
+  }
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[ name, location || "", region || "", schedule || "", prizePool || "", contact || "", logoUrl || "", now, registerUrl || "" ]] },

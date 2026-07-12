@@ -595,6 +595,14 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
             <label class="f-label" for="venueLocation">Location</label>
             <input class="f-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
           </div>
+          <div class="f-group">
+            <label class="f-label" for="venueRegion">Region</label>
+            <input class="f-input" id="venueRegion" placeholder="e.g. Jakarta, Tangerang"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueRegister">Register URL</label>
+            <input class="f-input" id="venueRegister" placeholder="https://forms.google.com/…"/>
+          </div>
         </div>
         <button class="btn btn-primary" onclick="saveVenueInfo()" style="margin-top:12px">Save Changes →</button>
         <div class="t-status" id="venueStatus"></div>
@@ -1101,6 +1109,8 @@ async function loadVenueInfo() {
       document.getElementById('venuePrize').value    = v.prizePool || '';
       document.getElementById('venueContact').value  = v.contact || '';
       document.getElementById('venueLocation').value = v.location || '';
+      document.getElementById('venueRegion').value   = v.region || '';
+      document.getElementById('venueRegister').value = v.registerUrl || '';
       venueCurrentLogo = v.logoUrl || '';
       venueLogoData = null;
       document.getElementById('venueLogoInput').value='';
@@ -1118,6 +1128,8 @@ async function saveVenueInfo() {
     prizePool: document.getElementById('venuePrize').value,
     contact:   document.getElementById('venueContact').value,
     location:  document.getElementById('venueLocation').value,
+    region:    document.getElementById('venueRegion').value,
+    registerUrl: document.getElementById('venueRegister').value,
   };
   if (venueLogoData) updates.logo = venueLogoData;  // base64 -> imgbb server-side
   try {
