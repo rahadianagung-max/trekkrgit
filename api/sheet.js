@@ -65,7 +65,12 @@ async function imgbbUploadImage(dataUrl, filename) {
   if (!resp.ok || !json || !json.success) {
     throw new Error((json && json.error && json.error.message) || `imgbb upload failed (HTTP ${resp.status})`);
   }
-  return (json.data && (json.data.url || json.data.display_url)) || "";
+  const raw = (json.data && (json.data.url || json.data.display_url)) || "";
+  // Some networks/regions can resolve i.ibb.co.com but not i.ibb.co, so persist the
+  // .co.com host in the sheet — that's the variant that loads for our users. Clients
+  // still fall back to the other host on error. Idempotent: a URL already on .co.com
+  // (…/i.ibb.co.com/…) is not matched because ".co" there is followed by ".", not "/".
+  return raw.replace(/^(https?:\/\/i\.ibb\.co)\//i, "$1.com/");
 }
 
 // Unified image upload: prefer imgbb when IMGBB_API_KEY is set, otherwise fall

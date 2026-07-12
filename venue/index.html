@@ -182,8 +182,11 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
   function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
-  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  // imgbb serves the same image on both i.ibb.co and i.ibb.co.com; some networks reach
+  // only one host. On load error, retry the alternate host once before giving up.
+  function ibbErr(img){var s=img.getAttribute('src')||'';if(!img.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){img.dataset.ibbAlt='1';img.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}img.style.visibility='hidden';}
+  function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt="" onerror="ibbErr(this)"/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
+  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="ibbErr(this)"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
   var content=document.getElementById('content');
 
   function selected(){
@@ -217,7 +220,7 @@
 
   /* ---- Detail ---- */
   function firstName(n){var t=String(n||'').trim();return t?t.split(/\s+/)[0]:'';}
-  function bigphoto(p){if(p.photoUrl)return '<img class="pod-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="pod-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function bigphoto(p){if(p.photoUrl)return '<img class="pod-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="ibbErr(this)"/>';return '<span class="pod-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
   function weekLabel(w){return String(w||'').replace(/^W/,'Week ');}
   var CUR=null,CURWEEK=null,ALLCACHE=null;
 
@@ -237,7 +240,7 @@
       +'<button class="vmode-b'+(mode==='all'?' on':'')+'" onclick="showAll()">All venue players</button></div>';
   }
   function ppNudge(){return '<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport &mdash; rating, tier, match history &amp; badges.</span></div></div>';}
-  function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="champ-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="ibbErr(this)"/>';return '<span class="champ-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
   function pdText(v){v=(v==null?0:v);return (v>0?'+':'')+v;}
   function champCard(p,rank){
     var label=rank===1?'Weekly Champion':(rank===2?'Runner-up':'3rd place');
@@ -331,7 +334,7 @@
       .catch(function(){content.innerHTML=hdr(CUR)+modeTabs('all')+'<div class="state">Couldn\'t load players.</div>';});
   }
   function setSort(m){renderAll(CUR,ALLCACHE||[],m);}
-  window.showWeekly=showWeekly;window.showAll=showAll;window.pickWeek=pickWeek;window.setSort=setSort;
+  window.showWeekly=showWeekly;window.showAll=showAll;window.pickWeek=pickWeek;window.setSort=setSort;window.ibbErr=ibbErr;
 
   /* ---- Load ---- */
   var sel=selected();
