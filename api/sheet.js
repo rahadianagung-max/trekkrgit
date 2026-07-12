@@ -95,6 +95,7 @@ const TABS = {
   reg_forms: "RegForms",
   registrations: "Registrations",
   edit_requests: "Edit_Requests",
+  venue_leads: "Venue_Leads",
 };
 
 const headers = {
@@ -220,6 +221,7 @@ const netlifyHandler = async (event) => {
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
+    if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "auth/login") return await login(body);
 
     if (path === "players" && method === "GET") return await getPlayers(params);
@@ -3140,6 +3142,45 @@ async function tFinalizeElo(eventId, force) {
 // REGISTRATION SYSTEM (configurable forms, Drive uploads)
 // ==============================================================
 function regGenId(p) { return p + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+// ── "GET LISTED" — venue / community lead capture (public form) ──
+// Writes to the self-bootstrapping Venue_Leads tab so no manual setup is needed.
+const VENUE_LEADS_HEADER = ["Lead_ID", "Timestamp", "PIC_Name", "Venue_Community", "Region", "WhatsApp", "Email", "Status"];
+async function ensureVenueLeadsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.venue_leads)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.venue_leads } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.venue_leads}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [VENUE_LEADS_HEADER] },
+  });
+}
+async function submitVenueLead(body) {
+  const picName = String((body && body.picName) || "").trim();
+  const venueName = String((body && body.venueName) || "").trim();
+  const region = String((body && body.region) || "").trim();
+  const whatsapp = String((body && body.whatsapp) || "").trim();
+  const email = String((body && body.email) || "").trim();
+  if (!picName || !venueName || !region || !whatsapp || !email) {
+    return respond(400, { error: "All fields are required." });
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return respond(400, { error: "Please enter a valid email address." });
+  if (!/[0-9]{6,}/.test(whatsapp.replace(/[^0-9]/g, ""))) return respond(400, { error: "Please enter a valid WhatsApp number." });
+
+  const sheets = getSheets();
+  await ensureVenueLeadsTab(sheets);
+  const leadId = "LEAD_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.venue_leads}!A:H`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[leadId, now, picName, venueName, region, whatsapp, email, "NEW"]] },
+  });
+  return respond(200, { success: true, leadId });
+}
+
 async function ensureRegTabs(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
   const titles = (meta.data.sheets || []).map((s) => s.properties.title);
