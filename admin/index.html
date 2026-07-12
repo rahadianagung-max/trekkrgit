@@ -71,6 +71,47 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .t-status.success{display:block;background:rgba(31,157,99,.1);border:1px solid rgba(31,157,99,.3);color:var(--ok)}
 .t-status.error{display:block;background:rgba(255,56,48,.08);border:1px solid rgba(255,56,48,.25);color:var(--danger)}
 
+/* ── HOW-TO-USE (admin guide) ── */
+.htu-btn{display:flex;align-items:center;gap:14px;width:100%;max-width:440px;text-align:left;background:linear-gradient(135deg,var(--blue-lt),var(--gold-lt));border:1.5px solid var(--pr);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:transform .15s,box-shadow .2s}
+.htu-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(255,106,0,.18)}
+.htu-btn-ic{width:46px;height:46px;border-radius:12px;background:var(--pr);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.htu-btn-tx{flex:1;min-width:0}
+.htu-btn-title{font-size:15px;font-weight:800;color:var(--on);line-height:1.2}
+.htu-btn-sub{font-size:12px;color:var(--on-v);margin-top:2px}
+.htu-btn-arrow{font-size:20px;color:var(--pr);flex-shrink:0}
+.htu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.htu-overlay.open{display:flex}
+.htu-modal{background:var(--sur-0);border-radius:var(--r-xl);width:100%;max-width:640px;margin:auto;box-shadow:var(--sh);border:1px solid rgba(115,118,136,.14);overflow:hidden}
+.htu-head{position:sticky;top:0;background:linear-gradient(135deg,var(--pr),var(--sec));color:#fff;padding:24px 26px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.htu-head-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;opacity:.9}
+.htu-head-title{font-family:'Saira Condensed',sans-serif;font-size:30px;font-weight:900;text-transform:uppercase;line-height:1;margin-top:4px}
+.htu-head-sub{font-size:13px;opacity:.95;margin-top:8px;line-height:1.5}
+.htu-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1}
+.htu-close:hover{background:rgba(255,255,255,.32)}
+.htu-body{padding:22px 26px 30px}
+.htu-intro{font-size:14px;color:var(--on-v);line-height:1.7;margin:0 0 10px}
+.htu-sec-label{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;color:var(--pr);font-size:19px;margin:26px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--sur-hi)}
+.htu-step{display:flex;gap:14px;margin-bottom:18px}
+.htu-step-num{width:30px;height:30px;border-radius:50%;background:var(--pr);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.htu-step-bd{flex:1;min-width:0}
+.htu-step-title{font-size:15px;font-weight:800;color:var(--on);margin-bottom:5px}
+.htu-step p{font-size:13.5px;color:var(--on-v);line-height:1.65;margin:0 0 6px}
+.htu-step a{color:var(--pr);font-weight:700;word-break:break-word}
+.htu-kv{margin:4px 0 0;padding:0;list-style:none}
+.htu-kv li{font-size:13px;color:var(--on-v);line-height:1.6;padding-left:16px;position:relative;margin-bottom:5px}
+.htu-kv li::before{content:"•";color:var(--pr);position:absolute;left:2px;font-weight:700}
+.htu-kv li b{color:var(--on)}
+.htu-checks{list-style:none;margin:0;padding:0}
+.htu-checks li{font-size:13.5px;color:var(--on);line-height:1.6;padding:10px 13px;background:var(--sur-lo);border-radius:var(--r-md);margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.htu-checks li::before{content:"✅";flex-shrink:0}
+.htu-note{background:var(--gold-lt);border:1px solid var(--gold);border-radius:var(--r-md);padding:12px 14px;font-size:13px;color:var(--on);line-height:1.6;margin:10px 0 0}
+.htu-note b{color:var(--pr)}
+.htu-eg{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.htu-eg span{font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:99px}
+.htu-eg .ok{background:rgba(34,160,82,.1);color:var(--ok)}
+.htu-eg .no{background:rgba(255,56,48,.08);color:var(--danger)}
+@media(max-width:560px){.htu-head-title{font-size:26px}.htu-body{padding:20px 18px 26px}}
+
 /* ── DASHBOARD ── */
 #adminScreen{display:none}
 .dash-hero{background:linear-gradient(135deg,#001c6f,#FF6A00);color:#fff;padding:40px 0 0}
@@ -339,6 +380,15 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 <!-- LOGIN                                          -->
 <!-- ══════════════════════════════════════════════ -->
 <div id="loginScreen">
+ <div style="width:100%;max-width:440px;display:flex;flex-direction:column;align-items:stretch">
+  <button class="htu-btn" type="button" onclick="htuOpen()">
+    <span class="htu-btn-ic">📖</span>
+    <span class="htu-btn-tx">
+      <span class="htu-btn-title">Cara Menggunakan</span>
+      <span class="htu-btn-sub">Panduan lengkap admin Weekly PlayRank</span>
+    </span>
+    <span class="htu-btn-arrow">→</span>
+  </button>
   <div class="login-card">
     <p class="login-eyebrow">Venue Portal</p>
     <h1 class="login-title">Venue<br/>Admin</h1>
@@ -354,6 +404,137 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px" onclick="doLogin()">Sign In →</button>
     <div class="t-status" id="loginStatus"></div>
     <p style="margin-top:20px;font-size:12px;color:var(--on-v);text-align:center">Not a venue yet? <a href="https://trekkr.online/get-listed" style="color:var(--pr);font-weight:700">Get listed →</a></p>
+  </div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- HOW-TO-USE — ADMIN GUIDE (Weekly PlayRank)     -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="htu-overlay" id="howtoOverlay" onclick="htuClose()">
+  <div class="htu-modal" onclick="event.stopPropagation()">
+    <div class="htu-head">
+      <div>
+        <div class="htu-head-eyebrow">Panduan Admin</div>
+        <div class="htu-head-title">Weekly PlayRank</div>
+        <div class="htu-head-sub">The Weekly Competition Engine</div>
+      </div>
+      <button class="htu-close" type="button" onclick="htuClose()" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="htu-body">
+      <p class="htu-intro"><b>Weekly PlayRank</b> adalah kompetisi ranking mingguan yang berlangsung di satu venue atau komunitas. Pemain bermain beberapa kali sepanjang minggu untuk mengumpulkan kemenangan dan poin.</p>
+      <p class="htu-intro">Di akhir minggu, sistem menghitung seluruh hasil pertandingan dan menentukan peringkat akhir. Pemain dengan performa terbaik menjadi juara minggu tersebut.</p>
+
+      <div class="htu-sec-label">Panduan Singkat Admin</div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">1</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Login</div>
+          <p>Masuk ke <a href="https://admin.trekkr.online" target="_blank" rel="noopener">admin.trekkr.online</a> menggunakan username dan password yang diberikan. Huruf besar dan kecil harus sesuai.</p>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">2</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Venue Info</div>
+          <p>Lengkapi informasi venue atau komunitas:</p>
+          <ul class="htu-kv">
+            <li><b>Playing Schedule</b> — jadwal Ranked Match reguler.</li>
+            <li><b>Prize Pool</b> — hadiah mingguan (jika ada).</li>
+            <li><b>Contact / Social</b> — Instagram, WhatsApp PIC, atau link komunitas.</li>
+            <li><b>Location</b> — area komunitas (contoh: Kemang, Jakarta Selatan).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">3</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Edit Request</div>
+          <p>Pemain dapat mengajukan perubahan foto profil dan nama tampilan. Admin perlu melakukan approval sebelum perubahan diterapkan.</p>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">4</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Aturan Ranked Match</div>
+          <ul class="htu-checks">
+            <li>Semua pemain harus berada di level yang sama.</li>
+            <li>Gunakan scoring tenis.</li>
+            <li>Pilih kategori Men, Women, atau Mixed Doubles — gender tiap pemain dicatat secara individual.</li>
+            <li>Semua pemain harus memainkan jumlah pertandingan yang sama.</li>
+            <li>Ranking ditentukan berdasarkan jumlah kemenangan.</li>
+            <li>Jika jumlah kemenangan sama, penentuan ranking menggunakan selisih poin.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">5</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Membuat Ranked Match</div>
+          <p>Klik <b>Start The Match</b>, lalu tentukan:</p>
+          <ul class="htu-kv">
+            <li>Jumlah lapangan</li>
+            <li>Kategori (Men, Women, atau Mixed)</li>
+            <li>Level pemain</li>
+          </ul>
+          <div class="htu-note"><b>Penting:</b> jangan mencampur beberapa level dalam satu Ranked Match. Contoh: Upper Beginner vs Upper Beginner, atau Upper Bronze vs Upper Bronze.</div>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">6</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Tambahkan Pemain</div>
+          <p>Cari nama pemain pada kolom pencarian. Jika belum tersedia, klik <b>Tambah Pemain</b>. Gunakan minimal 2 kata untuk setiap nama agar tidak terjadi duplikasi data pemain.</p>
+          <div class="htu-eg">
+            <span class="ok">✓ Budi Santoso</span>
+            <span class="ok">✓ Kevin Wijaya</span>
+            <span class="no">✕ Budi</span>
+            <span class="no">✕ Kevin</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">7</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Jalankan Match</div>
+          <p>Setelah semua pemain masuk, sistem memberikan rekomendasi jumlah pertandingan minimum agar seluruh pemain mendapat kesempatan bermain yang seimbang. Ikuti rekomendasi tersebut.</p>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">8</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Update Jika Ada Perubahan</div>
+          <p>Jika ada pemain yang terlambat, berhalangan hadir, atau diganti, admin tetap dapat melakukan perubahan selama match berlangsung.</p>
+        </div>
+      </div>
+
+      <div class="htu-step">
+        <div class="htu-step-num">9</div>
+        <div class="htu-step-bd">
+          <div class="htu-step-title">Bagikan Hasil</div>
+          <p>Setelah seluruh pertandingan selesai, bagikan hasil melalui tombol <b>WhatsApp Share</b> agar seluruh peserta dapat melihat ranking dan hasil pertandingan mereka.</p>
+        </div>
+      </div>
+
+      <div class="htu-sec-label">Checklist Cepat</div>
+      <ul class="htu-checks">
+        <li>Venue Info sudah lengkap.</li>
+        <li>Semua pemain berada di level yang sama.</li>
+        <li>Nama pemain menggunakan minimal 2 kata.</li>
+        <li>Menggunakan scoring tenis.</li>
+        <li>Jumlah pertandingan mengikuti rekomendasi sistem.</li>
+        <li>Semua pemain mendapat jumlah pertandingan yang sama.</li>
+        <li>Hasil pertandingan dibagikan ke peserta setelah selesai.</li>
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -772,6 +953,11 @@ function rmShowErr(elId, msg) {
   el.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 function rmHideErr(elId) { document.getElementById(elId).classList.add('hidden'); }
+
+/* How-to-use admin guide modal */
+function htuOpen(){ document.getElementById('howtoOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
+function htuClose(){ document.getElementById('howtoOverlay').classList.remove('open'); document.body.style.overflow=''; }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') htuClose(); });
 
 async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
