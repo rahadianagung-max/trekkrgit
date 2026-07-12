@@ -199,15 +199,30 @@ footer span{color:var(--lime)}
     </div>
     <div class="tab-pane" id="tab-venues">
       <div class="section">
-        <div class="section-title">ADD VENUE</div>
+        <div class="section-title" id="venueFormTitle">ADD VENUE</div>
         <div class="field-row"><div class="field"><label class="field-label">Venue Name *</label><input class="field-input" id="av-name" placeholder="Venue name"></div><div class="field"><label class="field-label">Location</label><input class="field-input" id="av-location" placeholder="Address"></div></div>
         <div class="field-row"><div class="field"><label class="field-label">Region</label><input class="field-input" id="av-region" placeholder="Jakarta, Tangerang"></div><div class="field"><label class="field-label">Prize Pool</label><input class="field-input" id="av-prize" placeholder="IDR 2.5 Million"></div></div>
         <div class="field"><label class="field-label">Schedule</label><textarea class="field-textarea" id="av-schedule" placeholder="Every Monday 8am-10am"></textarea></div>
+        <div class="field"><label class="field-label">Contact / Social</label><input class="field-input" id="av-contact" placeholder="@instagram or WhatsApp"></div>
         <div class="field"><label class="field-label">Register URL</label><input class="field-input" id="av-register" placeholder="https://forms.google.com/..."></div>
-        <button class="btn btn-primary" onclick="addVenue()">Add Venue →</button>
+        <div class="field">
+          <label class="field-label">Logo</label>
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+            <div id="av-logo-preview" style="width:76px;height:76px;border-radius:12px;background:var(--s3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:9px;color:var(--muted);text-align:center;padding:4px">No logo</div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+              <input type="file" id="av-logo-input" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="onAvLogoPick(event)">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('av-logo-input').click()">Upload Logo</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="av-logo-cancel" style="display:none" onclick="cancelAvLogo()">Remove selected</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <button class="btn btn-primary" id="venueSaveBtn" onclick="saveVenue()">Add Venue →</button>
+          <button class="btn btn-ghost" id="venueCancelBtn" style="display:none" onclick="cancelVenueEdit()">Cancel edit</button>
+        </div>
         <div class="status-msg" id="addVenueStatus"></div>
       </div>
-      <div class="section"><div class="section-title">ALL VENUES</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Name</th><th>Location</th><th>Region</th><th>Prize Pool</th><th>Register URL</th><th>Actions</th></tr></thead><tbody id="venuesTbody"></tbody></table></div></div>
+      <div class="section"><div class="section-title">ALL VENUES</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Logo</th><th>Name</th><th>Location</th><th>Region</th><th>Prize Pool</th><th>Register URL</th><th>Actions</th></tr></thead><tbody id="venuesTbody"></tbody></table></div></div>
     </div>
     <!-- ADMINS -->
     <div class="tab-pane" id="tab-admins">
@@ -293,31 +308,94 @@ function editPlayer(name){
 
 async function loadVenues(){
   try{const d=await TrekkrAPI.getVenues();
-    document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>`<tr><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editVenue('${v.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('');
+    document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>`<tr><td>${v.logoUrl?`<img src="${v.logoUrl}" onerror="erImg(this)" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:#fff;border:1px solid var(--border)">`:'<span style="color:var(--muted)">—</span>'}</td><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editVenue('${v.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('');
     const s=document.getElementById('aa-venue');while(s.options.length>1)s.remove(1);
     d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});allVenues=d.venues;populateVenueList();
   }catch(e){console.warn(e)}
 }
 
-async function addVenue(){
-  const st=document.getElementById('addVenueStatus'),n=document.getElementById('av-name').value.trim();
+/* Unified venue form — same fields + logo uploader as the venue admin (admin.trekkr.online). */
+let avEditing=null;      // venue name being edited (null = add mode)
+let avLogoData=null;     // base64 data URL of a newly picked logo (null = no change)
+let avCurrentLogo='';    // saved logo URL of the venue being edited
+
+function renderAvLogo(src){
+  const box=document.getElementById('av-logo-preview');
+  box.innerHTML=src?`<img src="${src}" onerror="erImg(this)" style="width:100%;height:100%;object-fit:contain;background:#fff">`:'No logo';
+}
+function onAvLogoPick(e){
+  const st=document.getElementById('addVenueStatus');
+  const file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  if(!/^image\//.test(file.type)){st.className='status-msg error';st.textContent='Please choose an image file.';return}
+  if(file.size>5*1024*1024){st.className='status-msg error';st.textContent='Image too large (max 5 MB).';e.target.value='';return}
+  const reader=new FileReader();
+  reader.onload=function(){avLogoData=reader.result;renderAvLogo(avLogoData);document.getElementById('av-logo-cancel').style.display='inline-flex';};
+  reader.readAsDataURL(file);
+}
+function cancelAvLogo(){
+  avLogoData=null;
+  document.getElementById('av-logo-input').value='';
+  document.getElementById('av-logo-cancel').style.display='none';
+  renderAvLogo(avCurrentLogo);
+}
+function venueFormReset(){
+  avEditing=null;avLogoData=null;avCurrentLogo='';
+  ['av-name','av-location','av-region','av-prize','av-schedule','av-contact','av-register'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('av-name').removeAttribute('readonly');
+  document.getElementById('av-logo-input').value='';
+  document.getElementById('av-logo-cancel').style.display='none';
+  renderAvLogo('');
+  document.getElementById('venueFormTitle').textContent='ADD VENUE';
+  document.getElementById('venueSaveBtn').textContent='Add Venue →';
+  document.getElementById('venueCancelBtn').style.display='none';
+}
+function cancelVenueEdit(){ venueFormReset(); document.getElementById('addVenueStatus').className='status-msg'; }
+
+async function saveVenue(){
+  const st=document.getElementById('addVenueStatus');
+  const n=document.getElementById('av-name').value.trim();
   if(!n){st.className='status-msg error';st.textContent='Name required';return}
-  try{await TrekkrAPI.addVenue({name:n,location:document.getElementById('av-location').value.trim(),region:document.getElementById('av-region').value.trim(),prizePool:document.getElementById('av-prize').value.trim(),schedule:document.getElementById('av-schedule').value.trim(),registerUrl:document.getElementById('av-register').value.trim()});
-    st.className='status-msg success';st.textContent=`✓ "${n}" created`;['av-name','av-location','av-region','av-prize','av-schedule','av-register'].forEach(id=>document.getElementById(id).value='');await loadVenues()}
-  catch(e){st.className='status-msg error';st.textContent=e.message}
+  const data={
+    location:document.getElementById('av-location').value.trim(),
+    region:document.getElementById('av-region').value.trim(),
+    prizePool:document.getElementById('av-prize').value.trim(),
+    schedule:document.getElementById('av-schedule').value.trim(),
+    contact:document.getElementById('av-contact').value.trim(),
+    registerUrl:document.getElementById('av-register').value.trim(),
+  };
+  if(avLogoData)data.logo=avLogoData;   // base64 -> imgbb server-side
+  st.className='status-msg';st.textContent=avLogoData?'Uploading logo & saving…':'Saving…';st.style.display='block';
+  try{
+    if(avEditing){ await TrekkrAPI.updateVenue(avEditing,data); }
+    else{ await TrekkrAPI.addVenue({name:n,...data}); }
+    st.className='status-msg success';st.textContent=`✓ "${n}" ${avEditing?'updated':'created'}`;
+    venueFormReset();
+    await loadVenues();
+  }catch(e){st.className='status-msg error';st.textContent=e.message}
 }
 
 function editVenue(name){
   TrekkrAPI.getVenues().then(d=>{
     const v=d.venues.find(x=>x.name===name);if(!v)return;
-    const nl=prompt('Location:',v.location||'');if(nl===null)return;
-    const nr=prompt('Region:',v.region||'');if(nr===null)return;
-    const ns=prompt('Schedule:',v.schedule||'');if(ns===null)return;
-    const np=prompt('Prize Pool:',v.prizePool||'');if(np===null)return;
-    const nc=prompt('Contact:',v.contact||'');if(nc===null)return;
-    const nu=prompt('Register URL:',v.registerUrl||'');if(nu===null)return;
-    TrekkrAPI.updateVenue(name,{location:nl,region:nr,schedule:ns,prizePool:np,contact:nc,registerUrl:nu}).then(()=>loadVenues()).catch(e=>alert(e.message));
-  });
+    avEditing=name;avLogoData=null;avCurrentLogo=v.logoUrl||'';
+    document.getElementById('av-name').value=v.name||'';
+    document.getElementById('av-name').setAttribute('readonly','readonly');
+    document.getElementById('av-location').value=v.location||'';
+    document.getElementById('av-region').value=v.region||'';
+    document.getElementById('av-prize').value=v.prizePool||'';
+    document.getElementById('av-schedule').value=v.schedule||'';
+    document.getElementById('av-contact').value=v.contact||'';
+    document.getElementById('av-register').value=v.registerUrl||'';
+    document.getElementById('av-logo-input').value='';
+    document.getElementById('av-logo-cancel').style.display='none';
+    renderAvLogo(avCurrentLogo);
+    document.getElementById('venueFormTitle').textContent='EDIT VENUE · '+v.name;
+    document.getElementById('venueSaveBtn').textContent='Update Venue →';
+    document.getElementById('venueCancelBtn').style.display='inline-flex';
+    const stx=document.getElementById('addVenueStatus');stx.className='status-msg';stx.textContent='';
+    document.getElementById('venueFormTitle').scrollIntoView({behavior:'smooth',block:'start'});
+  }).catch(e=>alert(e.message));
 }
 
 async function loadAdmins(){try{const d=await TrekkrAPI.getAdmins();document.getElementById('adminsTbody').innerHTML=d.admins.map(a=>`<tr><td><strong>${a.username}</strong></td><td><span class="badge ${a.role==='superadmin'?'badge-lime':'badge-muted'}">${a.role}</span></td><td>${a.venue||'—'}</td></tr>`).join('')}catch(e){console.warn(e)}}

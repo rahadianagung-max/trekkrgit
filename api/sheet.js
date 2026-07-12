@@ -807,10 +807,19 @@ async function getVenues() {
 }
 
 async function addVenue(body) {
-  const { name, location, region, schedule, prizePool, contact, logoUrl, registerUrl } = body;
+  const { name, location, region, schedule, prizePool, contact, registerUrl } = body;
   if (!name) return respond(400, { error: "Venue name required" });
   const sheets = getSheets();
   const now = new Date().toISOString();
+  // A logo may arrive as a base64 data URL (same pipeline as updateVenue) or a plain URL.
+  let logoUrl = body.logoUrl || "";
+  if (body.logo) {
+    try {
+      const safe = String(name).replace(/[^a-z0-9]/gi, "_");
+      const folderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+      logoUrl = await uploadImage(body.logo, `venuelogo_${safe}_${Date.now()}.jpg`, folderId);
+    } catch (e) { return respond(500, { error: "Logo upload failed: " + (e.message || e) }); }
+  }
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[ name, location || "", region || "", schedule || "", prizePool || "", contact || "", logoUrl || "", now, registerUrl || "" ]] },
