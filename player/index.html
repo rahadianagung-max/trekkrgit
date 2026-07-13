@@ -591,36 +591,35 @@ canvas#shareCanvas{display:none}
 .share-also-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-pill);border:1px solid rgba(115,118,136,.15);background:var(--surface-low);font-size:12px;font-weight:600;color:var(--on-surface);cursor:pointer;transition:background var(--motion-base)}
 .share-also-chip:hover{background:var(--surface-container)}
 .result-layout{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start}
-.night-card-preview{background:#080808;border-radius:16px;aspect-ratio:9/16;display:flex;flex-direction:column;overflow:hidden}
-.ncp-photo{flex:1.8;background:#141414;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.ncp-initials{font-size:28px;font-weight:700;color:#222;font-family:'Saira Condensed',sans-serif}
-/* FIX: photo fills with contain so no crop distortion */
+/* Light "paper passport" preview — matches the rebuilt export (brief §2.3 opt B) */
+.night-card-preview{background:#F7F5F0;border-radius:16px;aspect-ratio:9/16;display:flex;flex-direction:column;overflow:hidden;border:1px solid #D8D4CC}
+.ncp-photo{flex:1.8;background:#ECE8E0;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ncp-initials{font-size:28px;font-weight:700;color:rgba(232,93,38,.24);font-family:'Saira Condensed',sans-serif}
 .ncp-img{width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;inset:0}
-.ncp-gradient{position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(to top,#080808,transparent)}
-.ncp-rank-pill{position:absolute;top:8px;right:8px;background:#FFB000;color:#1a1000;font-size:7px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
+.ncp-gradient{position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(to top,#F7F5F0,transparent)}
+.ncp-rank-pill{position:absolute;top:8px;right:8px;background:#FBF6E6;color:#8a6d12;border:1px solid #E7D8A6;font-size:7px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
 .ncp-name-area{position:absolute;bottom:8px;left:10px;right:10px}
-.ncp-pname{font-size:11px;font-weight:700;color:#fff;font-family:'Saira Condensed',sans-serif;text-transform:uppercase;letter-spacing:-.01em}
-.ncp-psub{font-size:8px;color:rgba(255,255,255,.4);margin-top:1px}
+.ncp-pname{font-size:11px;font-weight:700;color:#101010;font-family:'Saira Condensed',sans-serif;text-transform:uppercase;letter-spacing:-.01em}
+.ncp-psub{font-size:8px;color:#6b6b63;margin-top:1px}
 .ncp-bottom{padding:9px 10px 10px;display:flex;flex-direction:column;gap:7px}
 .ncp-elo-row{display:flex;align-items:flex-end;justify-content:space-between}
-.ncp-elo-lbl{font-size:7px;color:rgba(255,255,255,.35);letter-spacing:.1em}
-.ncp-elo-val{font-size:20px;font-weight:700;color:#fff;font-family:'Saira Condensed',sans-serif;line-height:1}
-.ncp-tier-lbl{font-size:7px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-align:right}
-.ncp-tier-val{font-size:10px;font-weight:700;color:#FFB000;text-align:right}
+.ncp-elo-lbl{font-size:7px;color:#9a9689;letter-spacing:.1em}
+.ncp-elo-val{font-size:20px;font-weight:700;color:#E85D26;font-family:ui-monospace,'JetBrains Mono',SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;line-height:1}
+.ncp-tier-lbl{font-size:7px;color:#9a9689;letter-spacing:.08em;text-align:right}
+.ncp-tier-val{font-size:10px;font-weight:700;color:#8a6d12;text-align:right}
 .ncp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
-.ncp-sbox{background:#141414;border-radius:6px;padding:5px 4px;text-align:center}
-.ncp-sv{font-size:11px;font-weight:700;color:#fff;font-family:'Saira Condensed',sans-serif}
-.ncp-sl{font-size:7px;color:rgba(255,255,255,.3);letter-spacing:.05em;margin-top:1px}
+.ncp-sbox{background:#fff;border:1px solid #D8D4CC;border-radius:6px;padding:5px 4px;text-align:center}
+.ncp-sv{font-size:11px;font-weight:700;color:#101010;font-family:ui-monospace,'JetBrains Mono',SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.ncp-sl{font-size:7px;color:#9a9689;letter-spacing:.05em;margin-top:1px}
 .ncp-badges{display:flex;gap:3px;flex-wrap:wrap}
-.ncp-badge{font-size:7px;font-weight:700;padding:2px 5px;border-radius:4px;border:0.5px solid;display:flex;align-items:center;gap:2px}
-.ncp-badge-gold{color:#FFB000;border-color:#3d2e00;background:#1e1700}
-.ncp-badge-purple{color:#B7A6F2;border-color:#2e2a5c;background:#16143a}
-.ncp-badge-teal{color:#46C58A;border-color:#0c3528;background:#071d15}
-.ncp-badge-blue{color:#FFD9BF;border-color:#0c2a50;background:#03122d}
-/* FIX: footer clear white */
-.ncp-footer{display:flex;align-items:center;justify-content:space-between;border-top:0.5px solid #2a2a2a;padding-top:6px;margin-top:2px}
-.ncp-brand{font-size:10px;font-weight:800;color:#fff;letter-spacing:.15em;font-family:'Saira Condensed',sans-serif}
-.ncp-visit{font-size:7px;color:#fff;opacity:.7;letter-spacing:.06em}
+.ncp-badge{font-size:7px;font-weight:700;padding:2px 5px;border-radius:4px;border:1px solid;display:flex;align-items:center;gap:2px;background:#fff}
+.ncp-badge-gold{color:#8a6d12;border-color:#E7D8A6;background:#FBF6E6}
+.ncp-badge-purple{color:#5b4bc4;border-color:#d9d3f5;background:#f2f0fc}
+.ncp-badge-teal{color:#1E5A46;border-color:#bfe0d3;background:#eaf4ef}
+.ncp-badge-blue{color:#b4472a;border-color:#f0d9c9;background:#fdf1ea}
+.ncp-footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #D8D4CC;padding-top:6px;margin-top:2px}
+.ncp-brand{font-size:10px;font-weight:800;color:#101010;letter-spacing:.15em;font-family:'Saira Condensed',sans-serif}
+.ncp-visit{font-size:7px;color:#6b6b63;letter-spacing:.06em}
 .share-opt-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius-md);border:1px solid rgba(115,118,136,.12);background:var(--surface-low);cursor:pointer;transition:all var(--motion-base);margin-bottom:8px}
 .share-opt-row:hover{border-color:var(--primary);background:var(--surface-container)}
 .share-opt-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -632,6 +631,20 @@ canvas#shareCanvas{display:none}
 .pp-edit-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,106,0,.4);color:var(--primary);background:transparent;border-radius:var(--radius-pill);padding:7px 15px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--motion-base)}
 .pp-edit-btn:hover{background:rgba(255,106,0,.08)}
 .edit-in{width:100%;border:1px solid rgba(115,118,136,.22);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;background:#F9FAFC;color:var(--on-surface)}
+
+/* Ecosystem passport treatment (brief §2.3 / §3.3): ELO in ember tabular-mono,
+   plus tournament provenance chips. Scoped so it doesn't disturb the page's
+   own .pp-card / .elo-delta components. */
+:root{--ember:#E85D26;--court:#1E5A46;--gold:#C9A227;--eco-line:#D8D4CC}
+.pp-meta-value.pp-elo,.pp-stat-val.pp-elo{font-family:ui-monospace,'JetBrains Mono',SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;color:var(--ember)}
+.pp-provenance{margin:16px 0 2px}
+.pp-prov-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant)}
+.pp-prov-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.pp-prov-chips a{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:var(--radius-pill);border:1px solid var(--eco-line);background:var(--surface);color:var(--court);text-decoration:none;transition:border-color .18s}
+.pp-prov-chips a:hover{border-color:var(--court)}
+.pp-prov-chips a.won{color:#8a6d12;border-color:#E7D8A6;background:#FBF6E6}
+.pp-prov-chips a.won:hover{border-color:var(--gold)}
+.pp-prov-chips a:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -881,7 +894,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
   <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
   <div class="pp-meta-grid">
-    <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
+    <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value pp-elo">${s.currentElo}</p></div>
     <div><p class="pp-meta-label">Level</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
     <div><p class="pp-meta-label">Gender</p><p class="pp-meta-value">${p.gender==='F'?'Women':'Men'}</p></div>
     ${p.ig?`<div><p class="pp-meta-label">Instagram</p><p class="pp-meta-value">${p.ig}</p></div>`:`<div><p class="pp-meta-label">Region</p><p class="pp-meta-value">${p.region||'—'}</p></div>`}
@@ -892,8 +905,25 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
     <div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">${s.winRate}%</p></div>
     <div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">${s.totalW}/${s.totalL}</p></div>
     <div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">${s.streak||'—'}</p></div>
-    <div class="pp-stat"><p class="pp-stat-label">ELO</p><p class="pp-stat-val">${s.currentElo}</p></div>
+    <div class="pp-stat"><p class="pp-stat-label">ELO</p><p class="pp-stat-val pp-elo">${s.currentElo}</p></div>
   </div>`;
+
+  // Tournament provenance chips (brief §2.3) — from the player's `tournaments`
+  // field (col K event names); gold when the event also appears in `winnerAt`.
+  // TODO(ecosystem): links go to turnamenpadel.com until per-event IDs exist
+  // (brief §5); academy-level chip omitted — no academy field in the payload.
+  (function(){
+    var ppEsc=function(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    var evNames=String(p.tournaments||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+    var wonLc=String(p.winnerAt||'').split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean);
+    if(evNames.length){
+      h+='<div class="pp-provenance"><span class="pp-prov-label">Official events</span><div class="pp-prov-chips">'+
+        evNames.slice(0,8).map(function(ev){
+          var won=wonLc.indexOf(ev.toLowerCase())!==-1;
+          return '<a class="'+(won?'won':'')+'" href="https://turnamenpadel.com?ref=trekkr" title="Played at an official TurnamenPadel event">'+(won?'🏆 ':'✓ ')+ppEsc(ev)+'</a>';
+        }).join('')+'</div></div>';
+    }
+  })();
 
   // Inject calibration banner if still calibrating
   if (isCalibrating(s.totalMatches)) {
@@ -1660,68 +1690,96 @@ function downloadNightCard(){
   var c=document.getElementById('shareCanvas'),ctx=c.getContext('2d');
   var W=1080,H=1920;c.width=W;c.height=H;
 
+  // Light "paper passport" export (brief §2.3 option B) — paper ground, ember
+  // tabular-mono ELO, court/gold provenance chips, matching the on-page card.
+  var PAPER='#F7F5F0', INK='#101010', EMBER='#E85D26', COURT='#1E5A46',
+      LINE='#D8D4CC', MUTE='#9a9689', SUB='#6b6b63',
+      MONO='"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
   function drawCard(){
     var pname=(p.name).toUpperCase();
     var sub=p.clubs||p.region||'';
     var PHOTO_H=Math.round(H*0.60);
     var CONTENT_Y=PHOTO_H+60;
 
-    // Rank pill top-right
-    ctx.fillStyle='#FFB000';roundRect(ctx,W-240,56,180,54,27);ctx.fill();
-    ctx.fillStyle='#1a1000';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(ti.current.toUpperCase(),W-150,93);
+    // Tier pill top-right — gold passport treatment
+    ctx.fillStyle='#FBF6E6';roundRect(ctx,W-268,52,208,58,29);ctx.fill();
+    ctx.strokeStyle='#E7D8A6';ctx.lineWidth=2;roundRect(ctx,W-268,52,208,58,29);ctx.stroke();
+    ctx.fillStyle='#8a6d12';ctx.font='700 24px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(ti.current.toUpperCase(),W-164,89);
 
-    // Name + URL + venue over gradient
+    // Name + URL + venue, ink over the paper-faded foot of the photo
     var purl='trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-    ctx.fillStyle='#fff';ctx.font='700 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-78);
-    ctx.fillStyle='#FF8A3D';ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(purl,60,PHOTO_H-38);
-    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='400 30px Plus Jakarta Sans,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);
+    ctx.fillStyle=INK;ctx.font='800 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-78);
+    ctx.fillStyle=EMBER;ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(purl,60,PHOTO_H-38);
+    if(sub){ctx.fillStyle=SUB;ctx.font='400 30px Plus Jakarta Sans,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);}
 
-    // Divider line
-    ctx.strokeStyle='#1e1e1e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,CONTENT_Y);ctx.lineTo(W-60,CONTENT_Y);ctx.stroke();
+    // Divider
+    ctx.strokeStyle=LINE;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,CONTENT_Y);ctx.lineTo(W-60,CONTENT_Y);ctx.stroke();
 
-    // ELO + tier row
+    // ELO (ember, mono) + tier
     var eloY=CONTENT_Y+56;
-    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
-    ctx.fillStyle='#fff';ctx.font='700 120px Saira Condensed,sans-serif';ctx.fillText(String(s.currentElo),60,eloY+118);
-    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
-    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(ti.current,W-60,eloY+50);
+    ctx.fillStyle=MUTE;ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
+    ctx.fillStyle=EMBER;ctx.font='700 118px '+MONO;ctx.fillText(String(s.currentElo),60,eloY+116);
+    ctx.fillStyle=MUTE;ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
+    ctx.fillStyle='#8a6d12';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(ti.current,W-60,eloY+50);
 
-    // Stat boxes
-    var bY=eloY+148,bW=306,bH=128,bGap=30,bX=60;
+    // Stat boxes — light, mono numbers
+    var bY=eloY+150,bW=306,bH=128,bGap=30,bX=60;
     [{v:s.totalMatches,l:'PLAYED'},{v:s.winRate+'%',l:'WIN RATE'},{v:s.totalW+'W '+s.totalL+'L',l:'RECORD'}].forEach(function(st,i){
-      ctx.fillStyle='#141414';roundRect(ctx,bX+i*(bW+bGap),bY,bW,bH,18);ctx.fill();
-      ctx.fillStyle='#fff';ctx.font='700 58px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(String(st.v),bX+i*(bW+bGap)+bW/2,bY+82);
-      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText(st.l,bX+i*(bW+bGap)+bW/2,bY+bH-16);
+      var x=bX+i*(bW+bGap);
+      ctx.fillStyle='#FFFFFF';roundRect(ctx,x,bY,bW,bH,18);ctx.fill();
+      ctx.strokeStyle=LINE;ctx.lineWidth=1.5;roundRect(ctx,x,bY,bW,bH,18);ctx.stroke();
+      ctx.fillStyle=INK;ctx.font='700 54px '+MONO;ctx.textAlign='center';ctx.fillText(String(st.v),x+bW/2,bY+78);
+      ctx.fillStyle=MUTE;ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText(st.l,x+bW/2,bY+bH-16);
     });
 
-    // Best performing partner (single — matches passport format)
-    var bp=playerData.bestPartner;
-    if(bp&&bp.name&&bp.name!=='No Data'){
-      var pY=bY+bH+40,pH=150;
-      ctx.fillStyle='#141414';roundRect(ctx,60,pY,W-120,pH,18);ctx.fill();
+    // Provenance chips (the passport signature) — else best-partner fallback.
+    var rowY=bY+bH+46;
+    var evNames=String(p.tournaments||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+    var wonLc=String(p.winnerAt||'').split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean);
+    if(evNames.length){
       ctx.textAlign='left';
-      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('BEST PERFORMING PARTNER',96,pY+50);
-      var pn=String(bp.name);ctx.font='800 46px Saira Condensed,sans-serif';
-      while(pn.length>3&&ctx.measureText(pn).width>W-120-370){pn=pn.slice(0,-1);}
-      if(pn!==bp.name)pn=pn.trim()+'…';
-      ctx.fillStyle='#fff';ctx.fillText(pn,96,pY+108);
-      ctx.textAlign='right';
-      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('RECORD TOGETHER',W-96,pY+50);
-      ctx.fillStyle='#4ADE80';ctx.font='800 42px Saira Condensed,sans-serif';ctx.fillText(String(bp.score||''),W-96,pY+106);
+      ctx.fillStyle=MUTE;ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('OFFICIAL EVENTS',60,rowY);
+      var cx=60,cy=rowY+26,ch=66;ctx.font='600 30px Plus Jakarta Sans,sans-serif';
+      evNames.slice(0,4).forEach(function(ev){
+        var won=wonLc.indexOf(ev.toLowerCase())!==-1;
+        var label=(won?'★ ':'✓ ')+ev;
+        var cw=ctx.measureText(label).width+56;
+        if(cx+cw>W-60)return;
+        ctx.fillStyle=won?'#FBF6E6':'#FFFFFF';roundRect(ctx,cx,cy,cw,ch,33);ctx.fill();
+        ctx.strokeStyle=won?'#E7D8A6':LINE;ctx.lineWidth=1.5;roundRect(ctx,cx,cy,cw,ch,33);ctx.stroke();
+        ctx.fillStyle=won?'#8a6d12':COURT;ctx.textAlign='left';ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(label,cx+28,cy+44);
+        cx+=cw+16;
+      });
+    } else {
+      var bp=playerData.bestPartner;
+      if(bp&&bp.name&&bp.name!=='No Data'){
+        var pY=rowY-10,pH=150;
+        ctx.fillStyle='#FFFFFF';roundRect(ctx,60,pY,W-120,pH,18);ctx.fill();
+        ctx.strokeStyle=LINE;ctx.lineWidth=1.5;roundRect(ctx,60,pY,W-120,pH,18);ctx.stroke();
+        ctx.textAlign='left';
+        ctx.fillStyle=MUTE;ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('BEST PERFORMING PARTNER',96,pY+50);
+        var pn=String(bp.name);ctx.fillStyle=INK;ctx.font='800 46px Saira Condensed,sans-serif';
+        while(pn.length>3&&ctx.measureText(pn).width>W-120-370){pn=pn.slice(0,-1);}
+        if(pn!==bp.name)pn=pn.trim()+'…';
+        ctx.fillText(pn,96,pY+108);
+        ctx.textAlign='right';
+        ctx.fillStyle=MUTE;ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('RECORD TOGETHER',W-96,pY+50);
+        ctx.fillStyle=COURT;ctx.font='800 42px Saira Condensed,sans-serif';ctx.fillText(String(bp.score||''),W-96,pY+106);
+      }
     }
 
-    // Footer — FIXED: white text, "Visit trekkr.online"
+    // Footer
     var footerY=H-100;
-    ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,footerY);ctx.lineTo(W-60,footerY);ctx.stroke();
-    ctx.fillStyle='#ffffff';ctx.font='800 46px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText('TREKKR',60,H-44);
-    ctx.fillStyle='#ffffff';ctx.font='400 28px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Visit trekkr.online',W-60,H-44);
+    ctx.strokeStyle=LINE;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,footerY);ctx.lineTo(W-60,footerY);ctx.stroke();
+    ctx.fillStyle=INK;ctx.font='800 46px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText('TREKKR',60,H-44);
+    ctx.fillStyle=SUB;ctx.font='400 28px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Visit trekkr.online',W-60,H-44);
 
     var link=document.createElement('a');link.download='trekkr-'+(p.name||'player').toLowerCase().replace(/\s+/g,'-')+'.png';link.href=c.toDataURL('image/png');link.click();
     showToast('Story card downloaded!');closeResultModal();
   }
 
-  // Black background always
-  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+  // Paper background always
+  ctx.fillStyle=PAPER;ctx.fillRect(0,0,W,H);
 
   if(p.photoUrl){
     var imgEl=new Image();imgEl.crossOrigin='anonymous';
@@ -1744,9 +1802,9 @@ function downloadNightCard(){
       ctx.restore();
       // gradient overlay bottom of photo
       var g1=ctx.createLinearGradient(0,PHOTO_H*0.4,0,PHOTO_H);
-      g1.addColorStop(0,'transparent');g1.addColorStop(1,'#080808');
+      g1.addColorStop(0,'transparent');g1.addColorStop(1,PAPER);
       ctx.fillStyle=g1;ctx.fillRect(0,PHOTO_H*0.4,W,PHOTO_H*0.6);
-      ctx.fillStyle='#080808';ctx.fillRect(0,PHOTO_H,W,H-PHOTO_H);
+      ctx.fillStyle=PAPER;ctx.fillRect(0,PHOTO_H,W,H-PHOTO_H);
       drawCard();
     };
     imgEl.onerror=function(){var s=imgEl.getAttribute('src')||'';if(!imgEl.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){imgEl.dataset.ibbAlt='1';imgEl.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}drawCard();};
@@ -1754,8 +1812,8 @@ function downloadNightCard(){
   } else {
     var iparts=(p.name).trim().split(/\s+/);
     var inits=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'??').slice(0,2).toUpperCase();
-    ctx.fillStyle='#141414';ctx.fillRect(0,0,W,Math.round(H*0.60));
-    ctx.fillStyle='#222';ctx.font='700 300px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(inits,W/2,Math.round(H*0.38));
+    ctx.fillStyle='#ECE8E0';ctx.fillRect(0,0,W,Math.round(H*0.60));
+    ctx.fillStyle='rgba(232,93,38,0.20)';ctx.font='700 300px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(inits,W/2,Math.round(H*0.38));
     drawCard();
   }
 }
