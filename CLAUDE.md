@@ -167,10 +167,9 @@ cd analytics && npm install && npm run build   # esbuild → self-contained bund
 
 This repo is part of the **SportsActvd ecosystem** (Trekkr + TurnamenPadel +
 Stellar Squad Academy + SportsActvd). An in-progress **frontend/IA revamp** is
-governed by a brief expected at `docs/ecosystem-revamp-brief.md` — that brief,
-once present, is the **single source of truth** for design tokens, components,
-copy, and build order for all UI work. (If it is not yet in the repo, add it
-before doing revamp work, and ask rather than guessing at token values.)
+governed by [`docs/ecosystem-revamp-brief.md`](docs/ecosystem-revamp-brief.md) —
+that brief is the **single source of truth** for design tokens, components,
+copy, and build order for all UI work. Read it fully before any revamp work.
 
 - All UI/frontend revamp work must follow `docs/ecosystem-revamp-brief.md`
   exactly. This is a **frontend/IA revamp ONLY**.
