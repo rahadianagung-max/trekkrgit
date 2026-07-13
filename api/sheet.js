@@ -677,10 +677,13 @@ async function resolveEditRequest(body) {
     const pi = prows.findIndex((x) => x[0]?.toLowerCase() === String(r[1] || "").toLowerCase());
     if (pi !== -1) {
       const psr = pi + 2, c = prows[pi];
-      const dn = String(r[2] || "").trim(), ig = String(r[3] || "").trim(), ph = String(r[4] || "").trim();
+      const nn = String(r[2] || "").trim(), ig = String(r[3] || "").trim(), ph = String(r[4] || "").trim();
+      // Passport edits change the canonical Name (col A) — the passport shows and
+      // is keyed by this. Display_Name (col D, used only by the turnamenpadel
+      // mobile/TV boards) is left untouched.
       const updated = [
-        c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
-        dn || c[3] || c[0] || "", c[4] || "M", c[5] || "", ph || c[6] || "", c[7] || "", c[8] || "", c[9] || "",
+        nn || c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
+        c[3] || "", c[4] || "M", c[5] || "", ph || c[6] || "", c[7] || "", c[8] || "", c[9] || "",
       ];
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
     }
