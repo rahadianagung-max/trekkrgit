@@ -1398,13 +1398,24 @@ async function getNationalLeaderboard(params) {
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
   const pRows = pRes.data.values || [];
   const playersInfo = {};
+  // Resolve ELO_Log names back to the canonical Players row by both the Name
+  // (col A) and the Display_Name (col D). Some ELO_Log entries were recorded
+  // under a player's alias/short name; without an alias index the join misses
+  // and the board falls back to showing that raw alias. Indexing on both keys
+  // means every match resolves to — and displays — the canonical Name.
+  const infoByKey = {}; // normName(Name) and normName(Display_Name) -> info
   pRows.forEach((r) => {
     if (r[0]) {
-      playersInfo[r[0].toLowerCase()] = {
+      const info = {
         name: r[0], ig: r[1] || "", verified: r[2] === "TRUE",
         displayName: r[3] || r[0], gender: (r[4] || "M").toUpperCase(),
         region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
       };
+      playersInfo[r[0].toLowerCase()] = info;
+      infoByKey[normName(r[0])] = info;
+      const alias = normName(r[3]);
+      // Never let an alias overwrite a real Name match, and skip blanks.
+      if (alias && !infoByKey[alias]) infoByKey[alias] = info;
     }
   });
 
@@ -1469,7 +1480,7 @@ async function getNationalLeaderboard(params) {
   let leaderboard = Object.keys(playerStats).map((k) => {
     const ps  = playerStats[k];
     const elo = ps.elo;
-    const info = playersInfo[k] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "", tournaments: "" };
+    const info = playersInfo[k] || infoByKey[normName(k)] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "", tournaments: "" };
     return {
       ...info,
       elo,
