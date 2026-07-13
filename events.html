@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
 <style>
 /* Header */
 .site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
@@ -130,19 +131,11 @@
 
 </main>
 
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <span class="footer-brand">Trekkr</span>
-    <nav class="footer-links" aria-label="Footer">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
-    </nav>
-    <span class="footer-copy">© 2026 Trekkr. All rights reserved.</span>
-  </div>
-</footer>
+<div data-eco-footer>
+  <a href="https://admin.trekkr.online">Admin (Venue login)</a>
+  <a href="https://trekkr.online/market">Market Intelligence</a>
+  <a href="https://trekkr.online/about">About</a>
+</div>
 
 <script>
 (function(){
@@ -256,5 +249,6 @@
     .catch(function(){ready(FALLBACK);});
 })();
 </script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
 </body>
 </html>

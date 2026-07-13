@@ -1,0 +1,241 @@
+/* ==========================================================================
+   ecosystem.css — SportsActvd Ecosystem Kit (shared layer)
+   Design tokens + the two signature shared elements: the Ecosystem Bar and
+   the shared 4-column footer. Load this AFTER the site's own theme:
+     <link rel="stylesheet" href="/trekkr-theme.css"/>
+     <link rel="stylesheet" href="/ecosystem.css"/>
+   Source of truth: docs/ecosystem-revamp-brief.md §2. Keep this file identical
+   across trekkr.online and turnamenpadel.com so the chrome is pixel-identical.
+   ========================================================================== */
+
+:root{
+  /* §2.1 Palette (shared across the whole ecosystem) */
+  --ink:#101010;         /* near-black — primary text / dark surfaces */
+  --paper:#F7F5F0;       /* off-white background */
+  --ember:#E85D26;       /* Trekkr orange — ELO numbers + primary CTAs ONLY */
+  --court:#1E5A46;       /* padel-court green — verified states / outbound links */
+  --line:#D8D4CC;        /* hairlines, borders */
+  --elo-gold:#C9A227;    /* reserved: top-10 / champion states only */
+
+  /* §2.1 Type roles. Display = scoreboard energy; body = quiet; mono = data.
+     No new webfont is downloaded here — we reuse the site's display face and a
+     system mono with tabular figures so ratings read like data, not marketing. */
+  --eco-display:'Saira Condensed','Barlow Condensed',system-ui,sans-serif;
+  --eco-body:'Plus Jakarta Sans','Inter',system-ui,sans-serif;
+  --eco-mono:ui-monospace,'JetBrains Mono',SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   §2.1 ELO number treatment — always ember, always tabular mono, everywhere.
+   Rendered by formatElo() in ecosystem.js. The repetition is how users learn
+   that the orange number is the ecosystem's shared currency.
+--------------------------------------------------------------------------- */
+.elo{
+  font-family:var(--eco-mono);
+  font-variant-numeric:tabular-nums;
+  font-weight:700;
+  color:var(--ember);
+  letter-spacing:-.01em;
+}
+.elo-delta{
+  font-family:var(--eco-mono);
+  font-variant-numeric:tabular-nums;
+  font-weight:600;
+  font-size:.82em;
+  margin-left:.4em;
+}
+.elo-delta--up{color:var(--court)}
+.elo-delta--down{color:var(--muted,#6b6b70)}
+.elo-delta--flat{color:var(--subtle,#9A9AA2)}
+
+/* ---------------------------------------------------------------------------
+   §2.2 The Ecosystem Bar (signature element #1)
+   ~32px, --ink background, sits at the very top above the main nav. Identical
+   on every page and across both sites.
+--------------------------------------------------------------------------- */
+.eco-bar{
+  background:var(--ink);
+  color:#EDEBE6;
+  font-family:var(--eco-body);
+  font-size:12px;
+  line-height:1;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.eco-bar__inner{
+  width:min(1180px,calc(100% - 40px));
+  margin:0 auto;
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.eco-bar__brand{
+  font-family:var(--eco-display);
+  font-style:italic;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  font-size:13px;
+  color:#FFFFFF;
+  white-space:nowrap;
+  padding-right:4px;
+}
+.eco-bar__links{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex:1;
+  min-width:0;
+}
+.eco-bar__sep{color:rgba(255,255,255,.22);user-select:none}
+.eco-bar__link{
+  display:inline-flex;
+  align-items:baseline;
+  gap:5px;
+  color:rgba(237,235,230,.72);
+  white-space:nowrap;
+  transition:color .15s ease;
+}
+.eco-bar__link:hover{color:#FFFFFF}
+.eco-bar__link--current{color:#FFFFFF;font-weight:600;cursor:default}
+.eco-bar__link--current:hover{color:#FFFFFF}
+.eco-bar__tag{color:rgba(237,235,230,.5);font-size:11px}
+.eco-bar__link--current .eco-bar__tag{color:rgba(237,235,230,.7)}
+.eco-bar__cta{
+  margin-left:auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--ember);
+  font-weight:600;
+  white-space:nowrap;
+}
+.eco-bar__cta:hover{color:#ff7a45}
+
+/* Mobile trigger + sheet (hidden on desktop) */
+.eco-bar__toggle{
+  display:none;
+  align-items:center;
+  gap:6px;
+  background:none;
+  border:0;
+  color:#FFFFFF;
+  font-family:var(--eco-display);
+  font-style:italic;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  font-size:13px;
+  padding:0;
+}
+.eco-bar__toggle .eco-caret{transition:transform .2s ease}
+.eco-bar__toggle[aria-expanded="true"] .eco-caret{transform:rotate(180deg)}
+
+.eco-sheet{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:none;
+}
+.eco-sheet[hidden]{display:none}
+.eco-sheet.open{display:block}
+.eco-sheet__backdrop{position:absolute;inset:0;background:rgba(16,16,16,.55)}
+.eco-sheet__panel{
+  position:absolute;
+  left:0;right:0;top:0;
+  background:var(--ink);
+  color:#EDEBE6;
+  padding:14px 20px 20px;
+  transform:translateY(-8px);
+  opacity:0;
+  transition:transform .22s ease,opacity .22s ease;
+}
+.eco-sheet.open .eco-sheet__panel{transform:translateY(0);opacity:1}
+.eco-sheet__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;margin-bottom:6px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.eco-sheet__title{
+  font-family:var(--eco-display);font-style:italic;font-weight:800;
+  text-transform:uppercase;letter-spacing:.02em;font-size:15px;color:#fff;
+}
+.eco-sheet__close{background:none;border:0;color:#EDEBE6;font-size:22px;line-height:1;padding:4px 8px}
+.eco-sheet__item{
+  display:block;padding:12px 2px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.eco-sheet__item:last-child{border-bottom:0}
+.eco-sheet__name{display:block;color:#fff;font-weight:600;font-size:15px}
+.eco-sheet__name .eco-bar__tag{font-size:12px;margin-left:6px}
+.eco-sheet__role{display:block;color:rgba(237,235,230,.6);font-size:13px;margin-top:3px}
+.eco-sheet__item--current .eco-sheet__name{color:var(--ember)}
+
+@media(max-width:720px){
+  .eco-bar__brand,.eco-bar__links,.eco-bar__cta{display:none}
+  .eco-bar__toggle{display:inline-flex}
+}
+
+/* Visible keyboard focus on every interactive element in the kit */
+.eco-bar a:focus-visible,
+.eco-bar button:focus-visible,
+.eco-sheet a:focus-visible,
+.eco-sheet button:focus-visible,
+.eco-footer a:focus-visible{
+  outline:2px solid var(--ember);
+  outline-offset:2px;
+  border-radius:3px;
+}
+
+/* ---------------------------------------------------------------------------
+   §2.4 Shared 4-column ecosystem footer. Identical on both sites.
+--------------------------------------------------------------------------- */
+.eco-footer{
+  background:var(--ink);
+  color:#EDEBE6;
+  font-family:var(--eco-body);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:44px 0 28px;
+  margin-top:56px;
+}
+.eco-footer__inner{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.eco-footer__cols{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:28px;
+}
+.eco-footer__brand{
+  font-family:var(--eco-display);font-style:italic;font-weight:800;
+  text-transform:uppercase;letter-spacing:.01em;font-size:17px;color:#fff;
+  margin-bottom:6px;display:inline-block;
+}
+.eco-footer__brand:hover{color:var(--ember)}
+.eco-footer__role{color:rgba(237,235,230,.58);font-size:13px;line-height:1.5}
+/* Optional per-site utility links (e.g. Trekkr: Admin, Market Intelligence).
+   Populated from whatever markup the page leaves inside [data-eco-footer]. */
+.eco-footer__utility{
+  margin-top:30px;padding-top:16px;
+  border-top:1px solid rgba(255,255,255,.1);
+  display:flex;flex-wrap:wrap;gap:8px 20px;
+}
+.eco-footer__utility a{color:rgba(237,235,230,.6);font-size:13px}
+.eco-footer__utility a:hover{color:#fff}
+.eco-footer__bottom{
+  margin-top:20px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+  color:rgba(237,235,230,.5);font-size:12px;
+}
+.eco-footer__utility + .eco-footer__bottom{margin-top:16px}
+.eco-footer__mark{color:var(--ember);font-weight:700;font-family:var(--eco-display);font-style:italic}
+
+@media(max-width:720px){
+  .eco-footer__cols{grid-template-columns:1fr 1fr;gap:22px}
+}
+@media(max-width:400px){
+  .eco-footer__cols{grid-template-columns:1fr}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .eco-bar__link,.eco-bar__cta,.eco-bar__toggle .eco-caret,
+  .eco-sheet__panel{transition:none !important}
+}
