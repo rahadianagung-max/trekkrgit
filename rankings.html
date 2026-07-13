@@ -59,18 +59,28 @@
 .champion .who{flex:1;min-width:0}
 .champion .who .name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .champion .who .meta{font-size:10px;color:var(--muted)}
-.champion .elo{text-align:right}
-.champion .elo .cap{font-size:9px;color:var(--subtle)}
-.champion .elo .val{font-size:17px;font-weight:800;font-style:italic}
+.champion__elo{text-align:right;display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.champion__elo .cap{font-size:9px;color:var(--subtle)}
+.champion__elo .elo{font-size:19px}
 
+/* Rankings rows — §3.3 treatment: tabular-mono numbers, ember ELO, hairline
+   dividers, no zebra. Rows expand to a Player Passport Card (brief §3.3). */
+.rrow,.champion{cursor:pointer}
 .rrow{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border-soft);border-radius:9px;padding:8px 12px;transition:border-color .2s}
-.rrow:hover{border-color:var(--orange)}
-.rrow .rank{font-family:var(--display);font-style:italic;font-weight:800;font-size:13px;color:var(--subtle);width:16px;text-align:center}
+.rrow:hover,.rrow:focus-visible{border-color:var(--ember);outline:none}
+.champion:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+.rrow .rank{font-family:var(--eco-mono);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:var(--subtle);width:18px;text-align:center}
 .rrow .avatar{width:28px;height:28px;font-size:11px}
 .rrow .who{flex:1;min-width:0}
 .rrow .who .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rrow .who .meta{font-size:9px;color:var(--subtle)}
-.rrow .elo{font-size:12px;font-weight:700;color:var(--orange)}
+.rrow .elo{font-size:13px}
+.rrow .chev,.champion .chev{flex-shrink:0;color:var(--faint);font-size:14px;transition:transform .2s}
+.rrow[aria-expanded="true"] .chev,.champion[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--ember)}
+@media(prefers-reduced-motion:reduce){.rrow .chev,.champion .chev{transition:none}}
+.pp-panel{margin-top:6px;animation:ppIn .22s ease}
+@keyframes ppIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.pp-panel{animation:none}}
 
 .see-full{margin-top:8px;background:transparent;border:0;font-size:11px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:5px;padding:2px}
 .state{font-size:13px;color:var(--subtle);padding:18px 4px}
@@ -199,20 +209,46 @@
   function meta(p){var parts=[p.level];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
 
-  function rowHTML(p,rank){
-    return '<a class="rrow" href="'+passportUrl(p)+'">'
+  function eloHTML(v){return window.formatElo?formatElo(v):'<span class="elo">'+(v||0)+'</span>';}
+  function chev(){return '<i class="ti ti-chevron-right chev" aria-hidden="true"></i>';}
+  function rowHTML(p,rank,g){
+    return '<div class="rrow" role="button" tabindex="0" aria-expanded="false" data-g="'+g+'" data-rank="'+rank+'">'
       +'<span class="rank">'+rank+'</span>'+avatar(p)
       +'<span class="who"><span class="name">'+esc(p.name)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
-      +'<span class="elo">'+p.elo+'</span></a>';
+      +eloHTML(p.elo)+chev()+'</div>';
   }
-  function championHTML(p){
-    return '<a class="champion" href="'+passportUrl(p)+'">'
+  function championHTML(p,g){
+    return '<div class="champion" role="button" tabindex="0" aria-expanded="false" data-g="'+g+'" data-rank="1">'
       +'<span class="rank">1</span>'+avatar(p,true)
       +'<span class="who"><span class="name">'+esc(p.name)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
-      +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
+      +'<span class="champion__elo"><span class="cap">ELO</span>'+eloHTML(p.elo)+'</span>'+chev()+'</div>';
   }
 
   var data={M:[],F:[]}, expanded={M:false,F:false};
+
+  /* Row expand → Player Passport Card (brief §3.3). Delegated so it survives
+     re-renders; keyboard accessible; one open card per column. */
+  function toggleRow(row){
+    var g=row.getAttribute('data-g'), rank=parseInt(row.getAttribute('data-rank'),10);
+    var box=document.getElementById(g==='M'?'colM':'colF');
+    var isOpen=row.getAttribute('aria-expanded')==='true';
+    box.querySelectorAll('[aria-expanded="true"]').forEach(function(r){
+      r.setAttribute('aria-expanded','false');
+      var n=r.nextElementSibling; if(n&&n.classList.contains('pp-panel'))n.remove();
+    });
+    if(!isOpen&&window.renderPassportCard){
+      var p=(data[g]||[])[rank-1]; if(!p)return;
+      row.setAttribute('aria-expanded','true');
+      row.insertAdjacentHTML('afterend','<div class="pp-panel">'+renderPassportCard(p,{rank:rank})+'</div>');
+    }
+  }
+  ['colM','colF'].forEach(function(id){
+    var box=document.getElementById(id);
+    box.addEventListener('click',function(e){var row=e.target.closest('.rrow,.champion');if(row&&box.contains(row))toggleRow(row);});
+    box.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){var row=e.target.closest('.rrow,.champion');if(row&&box.contains(row)){e.preventDefault();toggleRow(row);}}
+    });
+  });
 
   function render(g){
     var box=document.getElementById(g==='M'?'colM':'colF');
@@ -220,8 +256,8 @@
     var list=data[g]||[];
     if(!list.length){box.innerHTML='<div class="state">No players found for this filter.</div>';moreBtn.hidden=true;return;}
     var show=expanded[g]?list:list.slice(0,5);
-    var html=championHTML(show[0]);
-    if(show.length>1){html+='<div class="col-list" style="margin-top:6px">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
+    var html=championHTML(show[0],g);
+    if(show.length>1){html+='<div class="col-list" style="margin-top:6px">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2,g);}).join('')+'</div>';}
     box.innerHTML=html;
     if(list.length>5){
       moreBtn.hidden=false;
@@ -291,7 +327,7 @@
         fr.innerHTML=list.map(function(p){
           return '<a class="fr-item" href="'+passportUrl(p)+'">'+avatar(p)
             +'<span class="name">'+esc(p.name)+'</span>'
-            +'<span class="meta">'+esc((p.gender==='F'?'Women':'Men')+' · '+p.level+' · '+p.elo)+'</span></a>';
+            +'<span class="meta">'+esc((p.gender==='F'?'Women':'Men')+' · '+p.level)+' · </span>'+eloHTML(p.elo)+'</a>';
         }).join('');
       }).catch(function(){fr.classList.add('show');fr.innerHTML='<div class="fr-empty">Search failed. Try again.</div>';});
   }

@@ -215,16 +215,121 @@
     el.innerHTML = footerHtml(currentSite, utilityHtml);
   }
 
+  // -------------------------------------------------------------------------
+  // §2.3  Player Passport Card — the second signature element.
+  //
+  // Grounded strictly in fields the current Trekkr payload already returns
+  // (inspected in api/sheet.js getPlayerDetail / getNationalLeaderboard):
+  //   name / displayName, elo|currentElo, totalMatches, winRate, streak,
+  //   level, region, photoUrl, tournaments (col K, comma-sep EVENT NAMES),
+  //   winnerAt (col J, comma-sep events won).
+  // Accepts either a leaderboard row (flat) or a getPlayerDetail response
+  // ({ player, stats }). Pass opts.rank for the board position.
+  //
+  // TODO(ecosystem): fields that do NOT exist in the payload yet, so their
+  //   chips are intentionally omitted (brief §2.3):
+  //     • academy level  — no Stellar Academy field on the player row.
+  //     • "last event"    — no timestamped last-event name available.
+  //     • per-event deep links — `tournaments` gives event NAMES only, no
+  //       Tournament/Event ID, so chips link to turnamenpadel.com (ref) as a
+  //       best-effort until canonical event IDs are surfaced (brief §5).
+  // -------------------------------------------------------------------------
+  function pick() {
+    for (var i = 0; i < arguments.length; i++) {
+      var v = arguments[i];
+      if (v !== null && v !== undefined && v !== "") return v;
+    }
+    return undefined;
+  }
+  function initials(name) {
+    return (String(name || "").trim().split(/\s+/).map(function (w) { return w[0] || ""; })
+      .slice(0, 2).join("") || "?").toUpperCase();
+  }
+  function commaList(s) {
+    return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+
+  function renderPassportCard(input, opts) {
+    opts = opts || {};
+    var pl = input.player || input;
+    var st = input.stats || input;
+    var name = String(pick(pl.displayName, pl.name, input.name, "")).trim();
+    var elo = pick(st.currentElo, pl.elo, input.elo, 0);
+    var matches = pick(st.totalMatches, pl.totalMatches, input.totalMatches, 0);
+    var winRate = pick(st.winRate, pl.winRate, input.winRate);
+    var streak = pick(st.streak, pl.streak, input.streak);
+    var level = pick(pl.level, input.level, "");
+    var region = pick(pl.region, input.region, "");
+    var photo = pick(pl.photoUrl, input.photoUrl, "");
+    var rank = pick(opts.rank, pl.rank, input.rank);
+    var events = commaList(pick(pl.tournaments, input.tournaments, ""));
+    var wonLc = commaList(pick(pl.winnerAt, input.winnerAt, "")).map(function (x) { return x.toLowerCase(); });
+
+    var subParts = [];
+    if (rank !== undefined && rank !== null && rank !== "") subParts.push("Rank #" + rank);
+    if (region) subParts.push(region);
+    if (level) subParts.push(level);
+
+    var av = photo
+      ? '<img class="pp-card__av" src="' + esc(photo) + '" alt="" loading="lazy"/>'
+      : '<span class="pp-card__av pp-card__av--i">' + esc(initials(name)) + "</span>";
+
+    var stats = [
+      { v: Number(matches).toLocaleString("en-US"), l: "Matches" }
+    ];
+    if (winRate !== undefined && winRate !== null && winRate !== "") stats.push({ v: winRate + "%", l: "Win rate" });
+    if (streak && streak !== "—") stats.push({ v: streak, l: "Streak" });
+    var statsHtml = stats.map(function (s) {
+      return '<div class="pp-card__stat"><span class="pp-card__stat-v">' + esc(s.v) +
+        '</span><span class="pp-card__stat-l">' + esc(s.l) + "</span></div>";
+    }).join("");
+
+    // Provenance chips: one per tournament event; gold if the player won it.
+    var CAP = 6;
+    var chips = events.slice(0, CAP).map(function (evName) {
+      var won = wonLc.indexOf(evName.toLowerCase()) !== -1;
+      var href = withRef("https://turnamenpadel.com", "trekkr", null); // TODO: per-event deep link (brief §5)
+      return '<a class="pp-chip' + (won ? " pp-chip--gold" : "") + '" href="' + esc(href) +
+        '" title="Played at an official TurnamenPadel event">' +
+        (won ? "🏆 " : "✓ ") + esc(evName) + "</a>";
+    });
+    if (events.length > CAP) chips.push('<span class="pp-chip pp-chip--more">+' + (events.length - CAP) + " more</span>");
+    var chipsHtml = chips.length
+      ? '<div class="pp-card__chips">' + chips.join("") +
+        "<!-- TODO(ecosystem): academy-level chip omitted — no academy field in payload (brief §2.3) --></div>"
+      : '<div class="pp-card__chips pp-card__chips--empty"><span class="pp-chip pp-chip--muted">No official events yet</span>' +
+        "<!-- TODO(ecosystem): tournament + academy chips omitted — player has no tournaments field and no academy field --></div>";
+
+    var full = opts.href || ("/player/" + String(pl.name || name).toLowerCase().replace(/[^a-z0-9]+/g, ""));
+    var linkHtml = opts.hideLink ? "" :
+      '<a class="pp-card__more" href="' + esc(full) + '">View full passport →</a>';
+
+    return '<article class="pp-card">' +
+      '<header class="pp-card__top">' +
+        '<div class="pp-card__id">' + av +
+          '<div class="pp-card__idtext"><h3 class="pp-card__name">' + esc(name.toUpperCase()) + "</h3>" +
+          (subParts.length ? '<div class="pp-card__sub">' + esc(subParts.join(" · ")) + "</div>" : "") +
+          "</div>" +
+        "</div>" +
+        '<div class="pp-card__elo"><span class="pp-card__elo-cap">ELO</span>' + formatElo(elo) + "</div>" +
+      "</header>" +
+      '<div class="pp-card__stats">' + statsHtml + "</div>" +
+      chipsHtml + linkHtml +
+    "</article>";
+  }
+
   // ---- expose + auto-init ------------------------------------------------
   var api = {
     sites: SITES,
     renderEcosystemBar: renderEcosystemBar,
     renderEcosystemFooter: renderEcosystemFooter,
+    renderPassportCard: renderPassportCard,
     formatElo: formatElo
   };
   global.Ecosystem = api;
   global.renderEcosystemBar = renderEcosystemBar;
   global.renderEcosystemFooter = renderEcosystemFooter;
+  global.renderPassportCard = renderPassportCard;
   global.formatElo = formatElo;
 
   var self = document.currentScript;

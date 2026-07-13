@@ -188,6 +188,46 @@
 }
 
 /* ---------------------------------------------------------------------------
+   §2.3 Player Passport Card — reusable, rendered by renderPassportCard().
+--------------------------------------------------------------------------- */
+.pp-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--paper);
+  color:var(--ink);
+  padding:18px 18px 16px;
+  font-family:var(--eco-body);
+}
+.pp-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.pp-card__id{display:flex;align-items:center;gap:12px;min-width:0}
+.pp-card__av{width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#EDE9E1}
+.pp-card__av--i{display:flex;align-items:center;justify-content:center;font-family:var(--eco-display);font-style:italic;font-weight:800;color:var(--ember);font-size:19px}
+.pp-card__idtext{min-width:0}
+.pp-card__name{font-family:var(--eco-display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:22px;line-height:1.02;margin:0;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-card__sub{font-size:12.5px;color:#6b6b63;margin-top:3px}
+.pp-card__elo{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;line-height:1}
+.pp-card__elo-cap{font-size:10px;font-weight:700;letter-spacing:.14em;color:#9a9689;margin-bottom:2px}
+.pp-card__elo .elo{font-size:34px}
+.pp-card__stats{display:flex;gap:22px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.pp-card__stat{display:flex;flex-direction:column;gap:2px}
+.pp-card__stat-v{font-family:var(--eco-mono);font-variant-numeric:tabular-nums;font-weight:700;font-size:18px;color:var(--ink)}
+.pp-card__stat-l{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a9689}
+.pp-card__chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+.pp-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:var(--radius-pill);border:1px solid var(--line);background:#fff;color:var(--court)}
+.pp-chip:hover{border-color:var(--court)}
+.pp-chip--gold{color:#8a6d12;border-color:#E7D8A6;background:#FBF6E6}
+.pp-chip--gold:hover{border-color:var(--elo-gold)}
+.pp-chip--more,.pp-chip--muted{color:#9a9689;border-style:dashed}
+.pp-chip--muted:hover{border-color:var(--line)}
+.pp-card__more{display:inline-block;margin-top:14px;font-size:13px;font-weight:700;color:var(--ember)}
+.pp-card__more:hover{text-decoration:underline}
+@media(max-width:480px){
+  .pp-card__elo .elo{font-size:28px}
+  .pp-card__name{font-size:19px}
+  .pp-card__stats{gap:16px}
+}
+
+/* ---------------------------------------------------------------------------
    §2.4 Shared 4-column ecosystem footer. Identical on both sites.
 --------------------------------------------------------------------------- */
 .eco-footer{
