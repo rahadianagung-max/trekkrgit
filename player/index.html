@@ -876,10 +876,10 @@ async function loadPlayer(){
 
 function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
   const ti=tierProg(s.currentElo);
-  document.title=`${p.displayName} — Trekkr Passport`;
+  document.title=`${p.name} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
-  <div><h2 class="pp-name">${(p.displayName||p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
+  <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
     <div><p class="pp-meta-label">Level</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
@@ -1023,7 +1023,7 @@ function drawChart(history){const canvas=document.getElementById('eloChart');if(
 
 function shareIG(){downloadNightCard();}
 function copyLink(){const url=`https://trekkr.online/player/${(playerData?.player?.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`;navigator.clipboard.writeText(url).then(()=>showToast('Link copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Link copied!')})}
-function shareWA(){if(!playerData)return;const p=playerData.player,s=playerData.stats,tier=TrekkrAPI.getTierName(s.currentElo),url=`https://trekkr.online/player/${(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`,text=`🎾 ${p.displayName||p.name} — ELO ${s.currentElo} (${tier})\nMatches: ${s.totalMatches} · Win Rate: ${s.winRate}%\n${url}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank')}
+function shareWA(){if(!playerData)return;const p=playerData.player,s=playerData.stats,tier=TrekkrAPI.getTierName(s.currentElo),url=`https://trekkr.online/player/${(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`,text=`🎾 ${p.name} — ELO ${s.currentElo} (${tier})\nMatches: ${s.totalMatches} · Win Rate: ${s.winRate}%\n${url}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank')}
 
 function renderDemo(name){
   playerData={
@@ -1622,7 +1622,7 @@ function openResultModal(){
   if(!playerData)return;
   var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
   var ti=tierProg(s.currentElo);
-  document.getElementById('ncpName').textContent=(p.displayName||p.name).toUpperCase();
+  document.getElementById('ncpName').textContent=(p.name).toUpperCase();
   document.getElementById('ncpSub').textContent=p.clubs||p.region||'';
   document.getElementById('ncpRankPill').textContent=ti.current.toUpperCase();
   document.getElementById('ncpElo').textContent=s.currentElo;
@@ -1633,7 +1633,7 @@ function openResultModal(){
   var photoEl=document.getElementById('ncpPhoto');
   var oldImg=photoEl.querySelector('.ncp-img');if(oldImg)oldImg.remove();
   if(p.photoUrl){var img=document.createElement('img');img.className='ncp-img';img.src=p.photoUrl;img.alt='';img.onerror=function(){var s=img.getAttribute('src')||'';if(!img.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){img.dataset.ibbAlt='1';img.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}img.remove();};photoEl.insertBefore(img,photoEl.firstChild);}
-  var iparts=(p.displayName||p.name).trim().split(/\s+/);
+  var iparts=(p.name).trim().split(/\s+/);
   document.getElementById('ncpInitials').textContent=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'').slice(0,2).toUpperCase();
   var badgeMap={rated:{cls:'ncp-badge-blue',ico:'★'},hot_streak:{cls:'ncp-badge-teal',ico:'▲'},win_machine:{cls:'ncp-badge-gold',ico:'⚡'},first_win:{cls:'ncp-badge-purple',ico:'◆'},consistent:{cls:'ncp-badge-teal',ico:'●'},veteran:{cls:'ncp-badge-blue',ico:'◈'}};
   var bc=document.getElementById('ncpBadges');bc.innerHTML='';
@@ -1647,7 +1647,7 @@ function shareResultWA(){
   if(!playerData)return;
   var p=playerData.player,s=playerData.stats,ti=tierProg(s.currentElo);
   var url='https://trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-  var text=(p.displayName||p.name)+' di Trekkr\n'+ti.current+' · ELO '+s.currentElo+'\nMatches: '+s.totalMatches+' · Win Rate: '+s.winRate+'%\n'+url;
+  var text=(p.name)+' di Trekkr\n'+ti.current+' · ELO '+s.currentElo+'\nMatches: '+s.totalMatches+' · Win Rate: '+s.winRate+'%\n'+url;
   window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
 
@@ -1661,7 +1661,7 @@ function downloadNightCard(){
   var W=1080,H=1920;c.width=W;c.height=H;
 
   function drawCard(){
-    var pname=(p.displayName||p.name).toUpperCase();
+    var pname=(p.name).toUpperCase();
     var sub=p.clubs||p.region||'';
     var PHOTO_H=Math.round(H*0.60);
     var CONTENT_Y=PHOTO_H+60;
@@ -1752,7 +1752,7 @@ function downloadNightCard(){
     imgEl.onerror=function(){var s=imgEl.getAttribute('src')||'';if(!imgEl.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){imgEl.dataset.ibbAlt='1';imgEl.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}drawCard();};
     imgEl.src=p.photoUrl;
   } else {
-    var iparts=(p.displayName||p.name).trim().split(/\s+/);
+    var iparts=(p.name).trim().split(/\s+/);
     var inits=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'??').slice(0,2).toUpperCase();
     ctx.fillStyle='#141414';ctx.fillRect(0,0,W,Math.round(H*0.60));
     ctx.fillStyle='#222';ctx.font='700 300px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(inits,W/2,Math.round(H*0.38));
@@ -1857,7 +1857,7 @@ var _editPhotoData="";
 var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";
 function openEditModal(){
   if(!playerData)return; var p=playerData.player;
-  document.getElementById('editName').value=p.displayName||p.name||'';
+  document.getElementById('editName').value=p.name||'';
   document.getElementById('editIg').value=(p.ig||'').replace(/^@+/,'');
   document.getElementById('editPhotoPrev').src=p.photoUrl||_EDIT_PH;
   _editPhotoData=''; var m=document.getElementById('editMsg'); m.textContent='';
