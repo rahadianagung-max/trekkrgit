@@ -22,11 +22,55 @@
 .lnk{color:var(--orange);font-weight:700;font-size:13px}
 .empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
 
-/* hero */
-.hero{padding:54px 0 30px;text-align:center}
-.hero-wm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(54px,12vw,104px);line-height:.92;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.02em .12em;display:inline-block}
-.hero-h{font-size:clamp(20px,3.6vw,30px);margin:6px 0 0}
-.hero-cta{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(18px,2.6vw,22px);margin-top:18px}
+/* hero — "What's your ELO?" + the search as the primary action (brief §3.1) */
+.hero{padding:60px 0 30px;text-align:center}
+.hero-elo-h{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(48px,10.5vw,104px);line-height:.9;letter-spacing:-.01em;color:var(--ink);margin:0 0 26px}
+.hero-elo-accent{color:var(--ember)}
+.hero-search{display:flex;gap:10px;max-width:540px;margin:0 auto}
+.hero-search input{flex:1;min-width:0;border:1.5px solid var(--border);border-radius:14px;padding:15px 20px;font:inherit;font-size:16px;background:var(--surface);transition:border-color .18s,box-shadow .18s}
+.hero-search input::placeholder{color:var(--subtle)}
+.hero-search input:focus{outline:none;border-color:var(--ember);box-shadow:0 0 0 4px rgba(232,93,38,.14)}
+.hero-search .hero-search-btn{padding:0 26px;border-radius:14px;font-size:15px;background:var(--ember);border:1.5px solid var(--ember);color:#fff}
+.hero-search .hero-search-btn:hover{background:#d24f1e;border-color:#d24f1e}
+.hero-res{max-width:540px;margin:6px auto 0;text-align:left}
+.hero-res a{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border-soft);color:inherit;text-decoration:none;border-radius:8px}
+.hero-res a:last-child{border-bottom:0}
+.hero-res a:hover{background:var(--surface-2)}
+.hero-proof{font-family:var(--eco-mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);margin:20px 0 0;letter-spacing:.01em;min-height:15px}
+.hero-proof strong{color:var(--ink);font-weight:700}
+
+/* orchestrated one-time load reveal */
+.reveal{opacity:0;transform:translateY(14px);animation:heroReveal .6s cubic-bezier(.2,.7,.2,1) forwards}
+.hero-elo-h.reveal{animation-delay:.03s}
+.hero-search.reveal{animation-delay:.13s}
+.hero-proof.reveal{animation-delay:.24s}
+@keyframes heroReveal{to{opacity:1;transform:none}}
+
+/* skeleton shimmer — replaces raw "Loading…" text (brief §6) */
+.skel{position:relative;overflow:hidden;background:var(--surface-2)}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:skelShim 1.25s infinite}
+@keyframes skelShim{100%{transform:translateX(100%)}}
+.skel-text{display:inline-block;width:min(320px,78%);height:13px;border-radius:6px;vertical-align:middle}
+.skel-row{height:62px;border-radius:12px;margin-top:8px}
+.skel-stack{margin-top:8px}
+.skel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+
+/* Journey strip — the ecosystem sequence (brief §3.2) */
+.journey{padding:10px 0 2px}
+.journey-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.journey-step{border:1px solid var(--border);border-radius:16px;padding:22px 20px;background:var(--surface)}
+.journey-num{font-family:var(--display);font-style:italic;font-weight:800;font-size:14px;color:var(--faint)}
+.journey-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:22px;margin:6px 0 8px;letter-spacing:.01em;color:var(--ink)}
+.journey-copy{font-size:14px;line-height:1.55;color:var(--muted);margin:0 0 16px;min-height:44px}
+.journey-cta{font-weight:700;font-size:14px;color:var(--ember)}
+.journey-cta:hover{text-decoration:underline}
+.journey-cta--court{color:var(--court)}
+@media(max-width:760px){.journey-grid{grid-template-columns:1fr}.journey-copy{min-height:0}}
+
+@media(prefers-reduced-motion:reduce){
+  .reveal{animation:none;opacity:1;transform:none}
+  .skel::after{animation:none}
+}
 
 /* region filter */
 .filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
@@ -106,9 +150,39 @@
 <main>
 
   <section class="hero container">
-    <div class="hero-wm">Trekkr</div>
-    <h1 class="display hero-h">Where Every Match Builds Your Journey</h1>
-    <div class="hero-cta">Every Match Counts.</div>
+    <h1 class="hero-elo-h reveal">What&rsquo;s your <span class="hero-elo-accent">ELO?</span></h1>
+    <div class="hero-search reveal">
+      <input id="homeFind" type="search" placeholder="Search your name&hellip;" autocomplete="off" aria-label="Search your name"/>
+      <button class="btn btn--primary hero-search-btn" id="homeFindBtn" type="button">Search</button>
+    </div>
+    <div class="hero-res" id="homeFindRes" aria-live="polite"></div>
+    <p class="hero-proof reveal" id="heroProof">
+      <span class="skel skel-text" id="heroProofSkel"></span>
+      <span id="heroProofText" hidden><strong id="heroPlayers">&mdash;</strong> players rated &middot; <strong id="heroMatches">&mdash;</strong> matches recorded &middot; updated daily</span>
+    </p>
+  </section>
+
+  <section class="journey container" aria-label="How Trekkr works">
+    <div class="journey-grid">
+      <div class="journey-step">
+        <span class="journey-num">01</span>
+        <h3 class="journey-title">Play</h3>
+        <p class="journey-copy">Any match at a partner venue counts.</p>
+        <a class="journey-cta" href="https://trekkr.online/get-listed">Find venues</a>
+      </div>
+      <div class="journey-step">
+        <span class="journey-num">02</span>
+        <h3 class="journey-title">Prove</h3>
+        <p class="journey-copy">Enter a TurnamenPadel event &mdash; results are verified &amp; synced.</p>
+        <a class="journey-cta journey-cta--court" href="https://turnamenpadel.com?ref=trekkr">See tournaments &rarr;</a>
+      </div>
+      <div class="journey-step">
+        <span class="journey-num">03</span>
+        <h3 class="journey-title">Progress</h3>
+        <p class="journey-copy">Train at Stellar Academy &mdash; your ELO gain is measured, not promised.</p>
+        <a class="journey-cta journey-cta--court" href="https://stellarsquadacademy.com?ref=trekkr">Visit academy &rarr;</a>
+      </div>
+    </div>
   </section>
 
   <section class="sec container">
@@ -117,7 +191,7 @@
       <a class="lnk" href="https://trekkr.online/playrank">learn more &rarr;</a>
     </div>
     <div class="filter-tabs" id="prFilter"></div>
-    <div id="prVenues"><div class="empty">Loading&hellip;</div></div>
+    <div id="prVenues"><div class="skel-stack" aria-hidden="true"><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div></div><span class="sr-only">Loading venues</span></div>
     <button class="show-more-btn" id="prShowMore" style="display:none">Show more</button>
   </section>
 
@@ -126,21 +200,12 @@
       <span class="secname secname--dark">Most Active Players</span>
       <a class="lnk" href="https://trekkr.online/rankings">View all &rarr;</a>
     </div>
-    <div id="activePlayersEl"><div class="empty" style="margin-top:8px">Loading&hellip;</div></div>
+    <div id="activePlayersEl"><div class="skel-stack" aria-hidden="true"><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div></div><span class="sr-only">Loading players</span></div>
   </section>
 
   <section class="sec container">
     <span class="secname secname--dark">New Players</span>
-    <div id="newPlayersEl"><div class="empty mt8">Loading&hellip;</div></div>
-  </section>
-
-  <section class="sec container">
-    <div style="font-weight:700;font-size:15px;margin-bottom:10px">Find Your Name</div>
-    <div class="find">
-      <input id="homeFind" type="search" placeholder="Search player name&hellip;" autocomplete="off" aria-label="Search players"/>
-      <button class="btn btn--primary" id="homeFindBtn">Search</button>
-    </div>
-    <div class="fres" id="homeFindRes" aria-live="polite"></div>
+    <div id="newPlayersEl"><div class="skel-grid" aria-hidden="true"><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div></div><span class="sr-only">Loading players</span></div>
   </section>
 
   <section class="band band--dark">
@@ -318,10 +383,23 @@
     if(sm)sm.textContent=fmt(total);
     if(sa)sa.textContent=leaderboard.length?Math.round(total/leaderboard.length):0;
 
+    // --- Hero proof line ---
+    var hp=document.getElementById('heroPlayers'),hm=document.getElementById('heroMatches');
+    if(hp)hp.textContent=fmt(leaderboard.length);
+    if(hm)hm.textContent=fmt(total);
+    revealProof();
+
   }).catch(function(){
     var listEl=document.getElementById('prVenues');
     if(listEl)listEl.innerHTML='<div class="empty">Gagal memuat data.</div>';
+    revealProof();
   });
+
+  function revealProof(){
+    var ps=document.getElementById('heroProofSkel'),pt=document.getElementById('heroProofText');
+    if(ps)ps.style.display='none';
+    if(pt)pt.hidden=false;
+  }
 })();
 </script>
 <script>
@@ -343,7 +421,8 @@
       var list=(d&&d.leaderboard)||[];
       if(!list.length){res.innerHTML='<p style="padding:8px 4px;font-size:13px;color:var(--muted)">No players found.</p>';return;}
       res.innerHTML=list.map(function(p){
-        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.name)+'</span><span style="font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)">'+(p.elo||0)+'</span></a>';
+        var elo=window.formatElo?formatElo(p.elo):'<span class="elo">'+(p.elo||0)+'</span>';
+        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.name)+'</span>'+elo+'</a>';
       }).join('');
     }).catch(function(){res.innerHTML='';});
   }
