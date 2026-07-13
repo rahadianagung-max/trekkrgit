@@ -198,8 +198,8 @@
   function firstClub(c){return (String(c||'').split(',')[0]||'').trim();}
   function avatar(p,big){
     var cls=big?'avatar':'avatar';
-    if(p.photoUrl) return '<img class="'+cls+'" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\''+cls+'\',textContent:\''+esc(initials(p.displayName))+'\'}))"/>';
-    return '<span class="'+cls+'">'+esc(initials(p.displayName))+'</span>';
+    if(p.photoUrl) return '<img class="'+cls+'" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\''+cls+'\',textContent:\''+esc(initials(p.name))+'\'}))"/>';
+    return '<span class="'+cls+'">'+esc(initials(p.name))+'</span>';
   }
   function meta(p){var parts=[p.level];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
@@ -207,13 +207,13 @@
   function rowHTML(p,rank){
     return '<a class="rrow" href="'+passportUrl(p)+'">'
       +'<span class="rank">'+rank+'</span>'+avatar(p)
-      +'<span class="who"><span class="name">'+esc(p.displayName)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(p.name)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
       +'<span class="elo">'+p.elo+'</span></a>';
   }
   function championHTML(p){
     return '<a class="champion" href="'+passportUrl(p)+'">'
       +'<span class="rank">1</span>'+avatar(p,true)
-      +'<span class="who"><span class="name">'+esc(p.displayName)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(p.name)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
       +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
   }
 
@@ -295,7 +295,7 @@
         if(!list.length){fr.innerHTML='<div class="fr-empty">No players match "'+esc(q)+'".</div>';return;}
         fr.innerHTML=list.map(function(p){
           return '<a class="fr-item" href="'+passportUrl(p)+'">'+avatar(p)
-            +'<span class="name">'+esc(p.displayName)+'</span>'
+            +'<span class="name">'+esc(p.name)+'</span>'
             +'<span class="meta">'+esc((p.gender==='F'?'Women':'Men')+' · '+p.level+' · '+p.elo)+'</span></a>';
         }).join('');
       }).catch(function(){fr.classList.add('show');fr.innerHTML='<div class="fr-empty">Search failed. Try again.</div>';});
