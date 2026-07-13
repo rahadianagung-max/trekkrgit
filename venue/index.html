@@ -182,7 +182,7 @@
   function initials(n){var p=String(n).trim().split(/\s+/);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
   function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
-  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.name))+'</span>';}
   var content=document.getElementById('content');
 
   function selected(){
@@ -216,7 +216,7 @@
 
   /* ---- Detail ---- */
   function firstName(n){var t=String(n||'').trim();return t?t.split(/\s+/)[0]:'';}
-  function bigphoto(p){if(p.photoUrl)return '<img class="pod-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="pod-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function bigphoto(p){if(p.photoUrl)return '<img class="pod-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="pod-photo">'+esc(initials(p.name))+'</span>';}
   function weekLabel(w){return String(w||'').replace(/^W/,'Week ');}
   var CUR=null,CURWEEK=null,ALLCACHE=null;
 
@@ -236,14 +236,14 @@
       +'<button class="vmode-b'+(mode==='all'?' on':'')+'" onclick="showAll()">All venue players</button></div>';
   }
   function ppNudge(){return '<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport &mdash; rating, tier, match history &amp; badges.</span></div></div>';}
-  function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="champ-photo">'+esc(initials(p.displayName||p.name))+'</span>';}
+  function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="champ-photo">'+esc(initials(p.name))+'</span>';}
   function pdText(v){v=(v==null?0:v);return (v>0?'+':'')+v;}
   function champCard(p,rank){
     var label=rank===1?'Weekly Champion':(rank===2?'Runner-up':'3rd place');
     return '<a class="champ champ'+rank+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
       +'<div class="champ-rk">'+rank+'</div>'+bigphoto2(p)
       +'<div class="champ-info"><div class="champ-lbl">'+label+'</div>'
-      +'<div class="champ-nm">'+esc(p.displayName||p.name)+'</div>'
+      +'<div class="champ-nm">'+esc(p.name)+'</div>'
       +'<div class="champ-stats"><span class="cs"><b>'+(p.w||0)+'</b>W</span><span class="cs"><b>'+(p.l||0)+'</b>L</span><span class="cs cs-pd"><b>'+pdText(p.pd)+'</b> diff</span><span class="cs"><b>'+(p.elo||'')+'</b> ELO</span></div></div>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
   }
@@ -251,7 +251,7 @@
   function wkRow(p,i){
     return '<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
       +'<span class="rk">'+(i+1)+'</span>'+photo(p)
-      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+' &middot; '+pdText(p.pd)+' diff</span></span>'
+      +'<span class="lb-name">'+esc(p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+' &middot; '+pdText(p.pd)+' diff</span></span>'
       +'<span class="lb-wl"><span class="n"><span class="w">'+(p.w||0)+'</span><span class="sep">/</span><span class="l">'+(p.l||0)+'</span></span><span class="cap">W / L</span></span>'
       +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
@@ -308,7 +308,7 @@
     var metric=mode==='wins'?((p.totalW||0)+' wins'):mode==='elo'?((p.elo||0)+' ELO'):((p.totalMatches||0)+' matches');
     return '<a class="lb-row" href="https://trekkr.online/player/'+slug(p.name)+'">'
       +'<span class="rk">'+(i+1)+'</span>'+photo(p)
-      +'<span class="lb-name">'+esc(p.displayName||p.name)+'<span class="lb-sub">'+esc(metric)+'</span></span>'
+      +'<span class="lb-name">'+esc(p.name)+'<span class="lb-sub">'+esc(metric)+'</span></span>'
       +'<span class="lb-wl"><span class="n"><span class="w">'+(p.totalW||0)+'</span><span class="sep">/</span><span class="l">'+(p.totalL||0)+'</span></span><span class="cap">W / L</span></span>'
       +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
