@@ -1078,7 +1078,7 @@ async function rmHandleAdd() {
   const btn=document.getElementById('rm-add-btn');
   btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
   try {
-    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level})});
+    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level,clubs:RM.venue||''})});
     await rmLoadPlayers();
     const newP=RM.allPlayers.find(p=>p.name===fullName);
     if(newP&&!RM.selectedPlayers.find(s=>s.name===fullName)) RM.selectedPlayers.push({...newP});
