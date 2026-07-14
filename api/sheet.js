@@ -456,8 +456,14 @@ async function getPlayerDetail(name) {
   const sheets = getSheets();
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
   const pRows = pRes.data.values || [];
-  const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  const pRow = pRows.find((r) => normName(r[0]) === normName(name) || normName(r[3]) === normName(name));
   if (!pRow) return respond(404, { error: "Player not found" });
+
+  // A player's ELO_Log rows may be recorded under their canonical Name (col A)
+  // OR their Display_Name (col D) — e.g. after an approved rename, or when a
+  // match was entered under an alias. Match on both so alias-recorded history
+  // isn't dropped (mirrors the alias resolution in getNationalLeaderboard).
+  const nameKeys = new Set([pRow[0], pRow[3]].map(normName).filter(Boolean));
 
   const player = {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
@@ -468,7 +474,7 @@ async function getPlayerDetail(name) {
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const eRows = eRes.data.values || [];
-  const history = eRows.filter((r) => r[1]?.toLowerCase() === name.toLowerCase()).map((r) => ({
+  const history = eRows.filter((r) => nameKeys.has(normName(r[1]))).map((r) => ({
     sessionId: r[0], elo: parseInt(r[2]) || 1350, delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0, l: parseInt(r[5]) || 0, timestamp: r[6] || "",
   }));
 
@@ -493,13 +499,18 @@ async function getPlayerDetail(name) {
 // row-order — the same order the client used to build, so ELO-delta alignment holds.
 async function getPlayerMatches(name) {
   const sheets = getSheets();
-  const target = normName(name);
   // Venue display names (ordered) + the set of tabs that actually exist, so a venue
-  // whose Venue_ tab is missing doesn't make the whole batchGet fail.
-  const [vRes, meta] = await Promise.all([
+  // whose Venue_ tab is missing doesn't make the whole batchGet fail. Also pull
+  // Players so we can resolve the player's canonical Name (col A) AND Display_Name
+  // (col D) — a match may be recorded under either, and matching only one drops
+  // alias-recorded rows (same resolution the leaderboard applies).
+  const [vRes, meta, pRes] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }),
     sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:D` }),
   ]);
+  const pRow = (pRes.data.values || []).find((r) => normName(r[0]) === normName(name) || normName(r[3]) === normName(name));
+  const targetSet = new Set([name, ...(pRow ? [pRow[0], pRow[3]] : [])].map(normName).filter(Boolean));
   const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
   const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
   if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
@@ -514,7 +525,8 @@ async function getPlayerMatches(name) {
     let appeared = false;
     for (const r of (vr.values || [])) {
       const p1t1 = r[2] || "", p2t1 = r[3] || "", p1t2 = r[4] || "", p2t2 = r[5] || "";
-      if (![p1t1, p2t1, p1t2, p2t2].some((n) => normName(n) === target)) continue;
+      const matchedKey = [p1t1, p2t1, p1t2, p2t2].map(normName).find((n) => targetSet.has(n));
+      if (!matchedKey) continue;
       appeared = true;
       const week = r[0] || "", date = r[1] || "";
       const scoreT1 = parseInt(r[6]) || 0, scoreT2 = parseInt(r[7]) || 0;
@@ -530,7 +542,7 @@ async function getPlayerMatches(name) {
       const category = matchCategory([g1, g2, g3, g4]);
       matches.push({
         week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2,
-        gender: toGender(slots[target], category === "MIXED" ? "M" : category),
+        gender: toGender(slots[matchedKey], category === "MIXED" ? "M" : category),
         genders: { p1t1: g1, p2t1: g2, p1t2: g3, p2t2: g4 }, category,
         sourceUrl: venueRowSource(r), venue,
       });
