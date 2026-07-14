@@ -543,6 +543,7 @@ async function getPlayerMatches(name) {
   const CHUNK = 25;
   const starts = [];
   for (let i = 0; i < ranges.length; i += CHUNK) starts.push(i);
+  let _batchError = "";
   const chunkResults = await Promise.all(starts.map((start) => {
     const slice = ranges.slice(start, start + CHUNK);
     return sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: slice })
@@ -550,9 +551,13 @@ async function getPlayerMatches(name) {
         const vrs = r.data.valueRanges || [];
         return vrs.length === slice.length ? vrs : slice.map((_, k) => vrs[k] || { values: [] });
       })
-      .catch((e) => { console.error("player matches batchGet chunk:", e.message); return slice.map(() => ({ values: [] })); });
+      .catch((e) => { _batchError = _batchError || (e && e.message) || String(e); console.error("player matches batchGet chunk:", e.message); return slice.map(() => ({ values: [] })); });
   }));
   const valueRanges = chunkResults.flat();
+  _debug.batchError = _batchError;
+  _debug.totalRowsFetched = valueRanges.reduce((n, vr) => n + ((vr && vr.values ? vr.values.length : 0)), 0);
+  const _firstVr = valueRanges.find((vr) => vr && vr.values && vr.values.length);
+  _debug.firstRowSample = _firstVr ? _firstVr.values[0] : null;
   const matches = [];
   const playedVenueSet = new Set();
   const seen = new Set();
