@@ -521,29 +521,20 @@ async function getPlayerMatches(name) {
   if (pRow) { if (pRow[0]) aliasSet.add(normName(pRow[0])); if (pRow[3]) aliasSet.add(normName(pRow[3])); }
   const isMe = (n) => aliasSet.has(normName(n));
   const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
-  const rawVenues = (vRes.data.values || []).map((r) => r[0]).filter(Boolean);
-  const venueNames = rawVenues.filter((v) => existingTabs.has(venueTabName(v)));
-  // TEMP diagnostic: surface why the venue scan may be coming back empty.
-  const _debug = {
-    venuesListed: rawVenues.length,
-    tabsTotal: existingTabs.size,
-    venueTabsInSheet: [...existingTabs].filter((t) => String(t).startsWith("Venue_")).length,
-    venueTabsMatched: venueNames.length,
-    sampleVenues: rawVenues.slice(0, 5),
-    sampleExpectedTabs: rawVenues.slice(0, 5).map(venueTabName),
-    sampleActualVenueTabs: [...existingTabs].filter((t) => String(t).startsWith("Venue_")).slice(0, 8),
-  };
-  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [], _debug });
-  const ranges = venueNames.map((v) => `${venueTabName(v)}!${VENUE_READ_RANGE}`);
-  // batchGet passes every range in the request URL; once there are enough venue
-  // tabs that URL exceeds Google's length limit and the whole call throws, which
-  // the router turns into a 500 — so Playing History silently came back empty for
-  // EVERY player. Fetch in bounded chunks in parallel, and keep the result aligned
-  // 1:1 with venueNames even if an individual chunk fails.
+  const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
+  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
+  // Read whole columns (A:M), NOT A2:M. A bounded range like `Venue_X!A2:M` throws
+  // "exceeds grid limits" when a venue tab has been trimmed to a single (header-only)
+  // row — and because batchGet is all-or-nothing, one such tab failed the entire
+  // request, so Playing History came back empty for EVERY player. `A:M` never trips
+  // the grid limit; we skip the header row (index 0) below, matching the old A2:M.
+  const ranges = venueNames.map((v) => `${venueTabName(v)}!A:M`);
+  // Also split into bounded chunks fetched in parallel (guards the request URL as the
+  // number of venues grows) and keep the result aligned 1:1 with venueNames even if a
+  // chunk fails, so one bad tab degrades to "that venue missing" instead of a 500.
   const CHUNK = 25;
   const starts = [];
   for (let i = 0; i < ranges.length; i += CHUNK) starts.push(i);
-  let _batchError = "";
   const chunkResults = await Promise.all(starts.map((start) => {
     const slice = ranges.slice(start, start + CHUNK);
     return sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: slice })
@@ -551,20 +542,17 @@ async function getPlayerMatches(name) {
         const vrs = r.data.valueRanges || [];
         return vrs.length === slice.length ? vrs : slice.map((_, k) => vrs[k] || { values: [] });
       })
-      .catch((e) => { _batchError = _batchError || (e && e.message) || String(e); console.error("player matches batchGet chunk:", e.message); return slice.map(() => ({ values: [] })); });
+      .catch((e) => { console.error("player matches batchGet chunk:", e && e.message); return slice.map(() => ({ values: [] })); });
   }));
   const valueRanges = chunkResults.flat();
-  _debug.batchError = _batchError;
-  _debug.totalRowsFetched = valueRanges.reduce((n, vr) => n + ((vr && vr.values ? vr.values.length : 0)), 0);
-  const _firstVr = valueRanges.find((vr) => vr && vr.values && vr.values.length);
-  _debug.firstRowSample = _firstVr ? _firstVr.values[0] : null;
   const matches = [];
   const playedVenueSet = new Set();
   const seen = new Set();
   valueRanges.forEach((vr, i) => {
     const venue = venueNames[i];
     let appeared = false;
-    for (const r of (vr.values || [])) {
+    // slice(1): drop the header row (we read A:M, which includes row 1).
+    for (const r of (vr.values || []).slice(1)) {
       const p1t1 = r[2] || "", p2t1 = r[3] || "", p1t2 = r[4] || "", p2t2 = r[5] || "";
       if (![p1t1, p2t1, p1t2, p2t2].some(isMe)) continue;
       appeared = true;
@@ -589,7 +577,7 @@ async function getPlayerMatches(name) {
     }
     if (appeared) playedVenueSet.add(venue);
   });
-  return respond(200, { matches, playedVenues: Array.from(playedVenueSet), _debug });
+  return respond(200, { matches, playedVenues: Array.from(playedVenueSet) });
 }
 
 async function addPlayer(body) {
