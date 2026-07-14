@@ -1422,7 +1422,7 @@ async function rmHandleAdd() {
   const btn=document.getElementById('rm-add-btn');
   btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
   try {
-    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level})});
+    await rmApi('players',{method:'POST',body:JSON.stringify({name:fullName,gender:RM.newGender,elo:RM.startElo,level:RM.level,clubs:RM.venue||''})});
     await rmLoadPlayers();
     const newP=RM.allPlayers.find(p=>p.name===fullName);
     if(newP&&!RM.selectedPlayers.find(s=>s.name===fullName)) RM.selectedPlayers.push({...newP});
@@ -1699,7 +1699,7 @@ async function rmManageAddNew(name, gender){
   if(!exists){
     res.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;font-size:13px;color:var(--txt2)"><div class="rm-spinner" style="width:16px;height:16px"></div> Mendaftarkan ${name}...</div>`;
     try{
-      await rmApi('players',{method:'POST',body:JSON.stringify({name,gender,elo:RM.startElo,level:RM.level})});
+      await rmApi('players',{method:'POST',body:JSON.stringify({name,gender,elo:RM.startElo,level:RM.level,clubs:RM.venue||''})});
       RM.allPlayers.push({name,displayName:name,gender,elo:RM.startElo,matchCount:0});
     }catch(e){ res.innerHTML=`<div class="rm-alert rm-alert-red">Gagal daftar: ${e.message}</div>`; return; }
   }

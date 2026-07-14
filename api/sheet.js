@@ -581,11 +581,22 @@ async function getPlayerMatches(name) {
 }
 
 async function addPlayer(body) {
-  const { name, gender, ig, displayName, region, photoUrl, clubs } = body;
+  const { name, gender, ig, displayName, photoUrl, clubs } = body;
+  let region = body.region;
   if (!name) return respond(400, { error: "Name is required" });
   const startElo = parseInt(body.elo) || 1350;
   const sheets = getSheets();
   const now = new Date().toISOString();
+  // If a club/venue was given but no explicit region, inherit the region
+  // registered for that venue (Venues tab col C). Ranked-match players added by a
+  // venue admin then get both their venue (Clubs) and region tagged automatically.
+  if (clubs && !String(region || "").trim()) {
+    try {
+      const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:C` });
+      const hit = (vr.data.values || []).find((r) => String(r[0] || "").trim().toLowerCase() === String(clubs).trim().toLowerCase());
+      if (hit && hit[2]) region = hit[2];
+    } catch (e) { console.error("addPlayer venue region:", e.message); }
+  }
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[ name, ig || "", ig ? "TRUE" : "FALSE", displayName || name, (gender || "M").toUpperCase(), region || "", ibbHostFix(photoUrl || ""), clubs || "", now ]] },
@@ -1275,7 +1286,16 @@ async function recordManualMatch(body) {
   const P = names.map(mk);
   const results = rmCalcElo(P[0], P[1], P[2], P[3], s1, s2);
 
-  // create brand-new players in the Players tab
+  // Look up the venue once: whether it already exists + its registered region
+  // (Venues tab col C), so brand-new players inherit both venue and region.
+  let venueExists = false, venueRegionVal = "";
+  try {
+    const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:C` });
+    const hit = (vr.data.values || []).find((r) => (r[0] || "").trim().toLowerCase() === venueName.toLowerCase());
+    if (hit) { venueExists = true; venueRegionVal = hit[2] || ""; }
+  } catch (e) {}
+
+  // create brand-new players in the Players tab (region inherited from the venue)
   try {
     const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
     const have = new Set((pr.data.values || []).map((r) => (r[0] || "").toLowerCase()));
@@ -1283,7 +1303,7 @@ async function recordManualMatch(body) {
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       if (!have.has(name.toLowerCase())) {
-        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[name, "", "FALSE", name, pg[i] || "M", "", "", venueName, isoNow]] } });
+        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[name, "", "FALSE", name, pg[i] || "M", venueRegionVal, "", venueName, isoNow]] } });
         have.add(name.toLowerCase());
       }
     }
@@ -1291,9 +1311,7 @@ async function recordManualMatch(body) {
 
   // register venue + ensure its match-log tab, then append the match
   try {
-    const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` });
-    const has = (vr.data.values || []).some((r) => (r[0] || "").trim().toLowerCase() === venueName.toLowerCase());
-    if (!has) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[venueName, "Community", "", "", "", "", "", new Date().toISOString(), ""]] } });
+    if (!venueExists) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[venueName, "Community", "", "", "", "", "", new Date().toISOString(), ""]] } });
   } catch (e) {}
   const tab = venueTabName(venueName);
   try {
@@ -1351,7 +1369,8 @@ async function importMatches(body) {
   const existingPlayers = new Set();
   try { const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` }); (pr.data.values || []).forEach((r) => { if (r[0]) existingPlayers.add(r[0].toLowerCase()); }); } catch (e) {}
   const existingVenues = new Set();
-  try { const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }); (vr.data.values || []).forEach((r) => { if (r[0]) existingVenues.add(String(r[0]).trim().toLowerCase()); }); } catch (e) {}
+  const venueRegion = {}; // venue name (lower) -> region, so new players inherit it
+  try { const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:C` }); (vr.data.values || []).forEach((r) => { if (r[0]) { const k = String(r[0]).trim().toLowerCase(); existingVenues.add(k); if (r[2]) venueRegion[k] = r[2]; } }); } catch (e) {}
   const sheetTitles = new Set();
   try { const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }); ss.data.sheets.forEach((s) => sheetTitles.add(s.properties.title)); } catch (e) {}
 
@@ -1370,7 +1389,7 @@ async function importMatches(body) {
       if (!stat[r.name]) stat[r.name] = { w: 0, l: 0, played: 0, elo: r.newElo };
       stat[r.name].w += r.w; stat[r.name].l += r.l; stat[r.name].played += 1; stat[r.name].elo = r.newElo;
     });
-    m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", "", "", m.venue, tsNow]); } });
+    m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", venueRegion[String(m.venue).toLowerCase()] || "", "", m.venue, tsNow]); } });
     const tab = venueTabName(m.venue);
     if (!venueRows[tab]) { venueRows[tab] = []; venueDisplay[tab] = m.venue; }
     venueRows[tab].push(buildVenueRow({ week, date: dateStr, p1t1: n1, p2t1: n2, p1t2: n3, p2t2: n4, scoreT1: m.s1, scoreT2: m.s2, genders: m.pg, source: "import" }));
