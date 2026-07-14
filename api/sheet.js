@@ -510,7 +510,7 @@ async function getPlayerMatches(name) {
   // whose Venue_ tab is missing doesn't make the whole batchGet fail.
   const [vRes, meta, pRes] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }),
-    sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }),
+    sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" }),
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:D` }),
   ]);
   // Match venue rows by the player's Name (col A) OR Display_Name/alias (col D):
@@ -524,8 +524,24 @@ async function getPlayerMatches(name) {
   const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
   if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
   const ranges = venueNames.map((v) => `${venueTabName(v)}!${VENUE_READ_RANGE}`);
-  const bRes = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges });
-  const valueRanges = bRes.data.valueRanges || [];
+  // batchGet passes every range in the request URL; once there are enough venue
+  // tabs that URL exceeds Google's length limit and the whole call throws, which
+  // the router turns into a 500 — so Playing History silently came back empty for
+  // EVERY player. Fetch in bounded chunks in parallel, and keep the result aligned
+  // 1:1 with venueNames even if an individual chunk fails.
+  const CHUNK = 25;
+  const starts = [];
+  for (let i = 0; i < ranges.length; i += CHUNK) starts.push(i);
+  const chunkResults = await Promise.all(starts.map((start) => {
+    const slice = ranges.slice(start, start + CHUNK);
+    return sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: slice })
+      .then((r) => {
+        const vrs = r.data.valueRanges || [];
+        return vrs.length === slice.length ? vrs : slice.map((_, k) => vrs[k] || { values: [] });
+      })
+      .catch((e) => { console.error("player matches batchGet chunk:", e.message); return slice.map(() => ({ values: [] })); });
+  }));
+  const valueRanges = chunkResults.flat();
   const matches = [];
   const playedVenueSet = new Set();
   const seen = new Set();
