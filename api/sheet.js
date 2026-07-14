@@ -521,8 +521,19 @@ async function getPlayerMatches(name) {
   if (pRow) { if (pRow[0]) aliasSet.add(normName(pRow[0])); if (pRow[3]) aliasSet.add(normName(pRow[3])); }
   const isMe = (n) => aliasSet.has(normName(n));
   const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
-  const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
-  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
+  const rawVenues = (vRes.data.values || []).map((r) => r[0]).filter(Boolean);
+  const venueNames = rawVenues.filter((v) => existingTabs.has(venueTabName(v)));
+  // TEMP diagnostic: surface why the venue scan may be coming back empty.
+  const _debug = {
+    venuesListed: rawVenues.length,
+    tabsTotal: existingTabs.size,
+    venueTabsInSheet: [...existingTabs].filter((t) => String(t).startsWith("Venue_")).length,
+    venueTabsMatched: venueNames.length,
+    sampleVenues: rawVenues.slice(0, 5),
+    sampleExpectedTabs: rawVenues.slice(0, 5).map(venueTabName),
+    sampleActualVenueTabs: [...existingTabs].filter((t) => String(t).startsWith("Venue_")).slice(0, 8),
+  };
+  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [], _debug });
   const ranges = venueNames.map((v) => `${venueTabName(v)}!${VENUE_READ_RANGE}`);
   // batchGet passes every range in the request URL; once there are enough venue
   // tabs that URL exceeds Google's length limit and the whole call throws, which
@@ -573,7 +584,7 @@ async function getPlayerMatches(name) {
     }
     if (appeared) playedVenueSet.add(venue);
   });
-  return respond(200, { matches, playedVenues: Array.from(playedVenueSet) });
+  return respond(200, { matches, playedVenues: Array.from(playedVenueSet), _debug });
 }
 
 async function addPlayer(body) {
