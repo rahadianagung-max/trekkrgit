@@ -706,6 +706,13 @@ async function resolveEditRequest(body) {
         c[3] || "", c[4] || "M", c[5] || "", ibbHostFix(ph || c[6] || ""), c[7] || "", c[8] || "", c[9] || "",
       ];
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+      // If the approval renamed the player (col A), re-point their ELO_Log and
+      // Venue match rows to the new name so Playing History / ELO don't orphan.
+      const oldName = String(c[0] || "").trim();
+      if (nn && normName(nn) !== normName(oldName) && oldName) {
+        try { await rebindPlayerNames(sheets, new Set([oldName.toLowerCase()]), nn); }
+        catch (e) { console.error("rename rebind:", e.message); }
+      }
     }
     await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["APPROVED", r[6] || "", now]] } });
     return respond(200, { success: true, applied: true });
@@ -3509,27 +3516,62 @@ async function ddApply(body) {
   }
   return respond(200, { success: true, name: finalName });
 }
+// Rebind every place a player's history is keyed by name — ELO_Log (col B),
+// Registrations (col D) and ALL Venue_ tabs (the 4 player-name columns C..F) —
+// from any name in `aliasSetLower` (lowercased) to `canonical`. Renaming or
+// merging a player without rebinding the venue tabs leaves their Playing History
+// orphaned under the old name (the passport then shows an empty history).
+async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
+  const hit = (v) => aliasSetLower.has(String(v || "").trim().toLowerCase());
+  let elo = 0, regs = 0, venues = 0;
+  // ELO_Log col B (ratings history / chart)
+  try {
+    const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+    const eRows = eRes.data.values || [];
+    if (eRows.length) {
+      const colB = eRows.map((r) => { if (hit(r[1])) { elo++; return [canonical]; } return [r[1] || ""]; });
+      if (elo) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!B2:B${colB.length + 1}`, valueInputOption: "RAW", requestBody: { values: colB } });
+    }
+  } catch (e) { console.error("rebind elo:", e.message); }
+  // Registrations col D
+  try {
+    const rRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+    const rRows = rRes.data.values || [];
+    if (rRows.length) {
+      const colD = rRows.map((r) => { if (hit(r[3])) { regs++; return [canonical]; } return [r[3] || ""]; });
+      if (regs) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!D2:D${colD.length + 1}`, valueInputOption: "RAW", requestBody: { values: colD } });
+    }
+  } catch (e) { console.error("rebind reg:", e.message); }
+  // Every Venue_ tab: player-name columns are C,D,E,F (indices 2..5). This is the
+  // Playing History source that the merge/rename previously left behind.
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
+    const venueTabs = (meta.data.sheets || []).map((s) => s.properties.title).filter((t) => t.startsWith("Venue_"));
+    for (const tab of venueTabs) {
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:M` });
+      const rows = res.data.values || [];
+      if (!rows.length) continue;
+      let changed = false;
+      const cf = rows.map((r) => {
+        const out = [r[2] || "", r[3] || "", r[4] || "", r[5] || ""];
+        for (let k = 0; k < 4; k++) { if (hit(out[k])) { out[k] = canonical; changed = true; venues++; } }
+        return out;
+      });
+      if (changed) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!C2:F${rows.length + 1}`, valueInputOption: "RAW", requestBody: { values: cf } });
+    }
+  } catch (e) { console.error("rebind venues:", e.message); }
+  return { elo, regs, venues };
+}
+
 async function ddMerge(body) {
   const { canonical, aliases } = body;
   if (!canonical || !Array.isArray(aliases) || !aliases.length) return respond(400, { error: "canonical & aliases wajib" });
   const alset = new Set(aliases.filter((a) => a && a.toLowerCase() !== canonical.toLowerCase()).map((a) => a.toLowerCase()));
   if (!alset.size) return respond(400, { error: "tidak ada alias valid" });
   const sheets = getSheets();
-  // 1) rebind ELO_Log kolom B (alias -> canonical), 1x tulis kolom B
-  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
-  const eRows = eRes.data.values || [];
-  let rebind = 0;
-  const colB = eRows.map((r) => { const nm = r[1] || ""; if (alset.has(nm.toLowerCase())) { rebind++; return [canonical]; } return [nm]; });
-  if (colB.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!B2:B${colB.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: colB } });
-  // 2) rebind Registrations kolom D
-  try {
-    const rRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
-    const rRows = rRes.data.values || [];
-    if (rRows.length) {
-      const colD = rRows.map((r) => { const nm = r[3] || ""; return [alset.has(nm.toLowerCase()) ? canonical : nm]; });
-      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!D2:D${colD.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: colD } });
-    }
-  } catch (e) { console.error("merge reg:", e.message); }
+  // 1+2) rebind ELO_Log (ratings), Registrations AND every Venue_ tab (Playing
+  // History) from alias -> canonical.
+  const { elo: rebind } = await rebindPlayerNames(sheets, alset, canonical);
   // 3) hapus baris alias di Players (perlu sheetId, hapus dari bawah)
   let removed = 0;
   try {
