@@ -781,8 +781,12 @@ async function loadPlayer(){
           myMatches = (pmData && pmData.matches) || [];
           d.playedVenues = (pmData && pmData.playedVenues) || [];
       } catch(e) { myMatches = []; d.playedVenues = []; }
-      const targetName = name.toLowerCase().trim();
-      
+      // Identify the player in each row by their canonical Name OR Display_Name/alias:
+      // sessions recorded under a short name would otherwise be mis-attributed.
+      const myNames = new Set([name, (d.player && d.player.displayName) || ""]
+          .map(s => String(s).toLowerCase().trim()).filter(Boolean));
+      const isMe = (n) => myNames.has(String(n || "").toLowerCase().trim());
+
       // urutan kronologis dipertahankan untuk sejajarkan delta ELO; dibalik saat render
 
       let partnerStats = {};
@@ -793,19 +797,19 @@ async function loadPlayer(){
           const p2t1 = (m.p2t1 || "").toLowerCase().trim();
           const p1t2 = (m.p1t2 || "").toLowerCase().trim();
           const p2t2 = (m.p2t2 || "").toLowerCase().trim();
-          const isT1 = (p1t1 === targetName || p2t1 === targetName);
-          
+          const isT1 = (isMe(p1t1) || isMe(p2t1));
+
           let partner = "";
           let opponents = "";
           let isWin = false;
           let isTie = (m.scoreT1 === m.scoreT2);
 
           if (isT1) {
-              partner = (p1t1 === targetName) ? m.p2t1 : m.p1t1;
+              partner = isMe(p1t1) ? m.p2t1 : m.p1t1;
               opponents = `${m.p1t2} & ${m.p2t2}`;
               isWin = m.scoreT1 > m.scoreT2;
           } else {
-              partner = (p1t2 === targetName) ? m.p2t2 : m.p1t2;
+              partner = isMe(p1t2) ? m.p2t2 : m.p1t2;
               opponents = `${m.p1t1} & ${m.p2t1}`;
               isWin = m.scoreT2 > m.scoreT1;
           }
@@ -1278,11 +1282,13 @@ const BADGE_DEFS = [
 // ── COMPUTE ALL BADGES FROM MATCH DATA ────────────────────────────────────
 function computeBadges(playerD, allMatchesForPlayer, allMatchesAllPlayers, allVenueEloMaps) {
   const { stats: s, history } = playerD;
-  const target = (playerD.player.name || '').toLowerCase().trim();
+  const _mine = new Set([playerD.player.name, playerD.player.displayName]
+    .map(x => String(x || '').toLowerCase().trim()).filter(Boolean));
+  const isMe = (n) => _mine.has(String(n || '').toLowerCase().trim());
 
   // Build matchesRaw with enriched data
   const matchesRaw = allMatchesForPlayer.map(m => {
-    const myT1 = (m.p1t1||'').toLowerCase().trim() === target || (m.p2t1||'').toLowerCase().trim() === target;
+    const myT1 = isMe(m.p1t1) || isMe(m.p2t1);
     const myScore  = myT1 ? (m.scoreT1||0) : (m.scoreT2||0);
     const oppScore = myT1 ? (m.scoreT2||0) : (m.scoreT1||0);
     const myWin    = myScore > oppScore;
@@ -1305,11 +1311,11 @@ function computeBadges(playerD, allMatchesForPlayer, allMatchesAllPlayers, allVe
   // Build partner stats
   const partnerStats = {};
   matchesRaw.forEach(m => {
-    const myT1 = (m.p1t1||'').toLowerCase().trim() === target || (m.p2t1||'').toLowerCase().trim() === target;
+    const myT1 = isMe(m.p1t1) || isMe(m.p2t1);
     const partner = myT1
-      ? ((m.p1t1||'').toLowerCase().trim() === target ? m.p2t1 : m.p1t1)
-      : ((m.p1t2||'').toLowerCase().trim() === target ? m.p2t2 : m.p1t2);
-    if (!partner || (partner||'').toLowerCase().trim() === target) return;
+      ? (isMe(m.p1t1) ? m.p2t1 : m.p1t1)
+      : (isMe(m.p1t2) ? m.p2t2 : m.p1t2);
+    if (!partner || isMe(partner)) return;
     const pk = (partner||'').toLowerCase().trim();
     if (!partnerStats[pk]) partnerStats[pk] = { name: partner, w: 0, l: 0, total: 0 };
     partnerStats[pk].total++;

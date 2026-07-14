@@ -46,6 +46,14 @@ async function driveUploadImage(dataUrl, filename, folderId) {
   return `https://drive.google.com/uc?export=view&id=${id}`;
 }
 
+// imgbb serves images from the host `i.ibb.co`, but that host is DNS-blocked on
+// some Indonesian ISPs, so stored image URLs fail to load for those players.
+// The mirror host `i.ibb.co.com` resolves fine, so rewrite the bare `i.ibb.co`
+// host to `i.ibb.co.com`. Idempotent: an already-`.co.com` URL is left as-is.
+function ibbHostFix(url) {
+  return String(url || "").replace(/^(https?:\/\/)i\.ibb\.co\//i, "$1i.ibb.co.com/");
+}
+
 // Upload a base64 image to imgbb (https://api.imgbb.com). No service account,
 // no OAuth, no storage quota — just an API key. Returns a public image URL.
 async function imgbbUploadImage(dataUrl, filename) {
@@ -65,7 +73,7 @@ async function imgbbUploadImage(dataUrl, filename) {
   if (!resp.ok || !json || !json.success) {
     throw new Error((json && json.error && json.error.message) || `imgbb upload failed (HTTP ${resp.status})`);
   }
-  return (json.data && (json.data.url || json.data.display_url)) || "";
+  return ibbHostFix((json.data && (json.data.url || json.data.display_url)) || "");
 }
 
 // Unified image upload: prefer imgbb when IMGBB_API_KEY is set, otherwise fall
@@ -440,7 +448,7 @@ async function getPlayers(params) {
   let players = rows.map((r) => ({
     name: r[0] || "", ig: r[1] || "", verified: r[2] === "TRUE",
     displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
-    region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", createdAt: r[8] || "",
+    region: r[5] || "", photoUrl: ibbHostFix(r[6] || ""), clubs: r[7] || "", createdAt: r[8] || "",
     winnerAt: r[9] || "", tournaments: r[10] || "",
   }));
   if (params.gender) players = players.filter((p) => p.gender === params.gender.toUpperCase());
@@ -462,13 +470,17 @@ async function getPlayerDetail(name) {
   const player = {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
     displayName: pRow[3] || pRow[0], gender: (pRow[4] || "M").toUpperCase(),
-    region: pRow[5] || "", photoUrl: pRow[6] || "", clubs: pRow[7] || "", createdAt: pRow[8] || "",
+    region: pRow[5] || "", photoUrl: ibbHostFix(pRow[6] || ""), clubs: pRow[7] || "", createdAt: pRow[8] || "",
     winnerAt: pRow[9] || "", tournaments: pRow[10] || "",
   };
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const eRows = eRes.data.values || [];
-  const history = eRows.filter((r) => r[1]?.toLowerCase() === name.toLowerCase()).map((r) => ({
+  // Match ELO_Log by the player's Name (col A) OR their Display_Name/alias (col D).
+  // Some sessions were recorded under a player's short name/alias; keying only on
+  // the canonical Name (as the passport now does) dropped that history entirely.
+  const aliasSet = new Set([normName(pRow[0]), normName(pRow[3])].filter(Boolean));
+  const history = eRows.filter((r) => aliasSet.has(normName(r[1]))).map((r) => ({
     sessionId: r[0], elo: parseInt(r[2]) || 1350, delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0, l: parseInt(r[5]) || 0, timestamp: r[6] || "",
   }));
 
@@ -496,10 +508,18 @@ async function getPlayerMatches(name) {
   const target = normName(name);
   // Venue display names (ordered) + the set of tabs that actually exist, so a venue
   // whose Venue_ tab is missing doesn't make the whole batchGet fail.
-  const [vRes, meta] = await Promise.all([
+  const [vRes, meta, pRes] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` }),
     sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:D` }),
   ]);
+  // Match venue rows by the player's Name (col A) OR Display_Name/alias (col D):
+  // sessions recorded under a short name/alias would otherwise be invisible on the
+  // passport now that it is keyed by the canonical Name.
+  const pRow = (pRes.data.values || []).find((r) => normName(r[0]) === target || normName(r[3]) === target);
+  const aliasSet = new Set([target]);
+  if (pRow) { if (pRow[0]) aliasSet.add(normName(pRow[0])); if (pRow[3]) aliasSet.add(normName(pRow[3])); }
+  const isMe = (n) => aliasSet.has(normName(n));
   const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
   const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
   if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
@@ -514,7 +534,7 @@ async function getPlayerMatches(name) {
     let appeared = false;
     for (const r of (vr.values || [])) {
       const p1t1 = r[2] || "", p2t1 = r[3] || "", p1t2 = r[4] || "", p2t2 = r[5] || "";
-      if (![p1t1, p2t1, p1t2, p2t2].some((n) => normName(n) === target)) continue;
+      if (![p1t1, p2t1, p1t2, p2t2].some(isMe)) continue;
       appeared = true;
       const week = r[0] || "", date = r[1] || "";
       const scoreT1 = parseInt(r[6]) || 0, scoreT2 = parseInt(r[7]) || 0;
@@ -526,11 +546,11 @@ async function getPlayerMatches(name) {
       const [g1, g2, g3, g4] = venueRowGenders(r);
       // `gender` = this player's own gender in the match (falls back to the row's
       // category when the slot is blank); `category` = M / F / MIXED for the whole match.
-      const slots = { [normName(p1t1)]: g1, [normName(p2t1)]: g2, [normName(p1t2)]: g3, [normName(p2t2)]: g4 };
+      const myEntry = [[p1t1, g1], [p2t1, g2], [p1t2, g3], [p2t2, g4]].find(([n]) => isMe(n));
       const category = matchCategory([g1, g2, g3, g4]);
       matches.push({
         week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2,
-        gender: toGender(slots[target], category === "MIXED" ? "M" : category),
+        gender: toGender(myEntry ? myEntry[1] : "", category === "MIXED" ? "M" : category),
         genders: { p1t1: g1, p2t1: g2, p1t2: g3, p2t2: g4 }, category,
         sourceUrl: venueRowSource(r), venue,
       });
@@ -548,7 +568,7 @@ async function addPlayer(body) {
   const now = new Date().toISOString();
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[ name, ig || "", ig ? "TRUE" : "FALSE", displayName || name, (gender || "M").toUpperCase(), region || "", photoUrl || "", clubs || "", now ]] },
+    requestBody: { values: [[ name, ig || "", ig ? "TRUE" : "FALSE", displayName || name, (gender || "M").toUpperCase(), region || "", ibbHostFix(photoUrl || ""), clubs || "", now ]] },
   });
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
@@ -569,7 +589,7 @@ async function updatePlayer(body) {
   const updated = [
     updates.name || c[0] || "", updates.ig || c[1] || "", updates.ig ? "TRUE" : c[2] || "FALSE",
     updates.displayName || c[3] || c[0] || "", (updates.gender || c[4] || "M").toUpperCase(),
-    updates.region || c[5] || "", updates.photoUrl || c[6] || "", updates.clubs || c[7] || "", c[8] || "", c[9] || "",
+    updates.region || c[5] || "", ibbHostFix(updates.photoUrl || c[6] || ""), updates.clubs || c[7] || "", c[8] || "", c[9] || "",
   ];
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID, range: `${TABS.players}!A${sr}:J${sr}`, valueInputOption: "USER_ENTERED",
@@ -654,7 +674,7 @@ async function listEditRequests(params) {
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
-    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: r[4] || "", status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
+    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: ibbHostFix(r[4] || ""), status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
     .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
@@ -683,7 +703,7 @@ async function resolveEditRequest(body) {
       // mobile/TV boards) is left untouched.
       const updated = [
         nn || c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
-        c[3] || "", c[4] || "M", c[5] || "", ph || c[6] || "", c[7] || "", c[8] || "", c[9] || "",
+        c[3] || "", c[4] || "M", c[5] || "", ibbHostFix(ph || c[6] || ""), c[7] || "", c[8] || "", c[9] || "",
       ];
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
     }
@@ -1140,7 +1160,7 @@ async function getVenueWeeklyRanking(venueName, params) {
   const info = {};
   (pRes.data.values || []).forEach((r) => {
     if (!r[0]) return;
-    info[normName(r[0])] = { displayName: r[3] || r[0], verified: r[2] === "TRUE", photoUrl: r[6] || "", region: r[5] || "", gender: toGender(r[4], "") };
+    info[normName(r[0])] = { displayName: r[3] || r[0], verified: r[2] === "TRUE", photoUrl: ibbHostFix(r[6] || ""), region: r[5] || "", gender: toGender(r[4], "") };
   });
 
   let ranking = Object.keys(stats).map((p) => {
@@ -1409,7 +1429,7 @@ async function getNationalLeaderboard(params) {
       const info = {
         name: r[0], ig: r[1] || "", verified: r[2] === "TRUE",
         displayName: r[3] || r[0], gender: (r[4] || "M").toUpperCase(),
-        region: r[5] || "", photoUrl: r[6] || "", clubs: r[7] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
+        region: r[5] || "", photoUrl: ibbHostFix(r[6] || ""), clubs: r[7] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
       };
       playersInfo[r[0].toLowerCase()] = info;
       infoByKey[normName(r[0])] = info;
@@ -2926,7 +2946,7 @@ async function tPublicEvent(eventId, opts) {
   const players = {};
   for (const r of plRows) {
     const name = r[0] || ""; if (!name) continue;
-    players[normName(name)] = { name, display: r[3] || name, photo: r[6] || "" };
+    players[normName(name)] = { name, display: r[3] || name, photo: ibbHostFix(r[6] || "") };
   }
   const allMatches = mRows.map(mapMatchRow);
   const tournaments = trRows.filter((x) => x[1] === eventId);
@@ -3276,7 +3296,7 @@ async function regUpsertPlayer(sheets, name, gender, photoUrl) {
   const now = new Date().toISOString();
   if (ri < 0) {
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[name, "", "FALSE", name, gender, "", photoUrl || "", "", now]] } });
+      requestBody: { values: [[name, "", "FALSE", name, gender, "", ibbHostFix(photoUrl || ""), "", now]] } });
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
       requestBody: { values: [["INITIAL", name, 1350, 0, 0, 0, now]] } });
   } else if (photoUrl && !((rows[ri][6] || "").trim())) {
@@ -3315,7 +3335,7 @@ async function regListRegistrations(formId) {
   const rows = res.data.values || [];
   const list = rows.filter((r) => r[1] === formId).map((r) => {
     let data = {}; try { data = JSON.parse(r[8] || "{}"); } catch (e) {}
-    return { regId: r[0], timestamp: r[2], name: r[3], gender: r[4], phone: r[5], photoUrl: r[6], paymentProofUrl: r[7], data, status: r[10] || "received" };
+    return { regId: r[0], timestamp: r[2], name: r[3], gender: r[4], phone: r[5], photoUrl: ibbHostFix(r[6]), paymentProofUrl: ibbHostFix(r[7]), data, status: r[10] || "received" };
   });
   return respond(200, { registrations: list, count: list.length });
 }
@@ -3404,7 +3424,7 @@ async function ddPlayersScan() {
   const players = (pRes.data.values || []).map((r) => {
     const em = eMap[(r[0] || "").toLowerCase()] || {};
     return { name: r[0] || "", ig: r[1] || "", verified: r[2] === "TRUE", gender: (r[4] || "M").toUpperCase(),
-      region: r[5] || "", photoUrl: r[6] || "", elo: em.elo == null ? 1350 : em.elo, matches: em.matches || 0, lastSeen: em.lastSeen || "" };
+      region: r[5] || "", photoUrl: ibbHostFix(r[6] || ""), elo: em.elo == null ? 1350 : em.elo, matches: em.matches || 0, lastSeen: em.lastSeen || "" };
   }).filter((p) => p.name);
   const parent = players.map((_, i) => i);
   const find = (x) => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
