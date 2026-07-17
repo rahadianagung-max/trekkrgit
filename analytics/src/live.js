@@ -3,11 +3,13 @@
  * Fetches the real Trekkr data at page load and computes the sabermetrics the
  * UI expects, so any NEW venue or player shows up automatically — no rebuild.
  *
- * Player analysis is GLOBAL: a player's impact, confidence, value added and
- * best-fit / worst-fit partners are computed from ALL of their matches across
- * every venue at once (one ridge regression over the whole match pool), not
- * per club. Match count and win rate stay contextual — club-specific in the
- * "By club" roster, global in "By players".
+ * Player analysis is GLOBAL: a player's impact, confidence, value added,
+ * win rate, match count and best-fit / worst-fit partners are computed from
+ * ALL of their matches across every venue at once (one ridge regression over
+ * the whole match pool), not per club. The "By club" roster is the club's FULL
+ * membership — taken from the Players tab `clubs` column, not just whoever
+ * happened to play at that venue — with each member shown on their global stats
+ * so their play at other clubs/venues/tournaments is fully reflected.
  *
  * Output:
  *   { venues: [ { name, region, location, count, rows, players:[Player] } ],
@@ -299,34 +301,55 @@ export async function loadLiveData() {
     displayMap
   );
 
-  const fallback = (name) => {
-    const key = name.toLowerCase();
-    return {
-      key,
-      name: displayMap[key] || name,
-      gender: genderMap[key] || "M",
-      impact: 0,
-      se: 0.05,
-      valueAdded: 0,
-      apps: 0,
-      winRate: 0,
-      bestFit: [],
-      worstFit: null,
-    };
-  };
+  const fallback = (key) => ({
+    key,
+    name: displayMap[key] || key,
+    gender: genderMap[key] || "M",
+    impact: 0,
+    se: 0.05,
+    valueAdded: 0,
+    apps: 0,
+    winRate: 0,
+    bestFit: [],
+    worstFit: null,
+  });
 
-  // Per venue: global analysis, but club-specific apps/win-rate and ranks.
+  // Club membership from the Players tab `clubs` column (comma-separated venue /
+  // tournament names). A player belongs to a club even when their matches were
+  // played somewhere else, so the roster must include every registered member
+  // regardless of where they show up in the match data.
+  const clubMembers = {}; // clubNameLower -> Set(playerKey)
+  for (const p of playersRes.players || []) {
+    const key = (p.name || "").toLowerCase();
+    if (!key) continue;
+    for (const c of String(p.clubs || "").split(",").map(norm).filter(Boolean)) {
+      const ck = c.toLowerCase();
+      (clubMembers[ck] || (clubMembers[ck] = new Set())).add(key);
+    }
+  }
+
+  // Home club (where a player actually played the most) — from club-specific
+  // appearances, for the "By players" subtitle. Captured before roster stats
+  // are globalized below.
+  const home = {};
+
+  // Per venue: the FULL club roster = everyone registered to the club (clubs
+  // column) ∪ anyone seen in its matches. Each player is analysed GLOBALLY
+  // (impact, win rate, apps, best-fit partner over ALL their matches across
+  // every venue/tournament), so a member's play elsewhere is fully reflected
+  // instead of being cut down to just this club's games.
   const venues = rawByVenue.map(({ meta, matches }) => {
-    const { apps, wins } = venueStat(matches);
-    const roster = Object.keys(apps).map((name) => {
-      const g = gMap[name.toLowerCase()] || fallback(name);
-      return {
-        ...g,
-        apps: apps[name],
-        winRate: apps[name] ? Math.round(((wins[name] || 0) / apps[name]) * 100) : 0,
-      };
-    });
-    rankRoster(roster); // ranks within this club
+    const { apps } = venueStat(matches);
+    for (const name of Object.keys(apps)) {
+      const key = name.toLowerCase();
+      if (!home[key] || apps[name] > home[key].apps)
+        home[key] = { venue: meta.name, apps: apps[name] };
+    }
+    const keys = new Set(Object.keys(apps).map((n) => n.toLowerCase()));
+    for (const mk of clubMembers[meta.name.toLowerCase()] || []) keys.add(mk);
+    // Copy the shared global player object so per-club ranks don't clobber it.
+    const roster = [...keys].map((key) => ({ ...(gMap[key] || fallback(key)) }));
+    rankRoster(roster); // ranks within this club, on global stats
     roster.sort((a, b) => b.impact - a.impact || b.apps - a.apps);
     return {
       name: meta.name,
@@ -338,13 +361,6 @@ export async function loadLiveData() {
     };
   });
 
-  // Home club (most matches) — used as the subtitle in "By players".
-  const home = {};
-  venues.forEach((v) =>
-    v.players.forEach((p) => {
-      if (!home[p.key] || p.apps > home[p.key].apps) home[p.key] = { venue: v.name, apps: p.apps };
-    })
-  );
   gPlayers.forEach((p) => (p.venue = (home[p.key] || {}).venue || ""));
 
   venues.sort((a, b) => b.rows - a.rows || b.count - a.count);
