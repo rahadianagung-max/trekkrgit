@@ -54,13 +54,18 @@ from the nav. It already uses the same fonts/theme as trekkr.online.
   //   worstFit: { partner, synergy, shared } }
   ```
 
-  Player analysis is **global**: impact, confidence, value added and best-fit /
-  worst-fit partners come from one ridge regression over *all* matches across
-  every venue, so a player has a single rating and their best partner can be
-  from any club. Match count and win rate stay contextual — club-specific in a
-  venue roster, global in the cross-venue `players` list. (Because impact is
-  only comparable within a connected pool, cross-venue ranks are most meaningful
-  where players actually move between clubs.)
+  Player analysis is **global**: impact, confidence, value added, win rate,
+  match count and best-fit / worst-fit partners all come from one ridge
+  regression over *all* matches across every venue, so a player has a single
+  rating and their best partner can be from any club. The **"By club" roster is
+  the club's full membership**, read from the Players tab `clubs` column (union
+  with anyone seen in that venue's matches) — not just whoever happened to play
+  there — and every member is shown on those global stats, so a player who is
+  registered to a club but mostly plays elsewhere still appears with their full
+  record. Ranks are computed within each set (within the club roster, and again
+  across the global `players` list). (Because impact is only comparable within a
+  connected pool, cross-venue ranks are most meaningful where players actually
+  move between clubs.)
 
 After editing:
 
