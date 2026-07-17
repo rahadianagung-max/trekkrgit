@@ -104,6 +104,7 @@ const TABS = {
   registrations: "Registrations",
   edit_requests: "Edit_Requests",
   venue_leads: "Venue_Leads",
+  player_auth: "Player_Auth",
 };
 
 const headers = {
@@ -119,6 +120,104 @@ function respond(statusCode, data, extraHeaders) {
     headers: extraHeaders ? { ...headers, ...extraHeaders } : headers,
     body: JSON.stringify(data)
   };
+}
+
+// ==============================================================
+// PLAYER ACCOUNTS / AUTH (registration, set-password, login, session token)
+// ==============================================================
+const crypto = require("crypto");
+
+// Player_Auth columns (A..K)
+const PLAYER_AUTH_HEADER = ["Email", "Player_Name", "Password_Hash", "Salt", "Status", "Token", "Token_Exp", "Token_Type", "Is_Claim", "Created_At", "Last_Login"];
+// Status: pending_set (email sent, no password yet) | pending_claim (password set, awaiting admin) | active | rejected
+
+async function ensurePlayerAuthTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.player_auth)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.player_auth } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [PLAYER_AUTH_HEADER] },
+  });
+}
+
+function normEmail(e) { return String(e || "").trim().toLowerCase(); }
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "")); }
+
+// scrypt password hashing (built-in crypto, no dependency)
+function hashPassword(password, saltHex) {
+  const salt = saltHex || crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
+  return { salt, hash };
+}
+function verifyPassword(password, saltHex, hashHex) {
+  if (!saltHex || !hashHex) return false;
+  const h = crypto.scryptSync(String(password), saltHex, 64).toString("hex");
+  const a = Buffer.from(h, "hex"), b = Buffer.from(hashHex, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Single-use email tokens (set-password / reset): store only the hash in the sheet.
+function makeToken() { return crypto.randomBytes(32).toString("hex"); }
+function hashToken(t) { return crypto.createHash("sha256").update(String(t)).digest("hex"); }
+
+// HMAC-signed session token: base64url(payloadJSON).hmac
+function authSecret() { return process.env.AUTH_SECRET || ""; }
+function signSession(payload) {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", authSecret()).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+function verifySession(token) {
+  if (!token || !authSecret()) return null;
+  const parts = String(token).split(".");
+  if (parts.length !== 2) return null;
+  const expected = crypto.createHmac("sha256", authSecret()).update(parts[0]).digest("base64url");
+  const a = Buffer.from(parts[1]), b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  let payload;
+  try { payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8")); } catch (e) { return null; }
+  if (!payload || (payload.exp && Date.now() > payload.exp)) return null;
+  return payload;
+}
+
+function appBaseUrl() { return (process.env.APP_BASE_URL || "https://trekkr.online").replace(/\/+$/, ""); }
+
+// Send a transactional email via Brevo (https://api.brevo.com). Uses global fetch.
+async function sendBrevoEmail(to, subject, htmlContent) {
+  const key = String(process.env.BREVO_API_KEY || "").trim();
+  const sender = String(process.env.BREVO_SENDER_EMAIL || "").trim();
+  if (!key || !sender) throw new Error("Email service not configured (BREVO_API_KEY / BREVO_SENDER_EMAIL)");
+  const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": key, "Content-Type": "application/json", "accept": "application/json" },
+    body: JSON.stringify({
+      sender: { email: sender, name: process.env.BREVO_SENDER_NAME || "Trekkr" },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+    }),
+  });
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try { const j = await resp.json(); if (j && j.message) msg = j.message; } catch (e) {}
+    throw new Error(`Email send failed: ${msg}`);
+  }
+  return true;
+}
+
+// Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
+async function findAuthByEmail(sheets, email) {
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const target = normEmail(email);
+  const i = rows.findIndex((r) => normEmail(r[0]) === target);
+  if (i === -1) return null;
+  return { rowIndex: i + 2, row: rows[i] };
 }
 
 // ==============================================================
@@ -231,6 +330,14 @@ const netlifyHandler = async (event) => {
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "auth/login") return await login(body);
+
+    // --- PLAYER ACCOUNTS / AUTH ---
+    if (path === "auth/register" && method === "POST") return await registerPlayer(body);
+    if (path === "auth/set-password" && method === "POST") return await setPlayerPassword(body);
+    if (path === "auth/login-player" && method === "POST") return await loginPlayer(body);
+    if (path === "auth/claims" && method === "GET") return await listAccountClaims(params);
+    if (path === "auth/claims/resolve" && method === "POST") return await resolveAccountClaim(body);
+    if (path === "players/me" && method === "PUT") return await updateOwnProfile(body);
 
     if (path === "players" && method === "GET") return await getPlayers(params);
     if (path === "players" && method === "POST") return await addPlayer(body);
@@ -750,6 +857,176 @@ async function resolveEditRequest(body) {
   }
   await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["REJECTED", r[6] || "", now]] } });
   return respond(200, { success: true, applied: false });
+}
+
+// ── PLAYER ACCOUNTS: register / set-password / login / self-edit / claims ──
+
+// Register: create (or resend) an account for a player, email a set-password link.
+// Links to an existing Players row when the name matches (claim → admin approval);
+// otherwise creates a new player. Always responds generically to avoid leaking which
+// emails/names exist.
+async function registerPlayer(body) {
+  const email = normEmail(body && body.email);
+  const name = String((body && body.name) || "").trim();
+  if (!validEmail(email)) return respond(400, { error: "Email tidak valid" });
+  if (!name) return respond(400, { error: "Nama wajib diisi" });
+  const sheets = getSheets();
+  await ensurePlayerAuthTab(sheets);
+
+  const existingAuth = await findAuthByEmail(sheets, email);
+  if (existingAuth && String(existingAuth.row[4] || "").toLowerCase() === "active") {
+    return respond(200, { success: true, message: "Jika email valid, instruksi telah dikirim." });
+  }
+
+  // Match an existing player by normalized name.
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
+  const pRows = pRes.data.values || [];
+  const pi = pRows.findIndex((r) => normName(r[0]) === normName(name));
+  const isClaim = pi !== -1;
+  const playerName = isClaim ? pRows[pi][0] : name;
+
+  // Prevent two accounts claiming the same player.
+  if (isClaim) {
+    const aRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
+    const taken = (aRes.data.values || []).some((r) => normName(r[1]) === normName(playerName) && normEmail(r[0]) !== email && ["active", "pending_claim"].includes(String(r[4] || "").toLowerCase()));
+    if (taken) return respond(200, { success: true, message: "Jika email valid, instruksi telah dikirim." });
+  }
+
+  // Create a new player row if the name is new.
+  if (!isClaim) {
+    const now = new Date().toISOString();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID, range: `${TABS.players}!A:I`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[name, "", "FALSE", name, (body.gender || "M").toUpperCase(), body.region || "", "", "", now]] },
+    });
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [["INITIAL", name, 1350, 0, 0, 0, now]] },
+    });
+  }
+
+  const rawToken = makeToken();
+  const tokenHash = hashToken(rawToken);
+  const exp = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  const now = new Date().toISOString();
+  const rowVals = [email, playerName, "", "", "pending_set", tokenHash, exp, "set", isClaim ? "TRUE" : "FALSE", now, ""];
+  if (existingAuth) {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A${existingAuth.rowIndex}:K${existingAuth.rowIndex}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  } else {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A:K`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  }
+
+  const link = `${appBaseUrl()}/set-password?e=${encodeURIComponent(email)}&token=${rawToken}`;
+  const html = `<div style="font-family:sans-serif;max-width:480px">
+    <h2>Selamat datang di Trekkr</h2>
+    <p>Halo <b>${playerName.replace(/</g, "&lt;")}</b>, buat kata sandi untuk akun passport-mu:</p>
+    <p><a href="${link}" style="display:inline-block;background:#FF6A00;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:700">Buat kata sandi</a></p>
+    <p style="font-size:12px;color:#666">Atau salin link ini: <br>${link}</p>
+    <p style="font-size:12px;color:#666">Link berlaku 24 jam. Abaikan email ini jika kamu tidak mendaftar.</p>
+  </div>`;
+  try {
+    await sendBrevoEmail(email, "Buat kata sandi akun Trekkr-mu", html);
+  } catch (e) {
+    console.error("register email:", e.message);
+    return respond(502, { error: "Gagal mengirim email. Coba lagi nanti." });
+  }
+  return respond(200, { success: true, message: "Cek email untuk membuat kata sandi.", claim: isClaim });
+}
+
+// Set password from the emailed token → activates the account (or moves a claim to
+// pending_claim awaiting admin approval).
+async function setPlayerPassword(body) {
+  const email = normEmail(body && body.email);
+  const token = String((body && body.token) || "");
+  const password = String((body && body.password) || "");
+  if (!email || !token) return respond(400, { error: "Token tidak valid" });
+  if (password.length < 8) return respond(400, { error: "Kata sandi minimal 8 karakter" });
+  const sheets = getSheets();
+  const found = await findAuthByEmail(sheets, email);
+  if (!found) return respond(400, { error: "Token tidak valid atau kedaluwarsa" });
+  const r = found.row;
+  if (String(r[7] || "") !== "set" || hashToken(token) !== String(r[5] || "")) return respond(400, { error: "Token tidak valid atau kedaluwarsa" });
+  if (r[6] && Date.now() > new Date(r[6]).getTime()) return respond(400, { error: "Link kedaluwarsa. Silakan daftar ulang." });
+  const { salt, hash } = hashPassword(password);
+  const isClaim = String(r[8] || "").toUpperCase() === "TRUE";
+  const status = isClaim ? "pending_claim" : "active";
+  // C=hash D=salt E=status F=token(clear) G=exp(clear) H=type(clear)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!C${found.rowIndex}:H${found.rowIndex}`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[hash, salt, status, "", "", ""]] },
+  });
+  return respond(200, { success: true, status, claim: isClaim, message: isClaim ? "Kata sandi dibuat. Menunggu persetujuan admin sebelum kamu bisa mengubah passport." : "Kata sandi dibuat. Silakan login." });
+}
+
+// Login → returns a signed session token (valid 30 days).
+async function loginPlayer(body) {
+  const email = normEmail(body && body.email);
+  const password = String((body && body.password) || "");
+  if (!email || !password) return respond(400, { error: "Email dan kata sandi wajib diisi" });
+  const sheets = getSheets();
+  const found = await findAuthByEmail(sheets, email);
+  if (!found) return respond(401, { error: "Email atau kata sandi salah" });
+  const r = found.row, status = String(r[4] || "").toLowerCase();
+  if (!["active", "pending_claim"].includes(status)) return respond(403, { error: "Akun belum aktif. Cek email untuk membuat kata sandi." });
+  if (!verifyPassword(password, r[3], r[2])) return respond(401, { error: "Email atau kata sandi salah" });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!K${found.rowIndex}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[new Date().toISOString()]] } });
+  const token = signSession({ email, name: r[1], exp: Date.now() + 30 * 24 * 3600 * 1000 });
+  return respond(200, { success: true, token, name: r[1], status, canEdit: status === "active" });
+}
+
+// Authenticated self-edit of the owner's own passport (display name / IG / photo) —
+// applied directly, no moderation. Requires an active (claim-approved) account.
+async function updateOwnProfile(body) {
+  const session = verifySession(body && body.token);
+  if (!session) return respond(401, { error: "Sesi tidak valid. Silakan login ulang." });
+  const sheets = getSheets();
+  const found = await findAuthByEmail(sheets, session.email);
+  if (!found || String(found.row[4] || "").toLowerCase() !== "active") return respond(403, { error: "Akun belum aktif / klaim belum disetujui admin." });
+  const playerName = found.row[1];
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
+  const pRows = pRes.data.values || [];
+  const pi = pRows.findIndex((x) => normName(x[0]) === normName(playerName));
+  if (pi === -1) return respond(404, { error: "Player tidak ditemukan" });
+  const psr = pi + 2, c = pRows[pi];
+  let photoUrl = c[6] || "", photoError = "";
+  if (body.photo) {
+    try { photoUrl = await uploadImage(body.photo, `pp_${String(playerName).replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || ""); }
+    catch (e) { photoError = e.message || "upload failed"; console.error("self-edit photo:", photoError); }
+  }
+  const dn = body.displayName != null ? String(body.displayName).trim() : (c[3] || c[0] || "");
+  const ig = body.ig != null ? String(body.ig).trim().replace(/^@+/, "") : (c[1] || "");
+  // Keep the key name (col A) unchanged; only update display name / IG / photo / verified.
+  const updated = [
+    c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
+    dn || c[3] || c[0] || "", c[4] || "M", c[5] || "", photoUrl, c[7] || "", c[8] || "", c[9] || "",
+  ];
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+  return respond(200, { success: true, displayName: dn, ig, photoUrl, photoError });
+}
+
+// Admin: list pending account claims (players registering against an existing name).
+async function listAccountClaims(params) {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
+  const want = String((params && params.status) || "pending_claim").toLowerCase();
+  const claims = (res.data.values || [])
+    .map((r) => ({ email: r[0], name: r[1], status: String(r[4] || "").toLowerCase(), createdAt: r[9] || "" }))
+    .filter((x) => x.email && (want === "all" || x.status === want))
+    .reverse();
+  return respond(200, { claims });
+}
+
+// Admin: approve/reject a claim (email identifies the account row).
+async function resolveAccountClaim(body) {
+  const email = normEmail(body && body.email);
+  const action = String((body && body.action) || "");
+  if (!email || !["approve", "reject"].includes(action)) return respond(400, { error: "email dan action wajib" });
+  const sheets = getSheets();
+  const found = await findAuthByEmail(sheets, email);
+  if (!found) return respond(404, { error: "Akun tidak ditemukan" });
+  if (String(found.row[4] || "").toLowerCase() !== "pending_claim") return respond(400, { error: "Klaim sudah diproses" });
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!E${found.rowIndex}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[action === "approve" ? "active" : "rejected"]] } });
+  return respond(200, { success: true, status: action === "approve" ? "active" : "rejected" });
 }
 
 // ── VENUES ──
