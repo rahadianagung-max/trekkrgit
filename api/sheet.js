@@ -94,6 +94,8 @@ const TABS = {
   admins: "Admins",
   claims: "Claims",
   playrank_active: "PlayRank_Active",
+  tracked_events: "Tracked_Events",
+  tournament_leads: "Tournament_Leads",
   t_events: "Tournament_Events",
   t_tournaments: "Tournaments",
   t_entrants: "Tournament_Entrants",
@@ -329,6 +331,8 @@ const netlifyHandler = async (event) => {
     if (path === "settings" && method === "GET") return await getSettings();
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
+    if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
+    if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
     if (path === "auth/login") return await login(body);
 
     // --- PLAYER ACCOUNTS / AUTH ---
@@ -3545,6 +3549,77 @@ async function submitVenueLead(body) {
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.venue_leads}!A:H`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[leadId, now, picName, venueName, region, whatsapp, email, "NEW"]] },
+  });
+  return respond(200, { success: true, leadId });
+}
+
+// ── TRACKED EVENTS — tournaments / leagues we track (public read list) ──
+// Diisi manual via tab Tracked_Events. Kolom: Month_Year | Name | Location | Logo_URL
+const TRACKED_EVENTS_HEADER = ["Month_Year", "Name", "Location", "Logo_URL"];
+async function ensureTrackedEventsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.tracked_events)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.tracked_events } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.tracked_events}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [TRACKED_EVENTS_HEADER] },
+  });
+}
+async function getTrackedEvents() {
+  const sheets = getSheets();
+  await ensureTrackedEventsTab(sheets);
+  const rows = await feedRows(sheets, `${TABS.tracked_events}!A2:D`);
+  const events = rows
+    .filter((r) => (r[1] || "").toString().trim())
+    .map((r) => ({
+      monthYear: (r[0] || "").toString().trim(),
+      name: (r[1] || "").toString().trim(),
+      location: (r[2] || "").toString().trim(),
+      logoUrl: (r[3] || "").toString().trim(),
+    }));
+  return respond(200, { events });
+}
+
+// ── "TOURNEY & LEAGUE" GET LISTED — organizer lead capture (public form) ──
+// Menulis ke tab Tournament_Leads yang bootstrap sendiri (mirip Venue_Leads).
+const TOURNAMENT_LEADS_HEADER = ["Lead_ID", "Timestamp", "Tournament_Name", "Location", "PIC_Name", "Phone", "Email", "Message", "Status"];
+async function ensureTournamentLeadsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.tournament_leads)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.tournament_leads } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.tournament_leads}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [TOURNAMENT_LEADS_HEADER] },
+  });
+}
+async function submitTournamentLead(body) {
+  const name = String((body && body.name) || "").trim();
+  const location = String((body && body.location) || "").trim();
+  const picName = String((body && body.picName) || "").trim();
+  const phone = String((body && body.phone) || "").trim();
+  const email = String((body && body.email) || "").trim();
+  const message = String((body && body.message) || "").trim();
+  if (!name || !location || !picName || !phone || !email) {
+    return respond(400, { error: "Please fill in all required fields." });
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return respond(400, { error: "Please enter a valid email address." });
+  if (!/[0-9]{6,}/.test(phone.replace(/[^0-9]/g, ""))) return respond(400, { error: "Please enter a valid phone number." });
+
+  const sheets = getSheets();
+  await ensureTournamentLeadsTab(sheets);
+  const leadId = "TLEAD_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.tournament_leads}!A:I`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[leadId, now, name, location, picName, phone, email, message, "NEW"]] },
   });
   return respond(200, { success: true, leadId });
 }
