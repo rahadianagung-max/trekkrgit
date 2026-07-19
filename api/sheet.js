@@ -3555,7 +3555,7 @@ async function submitVenueLead(body) {
 
 // ── TRACKED EVENTS — tournaments / leagues we track (public read list) ──
 // Diisi manual via tab Tracked_Events. Kolom: Month_Year | Name | Location | Logo_URL
-const TRACKED_EVENTS_HEADER = ["Month_Year", "Name", "Location", "Logo_URL"];
+const TRACKED_EVENTS_HEADER = ["Month_Year", "Name", "Location", "Logo_URL", "URL"];
 async function ensureTrackedEventsTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
   const existing = (meta.data.sheets || []).map((s) => s.properties.title);
@@ -3572,7 +3572,7 @@ async function ensureTrackedEventsTab(sheets) {
 async function getTrackedEvents() {
   const sheets = getSheets();
   await ensureTrackedEventsTab(sheets);
-  const rows = await feedRows(sheets, `${TABS.tracked_events}!A2:D`);
+  const rows = await feedRows(sheets, `${TABS.tracked_events}!A2:E`);
   const events = rows
     .filter((r) => (r[1] || "").toString().trim())
     .map((r) => ({
@@ -3580,6 +3580,7 @@ async function getTrackedEvents() {
       name: (r[1] || "").toString().trim(),
       location: (r[2] || "").toString().trim(),
       logoUrl: (r[3] || "").toString().trim(),
+      url: (r[4] || "").toString().trim(),
     }));
   return respond(200, { events });
 }

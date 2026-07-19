@@ -52,6 +52,9 @@
 .trk-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trk-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .trk-region{font-size:10px;font-weight:700;color:var(--subtle);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 9px;white-space:nowrap;flex-shrink:0}
+.trk-link{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .2s}
+.trk-link:hover{border-color:var(--orange)}
+.trk-go{color:var(--muted);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -153,11 +156,14 @@
     }
     var html='<div class="trk-list">';
     list.forEach(function(e){
-      html+='<div class="trk-row">';
-      html+='<div class="trk-av">'+esc(inits(e.name))+(e.logoUrl?'<img src="'+esc(e.logoUrl)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
-      html+='<div class="trk-info"><div class="trk-name">'+esc(e.name)+'</div>'+(e.monthYear?'<div class="trk-meta">'+esc(e.monthYear)+'</div>':'')+'</div>';
-      if(e.location)html+='<span class="trk-region">'+esc(e.location)+'</span>';
-      html+='</div>';
+      var inner='<div class="trk-av">'+esc(inits(e.name))+(e.logoUrl?'<img src="'+esc(e.logoUrl)+'" alt="" onerror="this.remove()"/>':'')+'</div>'
+        +'<div class="trk-info"><div class="trk-name">'+esc(e.name)+'</div>'+(e.monthYear?'<div class="trk-meta">'+esc(e.monthYear)+'</div>':'')+'</div>'
+        +(e.location?'<span class="trk-region">'+esc(e.location)+'</span>':'');
+      if(e.url){
+        html+='<a class="trk-row trk-link" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+inner+'<i class="ti ti-chevron-right trk-go" aria-hidden="true"></i></a>';
+      }else{
+        html+='<div class="trk-row">'+inner+'</div>';
+      }
     });
     html+='</div>';
     el.innerHTML=html;
