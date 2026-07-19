@@ -3764,14 +3764,45 @@ async function getCompetition(slug) {
 // Mixed, derived from the per-player genders in each venue row). Each category
 // has pair standings (both players + photos, ranked by wins) and a per-individual
 // "player performance" list ranked by highest ELO.
+// Pair standings ranked by wins -> head-to-head (among pairs tied on wins) ->
+// point difference -> points for.
 function buildPairs(rows, pinfo) {
-  return Object.values(pairStatsFromRows(rows))
-    .sort((a, b) => (b.w - a.w) || (b.pd - a.pd))
-    .map((p, i) => ({
-      rank: i + 1,
-      players: p.players.map((n) => { const x = pinfo(n); return { name: x.display, slug: x.slug, photo: x.photo }; }),
-      wins: p.w, losses: p.l, gd: p.pd,
-    }));
+  const keyOf = (team) => team.slice().sort().join(" ");
+  const pairs = {};
+  const played = [];
+  rows.forEach((r) => {
+    const t1 = [r[2], r[3]].filter(Boolean), t2 = [r[4], r[5]].filter(Boolean);
+    if (!t1.length || !t2.length || !validScore(r[6]) || !validScore(r[7])) return;
+    const s1 = Number(r[6]), s2 = Number(r[7]);
+    const k1 = keyOf(t1), k2 = keyOf(t2);
+    if (!pairs[k1]) pairs[k1] = { key: k1, players: t1.slice(), w: 0, l: 0, gf: 0, ga: 0 };
+    if (!pairs[k2]) pairs[k2] = { key: k2, players: t2.slice(), w: 0, l: 0, gf: 0, ga: 0 };
+    pairs[k1].gf += s1; pairs[k1].ga += s2; pairs[k2].gf += s2; pairs[k2].ga += s1;
+    if (s1 > s2) { pairs[k1].w++; pairs[k2].l++; } else if (s2 > s1) { pairs[k2].w++; pairs[k1].l++; }
+    played.push({ a: k1, b: k2, sa: s1, sb: s2 });
+  });
+  const h2hWins = (key, subset) => {
+    let w = 0;
+    for (const m of played) {
+      if (m.a === key && subset.has(m.b)) { if (m.sa > m.sb) w++; }
+      else if (m.b === key && subset.has(m.a)) { if (m.sb > m.sa) w++; }
+    }
+    return w;
+  };
+  const arr = Object.values(pairs).map((p) => ({ ...p, pd: p.gf - p.ga }));
+  arr.sort((x, y) => {
+    if (y.w !== x.w) return y.w - x.w;
+    const subset = new Set(arr.filter((s) => s.w === x.w).map((s) => s.key));
+    const hx = h2hWins(x.key, subset), hy = h2hWins(y.key, subset);
+    if (hy !== hx) return hy - hx;
+    if (y.pd !== x.pd) return y.pd - x.pd;
+    return y.gf - x.gf;
+  });
+  return arr.map((p, i) => ({
+    rank: i + 1,
+    players: p.players.map((n) => { const x = pinfo(n); return { name: x.display, slug: x.slug, photo: x.photo }; }),
+    wins: p.w, losses: p.l, gd: p.pd,
+  }));
 }
 function buildPlayers(rows, pinfo) {
   return Object.values(playerStatsFromRows(rows))
