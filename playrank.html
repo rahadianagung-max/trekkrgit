@@ -137,7 +137,12 @@
   if(!el)return;
   fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
     var list=(d&&d.activePlayrank)||[];
-    list=list.filter(function(p){return (p.status||'')!=='completed'&&(p.status||'')!=='finished';});
+    list=list.filter(function(p){
+      var st=(p.status||'').toLowerCase();
+      var lvl=(p.level||'').toLowerCase();
+      // Hanya tampilkan entri yang kolom level-nya mengandung kata "playrank".
+      return st!=='completed'&&st!=='finished'&&lvl.indexOf('playrank')!==-1;
+    });
     if(!list.length){
       el.innerHTML='<div class="empty">Belum ada PlayRank aktif saat ini. Cek kembali nanti.</div>';
       return;
