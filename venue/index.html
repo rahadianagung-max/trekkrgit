@@ -125,6 +125,17 @@
   .champ .lb-go{color:var(--faint);font-size:20px;flex-shrink:0}
   .champ:hover .lb-go{color:var(--orange)}
   @media(max-width:520px){.champ-photo{width:76px;height:76px;font-size:27px}.champ1 .champ-photo{width:96px;height:96px;font-size:34px}.champ-rk{font-size:26px;width:24px}.champ{gap:12px;padding:14px}}
+  /* Competition (Tournament) type badge + standings table */
+  .tbadge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 11px;border-radius:999px;margin-bottom:2px}
+  .tb-tourney{background:#FFF6E5;color:#B8860B;border:1px solid #F0D9A8}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);font-weight:700;text-align:right;padding:9px 8px;border-bottom:1px solid var(--border)}
+  .tbl th:nth-child(2){text-align:left}
+  .tbl td{padding:11px 8px;border-bottom:1px solid var(--border-soft);text-align:right;font-variant-numeric:tabular-nums}
+  .tbl td:nth-child(2){text-align:left;font-weight:700}
+  .tbl .rkn{color:var(--subtle);font-family:var(--display);font-style:italic;font-weight:800}
+  .tbl .eloc{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px;color:var(--orange)}
+  .tbl tr.top td{background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -332,18 +343,85 @@
   function setSort(m){renderAll(CUR,ALLCACHE||[],m);}
   window.showWeekly=showWeekly;window.showAll=showAll;window.pickWeek=pickWeek;window.setSort=setSort;
 
+  /* ---- Tournament (standalone result page) ---- */
+  function compLogo(d){if(d.logoUrl)return '<span class="vlogo"><img src="'+esc(d.logoUrl)+'" alt=""/></span>';return '<span class="vlogo">'+esc(initials(d.name))+'</span>';}
+  function tourHdr(d){
+    var loc=d.location||(d.event&&d.event.venue)||'';
+    var date=(d.event&&d.event.date)||'';
+    var st=d.status?d.status.charAt(0).toUpperCase()+d.status.slice(1):'';
+    var tags='';
+    if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
+    if(date)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(date)+'</span>';
+    if(st)tags+='<span class="vtag"><i class="ti ti-flag"></i>'+esc(st)+'</span>';
+    return '<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div>'
+      +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge tb-tourney"><i class="ti ti-trophy"></i>Tournament · Single Event</span>'
+      +'<div class="vname">'+esc(d.name)+'</div><div class="vtags">'+tags+'</div></div></div>';
+  }
+  function tourPodium(cat){
+    var items=[['Champion',cat.champion],['Runner-up',cat.runnerUp],['3rd place',cat.third]].filter(function(x){return x[1];});
+    if(!items.length)return '';
+    return '<div class="champs">'+items.map(function(it,i){
+      return '<div class="champ champ'+(i+1)+'"><div class="champ-rk">'+(i+1)+'</div>'
+        +'<span class="champ-photo">'+esc(initials(it[1]))+'</span>'
+        +'<div class="champ-info"><div class="champ-lbl">'+esc(it[0])+'</div><div class="champ-nm">'+esc(it[1])+'</div></div></div>';
+    }).join('')+'</div>';
+  }
+  function tourStandings(cat){
+    if(!cat.standings||!cat.standings.length)return '';
+    var rows=cat.standings.map(function(s){
+      return '<tr'+(s.rank===1?' class="top"':'')+'><td class="rkn">'+s.rank+'</td><td>'+esc(s.team)+'</td>'
+        +'<td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+pdText(s.gd)+'</td>'
+        +'<td class="eloc">'+(s.seedElo||'—')+'</td></tr>';
+    }).join('');
+    return '<div class="sec-label" style="margin-top:18px">Final standings</div>'
+      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Pair</th><th>W</th><th>L</th><th>Diff</th><th>ELO</th></tr>'+rows+'</table></div>';
+  }
+  function tourMatches(cat){
+    if(!cat.matches||!cat.matches.length)return '';
+    var rows=cat.matches.map(function(m){
+      return '<div class="mh-row"><span class="mh-team'+(m.winner==='A'?' win':'')+'">'+esc(m.teamA)+'</span>'
+        +'<span class="mh-sc">'+m.scoreA+'<span>&ndash;</span>'+m.scoreB+'</span>'
+        +'<span class="mh-team r'+(m.winner==='B'?' win':'')+'">'+esc(m.teamB)+'</span></div>';
+    }).join('');
+    return '<div class="sec-label" style="margin-top:22px">All matches</div><div class="mh">'+rows+'</div>';
+  }
+  function loadTournamentPage(cslug){
+    content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
+    fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
+      if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">Tournament not found.</div>';return;}
+      var html=tourHdr(d);
+      if(!d.categories||!d.categories.length){
+        html+='<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu turnamen selesai di-input.</div>';
+        content.innerHTML=html;return;
+      }
+      d.categories.forEach(function(cat){
+        var parts=[cat.category,cat.level].filter(Boolean).map(esc);
+        var title=parts.length?parts.join(' · '):'Results';
+        html+='<div class="sec-label" style="margin-top:22px">'+title+'</div>';
+        html+=tourPodium(cat)+tourStandings(cat)+tourMatches(cat);
+      });
+      content.innerHTML=html;
+    }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load tournament.</div>';});
+  }
+
   /* ---- Load ---- */
-  var sel=selected();
-  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-    var venues=(d&&d.venues)||[];
-    if(!sel){renderDirectory(venues);return;}
-    var key=slug(sel);
-    var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
-    if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
-    openVenue(v);
-  }).catch(function(){
-    content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
-  });
+  var segs=location.pathname.split('/').filter(Boolean);
+  var kind=segs.length>=2?segs[segs.length-2].toLowerCase():'';
+  if(kind==='tournament'){
+    loadTournamentPage(decodeURIComponent(segs[segs.length-1]));
+  }else{
+    var sel=selected();
+    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+      var venues=(d&&d.venues)||[];
+      if(!sel){renderDirectory(venues);return;}
+      var key=slug(sel);
+      var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
+      if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
+      openVenue(v);
+    }).catch(function(){
+      content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
+    });
+  }
 })();
 </script>
 </body>

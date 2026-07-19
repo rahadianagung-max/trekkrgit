@@ -96,6 +96,7 @@ const TABS = {
   playrank_active: "PlayRank_Active",
   tracked_events: "Tracked_Events",
   tournament_leads: "Tournament_Leads",
+  competitions: "Competitions",
   t_events: "Tournament_Events",
   t_tournaments: "Tournaments",
   t_entrants: "Tournament_Entrants",
@@ -333,6 +334,7 @@ const netlifyHandler = async (event) => {
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
     if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
+    if (path.startsWith("competition/") && method === "GET") return await getCompetition(decodeURIComponent(path.slice("competition/".length)));
     if (path === "auth/login") return await login(body);
 
     // --- PLAYER ACCOUNTS / AUTH ---
@@ -3623,6 +3625,113 @@ async function submitTournamentLead(body) {
     requestBody: { values: [[leadId, now, name, location, picName, phone, email, message, "NEW"]] },
   });
   return respond(200, { success: true, leadId });
+}
+
+// ── COMPETITIONS registry (standalone Tournament / League result pages) ──
+// Maps a friendly slug -> engine Event_ID. Self-bootstrapping tab.
+// Columns: Slug | Type | Event_ID | Name | Location | Logo_URL | Status
+const COMPETITIONS_HEADER = ["Slug", "Type", "Event_ID", "Name", "Location", "Logo_URL", "Status"];
+async function ensureCompetitionsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.competitions)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.competitions } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [COMPETITIONS_HEADER] },
+  });
+}
+async function resolveCompetition(sheets, slug) {
+  await ensureCompetitionsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A2:G` });
+  const rows = res.data.values || [];
+  const s = String(slug || "").trim().toLowerCase();
+  const r = rows.find((x) => String(x[0] || "").trim().toLowerCase() === s);
+  if (!r) return null;
+  return {
+    slug: r[0] || "", type: (r[1] || "tournament").toString().trim().toLowerCase(),
+    eventId: (r[2] || "").toString().trim(), name: r[3] || "", location: r[4] || "",
+    logoUrl: (r[5] || "").toString().trim(), status: (r[6] || "").toString().trim().toLowerCase(),
+  };
+}
+// Final standings for a tournament = every completed match (group + playoff)
+// aggregated per pair, ranked by total wins -> game diff -> games for.
+async function getCompetition(slug) {
+  const sheets = getSheets();
+  const comp = await resolveCompetition(sheets, slug);
+  if (!comp) return respond(404, { error: "Competition not found" });
+  const base = { slug: comp.slug, type: comp.type, name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
+  if (comp.type !== "tournament" || !comp.eventId) {
+    // League handled separately (later); tournament with no linked event -> results pending.
+    return respond(200, { ...base, event: null, categories: [] });
+  }
+  const br = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SHEET_ID,
+    ranges: [`${TABS.t_events}!A2:H`, `${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:J`],
+  });
+  const vr = br.data.valueRanges || [];
+  const val = (i) => (vr[i] && vr[i].values) || [];
+  const evRows = val(0), trRows = val(1), allGroups = val(2), mRows = val(3), plRows = val(4);
+  const evRow = evRows.find((x) => x[0] === comp.eventId);
+  const event = evRow ? { eventId: evRow[0], name: evRow[1], venue: evRow[2], date: evRow[3] } : null;
+
+  const photos = {};
+  for (const r of plRows) { const name = r[0] || ""; if (!name) continue; photos[normName(name)] = ibbHostFix(r[6] || ""); }
+  const allMatches = mRows.map(mapMatchRow);
+  const tournaments = trRows.filter((x) => x[1] === comp.eventId);
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+
+  const categories = tournaments.map((t) => {
+    const tid = t[0];
+    const entrants = {};
+    for (const x of allGroups.filter((g) => g[0] === tid)) {
+      entrants[x[3]] = { player1: x[4] || "", player2: x[5] || "", seedElo: parseInt(x[6]) || 0 };
+    }
+    const nm = (eid) => { const e = entrants[eid]; return e ? `${e.player1} + ${e.player2}` : (eid || ""); };
+    const tMatches = allMatches.filter((m) => m.tournamentId === tid);
+
+    const agg = {};
+    const ensure = (id) => { if (!agg[id]) agg[id] = { entrantId: id, played: 0, wins: 0, losses: 0, gf: 0, ga: 0 }; return agg[id]; };
+    Object.keys(entrants).forEach(ensure);
+    for (const m of tMatches) {
+      if (!has(m.scoreA) || !has(m.scoreB) || !m.entrantA || !m.entrantB) continue;
+      const A = ensure(m.entrantA), B = ensure(m.entrantB), sa = Number(m.scoreA), sb = Number(m.scoreB);
+      A.played++; B.played++; A.gf += sa; A.ga += sb; B.gf += sb; B.ga += sa;
+      if (sa > sb) { A.wins++; B.losses++; } else if (sb > sa) { B.wins++; A.losses++; }
+    }
+    const standings = Object.values(agg)
+      .map((s) => ({ ...s, gd: s.gf - s.ga }))
+      .sort((x, y) => (y.wins - x.wins) || (y.gd - x.gd) || (y.gf - x.gf))
+      .map((s, i) => {
+        const e = entrants[s.entrantId] || {};
+        return {
+          rank: i + 1, team: nm(s.entrantId),
+          players: [
+            { name: e.player1 || "", photo: photos[normName(e.player1 || "")] || "" },
+            { name: e.player2 || "", photo: photos[normName(e.player2 || "")] || "" },
+          ],
+          seedElo: e.seedElo || 0, played: s.played, wins: s.wins, losses: s.losses, gd: s.gd,
+        };
+      });
+    const playoff = playoffBracketsView(tMatches.filter((m) => m.stage === "PLAYOFF"), nm);
+    const pod = (playoff[0] && playoff[0].podium) || {};
+    const champion = pod.champion || (standings[0] && standings[0].team) || "";
+    const runnerUp = pod.runnerUp || (standings[1] && standings[1].team) || "";
+    const third = pod.third || (standings[2] && standings[2].team) || "";
+    const matches = tMatches
+      .filter((m) => has(m.scoreA) && has(m.scoreB))
+      .map((m) => ({
+        stage: m.stage, teamA: nm(m.entrantA), teamB: nm(m.entrantB),
+        scoreA: Number(m.scoreA), scoreB: Number(m.scoreB),
+        winner: m.winner === m.entrantA ? "A" : (m.winner === m.entrantB ? "B" : ""),
+      }));
+    return { tournamentId: tid, category: t[2] || "", level: t[3] || "", format: t[4] || "", status: (t[7] || "").toString().toLowerCase(), champion, runnerUp, third, standings, matches };
+  });
+
+  return respond(200, { ...base, event, categories });
 }
 
 async function ensureRegTabs(sheets) {
