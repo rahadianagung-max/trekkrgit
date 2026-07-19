@@ -265,10 +265,11 @@
     });
   });
 
-  /* Populate region dropdown */
-  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-    var vs=(d&&d.venues)||[]; var regions={};
-    vs.forEach(function(v){ if(v.region)regions[v.region]=1; });
+  /* Populate region dropdown from PLAYER regions (matches the region filter,
+     which compares against each player's region in the Players tab). */
+  fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).then(function(d){
+    var list=(d&&d.leaderboard)||[]; var regions={};
+    list.forEach(function(p){ var rg=(p.region||'').trim(); if(rg)regions[rg]=1; });
     Object.keys(regions).sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;document.getElementById('regionSel').appendChild(o);});
   }).catch(function(){});
 
