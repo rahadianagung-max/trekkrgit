@@ -3673,12 +3673,22 @@ async function loadVenueForCompetition(sheets, sourceName) {
   ]);
   const rows = (vRes.data.values || []).filter((r) => r && r.some((c) => String(c == null ? "" : c).trim() !== ""));
   const latestElo = {};
-  (eRes.data.values || []).forEach((r) => { if (r[1]) latestElo[r[1].toLowerCase()] = parseInt(r[2]) || 1350; });
+  (eRes.data.values || []).forEach((r) => { if (r[1]) latestElo[normName(r[1])] = parseInt(r[2]) || 1350; });
+  // Resolve any recorded name — the canonical Name (col A) OR the Display_Name
+  // alias (col D) — back to the canonical Name. trekkr.online always shows the
+  // Name column; Display_Name is only used on turnamenpadel.com.
   const info = {};
-  (pRes.data.values || []).forEach((r) => { if (!r[0]) return; info[normName(r[0])] = { display: r[3] || r[0], photo: ibbHostFix(r[6] || "") }; });
+  (pRes.data.values || []).forEach((r) => {
+    if (!r[0]) return;
+    const rec = { name: r[0], photo: ibbHostFix(r[6] || "") };
+    info[normName(r[0])] = rec;
+    const alias = normName(r[3]);
+    if (alias && !info[alias]) info[alias] = rec; // never let an alias overwrite a real Name
+  });
   const pinfo = (nm) => {
-    const gi = info[normName(nm)] || {};
-    return { name: nm, display: gi.display || nm, slug: compSlug(nm), photo: gi.photo || "", elo: latestElo[String(nm).toLowerCase()] || 1350 };
+    const gi = info[normName(nm)];
+    const canonical = (gi && gi.name) || nm;
+    return { name: canonical, display: canonical, slug: compSlug(canonical), photo: (gi && gi.photo) || "", elo: latestElo[normName(canonical)] || latestElo[normName(nm)] || 1350 };
   };
   return { rows, pinfo };
 }
