@@ -3668,9 +3668,13 @@ async function resolveCompetition(sheets, slug) {
   const r = rows.find((x) => String(x[0] || "").trim().toLowerCase() === s);
   if (!r) return null;
   const name = r[3] || "";
+  const colC = (r[2] || "").toString().trim();
+  // Column C holds EITHER an engine Event_ID (bracket-aware, when it looks like
+  // "EV..."/"EVT...") OR a venue-tab source name. Event wins when present.
+  const eventId = /^EVT?_/i.test(colC) ? colC : "";
   return {
     slug: r[0] || "", type: (r[1] || "tournament").toString().trim().toLowerCase(),
-    source: (r[2] || "").toString().trim() || name, // Venue tab source; defaults to Name
+    eventId, source: eventId ? name : (colC || name),
     name, location: r[4] || "",
     logoUrl: (r[5] || "").toString().trim(), status: (r[6] || "").toString().trim().toLowerCase(),
   };
@@ -3810,8 +3814,99 @@ function buildPlayers(rows, pinfo) {
     .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins))
     .map((p, i) => ({ rank: i + 1, ...p }));
 }
+// Bracket-aware final standings for one engine tournament (category): placement
+// follows the playoff (champion -> runner-up -> 3rd -> 4th -> earlier-out), then
+// group-only entrants by wins. This respects the bracket instead of raw win counts.
+function buildEngineCategory(tid, catStr, groupRows, allMatches, pinfo) {
+  const entrants = {};
+  for (const g of groupRows) if (g[0] === tid) entrants[g[3]] = { players: [g[4] || "", g[5] || ""], seedElo: parseInt(g[6]) || 0 };
+  const ids = Object.keys(entrants);
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+  const done = allMatches.filter((m) => m.tournamentId === tid && has(m.scoreA) && has(m.scoreB) && m.entrantA && m.entrantB);
+
+  const st = {};
+  const ensure = (id) => { if (!st[id]) st[id] = { w: 0, l: 0, gf: 0, ga: 0 }; return st[id]; };
+  ids.forEach(ensure);
+  for (const m of done) {
+    const a = ensure(m.entrantA), b = ensure(m.entrantB), sa = Number(m.scoreA), sb = Number(m.scoreB);
+    a.gf += sa; a.ga += sb; b.gf += sb; b.ga += sa;
+    if (sa > sb) { a.w++; b.l++; } else if (sb > sa) { b.w++; a.l++; }
+  }
+
+  const placement = {};
+  let pos = 1;
+  const playoff = done.filter((m) => m.stage === "PLAYOFF");
+  const loserOf = (m) => (String(m.winner) === String(m.entrantA) ? m.entrantB : m.entrantA);
+  if (playoff.length) {
+    const tiers = [...new Set(playoff.map((m) => m.bracket))];
+    let mainTier = null, mainRounds = -1;
+    for (const tier of tiers) {
+      const tm = playoff.filter((m) => m.bracket === tier);
+      const mr = Math.max(0, ...tm.filter((m) => /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
+      if (mr > mainRounds) { mainRounds = mr; mainTier = tier; }
+    }
+    const tm = playoff.filter((m) => m.bracket === mainTier);
+    const finalM = tm.find((m) => parseInt(m.round) === mainRounds && m.slot === 0 && m.status === "DONE" && m.winner);
+    const bronzeM = tm.find((m) => String(m.round) === "BRONZE" && m.status === "DONE" && m.winner);
+    if (finalM) { placement[finalM.winner] = pos++; placement[loserOf(finalM)] = pos++; }
+    if (bronzeM) { placement[bronzeM.winner] = pos++; placement[loserOf(bronzeM)] = pos++; }
+    const inPlayoff = new Set();
+    playoff.forEach((m) => { if (m.entrantA) inPlayoff.add(m.entrantA); if (m.entrantB) inPlayoff.add(m.entrantB); });
+    const lastRound = (id) => Math.max(0, ...playoff.filter((m) => (m.entrantA === id || m.entrantB === id) && /^\d+$/.test(String(m.round))).map((m) => parseInt(m.round)));
+    [...inPlayoff].filter((id) => !(id in placement)).sort((x, y) => (lastRound(y) - lastRound(x)) || (st[y].w - st[x].w)).forEach((id) => { placement[id] = pos++; });
+  }
+  ids.filter((id) => !(id in placement))
+    .sort((x, y) => (st[y].w - st[x].w) || ((st[y].gf - st[y].ga) - (st[x].gf - st[x].ga)))
+    .forEach((id) => { placement[id] = pos++; });
+
+  const pairs = ids.slice().sort((x, y) => placement[x] - placement[y]).map((id, i) => {
+    const e = entrants[id], s = st[id];
+    return {
+      rank: i + 1,
+      players: e.players.filter(Boolean).map((n) => { const x = pinfo(n); return { name: x.name, slug: x.slug, photo: x.photo }; }),
+      wins: s.w, losses: s.l, gd: s.gf - s.ga,
+    };
+  });
+
+  const ps = {};
+  const pen = (n) => { if (!ps[n]) ps[n] = { w: 0, l: 0, gf: 0, ga: 0 }; return ps[n]; };
+  for (const m of done) {
+    const A = entrants[m.entrantA], B = entrants[m.entrantB]; if (!A || !B) continue;
+    const sa = Number(m.scoreA), sb = Number(m.scoreB);
+    A.players.filter(Boolean).forEach((n) => { const p = pen(n); p.gf += sa; p.ga += sb; if (sa > sb) p.w++; else if (sb > sa) p.l++; });
+    B.players.filter(Boolean).forEach((n) => { const p = pen(n); p.gf += sb; p.ga += sa; if (sb > sa) p.w++; else if (sa > sb) p.l++; });
+  }
+  const players = Object.keys(ps).map((n) => { const x = pinfo(n); return { name: x.name, slug: x.slug, photo: x.photo, elo: x.elo, wins: ps[n].w, losses: ps[n].l, gd: ps[n].gf - ps[n].ga }; })
+    .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins))
+    .map((p, i) => ({ rank: i + 1, ...p }));
+
+  const code = catCode(catStr);
+  const LABEL = { MD: "Men's Doubles", WD: "Women's Doubles", MIXED: "Fixed Mixed" };
+  return { key: code, label: LABEL[code] || catStr || "Results", pairs, players };
+}
+async function tournamentFromEngine(sheets, comp, base) {
+  const br = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SHEET_ID,
+    ranges: [`${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:K`, `${TABS.elo_log}!A2:G`],
+  });
+  const vr = br.data.valueRanges || [];
+  const val = (i) => (vr[i] && vr[i].values) || [];
+  const trRows = val(0), grRows = val(1), mRows = val(2), plRows = val(3), elRows = val(4);
+  const info = {};
+  for (const r of plRows) { if (!r[0]) continue; const rec = { name: r[0], photo: ibbHostFix(r[6] || "") }; info[normName(r[0])] = rec; const a = normName(r[3]); if (a && !info[a]) info[a] = rec; }
+  const latestElo = {};
+  for (const r of elRows) { if (!r[1]) continue; const e = parseInt(r[2]); if (!isNaN(e) && r[0] !== "INITIAL") latestElo[normName(r[1])] = e; }
+  const pinfo = (nm) => { const gi = info[normName(nm)]; const c = (gi && gi.name) || nm; return { name: c, slug: compSlug(c), photo: (gi && gi.photo) || "", elo: latestElo[normName(c)] || latestElo[normName(nm)] || 1350 }; };
+  const allMatches = mRows.map(mapMatchRow);
+  const tournaments = trRows.filter((t) => t[1] === comp.eventId);
+  const categories = tournaments
+    .map((t) => buildEngineCategory(t[0], t[2] || "", grRows, allMatches, pinfo))
+    .filter((c) => (c.pairs && c.pairs.length) || (c.players && c.players.length));
+  return respond(200, { ...base, categories });
+}
 async function getTournamentCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "tournament", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
+  if (comp.eventId) return await tournamentFromEngine(sheets, comp, base);
   const load = await loadVenueForCompetition(sheets, comp.source);
   const rows = load.rows, pinfo = load.pinfo;
   if (!rows.length) return respond(200, { ...base, categories: [] });
