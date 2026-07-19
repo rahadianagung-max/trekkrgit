@@ -226,8 +226,11 @@
     });
     trackedEvents.forEach(function(e){
       if(!e.name)return;
-      var isLeague=/league|liga/i.test(e.name);
-      items.push({type:isLeague?'League':'Tourney',pill:isLeague?'tp-league':'tp-tourney',name:e.name,meta:e.monthYear||'',region:e.location||'',logo:e.logoUrl||'',href:'https://trekkr.online/tournament'});
+      var url=e.url||'';
+      // Prefer the type encoded in the linked URL (/league/ vs /tournament/),
+      // then fall back to the name.
+      var isLeague=/\/league\//i.test(url)||(!/\/tournament\//i.test(url)&&/league|liga/i.test(e.name));
+      items.push({type:isLeague?'League':'Tournament',pill:isLeague?'tp-league':'tp-tourney',name:e.name,meta:e.monthYear||'',region:e.location||'',logo:e.logoUrl||'',href:url||'https://trekkr.online/tournament'});
     });
 
     var listEl=document.getElementById('prVenues');
@@ -245,7 +248,7 @@
       shown.forEach(function(v){
         html+='<a class="venue-row" href="'+esc(v.href)+'">';
         html+='<div class="venue-av">'+esc(inits(v.name))+(v.logo?'<img src="'+esc(v.logo)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
-        html+='<div class="venue-info"><div class="venue-nameline"><span class="venue-name">'+esc(v.name)+'</span>'+(v.type!=='PlayRank'?'<span class="typepill '+v.pill+'">'+esc(v.type)+'</span>':'')+'</div>';
+        html+='<div class="venue-info"><div class="venue-nameline"><span class="venue-name">'+esc(v.name)+'</span><span class="typepill '+v.pill+'">'+esc(v.type)+'</span></div>';
         if(v.meta)html+='<div class="venue-tags">'+esc(v.meta)+'</div>';
         html+='</div>';
         if(v.region)html+='<span class="venue-region-badge">'+esc(v.region)+'</span>';

@@ -226,27 +226,61 @@
     return new URLSearchParams(location.search).get('v')||null;
   }
 
-  /* ---- Directory ---- */
-  function renderDirectory(venues){
-    var cards=venues.filter(function(v){return v.name;}).map(function(v){
-      var loc=v.region||v.location||'';
-      return '<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
-        +'<div class="vname">'+esc(v.name)+'</div>'
-        +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
-        +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
-        +'<div class="vgo">View leaderboard <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
-    }).join('');
-    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display">Venues</h1>'
-      +'<p>Find your home court and its ranked-match leaderboard. '+venues.length+' venues on Trekkr.</p></div>'
-      +'<div class="searchbar"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search venues…" aria-label="Search venues"/></div>'
-      +'<div class="grid" id="vgrid">'+cards+'</div>';
-    var inp=document.getElementById('vsearch'), grid=document.getElementById('vgrid');
-    inp.addEventListener('input',function(){
-      var q=inp.value.toLowerCase();
-      Array.prototype.forEach.call(grid.children,function(c){
-        c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
+  /* ---- Directory (PlayRank venues / Tournaments / Leagues) ---- */
+  function venueCard(v){
+    var loc=v.region||v.location||'';
+    return '<a class="vcard" href="/'+slug(v.name)+'">'+vlogo(v)
+      +'<div class="vname">'+esc(v.name)+'</div>'
+      +(loc?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(loc)+'</div>':'')
+      +(v.schedule?'<div class="vmeta"><i class="ti ti-calendar" aria-hidden="true"></i>'+esc(v.schedule)+'</div>':'')
+      +'<div class="vgo">View leaderboard <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
+  }
+  function compCard(c){
+    var logo=c.logoUrl?'<span class="vlogo"><img src="'+esc(c.logoUrl)+'" alt=""/></span>':'<span class="vlogo">'+esc(initials(c.name))+'</span>';
+    var st=c.status?'<div class="vmeta"><i class="ti ti-flag" aria-hidden="true"></i>'+esc(c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</div>':'';
+    return '<a class="vcard" href="/'+esc(c.type)+'/'+esc(c.slug)+'">'+logo
+      +'<div class="vname">'+esc(c.name)+'</div>'
+      +(c.location?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(c.location)+'</div>':'')
+      +st
+      +'<div class="vgo">View results <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
+  }
+  function renderDirectory(venues,comps){
+    venues=(venues||[]).filter(function(v){return v.name;});
+    comps=comps||[];
+    var tournaments=comps.filter(function(c){return c.type==='tournament';});
+    var leagues=comps.filter(function(c){return c.type==='league';});
+    function grid(id,cards,empty,show){
+      return '<div class="grid dgrid" id="'+id+'"'+(show?'':' style="display:none"')+'>'
+        +(cards?cards:'<div class="state" style="grid-column:1/-1">'+empty+'</div>')+'</div>';
+    }
+    content.innerHTML='<div class="page-head"><span class="eyebrow">Ranked match</span><h1 class="display">Browse</h1>'
+      +'<p>PlayRank venues, tournaments, and leagues tracked on Trekkr.</p></div>'
+      +'<div class="vmode dirtabs" style="margin-top:14px">'
+        +'<button class="vmode-b on" data-dt="pr">PlayRank ('+venues.length+')</button>'
+        +'<button class="vmode-b" data-dt="tn">Tournaments ('+tournaments.length+')</button>'
+        +'<button class="vmode-b" data-dt="lg">Leagues ('+leagues.length+')</button>'
+      +'</div>'
+      +'<div class="searchbar" style="margin-top:14px"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search…" aria-label="Search"/></div>'
+      +grid('grid-pr',venues.map(venueCard).join(''),'No venues yet.',true)
+      +grid('grid-tn',tournaments.map(compCard).join(''),'No tournaments listed yet.',false)
+      +grid('grid-lg',leagues.map(compCard).join(''),'No leagues listed yet.',false);
+    var tabs=content.querySelectorAll('.dirtabs .vmode-b');
+    var map={pr:'grid-pr',tn:'grid-tn',lg:'grid-lg'};
+    var active='pr';
+    var inp=document.getElementById('vsearch');
+    function applySearch(){
+      var q=(inp.value||'').toLowerCase(), g=document.getElementById(map[active]);
+      Array.prototype.forEach.call(g.children,function(c){
+        if(c.classList&&c.classList.contains('vcard'))c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
       });
-    });
+    }
+    Array.prototype.forEach.call(tabs,function(b){b.addEventListener('click',function(){
+      active=b.getAttribute('data-dt');
+      Array.prototype.forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});
+      Object.keys(map).forEach(function(k){document.getElementById(map[k]).style.display=k===active?'':'none';});
+      applySearch();
+    });});
+    inp.addEventListener('input',applySearch);
   }
 
   /* ---- Detail ---- */
@@ -505,16 +539,22 @@
     loadLeaguePage(decodeURIComponent(segs[segs.length-1]));
   }else{
     var sel=selected();
-    fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-      var venues=(d&&d.venues)||[];
-      if(!sel){renderDirectory(venues);return;}
-      var key=slug(sel);
-      var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
-      if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
-      openVenue(v);
-    }).catch(function(){
-      content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';
-    });
+    if(!sel){
+      Promise.all([
+        fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return{};}),
+        fetch(BASE+'/competitions').then(function(r){return r.json();}).catch(function(){return{};})
+      ]).then(function(res){
+        renderDirectory((res[0]&&res[0].venues)||[],(res[1]&&res[1].competitions)||[]);
+      }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load. Please try again.</div>';});
+    }else{
+      fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+        var venues=(d&&d.venues)||[];
+        var key=slug(sel);
+        var v=venues.filter(function(x){return slug(x.name)===key||(x.name||'').toLowerCase()===String(sel).toLowerCase();})[0];
+        if(!v){content.innerHTML='<div class="page-head"><a class="back" href="/"><i class="ti ti-arrow-left"></i>All venues</a></div><div class="state" style="margin-top:24px">Venue not found.</div>';return;}
+        openVenue(v);
+      }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load venues. Please try again.</div>';});
+    }
   }
 })();
 </script>
