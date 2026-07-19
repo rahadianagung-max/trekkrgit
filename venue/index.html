@@ -160,6 +160,9 @@
   .pair-photos .champ-photo + .champ-photo{margin-left:-16px;border:2px solid #fff}
   .champ1 .pair-photos .champ-photo + .champ-photo{border-color:var(--orange)}
   .ct-pane{margin-top:2px}
+  /* Podium: stack the two players (top/bottom) so neither name is clipped on mobile */
+  .champ-nm.champ-pair{display:flex;flex-direction:column;gap:1px;white-space:normal;overflow:visible;text-overflow:clip}
+  .champ-nm.champ-pair .cp-name{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.0;word-break:break-word}
 </style>
 </head>
 <body>
@@ -421,9 +424,9 @@
     return '<div class="sec-label" style="margin-top:20px">Podium</div><div class="champs">'+top.map(function(pr,i){
       var pls=pr.players||[];
       var avs='<div class="pair-photos">'+pls.map(function(p){return pAv(p,'champ-photo');}).join('')+'</div>';
-      var names=pls.map(nameLink).join(' <span class="amp">&amp;</span> ');
+      var names=pls.map(function(p){return '<div class="cp-name">'+nameLink(p)+'</div>';}).join('');
       return '<div class="champ champ'+(i+1)+'"><div class="champ-rk">'+(i+1)+'</div>'+avs
-        +'<div class="champ-info"><div class="champ-lbl">'+labels[i]+'</div><div class="champ-nm">'+names+'</div>'
+        +'<div class="champ-info"><div class="champ-lbl">'+labels[i]+'</div><div class="champ-nm champ-pair">'+names+'</div>'
         +'<div class="champ-stats"><span class="cs"><b>'+pr.wins+'</b>W</span><span class="cs"><b>'+pr.losses+'</b>L</span><span class="cs"><b>'+pdText(pr.gd)+'</b> diff</span></div></div></div>';
     }).join('')+'</div>';
   }
