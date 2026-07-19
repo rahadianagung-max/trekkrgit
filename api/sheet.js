@@ -3723,28 +3723,42 @@ async function getCompetition(slug) {
   return await getTournamentCompetition(sheets, comp);
 }
 
-// Tournament page: pair standings (both players + photos) ranked by wins, plus a
-// per-individual "player performance" list ranked by highest ELO.
-async function getTournamentCompetition(sheets, comp) {
-  const base = { slug: comp.slug, type: "tournament", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
-  const load = await loadVenueForCompetition(sheets, comp.source);
-  const rows = load.rows, pinfo = load.pinfo;
-  if (!rows.length) return respond(200, { ...base, pairs: [], players: [] });
-
-  const pairs = Object.values(pairStatsFromRows(rows))
+// Tournament page: split by category (Men's Doubles / Women's Doubles / Fixed
+// Mixed, derived from the per-player genders in each venue row). Each category
+// has pair standings (both players + photos, ranked by wins) and a per-individual
+// "player performance" list ranked by highest ELO.
+function buildPairs(rows, pinfo) {
+  return Object.values(pairStatsFromRows(rows))
     .sort((a, b) => (b.w - a.w) || (b.pd - a.pd))
     .map((p, i) => ({
       rank: i + 1,
       players: p.players.map((n) => { const x = pinfo(n); return { name: x.display, slug: x.slug, photo: x.photo }; }),
       wins: p.w, losses: p.l, gd: p.pd,
     }));
-
-  const players = Object.values(playerStatsFromRows(rows))
+}
+function buildPlayers(rows, pinfo) {
+  return Object.values(playerStatsFromRows(rows))
     .map((s) => { const x = pinfo(s.name); return { name: x.display, slug: x.slug, photo: x.photo, elo: x.elo, wins: s.w, losses: s.l, gd: s.pd }; })
     .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins))
     .map((p, i) => ({ rank: i + 1, ...p }));
+}
+async function getTournamentCompetition(sheets, comp) {
+  const base = { slug: comp.slug, type: "tournament", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
+  const load = await loadVenueForCompetition(sheets, comp.source);
+  const rows = load.rows, pinfo = load.pinfo;
+  if (!rows.length) return respond(200, { ...base, categories: [] });
 
-  return respond(200, { ...base, pairs, players });
+  const buckets = {};
+  for (const r of rows) {
+    const cat = matchCategory(venueRowGenders(r)); // "M" | "F" | "MIXED"
+    (buckets[cat] = buckets[cat] || []).push(r);
+  }
+  const LABEL = { M: "Men's Doubles", F: "Women's Doubles", MIXED: "Fixed Mixed" };
+  const categories = ["M", "F", "MIXED"]
+    .filter((k) => buckets[k] && buckets[k].length)
+    .map((k) => ({ key: k, label: LABEL[k] || k, pairs: buildPairs(buckets[k], pinfo), players: buildPlayers(buckets[k], pinfo) }));
+
+  return respond(200, { ...base, categories });
 }
 
 // League page: per individual across all series; each Week in the venue tab is a series.
