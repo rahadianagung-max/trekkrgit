@@ -144,6 +144,18 @@
   .tbl .rkn{color:var(--subtle);font-family:var(--display);font-style:italic;font-weight:800}
   .tbl .eloc{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px;color:var(--orange)}
   .tbl tr.top td{background:var(--surface-2)}
+  .pl-link{color:inherit;font-weight:700}
+  .pl-link:hover{color:var(--orange);text-decoration:underline}
+  .pl-inline{display:inline-flex;align-items:center;gap:7px}
+  .pl-av{width:28px;height:28px;border-radius:8px;background:var(--surface-3);color:var(--muted);font-family:var(--display);font-style:italic;font-weight:800;font-size:12px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+  .pl-av img{width:100%;height:100%;object-fit:cover}
+  .tbl td.pairc{white-space:normal}
+  .amp{color:var(--faint);font-weight:600}
+  .pair-photos{display:flex;align-items:center;flex-shrink:0}
+  .pair-photos .champ-photo{width:56px;height:56px;font-size:20px}
+  .pair-photos .champ-photo + .champ-photo{margin-left:-16px;border:2px solid #fff}
+  .champ1 .pair-photos .champ-photo + .champ-photo{border-color:var(--orange)}
+  .ct-pane{margin-top:2px}
 </style>
 </head>
 <body>
@@ -353,62 +365,65 @@
 
   /* ---- Tournament (standalone result page) ---- */
   function compLogo(d){if(d.logoUrl)return '<span class="vlogo"><img src="'+esc(d.logoUrl)+'" alt=""/></span>';return '<span class="vlogo">'+esc(initials(d.name))+'</span>';}
-  function tourHdr(d){
-    var loc=d.location||(d.event&&d.event.venue)||'';
-    var date=(d.event&&d.event.date)||'';
-    var st=d.status?d.status.charAt(0).toUpperCase()+d.status.slice(1):'';
+  function passHref(sl){return 'https://trekkr.online/player/'+sl;}
+  function nameLink(p){return '<a class="pl-link" href="'+passHref(p.slug)+'">'+esc(p.name)+'</a>';}
+  function pAv(p,cls){cls=cls||'pl-av';if(p&&p.photo)return '<span class="'+cls+'"><img src="'+esc(p.photo)+'" alt="" loading="lazy"/></span>';return '<span class="'+cls+'">'+esc(initials(p&&p.name||''))+'</span>';}
+  function compHdr(d,badgeCls,badge){
     var tags='';
-    if(loc)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(loc)+'</span>';
-    if(date)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+esc(date)+'</span>';
-    if(st)tags+='<span class="vtag"><i class="ti ti-flag"></i>'+esc(st)+'</span>';
+    if(d.location)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(d.location)+'</span>';
+    if(d.status)tags+='<span class="vtag"><i class="ti ti-flag"></i>'+esc(cap(d.status))+'</span>';
     return '<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div>'
-      +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge tb-tourney"><i class="ti ti-trophy"></i>Tournament · Single Event</span>'
+      +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge '+badgeCls+'">'+badge+'</span>'
       +'<div class="vname">'+esc(d.name)+'</div><div class="vtags">'+tags+'</div></div></div>';
   }
-  function tourPodium(cat){
-    var items=[['Champion',cat.champion],['Runner-up',cat.runnerUp],['3rd place',cat.third]].filter(function(x){return x[1];});
-    if(!items.length)return '';
-    return '<div class="champs">'+items.map(function(it,i){
-      return '<div class="champ champ'+(i+1)+'"><div class="champ-rk">'+(i+1)+'</div>'
-        +'<span class="champ-photo">'+esc(initials(it[1]))+'</span>'
-        +'<div class="champ-info"><div class="champ-lbl">'+esc(it[0])+'</div><div class="champ-nm">'+esc(it[1])+'</div></div></div>';
+  function tourPodium(d){
+    var top=(d.pairs||[]).slice(0,3);
+    if(!top.length)return '';
+    var labels=['Champion','Runner-up','3rd place'];
+    return '<div class="sec-label" style="margin-top:20px">Podium</div><div class="champs">'+top.map(function(pr,i){
+      var pls=pr.players||[];
+      var avs='<div class="pair-photos">'+pls.map(function(p){return pAv(p,'champ-photo');}).join('')+'</div>';
+      var names=pls.map(nameLink).join(' <span class="amp">&amp;</span> ');
+      return '<div class="champ champ'+(i+1)+'"><div class="champ-rk">'+(i+1)+'</div>'+avs
+        +'<div class="champ-info"><div class="champ-lbl">'+labels[i]+'</div><div class="champ-nm">'+names+'</div>'
+        +'<div class="champ-stats"><span class="cs"><b>'+pr.wins+'</b>W</span><span class="cs"><b>'+pr.losses+'</b>L</span><span class="cs"><b>'+pdText(pr.gd)+'</b> diff</span></div></div></div>';
     }).join('')+'</div>';
   }
-  function tourStandings(cat){
-    if(!cat.standings||!cat.standings.length)return '';
-    var rows=cat.standings.map(function(s){
-      return '<tr'+(s.rank===1?' class="top"':'')+'><td class="rkn">'+s.rank+'</td><td>'+esc(s.team)+'</td>'
-        +'<td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+pdText(s.gd)+'</td>'
-        +'<td class="eloc">'+(s.seedElo||'—')+'</td></tr>';
+  function tourPairsTable(d){
+    if(!d.pairs||!d.pairs.length)return '<div class="state">No results yet.</div>';
+    var rows=d.pairs.map(function(pr){
+      var cell=(pr.players||[]).map(function(p){return '<span class="pl-inline">'+pAv(p)+nameLink(p)+'</span>';}).join('<span class="amp"> &amp; </span>');
+      return '<tr'+(pr.rank===1?' class="top"':'')+'><td class="rkn">'+pr.rank+'</td><td class="pairc">'+cell+'</td><td>'+pr.wins+'</td><td>'+pr.losses+'</td><td>'+pdText(pr.gd)+'</td></tr>';
     }).join('');
-    return '<div class="sec-label" style="margin-top:18px">Final standings</div>'
-      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Pair</th><th>W</th><th>L</th><th>Diff</th><th>ELO</th></tr>'+rows+'</table></div>';
+    return '<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Pair</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div>';
   }
-  function tourMatches(cat){
-    if(!cat.matches||!cat.matches.length)return '';
-    var rows=cat.matches.map(function(m){
-      return '<div class="mh-row"><span class="mh-team'+(m.winner==='A'?' win':'')+'">'+esc(m.teamA)+'</span>'
-        +'<span class="mh-sc">'+m.scoreA+'<span>&ndash;</span>'+m.scoreB+'</span>'
-        +'<span class="mh-team r'+(m.winner==='B'?' win':'')+'">'+esc(m.teamB)+'</span></div>';
+  function tourPlayersTable(d){
+    if(!d.players||!d.players.length)return '<div class="state">No players yet.</div>';
+    var rows=d.players.map(function(p){
+      return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td><td>'+p.wins+'</td><td>'+p.losses+'</td><td class="eloc">'+(p.elo||'—')+'</td></tr>';
     }).join('');
-    return '<div class="sec-label" style="margin-top:22px">All matches</div><div class="mh">'+rows+'</div>';
+    return '<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div>';
   }
   function loadTournamentPage(cslug){
     content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
     fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
       if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">Tournament not found.</div>';return;}
-      var html=tourHdr(d);
-      if(!d.categories||!d.categories.length){
+      var html=compHdr(d,'tb-tourney','<i class="ti ti-trophy"></i>Tournament · Single Event');
+      if((!d.pairs||!d.pairs.length)&&(!d.players||!d.players.length)){
         html+='<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu turnamen selesai di-input.</div>';
         content.innerHTML=html;return;
       }
-      d.categories.forEach(function(cat){
-        var parts=[cat.category,cat.level].filter(Boolean).map(esc);
-        var title=parts.length?parts.join(' · '):'Results';
-        html+='<div class="sec-label" style="margin-top:22px">'+title+'</div>';
-        html+=tourPodium(cat)+tourStandings(cat)+tourMatches(cat);
-      });
+      html+=tourPodium(d);
+      html+='<div class="vmode" style="margin-top:18px"><button class="vmode-b on" data-ct="stand">Standings</button><button class="vmode-b" data-ct="perf">Player Performance</button></div>';
+      html+='<div id="ctStand" class="ct-pane"><div class="sec-label" style="margin-top:14px">Final standings &middot; by pair</div>'+tourPairsTable(d)+'</div>';
+      html+='<div id="ctPerf" class="ct-pane" style="display:none"><div class="sec-label" style="margin-top:14px">Player performance &middot; ranked by ELO</div>'+tourPlayersTable(d)+'</div>';
       content.innerHTML=html;
+      var mb=content.querySelectorAll('.vmode-b[data-ct]');
+      Array.prototype.forEach.call(mb,function(b){b.addEventListener('click',function(){
+        Array.prototype.forEach.call(mb,function(x){x.classList.toggle('on',x===b);});
+        content.querySelector('#ctStand').style.display=b.getAttribute('data-ct')==='stand'?'':'none';
+        content.querySelector('#ctPerf').style.display=b.getAttribute('data-ct')==='perf'?'':'none';
+      });});
     }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load tournament.</div>';});
   }
 
@@ -427,16 +442,16 @@
     if(!d.leaders)return '';
     var cards='';
     var m=d.leaders.mostWins;
-    if(m)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-trophy"></i></div><span class="champ-photo">'+esc(initials(m.name))+'</span><div class="champ-info"><div class="champ-lbl">Most Wins</div><div class="champ-nm">'+esc(m.name)+'</div><div class="champ-stats"><span class="cs"><b>'+m.wins+'</b>W</span><span class="cs"><b>'+m.losses+'</b>L</span><span class="cs"><b>'+pdText(m.gd)+'</b> diff</span></div></div></div>';
+    if(m)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-trophy"></i></div>'+pAv(m,'champ-photo')+'<div class="champ-info"><div class="champ-lbl">Most Wins</div><div class="champ-nm">'+nameLink(m)+'</div><div class="champ-stats"><span class="cs"><b>'+m.wins+'</b>W</span><span class="cs"><b>'+m.losses+'</b>L</span><span class="cs"><b>'+pdText(m.gd)+'</b> diff</span></div></div></div>';
     var t=d.leaders.topElo;
-    if(t)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-chart-line"></i></div><span class="champ-photo">'+esc(initials(t.name))+'</span><div class="champ-info"><div class="champ-lbl">Highest ELO</div><div class="champ-nm">'+esc(t.name)+'</div><div class="champ-stats"><span class="cs"><b style="color:var(--orange)">'+t.elo+'</b> ELO</span><span class="cs"><b>'+t.wins+'</b>W</span></div></div></div>';
+    if(t)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-chart-line"></i></div>'+pAv(t,'champ-photo')+'<div class="champ-info"><div class="champ-lbl">Highest ELO</div><div class="champ-nm">'+nameLink(t)+'</div><div class="champ-stats"><span class="cs"><b style="color:var(--orange)">'+t.elo+'</b> ELO</span><span class="cs"><b>'+t.wins+'</b>W</span></div></div></div>';
     if(!cards)return '';
     return '<div class="sec-label" style="margin-top:20px">Season leaders</div><div class="champs">'+cards+'</div>';
   }
   function leagueStandings(d){
     if(!d.standings||!d.standings.length)return '';
     var rows=d.standings.map(function(s){
-      return '<tr'+(s.rank===1?' class="top"':'')+'><td class="rkn">'+s.rank+'</td><td>'+esc(s.name)+'</td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+pdText(s.gd)+'</td><td class="eloc">'+(s.elo||'—')+'</td></tr>';
+      return '<tr'+(s.rank===1?' class="top"':'')+'><td class="rkn">'+s.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(s)+nameLink(s)+'</span></td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+pdText(s.gd)+'</td><td class="eloc">'+(s.elo||'—')+'</td></tr>';
     }).join('');
     return '<div class="sec-label" style="margin-top:18px">Season standings &middot; ranked by wins</div>'
       +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>ELO</th></tr>'+rows+'</table></div>';
@@ -449,8 +464,8 @@
       if(live)body='<div class="lsw">In progress<br><b>Live</b></div>';
       else if(sr.status==='upcoming')body='<div class="lsw">Upcoming</div>';
       else{
-        if(sr.mostWins)body+='<div class="lsw"><i class="ti ti-trophy"></i> Wins<br><b>'+esc(sr.mostWins.name)+'</b></div>';
-        if(sr.topElo)body+='<div class="lsw"><i class="ti ti-chart-line"></i> ELO<br><b>'+esc(sr.topElo.name)+'</b></div>';
+        if(sr.mostWins)body+='<div class="lsw"><i class="ti ti-trophy"></i> Wins<br>'+nameLink(sr.mostWins)+'</div>';
+        if(sr.topElo)body+='<div class="lsw"><i class="ti ti-chart-line"></i> ELO<br>'+nameLink(sr.topElo)+'</div>';
         if(!body)body='<div class="lsw">&mdash;</div>';
       }
       return '<div class="lserie'+(live?' now':'')+'"><div class="lst">Series '+esc(sr.seriesNo)+'</div><div class="lsn">'+esc(sr.label||'')+'</div>'+body+'</div>';
