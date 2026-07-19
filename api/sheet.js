@@ -635,17 +635,31 @@ async function getPlayerMatches(name) {
   const aliasSet = new Set([target]);
   if (pRow) { if (pRow[0]) aliasSet.add(normName(pRow[0])); if (pRow[3]) aliasSet.add(normName(pRow[3])); }
   const isMe = (n) => aliasSet.has(normName(n));
-  const existingTabs = new Set((meta.data.sheets || []).map((s) => s.properties.title));
-  const venueNames = (vRes.data.values || []).map((r) => r[0]).filter(Boolean).filter((v) => existingTabs.has(venueTabName(v)));
-  if (!venueNames.length) return respond(200, { matches: [], playedVenues: [] });
+  const existingTitles = (meta.data.sheets || []).map((s) => s.properties.title);
+  const existingTabs = new Set(existingTitles);
+  // Map each venue TAB we'll read -> a display name. Prefer the Venues-registry
+  // name (nicer display); also include any orphan `Venue_*` tab not covered by the
+  // registry — e.g. a tab renamed by hand (Venue_Makassar -> Venue_Hari_Pajak_Makassar)
+  // — so passport history survives renames without editing the registry.
+  const tabToName = {};
+  (vRes.data.values || []).forEach((r) => {
+    const nm = r[0]; if (!nm) return;
+    const tab = venueTabName(nm);
+    if (existingTabs.has(tab) && !tabToName[tab]) tabToName[tab] = nm;
+  });
+  existingTitles.forEach((t) => {
+    if (/^Venue_/.test(t) && !tabToName[t]) tabToName[t] = t.replace(/^Venue_/, "").replace(/_/g, " ");
+  });
+  const venueTabs = Object.keys(tabToName);
+  if (!venueTabs.length) return respond(200, { matches: [], playedVenues: [] });
   // Read whole columns (A:M), NOT A2:M. A bounded range like `Venue_X!A2:M` throws
   // "exceeds grid limits" when a venue tab has been trimmed to a single (header-only)
   // row — and because batchGet is all-or-nothing, one such tab failed the entire
   // request, so Playing History came back empty for EVERY player. `A:M` never trips
   // the grid limit; we skip the header row (index 0) below, matching the old A2:M.
-  const ranges = venueNames.map((v) => `${venueTabName(v)}!A:M`);
+  const ranges = venueTabs.map((t) => `${t}!A:M`);
   // Also split into bounded chunks fetched in parallel (guards the request URL as the
-  // number of venues grows) and keep the result aligned 1:1 with venueNames even if a
+  // number of venues grows) and keep the result aligned 1:1 with venueTabs even if a
   // chunk fails, so one bad tab degrades to "that venue missing" instead of a 500.
   const CHUNK = 25;
   const starts = [];
@@ -664,7 +678,7 @@ async function getPlayerMatches(name) {
   const playedVenueSet = new Set();
   const seen = new Set();
   valueRanges.forEach((vr, i) => {
-    const venue = venueNames[i];
+    const venue = tabToName[venueTabs[i]];
     let appeared = false;
     // slice(1): drop the header row (we read A:M, which includes row 1).
     for (const r of (vr.values || []).slice(1)) {
