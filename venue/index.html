@@ -136,6 +136,10 @@
   .lserie .lsn{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;margin-top:2px}
   .lserie .lsw{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
   .lserie .lsw b{color:var(--text)}
+  .lg-boards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px}
+  @media(max-width:640px){.lg-boards{grid-template-columns:1fr}}
+  .lg-col{min-width:0}
+  .lg-col .dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:5px}
   .tbl{width:100%;border-collapse:collapse;font-size:13px}
   .tbl th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);font-weight:700;text-align:right;padding:9px 8px;border-bottom:1px solid var(--border)}
   .tbl th:nth-child(2){text-align:left}
@@ -449,57 +453,46 @@
   function leagueHdr(d){
     var tags='';
     if(d.location)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(d.location)+'</span>';
-    if(d.series&&d.series.length)tags+='<span class="vtag"><i class="ti ti-calendar"></i>'+d.series.length+' series</span>';
     if(d.status)tags+='<span class="vtag"><i class="ti ti-flag"></i>'+esc(cap(d.status))+'</span>';
     return '<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div>'
       +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge tb-league"><i class="ti ti-medal"></i>League · Season</span>'
       +'<div class="vname">'+esc(d.name)+'</div><div class="vtags">'+tags+'</div></div></div>';
   }
-  function leagueLeaders(d){
-    if(!d.leaders)return '';
-    var cards='';
-    var m=d.leaders.mostWins;
-    if(m)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-trophy"></i></div>'+pAv(m,'champ-photo')+'<div class="champ-info"><div class="champ-lbl">Most Wins</div><div class="champ-nm">'+nameLink(m)+'</div><div class="champ-stats"><span class="cs"><b>'+m.wins+'</b>W</span><span class="cs"><b>'+m.losses+'</b>L</span><span class="cs"><b>'+pdText(m.gd)+'</b> diff</span></div></div></div>';
-    var t=d.leaders.topElo;
-    if(t)cards+='<div class="champ champ1"><div class="champ-rk"><i class="ti ti-chart-line"></i></div>'+pAv(t,'champ-photo')+'<div class="champ-info"><div class="champ-lbl">Highest ELO</div><div class="champ-nm">'+nameLink(t)+'</div><div class="champ-stats"><span class="cs"><b style="color:var(--orange)">'+t.elo+'</b> ELO</span><span class="cs"><b>'+t.wins+'</b>W</span></div></div></div>';
-    if(!cards)return '';
-    return '<div class="sec-label" style="margin-top:20px">Season leaders</div><div class="champs">'+cards+'</div>';
-  }
-  function leagueStandings(d){
-    if(!d.standings||!d.standings.length)return '';
-    var rows=d.standings.map(function(s){
-      return '<tr'+(s.rank===1?' class="top"':'')+'><td class="rkn">'+s.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(s)+nameLink(s)+'</span></td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+pdText(s.gd)+'</td><td class="eloc">'+(s.elo||'—')+'</td></tr>';
+  function leagueBoard(title,list){
+    if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
+    var rows=list.map(function(p){
+      return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td><td>'+p.wins+'</td><td>'+p.losses+'</td><td>'+pdText(p.gd)+'</td></tr>';
     }).join('');
-    return '<div class="sec-label" style="margin-top:18px">Season standings &middot; ranked by wins</div>'
-      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>ELO</th></tr>'+rows+'</table></div>';
+    return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
+      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div></div>';
   }
-  function leagueSeries(d){
-    if(!d.series||!d.series.length)return '';
-    var cells=d.series.map(function(sr){
-      var live=(sr.status==='ongoing'||sr.status==='live');
-      var body='';
-      if(live)body='<div class="lsw">In progress<br><b>Live</b></div>';
-      else if(sr.status==='upcoming')body='<div class="lsw">Upcoming</div>';
-      else{
-        if(sr.mostWins)body+='<div class="lsw"><i class="ti ti-trophy"></i> Wins<br>'+nameLink(sr.mostWins)+'</div>';
-        if(sr.topElo)body+='<div class="lsw"><i class="ti ti-chart-line"></i> ELO<br>'+nameLink(sr.topElo)+'</div>';
-        if(!body)body='<div class="lsw">&mdash;</div>';
-      }
-      return '<div class="lserie'+(live?' now':'')+'"><div class="lst">Series '+esc(sr.seriesNo)+'</div><div class="lsn">'+esc(sr.label||'')+'</div>'+body+'</div>';
-    }).join('');
-    return '<div class="sec-label" style="margin-top:22px">Series breakdown</div><div class="lseries">'+cells+'</div>';
+  function leagueViewBody(v){
+    return '<div class="lg-boards">'
+      +leagueBoard('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
+      +leagueBoard('<span class="dot" style="background:var(--red)"></span> Women', v.women)
+      +'</div>';
   }
   function loadLeaguePage(cslug){
     content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
     fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
       if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">League not found.</div>';return;}
       var html=leagueHdr(d);
-      if((!d.standings||!d.standings.length)&&(!d.series||!d.series.length)){
+      var views=d.views||[];
+      if(!views.length){
         html+='<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu series di-input.</div>';
         content.innerHTML=html;return;
       }
-      html+=leagueLeaders(d)+leagueStandings(d)+leagueSeries(d);
+      html+='<div class="vmode lgviews" style="margin-top:16px">'+views.map(function(v,i){return '<button class="vmode-b'+(i===views.length-1?' on':'')+'" data-vi="'+i+'">'+esc(v.label)+'</button>';}).join('')+'</div>';
+      html+='<div id="lgBody"></div>';
       content.innerHTML=html;
+      var body=document.getElementById('lgBody');
+      function renderView(i){ body.innerHTML=leagueViewBody(views[i]); }
+      renderView(views.length-1);
+      var vb=content.querySelectorAll('.lgviews .vmode-b[data-vi]');
+      Array.prototype.forEach.call(vb,function(b){b.addEventListener('click',function(){
+        Array.prototype.forEach.call(vb,function(x){x.classList.toggle('on',x===b);});
+        renderView(parseInt(b.getAttribute('data-vi'),10));
+      });});
     }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load league.</div>';});
   }
 

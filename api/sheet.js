@@ -3761,43 +3761,46 @@ async function getTournamentCompetition(sheets, comp) {
   return respond(200, { ...base, categories });
 }
 
-// League page: per individual across all series; each Week in the venue tab is a series.
+// League page: Men / Women rankings by W/L. Each Week in the venue tab is a
+// series; views = per-series + a season total. Gender comes from the match
+// category in the venue rows (Men's Doubles -> M, Women's Doubles -> F).
+function leagueOrdinal(n) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function leagueBoard(rows, pinfo) {
+  return Object.values(playerStatsFromRows(rows))
+    .map((s) => { const x = pinfo(s.name); return { name: x.display, slug: x.slug, photo: x.photo, wins: s.w, losses: s.l, gd: s.pd }; })
+    .sort((a, b) => (b.wins - a.wins) || (b.gd - a.gd) || (a.losses - b.losses))
+    .map((p, i) => ({ rank: i + 1, ...p }));
+}
+function leagueBoards(rows, pinfo) {
+  const men = rows.filter((r) => matchCategory(venueRowGenders(r)) === "M");
+  const women = rows.filter((r) => matchCategory(venueRowGenders(r)) === "F");
+  return { men: leagueBoard(men, pinfo), women: leagueBoard(women, pinfo) };
+}
 async function getLeagueCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "league", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
   const load = await loadVenueForCompetition(sheets, comp.source);
   const rows = load.rows, pinfo = load.pinfo;
-  if (!rows.length) return respond(200, { ...base, standings: [], series: [], leaders: null });
+  if (!rows.length) return respond(200, { ...base, views: [] });
 
   const wkNum = (w) => parseInt(String(w || "").replace(/\D/g, ""), 10) || 0;
   const weeks = [...new Set(rows.map((r) => r[0]).filter(Boolean))].sort((a, b) => wkNum(a) - wkNum(b));
 
-  const standings = Object.values(playerStatsFromRows(rows))
-    .map((s) => { const x = pinfo(s.name); return { name: x.display, slug: x.slug, photo: x.photo, elo: x.elo, wins: s.w, losses: s.l, gd: s.pd }; })
-    .sort((a, b) => (b.wins - a.wins) || (b.gd - a.gd) || (b.elo - a.elo))
-    .map((p, i) => ({ rank: i + 1, ...p }));
-
-  const series = weeks.map((w, idx) => {
-    const wr = rows.filter((r) => r[0] === w);
-    const arr = Object.values(playerStatsFromRows(wr)).map((s) => { const x = pinfo(s.name); return { display: x.display, slug: x.slug, elo: x.elo, wins: s.w }; });
-    const mw = arr.slice().sort((a, b) => (b.wins - a.wins) || (b.elo - a.elo))[0];
-    const te = arr.slice().sort((a, b) => b.elo - a.elo)[0];
-    return {
-      seriesNo: idx + 1, label: String(w), status: "",
-      mostWins: (mw && mw.wins > 0) ? { name: mw.display, slug: mw.slug, wins: mw.wins } : null,
-      topElo: te ? { name: te.display, slug: te.slug, elo: te.elo } : null,
-    };
-  });
-
-  let leaders = null;
-  if (standings.length) {
-    const w = standings[0];
-    const byElo = standings.slice().sort((a, b) => b.elo - a.elo)[0];
-    leaders = {
-      mostWins: { name: w.name, slug: w.slug, wins: w.wins, losses: w.losses, gd: w.gd, photo: w.photo },
-      topElo: byElo ? { name: byElo.name, slug: byElo.slug, elo: byElo.elo, wins: byElo.wins, photo: byElo.photo } : null,
-    };
+  const views = [];
+  if (weeks.length > 1) {
+    weeks.forEach((w, i) => {
+      const b = leagueBoards(rows.filter((r) => r[0] === w), pinfo);
+      views.push({ key: "S" + i, label: leagueOrdinal(i + 1) + " Series", men: b.men, women: b.women });
+    });
+    const tot = leagueBoards(rows, pinfo);
+    views.push({ key: "TOTAL", label: "Total Season 1", men: tot.men, women: tot.women });
+  } else {
+    const tot = leagueBoards(rows, pinfo);
+    views.push({ key: "TOTAL", label: "Season 1", men: tot.men, women: tot.women });
   }
-  return respond(200, { ...base, standings, series, leaders });
+  return respond(200, { ...base, views });
 }
 
 async function ensureRegTabs(sheets) {
