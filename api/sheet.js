@@ -96,6 +96,8 @@ const TABS = {
   playrank_active: "PlayRank_Active",
   tracked_events: "Tracked_Events",
   tournament_leads: "Tournament_Leads",
+  competitions: "Competitions",
+  league_series: "League_Series",
   t_events: "Tournament_Events",
   t_tournaments: "Tournaments",
   t_entrants: "Tournament_Entrants",
@@ -333,6 +335,7 @@ const netlifyHandler = async (event) => {
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
     if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
+    if (path.startsWith("competition/") && method === "GET") return await getCompetition(decodeURIComponent(path.slice("competition/".length)));
     if (path === "auth/login") return await login(body);
 
     // --- PLAYER ACCOUNTS / AUTH ---
@@ -3623,6 +3626,214 @@ async function submitTournamentLead(body) {
     requestBody: { values: [[leadId, now, name, location, picName, phone, email, message, "NEW"]] },
   });
   return respond(200, { success: true, leadId });
+}
+
+// ── COMPETITIONS registry (standalone Tournament / League result pages) ──
+// Maps a friendly slug -> engine Event_ID. Self-bootstrapping tab.
+// Columns: Slug | Type | Event_ID | Name | Location | Logo_URL | Status
+const COMPETITIONS_HEADER = ["Slug", "Type", "Event_ID", "Name", "Location", "Logo_URL", "Status"];
+async function ensureCompetitionsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.competitions)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.competitions } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [COMPETITIONS_HEADER] },
+  });
+}
+async function resolveCompetition(sheets, slug) {
+  await ensureCompetitionsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A2:G` });
+  const rows = res.data.values || [];
+  const s = String(slug || "").trim().toLowerCase();
+  const r = rows.find((x) => String(x[0] || "").trim().toLowerCase() === s);
+  if (!r) return null;
+  return {
+    slug: r[0] || "", type: (r[1] || "tournament").toString().trim().toLowerCase(),
+    eventId: (r[2] || "").toString().trim(), name: r[3] || "", location: r[4] || "",
+    logoUrl: (r[5] || "").toString().trim(), status: (r[6] || "").toString().trim().toLowerCase(),
+  };
+}
+// Final standings for a tournament = every completed match (group + playoff)
+// aggregated per pair, ranked by total wins -> game diff -> games for.
+async function getCompetition(slug) {
+  const sheets = getSheets();
+  const comp = await resolveCompetition(sheets, slug);
+  if (!comp) return respond(404, { error: "Competition not found" });
+  if (comp.type === "league") return await getLeagueCompetition(sheets, comp);
+  const base = { slug: comp.slug, type: comp.type, name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
+  if (comp.type !== "tournament" || !comp.eventId) {
+    // Tournament with no linked event -> results pending.
+    return respond(200, { ...base, event: null, categories: [] });
+  }
+  const br = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SHEET_ID,
+    ranges: [`${TABS.t_events}!A2:H`, `${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:J`],
+  });
+  const vr = br.data.valueRanges || [];
+  const val = (i) => (vr[i] && vr[i].values) || [];
+  const evRows = val(0), trRows = val(1), allGroups = val(2), mRows = val(3), plRows = val(4);
+  const evRow = evRows.find((x) => x[0] === comp.eventId);
+  const event = evRow ? { eventId: evRow[0], name: evRow[1], venue: evRow[2], date: evRow[3] } : null;
+
+  const photos = {};
+  for (const r of plRows) { const name = r[0] || ""; if (!name) continue; photos[normName(name)] = ibbHostFix(r[6] || ""); }
+  const allMatches = mRows.map(mapMatchRow);
+  const tournaments = trRows.filter((x) => x[1] === comp.eventId);
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+
+  const categories = tournaments.map((t) => {
+    const tid = t[0];
+    const entrants = {};
+    for (const x of allGroups.filter((g) => g[0] === tid)) {
+      entrants[x[3]] = { player1: x[4] || "", player2: x[5] || "", seedElo: parseInt(x[6]) || 0 };
+    }
+    const nm = (eid) => { const e = entrants[eid]; return e ? `${e.player1} + ${e.player2}` : (eid || ""); };
+    const tMatches = allMatches.filter((m) => m.tournamentId === tid);
+
+    const agg = {};
+    const ensure = (id) => { if (!agg[id]) agg[id] = { entrantId: id, played: 0, wins: 0, losses: 0, gf: 0, ga: 0 }; return agg[id]; };
+    Object.keys(entrants).forEach(ensure);
+    for (const m of tMatches) {
+      if (!has(m.scoreA) || !has(m.scoreB) || !m.entrantA || !m.entrantB) continue;
+      const A = ensure(m.entrantA), B = ensure(m.entrantB), sa = Number(m.scoreA), sb = Number(m.scoreB);
+      A.played++; B.played++; A.gf += sa; A.ga += sb; B.gf += sb; B.ga += sa;
+      if (sa > sb) { A.wins++; B.losses++; } else if (sb > sa) { B.wins++; A.losses++; }
+    }
+    const standings = Object.values(agg)
+      .map((s) => ({ ...s, gd: s.gf - s.ga }))
+      .sort((x, y) => (y.wins - x.wins) || (y.gd - x.gd) || (y.gf - x.gf))
+      .map((s, i) => {
+        const e = entrants[s.entrantId] || {};
+        return {
+          rank: i + 1, team: nm(s.entrantId),
+          players: [
+            { name: e.player1 || "", photo: photos[normName(e.player1 || "")] || "" },
+            { name: e.player2 || "", photo: photos[normName(e.player2 || "")] || "" },
+          ],
+          seedElo: e.seedElo || 0, played: s.played, wins: s.wins, losses: s.losses, gd: s.gd,
+        };
+      });
+    const playoff = playoffBracketsView(tMatches.filter((m) => m.stage === "PLAYOFF"), nm);
+    const pod = (playoff[0] && playoff[0].podium) || {};
+    const champion = pod.champion || (standings[0] && standings[0].team) || "";
+    const runnerUp = pod.runnerUp || (standings[1] && standings[1].team) || "";
+    const third = pod.third || (standings[2] && standings[2].team) || "";
+    const matches = tMatches
+      .filter((m) => has(m.scoreA) && has(m.scoreB))
+      .map((m) => ({
+        stage: m.stage, teamA: nm(m.entrantA), teamB: nm(m.entrantB),
+        scoreA: Number(m.scoreA), scoreB: Number(m.scoreB),
+        winner: m.winner === m.entrantA ? "A" : (m.winner === m.entrantB ? "B" : ""),
+      }));
+    return { tournamentId: tid, category: t[2] || "", level: t[3] || "", format: t[4] || "", status: (t[7] || "").toString().toLowerCase(), champion, runnerUp, third, standings, matches };
+  });
+
+  return respond(200, { ...base, event, categories });
+}
+
+// ── LEAGUE: aggregate several series (each = an engine event) per individual ──
+// No points: season is ranked by total match wins (tiebreak game diff, then ELO).
+// Each series exposes its most-wins player + highest-ELO player.
+const LEAGUE_SERIES_HEADER = ["League_Slug", "Series_No", "Label", "Event_ID", "Status"];
+async function ensureLeagueSeriesTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.league_series)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.league_series } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.league_series}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [LEAGUE_SERIES_HEADER] },
+  });
+}
+async function getLeagueCompetition(sheets, comp) {
+  await ensureLeagueSeriesTab(sheets);
+  const base = { slug: comp.slug, type: "league", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
+  const lsRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.league_series}!A2:E` });
+  const s = String(comp.slug || "").trim().toLowerCase();
+  const seriesRows = (lsRes.data.values || [])
+    .filter((r) => String(r[0] || "").trim().toLowerCase() === s)
+    .map((r) => ({ seriesNo: r[1] || "", label: r[2] || "", eventId: (r[3] || "").toString().trim(), status: (r[4] || "").toString().trim().toLowerCase() }))
+    .sort((a, b) => (parseInt(a.seriesNo) || 0) - (parseInt(b.seriesNo) || 0));
+  if (!seriesRows.length) return respond(200, { ...base, standings: [], series: [], leaders: null });
+
+  const br = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SHEET_ID,
+    ranges: [`${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:J`, `${TABS.elo_log}!A2:G`],
+  });
+  const vr = br.data.valueRanges || [];
+  const val = (i) => (vr[i] && vr[i].values) || [];
+  const trRows = val(0), grRows = val(1), mRows = val(2), plRows = val(3), elRows = val(4);
+
+  // Per-player display + photo + current ELO (ELO_Log last row wins).
+  const info = {};
+  for (const r of plRows) { const n = r[0] || ""; if (!n) continue; info[normName(n)] = { name: r[0], display: r[3] || r[0], photo: ibbHostFix(r[6] || ""), elo: 0 }; }
+  for (const r of elRows) { const n = r[1] || ""; if (!n) continue; const k = normName(n); if (!info[k]) info[k] = { name: n, display: n, photo: "", elo: 0 }; const e = parseInt(r[2]); if (!isNaN(e) && r[0] !== "INITIAL") info[k].elo = e; }
+  const pInfo = (name) => info[normName(name)] || { name, display: name, photo: "", elo: 0 };
+
+  const eventIds = new Set(seriesRows.map((x) => x.eventId).filter(Boolean));
+  const tidToEvent = {};
+  for (const t of trRows) { if (eventIds.has(t[1])) tidToEvent[t[0]] = t[1]; }
+  const entrantsByTid = {};
+  for (const g of grRows) { const tid = g[0]; if (!tidToEvent[tid]) continue; (entrantsByTid[tid] = entrantsByTid[tid] || {})[g[3]] = { p1: g[4] || "", p2: g[5] || "" }; }
+
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+  const matches = mRows.map(mapMatchRow).filter((m) => tidToEvent[m.tournamentId] && has(m.scoreA) && has(m.scoreB) && m.entrantA && m.entrantB);
+
+  const season = {};       // normName -> aggregate over all series
+  const perSeries = {};    // eventId -> normName -> { wins, display, elo }
+  const ensureP = (obj, name) => {
+    const k = normName(name);
+    if (!obj[k]) { const pi = pInfo(name); obj[k] = { name: pi.name, display: pi.display, photo: pi.photo, elo: pi.elo, wins: 0, losses: 0, gf: 0, ga: 0 }; }
+    return obj[k];
+  };
+  for (const m of matches) {
+    const ent = entrantsByTid[m.tournamentId] || {};
+    const A = ent[m.entrantA], B = ent[m.entrantB];
+    if (!A || !B) continue;
+    const eid = tidToEvent[m.tournamentId];
+    perSeries[eid] = perSeries[eid] || {};
+    const sa = Number(m.scoreA), sb = Number(m.scoreB), aWon = sa > sb, bWon = sb > sa;
+    const sideA = [A.p1, A.p2].filter(Boolean), sideB = [B.p1, B.p2].filter(Boolean);
+    for (const p of sideA) { const ps = ensureP(season, p); ps.gf += sa; ps.ga += sb; if (aWon) ps.wins++; else if (bWon) ps.losses++; if (aWon) ensureP(perSeries[eid], p).wins++; else ensureP(perSeries[eid], p); }
+    for (const p of sideB) { const ps = ensureP(season, p); ps.gf += sb; ps.ga += sa; if (bWon) ps.wins++; else if (aWon) ps.losses++; if (bWon) ensureP(perSeries[eid], p).wins++; else ensureP(perSeries[eid], p); }
+  }
+
+  const standings = Object.values(season)
+    .map((p) => ({ ...p, gd: p.gf - p.ga }))
+    .sort((x, y) => (y.wins - x.wins) || (y.gd - x.gd) || (y.elo - x.elo))
+    .map((p, i) => ({ rank: i + 1, name: p.display, photo: p.photo, elo: p.elo, wins: p.wins, losses: p.losses, gd: p.gd }));
+
+  const series = seriesRows.map((sr) => {
+    const out = { seriesNo: sr.seriesNo, label: sr.label, status: sr.status, mostWins: null, topElo: null };
+    const agg = perSeries[sr.eventId];
+    if (agg) {
+      const arr = Object.values(agg);
+      const mw = arr.slice().sort((a, b) => (b.wins - a.wins) || (b.elo - a.elo))[0];
+      const te = arr.slice().filter((p) => p.elo > 0).sort((a, b) => b.elo - a.elo)[0];
+      if (mw && mw.wins > 0) out.mostWins = { name: mw.display, wins: mw.wins };
+      if (te) out.topElo = { name: te.display, elo: te.elo };
+    }
+    return out;
+  });
+
+  let leaders = null;
+  if (standings.length) {
+    const w = standings[0];
+    const byElo = Object.values(season).filter((p) => p.elo > 0).sort((a, b) => b.elo - a.elo)[0];
+    leaders = {
+      mostWins: { name: w.name, wins: w.wins, losses: w.losses, gd: w.gd, photo: w.photo },
+      topElo: byElo ? { name: byElo.display, elo: byElo.elo, wins: byElo.wins, photo: byElo.photo } : null,
+    };
+  }
+  return respond(200, { ...base, standings, series, leaders });
 }
 
 async function ensureRegTabs(sheets) {
