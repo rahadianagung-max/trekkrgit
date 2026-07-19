@@ -335,6 +335,7 @@ const netlifyHandler = async (event) => {
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
     if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
+    if (path === "competitions" && method === "GET") return await listCompetitions();
     if (path.startsWith("competition/") && method === "GET") return await getCompetition(decodeURIComponent(path.slice("competition/".length)));
     if (path === "auth/login") return await login(body);
 
@@ -3725,6 +3726,18 @@ function pairStatsFromRows(rows) {
   return pairs;
 }
 
+async function listCompetitions() {
+  const sheets = getSheets();
+  await ensureCompetitionsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A2:G` }).catch(() => ({ data: { values: [] } }));
+  const competitions = (res.data.values || [])
+    .filter((r) => (r[0] || "").toString().trim() && (r[3] || "").toString().trim())
+    .map((r) => ({
+      slug: r[0].toString().trim(), type: (r[1] || "tournament").toString().trim().toLowerCase(),
+      name: r[3] || "", location: r[4] || "", logoUrl: (r[5] || "").toString().trim(), status: (r[6] || "").toString().trim().toLowerCase(),
+    }));
+  return respond(200, { competitions });
+}
 async function getCompetition(slug) {
   const sheets = getSheets();
   const comp = await resolveCompetition(sheets, slug);
