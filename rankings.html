@@ -94,7 +94,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings" class="active">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -107,7 +107,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings" class="active">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -141,7 +141,6 @@
     </div>
     <div class="select hidden" id="regionWrap"><select id="regionSel" aria-label="Region"><option value="">All regions</option></select></div>
     <div class="select"><select id="levelSel" aria-label="Level"><option value="">All levels</option></select></div>
-    <div class="select"><select id="venueSel" aria-label="Venue"><option value="">All venues</option></select></div>
   </div>
 
   <div class="cols">
@@ -232,7 +231,6 @@
   function params(){
     var p={limit:50};
     var lvl=document.getElementById('levelSel').value; if(lvl)p.level=lvl;
-    var ven=document.getElementById('venueSel').value; if(ven)p.venue=ven;
     var reg=document.getElementById('regionSel'); if(!document.getElementById('regionWrap').classList.contains('hidden')&&reg.value)p.region=reg.value;
     return p;
   }
@@ -255,7 +253,6 @@
   /* Filters */
   LEVELS.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;document.getElementById('levelSel').appendChild(o);});
   document.getElementById('levelSel').addEventListener('change',loadAll);
-  document.getElementById('venueSel').addEventListener('change',loadAll);
   document.getElementById('regionSel').addEventListener('change',loadAll);
   document.querySelectorAll('.seg button').forEach(function(b){
     b.addEventListener('click',function(){
@@ -268,13 +265,10 @@
     });
   });
 
-  /* Populate venue + region dropdowns */
+  /* Populate region dropdown */
   fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
     var vs=(d&&d.venues)||[]; var regions={};
-    vs.forEach(function(v){
-      var o=document.createElement('option');o.value=v.name;o.textContent=v.name;document.getElementById('venueSel').appendChild(o);
-      if(v.region)regions[v.region]=1;
-    });
+    vs.forEach(function(v){ if(v.region)regions[v.region]=1; });
     Object.keys(regions).sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;document.getElementById('regionSel').appendChild(o);});
   }).catch(function(){});
 
