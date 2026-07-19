@@ -40,8 +40,11 @@
 .venue-av{position:relative;overflow:hidden;width:40px;height:40px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:13px;flex-shrink:0}
 .venue-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .venue-info{flex:1;min-width:0}
+.venue-nameline{display:flex;align-items:center;gap:7px;min-width:0}
 .venue-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .venue-tags{font-size:12px;color:var(--muted);margin-top:2px}
+.typepill{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;flex-shrink:0}
+.tp-play{background:#FFF4DA;color:#854F0B}.tp-tourney{background:#EEF0FF;color:#534AB7}.tp-league{background:#E7F6EC;color:#15803D}
 .venue-region-badge{font-size:10px;font-weight:700;color:var(--subtle);background:var(--surface-2);border-radius:999px;padding:2px 7px;white-space:nowrap;flex-shrink:0}
 .show-more-btn{width:100%;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--orange);background:none;border:1px solid var(--border);border-radius:10px;cursor:pointer;margin-top:8px;font-family:inherit}
 .show-more-btn:hover{background:var(--surface)}
@@ -84,7 +87,7 @@
       <a href="https://trekkr.online/" class="active">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -97,7 +100,7 @@
       <a href="https://trekkr.online/" class="active">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -113,10 +116,8 @@
 
   <section class="sec container">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span class="secname">Weekly PlayRank</span>
-      <a class="lnk" href="https://trekkr.online/playrank">learn more &rarr;</a>
+      <span class="secname">PlayRank, Tourney &amp; League</span>
     </div>
-    <div class="filter-tabs" id="prFilter"></div>
     <div id="prVenues"><div class="empty">Loading&hellip;</div></div>
     <button class="show-more-btn" id="prShowMore" style="display:none">Show more</button>
   </section>
@@ -184,38 +185,17 @@
     fetch(BASE+'/public/feed').then(function(r){return r.json();}).catch(function(){return{};}),
     fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return{};}),
     fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};})
+    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};}),
+    fetch(BASE+'/tracked-events').then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(results){
-    var feedData=results[0],venuesData=results[1],lbData=results[2],playersData=results[3];
+    var feedData=results[0],venuesData=results[1],lbData=results[2],playersData=results[3],trackedData=results[4];
     var activePlayrank=(feedData&&feedData.activePlayrank)||[];
     var venues=(venuesData&&venuesData.venues)||[];
     var leaderboard=(lbData&&lbData.leaderboard)||[];
     var players=(playersData&&playersData.players)||[];
+    var trackedEvents=(trackedData&&trackedData.events)||[];
 
-    // --- PlayRank Venues ---
-    var venueRegionMap={},venueLogoMap={};
-    venues.forEach(function(v){if(v.name){venueRegionMap[normName(v.name)]=v.region||'';venueLogoMap[normName(v.name)]=v.logoUrl||'';}});
-
-    var venueMap={};
-    activePlayrank.forEach(function(p){
-      var vn=(p.venue||'').trim();
-      if(!vn)return;
-      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||'',logo:venueLogoMap[normName(vn)]||''};
-      venueMap[vn].sessions.push(p);
-    });
-    var venueList=Object.keys(venueMap).map(function(k){return venueMap[k];});
-
-    var regions=[];
-    venueList.forEach(function(v){if(v.region&&regions.indexOf(v.region)===-1)regions.push(v.region);});
-    regions.sort();
-
-    var filterEl=document.getElementById('prFilter');
-    var listEl=document.getElementById('prVenues');
-    var moreBtn=document.getElementById('prShowMore');
-    var showCount=4;
-    var currentRegion='All';
-
-    function venueInits(name){return String(name).trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()||'?';}
+    function inits(name){return String(name).trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()||'?';}
     function sessionTags(sessions){
       var levels=[],genders=[];
       sessions.forEach(function(s){
@@ -229,22 +209,44 @@
       return parts.join(' · ');
     }
 
-    function renderVenues(){
-      var filtered=currentRegion==='All'?venueList:venueList.filter(function(v){return v.region===currentRegion;});
-      if(!filtered.length){
-        listEl.innerHTML='<div class="empty">Tidak ada sesi PlayRank aktif saat ini. <a class="lnk" href="https://trekkr.online/playrank">View PlayRank &rarr;</a></div>';
+    // --- Combined list: active PlayRank venues + tracked Tourney/League ---
+    var venueRegionMap={},venueLogoMap={};
+    venues.forEach(function(v){if(v.name){venueRegionMap[normName(v.name)]=v.region||'';venueLogoMap[normName(v.name)]=v.logoUrl||'';}});
+
+    var venueMap={};
+    activePlayrank.forEach(function(p){
+      var vn=(p.venue||'').trim();
+      if(!vn)return;
+      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||'',logo:venueLogoMap[normName(vn)]||''};
+      venueMap[vn].sessions.push(p);
+    });
+    var items=Object.keys(venueMap).map(function(k){
+      var v=venueMap[k];
+      return {type:'PlayRank',pill:'tp-play',name:v.name,meta:sessionTags(v.sessions),region:v.region,logo:v.logo,href:'https://venue.trekkr.online/'+slug(v.name)};
+    });
+    trackedEvents.forEach(function(e){
+      if(!e.name)return;
+      var isLeague=/league|liga/i.test(e.name);
+      items.push({type:isLeague?'League':'Tourney',pill:isLeague?'tp-league':'tp-tourney',name:e.name,meta:e.monthYear||'',region:e.location||'',logo:e.logoUrl||'',href:'https://trekkr.online/tournament'});
+    });
+
+    var listEl=document.getElementById('prVenues');
+    var moreBtn=document.getElementById('prShowMore');
+    var showCount=4;
+
+    function renderList(){
+      if(!items.length){
+        listEl.innerHTML='<div class="empty">Belum ada PlayRank, turnamen, atau liga aktif saat ini. <a class="lnk" href="https://trekkr.online/playrank">View PlayRank &rarr;</a></div>';
         moreBtn.style.display='none';
         return;
       }
-      var shown=filtered.slice(0,showCount);
+      var shown=items.slice(0,showCount);
       var html='<div class="venue-list">';
       shown.forEach(function(v){
-        var s=slug(v.name);
-        var tags=sessionTags(v.sessions);
-        html+='<a class="venue-row" href="https://venue.trekkr.online/'+s+'">';
-        html+='<div class="venue-av">'+esc(venueInits(v.name))+(v.logo?'<img src="'+esc(v.logo)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
-        html+='<div class="venue-info"><div class="venue-name">'+esc(v.name)+'</div>';
-        if(tags)html+='<div class="venue-tags">'+esc(tags)+'</div>';
+        html+='<a class="venue-row" href="'+esc(v.href)+'">';
+        html+='<div class="venue-av">'+esc(inits(v.name))+(v.logo?'<img src="'+esc(v.logo)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
+        html+='<div class="venue-info"><div class="venue-nameline"><span class="venue-name">'+esc(v.name)+'</span><span class="typepill '+v.pill+'">'+esc(v.type)+'</span></div>';
+        if(v.meta)html+='<div class="venue-tags">'+esc(v.meta)+'</div>';
         html+='</div>';
         if(v.region)html+='<span class="venue-region-badge">'+esc(v.region)+'</span>';
         html+='<i class="ti ti-chevron-right" style="color:var(--muted);flex-shrink:0" aria-hidden="true"></i>';
@@ -252,29 +254,14 @@
       });
       html+='</div>';
       listEl.innerHTML=html;
-      if(filtered.length>showCount){
+      if(items.length>showCount){
         moreBtn.style.display='block';
-        moreBtn.onclick=function(){showCount+=4;renderVenues();};
+        moreBtn.onclick=function(){showCount+=4;renderList();};
       }else{
         moreBtn.style.display='none';
       }
     }
-
-    if(filterEl&&regions.length){
-      var tabs=['All'].concat(regions);
-      filterEl.innerHTML=tabs.map(function(r){
-        return'<button class="filter-tab'+(r===currentRegion?' active':'')+'" data-r="'+esc(r)+'">'+esc(r)+'</button>';
-      }).join('');
-      filterEl.addEventListener('click',function(e){
-        var btn=e.target.closest('.filter-tab');
-        if(!btn)return;
-        currentRegion=btn.getAttribute('data-r');
-        showCount=4;
-        filterEl.querySelectorAll('.filter-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-r')===currentRegion);});
-        renderVenues();
-      });
-    }
-    renderVenues();
+    renderList();
 
     // --- Most Active Players ---
     var activeEl=document.getElementById('activePlayersEl');

@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Tournament Management — Trekkr</title>
-<meta name="description" content="Professional tournament experiences powered by Trekkr — run for you or licensed to run yourself, with player mobile view and LED sponsorship displays."/>
+<title>Tourney &amp; League — Trekkr</title>
+<meta name="description" content="Trekkr tracks the players in your tournaments and leagues to build one trusted player database — an anti-sandbagging system that reveals every player's real level."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
 <style>
 .wrap{padding:30px 0 10px}
 .sec{padding:30px 0;border-top:1px solid var(--border-soft)}
@@ -43,19 +44,14 @@
 .fcard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
 .acard{border:1px solid var(--border);border-radius:13px;padding:15px;background:var(--surface)}
 .empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
-.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ev-card{display:block;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);transition:border-color .2s}
-.ev-card:hover{border-color:var(--orange)}
-.ev-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:999px;margin-bottom:8px}
-.ev-playrank{background:var(--warm);color:#C2410C}
-.ev-tournament{background:#EEF0FF;color:#534AB7}
-.ev-title{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;color:var(--text);line-height:1.05}
-.ev-meta{font-size:12.5px;color:var(--muted);margin-top:6px}
-.ev-sub{font-size:11.5px;color:var(--subtle);margin-top:4px}
-.ev-status{display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
-.ev-status.live,.ev-status.active{background:rgba(34,160,82,.12);color:#0F6E56}
-.ev-status.upcoming{background:#E6F1FB;color:#185FA5}
-@media(max-width:640px){.ev-grid{grid-template-columns:1fr}}
+.trk-list{display:flex;flex-direction:column;gap:8px}
+.trk-row{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface)}
+.trk-av{position:relative;overflow:hidden;width:44px;height:44px;border-radius:10px;background:#fff;border:1px solid var(--warm-border);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:14px;flex-shrink:0}
+.trk-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.trk-info{flex:1;min-width:0}
+.trk-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trk-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.trk-region{font-size:10px;font-weight:700;color:var(--subtle);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 9px;white-space:nowrap;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -66,7 +62,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -79,7 +75,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -87,81 +83,55 @@
 </header>
 <main>
   <section class="hero container">
-    <h1 class="display">Tournament Management</h1>
-    <div class="tagline">Professional Tournament Experiences. Powered by Trekkr.</div>
-    <p class="lead">From community competitions to large-scale championships, Trekkr helps organizers deliver tournaments that are structured, professional, and enjoyable for every participant. Whether you need a complete operations team or simply a powerful management platform, Trekkr provides the expertise and technology to make it happen.</p>
-    <div class="mt16"><a class="btn btn--primary" href="https://trekkr.online/tournaments">Try the engine</a></div>
+    <h1 class="display">Tourney &amp; League</h1>
+    <div class="tagline">Every Result Feeds The Real Level</div>
+    <p class="lead">Trekkr tracks the players in your tournaments and leagues to build one trusted player database — so organizers and players can always see everyone's <strong>real level</strong>. It's an anti-sandbagging system: no more hidden ringers, no more players sneaking into a bracket far below their skill. Every result you send makes the next draw fairer for everyone.</p>
+  </section>
+
+  <section class="sec container center">
+    <div class="eyebrow">Anti-Sandbagging System</div>
+    <h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px);margin-top:6px">Two Ways We Track Your Event</h2>
+    <p class="p mt8" style="max-width:640px;margin-left:auto;margin-right:auto">Whether your competition is live or already finished, there's a simple path to get its results into the Trekkr database.</p>
+  </section>
+
+  <section class="container" style="padding-bottom:8px">
+    <div class="grid2">
+      <div class="fcard">
+        <i class="ti ti-settings-automation ico" aria-hidden="true" style="font-size:24px"></i>
+        <div class="display secname--dark" style="font-size:19px;margin:8px 0 5px">1 · Automatic Tournament Tools</div>
+        <p class="p" style="font-size:13px">Run your event on our automatic tournament engine, <strong>turnamenpadel.com</strong>. Scores are captured live and flow straight into the Trekkr database as matches finish — no spreadsheets, no double entry, no extra admin for your team.</p>
+        <a class="lnk mt12" style="display:inline-block" href="https://www.turnamenpadel.com" target="_blank" rel="noopener">Explore turnamenpadel.com &rarr;</a>
+      </div>
+      <div class="fcard">
+        <i class="ti ti-file-spreadsheet ico" aria-hidden="true" style="font-size:24px"></i>
+        <div class="display secname--dark" style="font-size:19px;margin:8px 0 5px">2 · Send Us Your Final Results</div>
+        <p class="p" style="font-size:13px">Already wrapped up? Just hand over your final match data as a spreadsheet (Google Sheet or Excel) and we'll import it into the database for you. Submit through the Get Listed form and our team will take it from there.</p>
+        <a class="lnk mt12" style="display:inline-block" href="https://trekkr.online/get-listed">Submit via Get Listed &rarr;</a>
+      </div>
+    </div>
   </section>
 
   <section class="band band--warm"><div class="container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <span class="secname">Events</span>
-      <span class="tag"><i class="ti ti-table" aria-hidden="true"></i>recorded · from sheet Events</span>
+    <div style="margin-bottom:14px">
+      <span class="secname">Tournaments &amp; Leagues We Track</span>
+      <div class="secsub" style="font-weight:500;color:var(--muted);font-size:13.5px;margin-top:4px">Competitions already feeding player levels into the Trekkr database.</div>
     </div>
-    <div id="trEvents">
-      <div class="empty">Belum ada event yang tercatat. Bagian ini akan terisi otomatis dari sheet <strong>Events</strong>.</div>
-    </div>
-  </div></section>
-
-  <section class="sec container center" style="padding-bottom:4px"><div class="eyebrow">Two Ways to Work With Trekkr</div></section>
-
-  <section class="sec container" style="border-top:0;padding-top:8px">
-    <div class="secname">Tournament Operations Service</div>
-    <div class="secsub">We Run The Tournament For You</div>
-    <p class="p mt8" style="max-width:700px">Perfect for courts, brands, communities, and organizations that want a professionally managed tournament without the operational burden. From concept to championship day, Trekkr becomes your tournament partner — with dedicated Tournament Directors, experienced officials, and Trekkr's technology, every event runs with the professionalism players expect.</p>
-    <p class="display secname--dark" style="font-size:16px;margin:10px 0 14px">You focus on the community. We handle the competition.</p>
-    <a class="btn btn--primary" href="mailto:sportsactvd@gmail.com">Contact us</a>
-  </section>
-
-  <section class="band band--warm"><div class="container">
-    <div class="secname">Tournament Engine Licensing</div>
-    <div class="secsub">Run Your Own Tournament Like a Pro</div>
-    <p class="p mt8" style="max-width:700px">Designed for tournament organizers who want full control while leveraging Trekkr's proven tournament technology. Our platform is easy to learn, simple to operate, and backed by technical support from the Trekkr team.</p>
-    <div class="mt12"><a class="btn btn--ghost" href="https://trekkr.online/tournaments">Try the engine</a></div>
-    <div class="eyebrow mt24">Built Into Every Licensed Engine</div>
-    <div class="grid2 mt12">
-      <div class="acard">
-        <i class="ti ti-device-mobile ico" aria-hidden="true" style="font-size:22px"></i>
-        <div class="display secname--dark" style="font-size:17px;margin:8px 0 5px">On Every Player's Phone</div>
-        <p class="p" style="font-size:12.5px">Players open the tournament right from their own phone — no app to install. Each player gets a personalized view showing only their own matches and schedule, so they always know exactly when and where they play next.</p>
-      </div>
-      <div class="acard">
-        <i class="ti ti-device-tv ico" aria-hidden="true" style="font-size:22px"></i>
-        <div class="display secname--dark" style="font-size:17px;margin:8px 0 5px">Live on the Court LED</div>
-        <p class="p" style="font-size:12.5px">Display the tournament on venue LED screens in a bold, broadcast-style layout — live scores, courts, and standings — complete with built-in sponsorship placements to put your partners front and center.</p>
-      </div>
+    <div id="trkList">
+      <div class="empty">Memuat&hellip;</div>
     </div>
   </div></section>
 
-  <section class="sec container center" style="padding-bottom:8px">
-    <div class="eyebrow">Tournament Formats</div>
-    <h2 class="display secname--dark" style="font-size:clamp(20px,3vw,24px);margin-top:6px">Choose The Format That Fits Your Community</h2>
-  </section>
-  <section class="container" style="padding-bottom:24px">
-    <div class="grid3">
-      <div class="fcard"><div class="display secname--dark" style="font-size:18px">Playoff Championship</div><div class="eyebrow" style="margin:5px 0 8px">Round Robin → Playoffs</div><p class="p" style="font-size:12.5px">The most familiar and widely used format. Players or teams compete in group-stage round robins before advancing to knockout playoffs.</p></div>
-      <div class="fcard"><div class="display secname--dark" style="font-size:18px">Double Path Championship</div><div class="eyebrow" style="margin:5px 0 8px">RR → Upper &amp; Lower Brackets</div><p class="p" style="font-size:12.5px">Designed to maximize competitive balance. After the round robin, players split into Upper and Lower Brackets based on performance — meaningful competition for every level.</p></div>
-      <div class="fcard"><div class="display secname--dark" style="font-size:18px">Community League</div><div class="eyebrow" style="margin:5px 0 8px">Multi-Week Series</div><p class="p" style="font-size:12.5px">A structured league played across multiple weeks. Teams or players accumulate points throughout the season before advancing to championship rounds.</p></div>
-    </div>
-  </section>
-
-  <section class="band band--warm center"><div class="container">
+  <section class="sec container center">
     <div class="secname">Powered By The Trekkr Ecosystem</div>
     <div class="secsub mt8">More Than Just Tournament Software</div>
-    <p class="p mt8" style="max-width:540px;margin-left:auto;margin-right:auto">Unlike standalone tournament platforms, Trekkr tournaments are connected to a larger competitive ecosystem. Every tournament becomes part of a player's long-term journey.</p>
-  </div></section>
+    <p class="p mt8" style="max-width:560px;margin-left:auto;margin-right:auto">Every tournament and league becomes part of each player's long-term journey — feeding national rankings, player passports, and a level you can trust across the whole ecosystem.</p>
+  </section>
 </main>
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <span class="footer-brand">Trekkr</span>
-    <nav class="footer-links" aria-label="Footer">
-      <a href="https://admin.trekkr.online">Admin (Venue login)</a>
-      <a href="https://trekkr.online/market">Market Intelligence</a>
-      <a href="https://trekkr.online/about">About</a>
-    </nav>
-    <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
-  </div>
-</footer>
+<div data-eco-footer>
+  <a href="https://admin.trekkr.online">Admin (Venue login)</a>
+  <a href="https://trekkr.online/market">Market Intelligence</a>
+  <a href="https://trekkr.online/about">About</a>
+</div>
 <script>
 (function(){
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
@@ -172,16 +142,30 @@
 (function(){
   var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  var el=document.getElementById('trEvents'); if(!el) return;
-  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
-    var list=(d&&d.events)||[]; if(!list.length) return;
-    el.innerHTML='<div class="ev-grid">'+list.map(function(e){
-      var sub=[e.format,e.category].filter(Boolean).join(' · ');
-      var st=e.status?'<span class="ev-status '+esc(e.status)+'">'+esc(e.status)+'</span>':'';
-      return '<a class="ev-card" href="'+(e.url?esc(e.url):'#')+'"><span class="ev-type ev-tournament">Tournament</span><div class="ev-title">'+esc(e.name)+'</div><div class="ev-meta">'+esc(e.venue||'')+(e.date?' · '+esc(e.date):'')+'</div>'+(sub?'<div class="ev-sub">'+esc(sub)+'</div>':'')+st+'</a>';
-    }).join('')+'</div>';
-  }).catch(function(){});
+  function inits(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  var el=document.getElementById('trkList');
+  if(!el)return;
+  fetch(BASE+'/tracked-events').then(function(r){return r.json();}).then(function(d){
+    var list=(d&&d.events)||[];
+    if(!list.length){
+      el.innerHTML='<div class="empty">Belum ada turnamen atau liga yang tercatat. Daftar ini terisi dari sheet <strong>Tracked_Events</strong>.</div>';
+      return;
+    }
+    var html='<div class="trk-list">';
+    list.forEach(function(e){
+      html+='<div class="trk-row">';
+      html+='<div class="trk-av">'+esc(inits(e.name))+(e.logoUrl?'<img src="'+esc(e.logoUrl)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
+      html+='<div class="trk-info"><div class="trk-name">'+esc(e.name)+'</div>'+(e.monthYear?'<div class="trk-meta">'+esc(e.monthYear)+'</div>':'')+'</div>';
+      if(e.location)html+='<span class="trk-region">'+esc(e.location)+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }).catch(function(){
+    el.innerHTML='<div class="empty">Gagal memuat data.</div>';
+  });
 })();
 </script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
 </body>
 </html>

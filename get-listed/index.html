@@ -39,6 +39,16 @@
 .benefits{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:20px auto 0;max-width:620px}
 .benefit{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-pill);padding:7px 14px}
 .benefit i{color:var(--orange);font-size:15px}
+.gl-tabs-wrap{display:flex;justify-content:center;margin-top:4px}
+.gl-tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px;gap:2px}
+.gl-tabs button{font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);background:transparent;border:0;padding:9px 20px;border-radius:var(--radius-pill);cursor:pointer;transition:background .2s,color .2s}
+.gl-tabs button.active{background:var(--orange);color:#fff}
+.gl-pane{display:none}
+.gl-pane.show{display:block}
+.gl-intro{background:var(--warm);border:1px solid var(--warm-border);border-radius:14px;padding:16px 18px;font-size:13.5px;color:#7a4a1e;line-height:1.65;margin-bottom:18px}
+.field textarea{width:100%;font-family:inherit;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;min-height:88px;resize:vertical;transition:border-color .2s,box-shadow .2s}
+.field textarea::placeholder{color:var(--faint)}
+.field textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,106,0,.12)}
 </style>
 </head>
 <body>
@@ -49,7 +59,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -62,7 +72,7 @@
       <a href="https://trekkr.online/">Home</a>
       <a href="https://trekkr.online/rankings">Rankings</a>
       <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://turnamenpadel.com/" target="_blank" rel="noopener">Tournament</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
       <a href="https://trekkr.online/get-listed">Get Listed</a>
       <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
     </nav>
@@ -71,17 +81,25 @@
 <main>
   <section class="hero container">
     <div class="eyebrow">Get Listed</div>
-    <h1 class="display">List your venue or community</h1>
+    <h1 class="display">List your venue, tournament or league</h1>
     <div class="tagline">Where Every Match Builds Your Journey</div>
-    <p class="lead">Register your venue or community with Trekkr so we can track your players' game progress — ratings, rankings, and match history, all under one system.</p>
-    <div class="benefits">
+    <p class="lead">Get your padel community onto Trekkr so we can track your players' game progress — ratings, rankings, and match history, all under one system. Choose what you'd like to list below.</p>
+  </section>
+
+  <div class="gl-tabs-wrap container">
+    <div class="gl-tabs" id="glTabs" role="tablist" aria-label="Get Listed type">
+      <button type="button" data-tab="playrank" class="active" role="tab" aria-selected="true">PlayRank</button>
+      <button type="button" data-tab="tourney" role="tab" aria-selected="false">Tournament / League</button>
+    </div>
+  </div>
+
+  <!-- ============ PLAYRANK (venue / community) ============ -->
+  <section class="form-wrap container gl-pane show" data-pane="playrank">
+    <div class="benefits" style="margin-bottom:18px">
       <span class="benefit"><i class="ti ti-chart-line"></i> Track player progress</span>
       <span class="benefit"><i class="ti ti-trophy"></i> Weekly rankings</span>
       <span class="benefit"><i class="ti ti-users-group"></i> Grow your community</span>
     </div>
-  </section>
-
-  <section class="form-wrap container">
     <div class="card">
       <form id="leadForm" novalidate>
         <div class="field">
@@ -117,6 +135,54 @@
         <div class="big-ic"><i class="ti ti-circle-check"></i></div>
         <h2>Thank you!</h2>
         <p>Your registration has been received. Our team will contact you via email within <strong>2&times;24 hours</strong>. Keep an eye on your inbox.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TOURNAMENT / LEAGUE ============ -->
+  <section class="form-wrap container gl-pane" data-pane="tourney">
+    <div class="gl-intro">
+      <strong>Already finished your tournament or league?</strong> We only need your final tournament match data as a spreadsheet (Google Sheet or Excel) so we can import it into our database — feeding the players' real levels and our anti-sandbagging system. Fill in the form below and our team will contact you shortly to arrange the import.
+    </div>
+    <div class="card">
+      <form id="tourneyForm" novalidate>
+        <div class="field">
+          <label for="tName">Tournament / League Name <span class="req">*</span></label>
+          <input type="text" id="tName" name="tName" placeholder="e.g. Jakarta Open 2026" required/>
+        </div>
+        <div class="field">
+          <label for="tLocation">Location <span class="req">*</span></label>
+          <input type="text" id="tLocation" name="tLocation" placeholder="e.g. Jakarta, Indonesia" autocomplete="address-level2" required/>
+        </div>
+        <div class="field">
+          <label for="tPic">PIC Name <span class="req">*</span></label>
+          <input type="text" id="tPic" name="tPic" placeholder="Person in charge" autocomplete="name" required/>
+        </div>
+        <div class="field">
+          <label for="tPhone">PIC Phone Number <span class="req">*</span></label>
+          <input type="tel" id="tPhone" name="tPhone" placeholder="e.g. +62 812 3456 7890" autocomplete="tel" inputmode="tel" required/>
+        </div>
+        <div class="field">
+          <label for="tEmail">PIC Email <span class="req">*</span></label>
+          <input type="email" id="tEmail" name="tEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" required/>
+        </div>
+        <div class="field">
+          <label for="tMessage">Message <span style="color:var(--subtle);font-weight:500">(optional)</span></label>
+          <textarea id="tMessage" name="tMessage" placeholder="Anything specific we should know?"></textarea>
+        </div>
+
+        <div class="msg" id="tFormMsg" role="alert"></div>
+
+        <div class="submit-row">
+          <button type="submit" class="btn btn--primary" id="tSubmitBtn">Submit</button>
+        </div>
+        <p class="note"><i class="ti ti-clock"></i> After you submit, we'll contact you shortly to arrange the data import.</p>
+      </form>
+
+      <div class="success-state" id="tSuccessState">
+        <div class="big-ic"><i class="ti ti-circle-check"></i></div>
+        <h2>Thank you!</h2>
+        <p>Your submission has been received. Our team will contact you shortly to arrange importing your tournament data.</p>
       </div>
     </div>
   </section>
@@ -181,6 +247,60 @@
     }catch(err){
       showMsg('err', (err&&err.message) ? err.message : 'Something went wrong. Please try again.');
       btn.disabled=false; btn.textContent='Submit registration';
+    }
+  });
+
+  // ── Tab switching (PlayRank ↔ Tournament / League) ──
+  var tabs=document.getElementById('glTabs');
+  if(tabs){
+    tabs.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-tab]'); if(!b)return;
+      tabs.querySelectorAll('button').forEach(function(x){
+        var on=x===b; x.classList.toggle('active',on); x.setAttribute('aria-selected',on?'true':'false');
+      });
+      document.querySelectorAll('[data-pane]').forEach(function(p){p.classList.toggle('show',p.dataset.pane===b.dataset.tab);});
+    });
+  }
+
+  // ── Tournament / League form ──
+  var tForm=document.getElementById('tourneyForm');
+  var tBtn=document.getElementById('tSubmitBtn');
+  var tMsg=document.getElementById('tFormMsg');
+  var tSuccess=document.getElementById('tSuccessState');
+  function tShow(kind,text){ tMsg.className='msg '+kind; tMsg.textContent=text; }
+  function tClear(){ tMsg.className='msg'; tMsg.textContent=''; }
+  tForm && tForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    tClear();
+    var payload={
+      name: val('tName'),
+      location: val('tLocation'),
+      picName: val('tPic'),
+      phone: val('tPhone'),
+      email: val('tEmail'),
+      message: val('tMessage'),
+    };
+    if(!payload.name||!payload.location||!payload.picName||!payload.phone||!payload.email){
+      tShow('err','Please fill in all required fields.'); return;
+    }
+    if(!emailRe.test(payload.email)){ tShow('err','Please enter a valid email address.'); return; }
+    if(payload.phone.replace(/[^0-9]/g,'').length<6){ tShow('err','Please enter a valid phone number.'); return; }
+
+    tBtn.disabled=true; tBtn.textContent='Submitting…';
+    try{
+      var res=await fetch(API+'/tournament-lead',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload),
+      });
+      var data=await res.json().catch(function(){return {};});
+      if(!res.ok||!data.success){ throw new Error(data.error||('Request failed ('+res.status+')')); }
+      tForm.style.display='none';
+      tSuccess.classList.add('show');
+      tSuccess.scrollIntoView({behavior:'smooth',block:'center'});
+    }catch(err){
+      tShow('err', (err&&err.message) ? err.message : 'Something went wrong. Please try again.');
+      tBtn.disabled=false; tBtn.textContent='Submit';
     }
   });
 })();
