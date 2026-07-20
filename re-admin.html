@@ -430,8 +430,13 @@ async function rosterLevel(pid,level){
 }
 function renderLinks(){
   const sc=location.origin+location.pathname.replace('re-admin.html','re-scorer.html');
+  const scAll=location.origin+location.pathname.replace('re-admin.html','re-scorer-all.html')+'?e='+CUR;
   const pub=location.origin+location.pathname.replace('re-admin.html','re-public.html')+'?e='+CUR;
-  $('#t_links').innerHTML=`<h3>Scorer (${DATA.scorers.A} / ${DATA.scorers.B})</h3>
+  $('#t_links').innerHTML=`<h3>Scorer 1 petugas — semua court</h3>
+   <div class="row"><a class="btn" href="${scAll}" target="_blank"><button class="pri">Buka Scorer Gabungan (semua court)</button></a></div>
+   <div class="linkbox" style="margin-top:8px">${scAll}</div>
+   <div class="muted" style="margin-top:6px">Satu petugas menginput skor seluruh court dari satu layar, lalu "Simpan semua court".</div>
+   <h3 style="margin-top:18px">Scorer terbagi 2 petugas (${DATA.scorers.A} / ${DATA.scorers.B})</h3>
    <div class="row"><a class="btn" href="${sc}?e=${CUR}&set=A" target="_blank"><button class="pri">Buka Scorer A · ${DATA.scorers.A}</button></a>
    <a class="btn" href="${sc}?e=${CUR}&set=B" target="_blank"><button class="pri">Buka Scorer B · ${DATA.scorers.B}</button></a></div>
    <div class="muted" style="margin-top:8px">Bagikan link Scorer A ke 1 petugas dan Scorer B ke petugas lain. Mereka hanya bisa input court bagiannya.</div>

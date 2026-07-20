@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trekkr · Scorer (Semua Court)</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--o:#FF6A00;--o2:#FFF4EA;--ink:#0D0D0D;--mut:#52525B;--bd:#E4E4E7;--bg:#F5F5F7;--ok:#22A052}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.top{background:var(--o);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
+.top b{font-size:16px}.top .r{text-align:right}.top small{color:#FFE3D6;font-size:12px;display:block}
+.wrap{max-width:460px;margin:0 auto;padding:14px 14px 96px}
+.prog{padding:4px 2px 10px}
+.prog .row{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:6px}
+.bar{height:7px;background:#eee;border-radius:4px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--o);transition:width .3s}
+.mc{background:#fff;border:1px solid var(--bd);border-radius:13px;padding:13px;margin-bottom:12px}
+.mc.live{border:2px solid var(--o)}
+.mc .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mc .h b{font-size:15px}.tier{font-size:11px;font-weight:600;padding:2px 9px;border-radius:8px;background:#FFF4EA;color:#FF6A00}
+.done{font-size:12px;color:var(--ok);font-weight:600}
+.tr{display:flex;align-items:center;justify-content:space-between;padding:7px 0}
+.tr+.tr{border-top:1px solid #f1ede7}
+.nm{font-size:14px}
+.stp{display:flex;align-items:center;gap:8px}
+.stp button{width:34px;height:34px;border-radius:9px;border:1px solid var(--bd);background:#fff;font-size:18px;cursor:pointer;line-height:1}
+.val{width:32px;text-align:center;font-size:19px;font-weight:700}
+.save{width:100%;margin-top:10px;padding:10px;background:#fff;color:var(--o);border:1px solid var(--bd);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+.gen{width:100%;padding:13px;border-radius:11px;font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--o);color:#fff;margin-top:4px}
+.gen:disabled{background:#eee;color:#aaa;cursor:not-allowed}
+.muted{color:var(--mut);font-size:13px;text-align:center;margin-top:8px}
+.err{background:#fdecea;color:#a3271a;padding:9px 12px;border-radius:9px;font-size:13px;margin:8px 0;display:none}
+.pick{background:#fff;border:1px solid var(--bd);border-radius:13px;padding:16px;margin-top:14px}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:9px;font-size:14px;margin-top:6px}
+.ro{font-size:18px;font-weight:700}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd)}
+.savebar .inner{max-width:460px;margin:0 auto;padding:10px 14px}
+.savebar button{width:100%;padding:13px;background:var(--ok);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
+.savebar button:disabled{background:#eee;color:#aaa;cursor:not-allowed}
+  /* brand display (retheme) */
+  h1,h2{font-family:'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;letter-spacing:-.01em}
+  .val,.ro,.sc{font-family:'Saira Condensed',sans-serif;font-style:italic}
+</style>
+</head>
+<body>
+<div class="top"><div><b id="t_title">Scorer — Semua Court</b><small id="t_courts"></small></div><div class="r"><small id="t_wave"></small><b id="t_phase"></b></div></div>
+<div class="wrap">
+<div class="err" id="err"></div>
+<div id="pick" style="display:none"><div class="pick"><b>Pilih event</b>
+  <select id="evsel"></select>
+  <button class="gen" style="margin-top:10px" onclick="startPick()">Mulai</button>
+  <div class="muted">Satu petugas menginput skor semua court dari satu layar.</div>
+</div></div>
+<div id="main" style="display:none">
+  <div class="prog"><div class="row"><span>Skor masuk semua court</span><span id="pg">0/0</span></div><div class="bar"><i id="pgbar" style="width:0%"></i></div><div class="muted" id="pghint">Isi skor tiap court lalu "Simpan semua". Gelombang berikutnya jalan saat semua court masuk.</div></div>
+  <div id="cards"></div>
+  <button class="gen" id="genBtn" onclick="genNext()" disabled>Generate gelombang berikutnya</button>
+  <div class="muted" id="genhint"></div>
+</div>
+</div>
+<div id="savebar" class="savebar" style="display:none"><div class="inner"><button id="saveAllBtn" onclick="saveAll()">Simpan semua court (<span id="nfill">0</span>)</button></div></div>
+<script>
+const API='https://trekkr.online/api';
+const $=s=>document.querySelector(s);
+let EV=null,POLL=null,DATA=null,LOCAL={};
+function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}
+async function api(path,opts){const r=await fetch(API+'/'+path,opts);const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
+function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+const TIER_LBL={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};
+const tierLbl=t=>TIER_LBL[t]||t||'';
+
+async function boot(){
+  const q=gp();
+  if(q.e){EV=q.e;start();return;}
+  $('#pick').style.display='block';
+  try{const {events}=await api('re/events');$('#evsel').innerHTML=events.slice().reverse().map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');}catch(e){err(e.message);}
+}
+function startPick(){EV=$('#evsel').value;location.search='?e='+EV;}
+function start(){$('#pick').style.display='none';$('#main').style.display='block';load();clearInterval(POLL);POLL=setInterval(()=>{if(!document.hidden)load();},10000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load();});}
+
+async function load(){
+  try{
+    // The per-court scorer splits courts into halves (A/B); fetch both and
+    // merge so one operator sees every court on a single screen.
+    const [a,b]=await Promise.all([api('re/event/'+EV+'/scorer/A'),api('re/event/'+EV+'/scorer/B')]);
+    const map={};[...a.matches,...b.matches].forEach(m=>{map[m.matchId]=m;});
+    const matches=Object.values(map).sort((x,y)=>x.court-y.court);
+    DATA={event:a.event,progress:a.progress,canGenerateNext:a.canGenerateNext,courts:matches.length,matches};
+    $('#t_courts').textContent=matches.length?matches.length+' court':'';
+    $('#t_wave').textContent='Gelombang '+DATA.event.currentWave;
+    $('#t_phase').textContent=DATA.event.phase>=2?'Fase 2':'Fase 1';
+    $('#pg').textContent=DATA.progress.done+'/'+DATA.progress.total;
+    $('#pgbar').style.width=(DATA.progress.total?Math.round(DATA.progress.done/DATA.progress.total*100):0)+'%';
+    render();
+    const gb=$('#genBtn');gb.disabled=!DATA.canGenerateNext;
+    $('#genhint').textContent=DATA.canGenerateNext?'Semua court sudah masuk — boleh lanjut.':(DATA.event.currentWave===0?'':'Isi & simpan semua court dulu.');
+  }catch(e){err(e.message);}
+}
+function render(){
+  if(!DATA.matches.length){$('#cards').innerHTML='<div class="muted">Belum ada match aktif. Tunggu admin generate gelombang.</div>';syncBar();return;}
+  $('#cards').innerHTML=DATA.matches.map(m=>card(m)).join('');
+  syncBar();
+}
+function card(m){
+  const done=m.status==='done';
+  const va=done?m.scoreA:(LOCAL[m.matchId]?LOCAL[m.matchId].a:0);
+  const vb=done?m.scoreB:(LOCAL[m.matchId]?LOCAL[m.matchId].b:0);
+  if(done){
+    const aw=m.scoreA>m.scoreB;
+    return `<div class="mc"><div class="h"><b>Court ${m.court}</b><span class="done">✓ Tersimpan</span></div>
+      <div class="tr"><span class="nm" style="color:var(--mut)">${esc(m.teamA.join(' / '))}</span><span class="ro">${m.scoreA}</span></div>
+      <div class="tr"><span class="nm" style="color:var(--mut)">${esc(m.teamB.join(' / '))}</span><span class="ro">${m.scoreB}</span></div>
+      <button class="save" onclick="editM('${m.matchId}')">Ubah</button></div>`;
+  }
+  return `<div class="mc live"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${tierLbl(m.tier)}</span>`:''}</div>
+    <div class="tr"><span class="nm">${esc(m.teamA.join(' / '))}</span><span class="stp"><button onclick="adj('${m.matchId}','a',-1)">−</button><span class="val" id="v_${m.matchId}_a">${va}</span><button onclick="adj('${m.matchId}','a',1)">+</button></span></div>
+    <div class="tr"><span class="nm">${esc(m.teamB.join(' / '))}</span><span class="stp"><button onclick="adj('${m.matchId}','b',-1)">−</button><span class="val" id="v_${m.matchId}_b">${vb}</span><button onclick="adj('${m.matchId}','b',1)">+</button></span></div>
+    <button class="save" id="sv_${m.matchId}" onclick="saveOne('${m.matchId}')">Simpan court ${m.court} saja</button></div>`;
+}
+function adj(id,side,d){LOCAL[id]=LOCAL[id]||{a:0,b:0};LOCAL[id][side]=Math.max(0,(LOCAL[id][side]||0)+d);$('#v_'+id+'_'+side).textContent=LOCAL[id][side];syncBar();}
+function editM(id){const m=DATA.matches.find(x=>x.matchId===id);LOCAL[id]={a:m.scoreA,b:m.scoreB};m.status='pending';render();}
+// Pending courts that have a non 0-0 score entered.
+function filled(){return DATA?DATA.matches.filter(m=>m.status!=='done'&&LOCAL[m.matchId]&&(LOCAL[m.matchId].a+LOCAL[m.matchId].b)>0):[];}
+function pendingCount(){return DATA?DATA.matches.filter(m=>m.status!=='done').length:0;}
+function syncBar(){
+  const n=filled().length,bar=$('#savebar');
+  if(pendingCount()===0){bar.style.display='none';return;}
+  bar.style.display='block';$('#nfill').textContent=n;
+  const b=$('#saveAllBtn');b.disabled=n===0;b.textContent=n?`Simpan semua court (${n})`:'Isi skor court dulu';
+}
+async function post(id,v){return api('re/event/'+EV+'/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId:id,scoreA:v.a,scoreB:v.b,scorer:'Scorer Gabungan'})});}
+async function saveOne(id){
+  const v=LOCAL[id]||{a:0,b:0};if((v.a+v.b)===0){err('Isi skor court dulu.');return;}
+  const b=$('#sv_'+id);b.disabled=true;b.textContent='Menyimpan...';
+  try{await post(id,v);delete LOCAL[id];await load();}
+  catch(e){err(e.message);b.disabled=false;}
+}
+async function saveAll(){
+  const list=filled();if(!list.length){err('Belum ada court yang diisi.');return;}
+  const b=$('#saveAllBtn');b.disabled=true;
+  let ok=0;
+  for(const m of list){
+    b.textContent=`Menyimpan ${ok+1}/${list.length}...`;
+    try{await post(m.matchId,LOCAL[m.matchId]);delete LOCAL[m.matchId];ok++;}
+    catch(e){err('Court '+m.court+': '+e.message);break;}
+  }
+  await load();
+  if(ok===list.length)b.textContent='✓ Tersimpan';
+}
+async function genNext(){
+  $('#genBtn').disabled=true;
+  try{await api('re/event/'+EV+'/wave',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});await load();}
+  catch(e){err(e.message);load();}
+}
+boot();
+</script>
+</body>
+</html>
