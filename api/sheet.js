@@ -4874,9 +4874,20 @@ async function reGenerateWave(eventId, body) {
   // CUT to phase 2 after the last phase-1 wave: tier only ACTIVE players.
   if (phase === 1 && ev.currentWave >= ev.p1Waves) {
     const act = active.slice();
-    const st1 = reStandings(matches, act.map((p) => p.id), eloById, 1);
+    // Promotion/relegation by WINS in the seeding phase: most seeding-phase
+    // wins climbs to the top tier, fewest drops to the bottom. Cumulative
+    // point-differential then global ELO break ties.
+    const win = {}, dif = {}; act.forEach((p) => { win[p.id] = 0; dif[p.id] = 0; });
+    matches.forEach((m) => {
+      if (m.phase !== 1 || m.status !== "done" || m.scoreA == null || m.scoreB == null) return;
+      const aw = m.scoreA > m.scoreB, bw = m.scoreB > m.scoreA;
+      m.a.forEach((x) => { if (win[x] != null) { dif[x] += m.scoreA - m.scoreB; if (aw) win[x]++; } });
+      m.b.forEach((x) => { if (win[x] != null) { dif[x] += m.scoreB - m.scoreA; if (bw) win[x]++; } });
+    });
+    const eloAt = (id) => (eloById[id] != null ? eloById[id] : 1350);
+    const orderedCut = act.map((p) => p.id).sort((x, y) => (win[y] - win[x]) || (dif[y] - dif[x]) || (eloAt(y) - eloAt(x)));
     const tierSize = Math.floor(act.length / 3);
-    st1.ordered.forEach((id, i) => { tierOf[id] = i < tierSize ? "Emas" : (i < 2 * tierSize ? "Perak" : "Perunggu"); });
+    orderedCut.forEach((id, i) => { tierOf[id] = i < tierSize ? "Emas" : (i < 2 * tierSize ? "Perak" : "Perunggu"); });
     const outP = allPRows.map((r) => { const c = r.slice(); while (c.length < 10) c.push(""); if (r[0] === eventId && tierOf[r[1]]) c[5] = tierOf[r[1]]; return c.slice(0, 10); });
     if (outP.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A2:J${outP.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: outP } });
     const interval = ev.matchMinutes + 3;

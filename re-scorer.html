@@ -65,6 +65,8 @@ function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTim
 async function api(path,opts){const r=await fetch(API+'/'+path,opts);const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){j={error:t.slice(0,200)}}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;}
 function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+const TIER_LBL={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};
+const tierLbl=t=>TIER_LBL[t]||t||'';
 
 async function boot(){
   const q=gp();
@@ -104,7 +106,7 @@ function card(m){
       <div class="tr"><span class="nm" style="color:var(--mut)">${esc(m.teamB.join(' / '))}</span><span class="ro">${m.scoreB}</span></div>
       <button class="save" style="background:#fff;color:var(--o);border:1px solid var(--bd)" onclick="editM('${m.matchId}')">Ubah</button></div>`;
   }
-  return `<div class="mc live"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${m.tier}</span>`:''}</div>
+  return `<div class="mc live"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${tierLbl(m.tier)}</span>`:''}</div>
     <div class="tr"><span class="nm">${esc(m.teamA.join(' / '))}</span><span class="stp"><button onclick="adj('${m.matchId}','a',-1)">−</button><span class="val" id="v_${m.matchId}_a">${va}</span><button onclick="adj('${m.matchId}','a',1)">+</button></span></div>
     <div class="tr"><span class="nm">${esc(m.teamB.join(' / '))}</span><span class="stp"><button onclick="adj('${m.matchId}','b',-1)">−</button><span class="val" id="v_${m.matchId}_b">${vb}</span><button onclick="adj('${m.matchId}','b',1)">+</button></span></div>
     <button class="save" id="sv_${m.matchId}" onclick="saveM('${m.matchId}')">Simpan skor court ${m.court}</button></div>`;
