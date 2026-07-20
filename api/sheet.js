@@ -4781,7 +4781,7 @@ async function reCreateEvent(body) {
     return { name: String(parts[0] || "").trim(), level: String(parts[1] || "").trim(), gender: normGender(parts[2]) };
   }).filter((x) => x.name);
   const N = roster.length;
-  if (N < 24 || N % 12 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${N}). Ideal 36.` });
+  if (N < 5 || N % 5 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 5 (5 pemain per court) dan minimal 5 (sekarang ${N}).` });
   const courts = parseInt(body.courts) || 6;
   const matchMinutes = parseInt(body.matchMinutes) || 15;
   const p1Waves = parseInt(body.p1Waves) || 5;
@@ -4886,8 +4886,14 @@ async function reGenerateWave(eventId, body) {
     });
     const eloAt = (id) => (eloById[id] != null ? eloById[id] : 1350);
     const orderedCut = act.map((p) => p.id).sort((x, y) => (win[y] - win[x]) || (dif[y] - dif[x]) || (eloAt(y) - eloAt(x)));
-    const tierSize = Math.floor(act.length / 3);
-    orderedCut.forEach((id, i) => { tierOf[id] = i < tierSize ? "Emas" : (i < 2 * tierSize ? "Perak" : "Perunggu"); });
+    // Adaptive tier count (5 players per court): 3 tiers once there are enough
+    // players & courts, 2 for a 10-player/2-court event, and a single pool
+    // (no tier badge) for the smallest 5-player/1-court event. Bounded by both
+    // the player count and the available courts so no tier is left empty.
+    const nTiers = Math.max(1, Math.min(3, Math.floor(act.length / 5), ev.courts));
+    const tierCodes = nTiers >= 3 ? ["Emas", "Perak", "Perunggu"] : (nTiers === 2 ? ["Emas", "Perunggu"] : [""]);
+    const per = Math.floor(act.length / nTiers) || 1;
+    orderedCut.forEach((id, i) => { tierOf[id] = tierCodes[Math.min(nTiers - 1, Math.floor(i / per))]; });
     const outP = allPRows.map((r) => { const c = r.slice(); while (c.length < 10) c.push(""); if (r[0] === eventId && tierOf[r[1]]) c[5] = tierOf[r[1]]; return c.slice(0, 10); });
     if (outP.length) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.players}!A2:J${outP.length + 1}`, valueInputOption: "USER_ENTERED", requestBody: { values: outP } });
     const interval = ev.matchMinutes + 3;
@@ -4915,18 +4921,24 @@ async function reGenerateWave(eventId, body) {
     const courtNums = Array.from({ length: courtsRun }, (_, i) => i + 1);
     rePairCourts(st.ordered, courtNums).forEach((pr) => matchRows.push([eventId, genId("REM"), nextWaveNum, 1, "", pr.court, pr.a[0], pr.a[1], pr.b[0], pr.b[1], "", "", "pending", "", nowGen]));
   } else {
-    const cpt = Math.floor(ev.courts / 3);
-    const tiers = ["Emas", "Perak", "Perunggu"];
     const tieMatches = matches.filter((m) => m.phase === 1);
-    tiers.forEach((t, ti) => {
-      const ids = active.filter((p) => tierOf[p.id] === t).map((p) => p.id);
+    // Tiers actually present among active players (top -> bottom). If none were
+    // assigned (smallest single-court event) run one pool with no tier badge.
+    let tiers = ["Emas", "Perak", "Perunggu"].filter((t) => active.some((p) => tierOf[p.id] === t));
+    const single = tiers.length === 0;
+    if (single) tiers = [""];
+    const cpt = Math.max(1, Math.floor(ev.courts / tiers.length));
+    let courtBase = 0;
+    tiers.forEach((t) => {
+      const ids = active.filter((p) => (single ? true : tierOf[p.id] === t)).map((p) => p.id);
       const courtsRun = Math.min(cpt, Math.floor(ids.length / 4));
       if (courtsRun < 1) return;
       const need = ids.length - courtsRun * 4;
       const restS = new Set(reChooseRest(ids, need, restCount, lastResters));
       const playing = ids.filter((id) => !restS.has(id));
       const st = reStandings(matches, playing, eloById, 2, tieMatches);
-      const courtsForTier = Array.from({ length: courtsRun }, (_, i) => ti * cpt + i + 1);
+      const courtsForTier = Array.from({ length: courtsRun }, (_, i) => courtBase + i + 1);
+      courtBase += courtsRun;
       rePairCourts(st.ordered, courtsForTier).forEach((pr) => matchRows.push([eventId, genId("REM"), nextWaveNum, 2, t, pr.court, pr.a[0], pr.a[1], pr.b[0], pr.b[1], "", "", "pending", "", nowGen]));
     });
   }
