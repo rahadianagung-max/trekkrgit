@@ -51,6 +51,12 @@ button.gho{background:transparent}
 .rchip .el{font-size:12px;font-weight:700;color:var(--o);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
 .rchip select{font-size:12px;padding:4px}
 .rchip .rm{border:0;background:none;color:#a3271a;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
+.reco{margin-top:10px;border:1px solid #ffd9bf;background:#FFF8F2;border-radius:10px;padding:10px 12px}
+.reco h4{margin:0 0 4px;font-size:13px;color:#FF6A00}
+.reco .rl{font-size:13px;line-height:1.5}
+.reco b{font-variant-numeric:tabular-nums}
+.reco .apply{margin-top:8px;font-size:12px;padding:6px 12px;border:1px solid #FF6A00;background:#fff;color:#FF6A00;border-radius:8px;cursor:pointer}
+.reco .apply:hover{background:#FF6A00;color:#fff}
 .team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
 .muted{color:var(--mut);font-size:13px}
@@ -93,7 +99,7 @@ a.btn{display:inline-block;text-decoration:none}
     <div class="grid g4">
       <div><label>Tanggal</label><input id="f_date" type="date"></div>
       <div><label>Jam mulai</label><input id="f_start" value="13:00"></div>
-      <div><label>Court (5 pemain/court)</label><input id="f_courts" type="number" value="6"></div>
+      <div><label>Court</label><input id="f_courts" type="number" value="6"></div>
       <div><label>Menit/match</label><input id="f_min" type="number" value="15"></div>
     </div>
     <div class="grid g2">
@@ -102,13 +108,14 @@ a.btn{display:inline-block;text-decoration:none}
     </div>
     <div class="grid g2"><div><label>Kategori</label><select id="f_cat" onchange="renderRoster()"><option value="open">Open (campur, gender disimpan per pemain)</option><option value="men">Putra</option><option value="women">Putri</option><option value="mixed">Mixed</option></select></div>
     <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div></div>
-    <label>Daftar pemain — cek ke database satu per satu (5 pemain per court · kelipatan 5, min 5)</label>
+    <label>Daftar pemain — cek ke database satu per satu (jumlah bebas · rotasi direkomendasikan otomatis)</label>
     <div class="psearch">
       <input id="f_search" placeholder="Ketik nama pemain…" autocomplete="off" autocorrect="off" spellcheck="false" oninput="renderSuggest()" onfocus="renderSuggest()">
       <div id="f_suggest" class="suggest hide"></div>
     </div>
     <div class="muted" style="margin-top:4px">Ketik nama lalu pilih dari database — ELO pemain otomatis dipakai untuk seeding (<b>court 1 = ELO tertinggi</b>, court berikutnya menurun). Nama belum terdaftar? Pilih "Tambah sebagai pemain baru" lalu set level & gender.</div>
     <div id="f_roster" class="roster"></div>
+    <div id="f_reco" class="reco hide"></div>
     <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="submitNewEvent()">Buat event</button></div>
   </div>
 </div>
@@ -232,8 +239,39 @@ function renderRoster(){
     const g=fixed?'':`<select onchange="selGender(${i},this.value)"><option value="M"${s.gender!=='F'?' selected':''}>Putra</option><option value="F"${s.gender==='F'?' selected':''}>Putri</option></select>`;
     return `<div class="rchip${s.isNew?' newp':''}"><span class="nm">${esc(s.name)}</span>${g}${elo}<button class="rm" title="hapus" onclick="removeSel(${i})">✕</button></div>`;
   }).join('');
-  const n=SELECTED.length, ok=n>=5&&n%5===0;
-  $('#pcount').textContent=n+' pemain'+(n?(ok?' ✓ siap':' — butuh kelipatan 5, min 5'):'');
+  const n=SELECTED.length;
+  $('#pcount').textContent=n+' pemain'+(n?(n>=4?' ✓ siap':' — min 4'):'');
+  renderReco(n);
+}
+// Best-rotation recommendation for accurate ranking: max courts (min rest),
+// adaptive tier levels, and enough waves for standings to converge.
+function recommend(n){
+  const courts=Math.floor(n/4);
+  const rest=n-courts*4;
+  const nTiers=Math.max(1,Math.min(3,Math.floor(n/5),courts||1));
+  const tierNames=nTiers>=3?['Advance','Intermediate','Prospect']:(nTiers===2?['Advance','Prospect']:['satu pool (tanpa tier)']);
+  const perWave=Math.ceil(n/Math.max(1,courts));
+  return {courts,rest,nTiers,tierNames,p1:Math.max(3,perWave),p2:Math.max(3,perWave+1)};
+}
+function renderReco(n){
+  const box=$('#f_reco'); if(!box) return;
+  if(n<4){box.classList.add('hide');box.innerHTML='';return;}
+  const r=recommend(n);
+  const restLine=r.rest===0
+    ?`<b>${r.courts}</b> court — semua pemain main tiap gelombang, tak ada yang istirahat <b>(paling akurat)</b>.`
+    :`<b>${r.courts}</b> court — <b>${r.rest}</b> pemain istirahat bergilir tiap gelombang. Tambah/kurangi pemain ke kelipatan 4 agar tak ada istirahat.`;
+  box.innerHTML=`<h4>Rekomendasi rotasi (${n} pemain)</h4>
+    <div class="rl">${restLine}</div>
+    <div class="rl">Fase tier: <b>${r.nTiers}</b> level — ${r.tierNames.join(' · ')}.</div>
+    <div class="rl">Gelombang: Fase 1 (seeding) <b>${r.p1}</b> · Fase 2 (tier) <b>${r.p2}</b>. Makin banyak gelombang → ranking makin akurat.</div>
+    <button class="apply" type="button" onclick="applyReco()">Terapkan rekomendasi ke pengaturan</button>`;
+  box.classList.remove('hide');
+}
+function applyReco(){
+  const n=SELECTED.length; if(n<4) return;
+  const r=recommend(n);
+  $('#f_courts').value=r.courts;$('#f_p1').value=r.p1;$('#f_p2').value=r.p2;
+  const b=$('#f_reco').querySelector('.apply'); if(b)b.textContent='✓ Diterapkan ke court & gelombang';
 }
 document.addEventListener('click',e=>{if($('#f_suggest')&&!e.target.closest('.psearch'))$('#f_suggest').classList.add('hide');});
 
@@ -251,7 +289,7 @@ async function loadEvents(){
 }
 async function submitNewEvent(){
   const n=SELECTED.length;
-  if(n<5||n%5!==0){err(`Jumlah pemain harus kelipatan 5 (5 pemain per court) dan minimal 5 (sekarang ${n}).`);return;}
+  if(n<4){err(`Minimal 4 pemain untuk mengisi 1 court (sekarang ${n}).`);return;}
   const cat=$('#f_cat').value, cg=cat==='men'?'M':(cat==='women'?'F':'');
   const players=SELECTED.map(s=>({name:s.name,level:s.isNew?(s.level||$('#f_level').value):'',gender:cg||s.gender||''}));
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,

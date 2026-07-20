@@ -4781,7 +4781,7 @@ async function reCreateEvent(body) {
     return { name: String(parts[0] || "").trim(), level: String(parts[1] || "").trim(), gender: normGender(parts[2]) };
   }).filter((x) => x.name);
   const N = roster.length;
-  if (N < 5 || N % 5 !== 0) return respond(400, { error: `Jumlah pemain harus kelipatan 5 (5 pemain per court) dan minimal 5 (sekarang ${N}).` });
+  if (N < 4) return respond(400, { error: `Minimal 4 pemain untuk mengisi 1 court (sekarang ${N}).` });
   const courts = parseInt(body.courts) || 6;
   const matchMinutes = parseInt(body.matchMinutes) || 15;
   const p1Waves = parseInt(body.p1Waves) || 5;
