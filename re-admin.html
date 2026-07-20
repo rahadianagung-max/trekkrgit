@@ -93,7 +93,7 @@ a.btn{display:inline-block;text-decoration:none}
     <div class="grid g4">
       <div><label>Tanggal</label><input id="f_date" type="date"></div>
       <div><label>Jam mulai</label><input id="f_start" value="13:00"></div>
-      <div><label>Court</label><input id="f_courts" type="number" value="6"></div>
+      <div><label>Court (5 pemain/court)</label><input id="f_courts" type="number" value="6"></div>
       <div><label>Menit/match</label><input id="f_min" type="number" value="15"></div>
     </div>
     <div class="grid g2">
@@ -102,7 +102,7 @@ a.btn{display:inline-block;text-decoration:none}
     </div>
     <div class="grid g2"><div><label>Kategori</label><select id="f_cat" onchange="renderRoster()"><option value="open">Open (campur, gender disimpan per pemain)</option><option value="men">Putra</option><option value="women">Putri</option><option value="mixed">Mixed</option></select></div>
     <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div></div>
-    <label>Daftar pemain — cek ke database satu per satu (kelipatan 12, ideal 36)</label>
+    <label>Daftar pemain — cek ke database satu per satu (5 pemain per court · kelipatan 5, min 5)</label>
     <div class="psearch">
       <input id="f_search" placeholder="Ketik nama pemain…" autocomplete="off" autocorrect="off" spellcheck="false" oninput="renderSuggest()" onfocus="renderSuggest()">
       <div id="f_suggest" class="suggest hide"></div>
@@ -232,8 +232,8 @@ function renderRoster(){
     const g=fixed?'':`<select onchange="selGender(${i},this.value)"><option value="M"${s.gender!=='F'?' selected':''}>Putra</option><option value="F"${s.gender==='F'?' selected':''}>Putri</option></select>`;
     return `<div class="rchip${s.isNew?' newp':''}"><span class="nm">${esc(s.name)}</span>${g}${elo}<button class="rm" title="hapus" onclick="removeSel(${i})">✕</button></div>`;
   }).join('');
-  const n=SELECTED.length, ok=n>=24&&n%12===0;
-  $('#pcount').textContent=n+' pemain'+(n?(ok?' ✓ siap':' — butuh kelipatan 12, min 24'):'');
+  const n=SELECTED.length, ok=n>=5&&n%5===0;
+  $('#pcount').textContent=n+' pemain'+(n?(ok?' ✓ siap':' — butuh kelipatan 5, min 5'):'');
 }
 document.addEventListener('click',e=>{if($('#f_suggest')&&!e.target.closest('.psearch'))$('#f_suggest').classList.add('hide');});
 
@@ -251,7 +251,7 @@ async function loadEvents(){
 }
 async function submitNewEvent(){
   const n=SELECTED.length;
-  if(n<24||n%12!==0){err(`Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${n}).`);return;}
+  if(n<5||n%5!==0){err(`Jumlah pemain harus kelipatan 5 (5 pemain per court) dan minimal 5 (sekarang ${n}).`);return;}
   const cat=$('#f_cat').value, cg=cat==='men'?'M':(cat==='women'?'F':'');
   const players=SELECTED.map(s=>({name:s.name,level:s.isNew?(s.level||$('#f_level').value):'',gender:cg||s.gender||''}));
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
