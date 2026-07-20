@@ -36,6 +36,21 @@ button.gho{background:transparent}
 .ct{border:1px solid var(--bd);border-radius:10px;padding:11px}
 .ct .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .ct .h b{font-size:14px}.tier{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:#FFF4EA;color:#FF6A00}
+.psearch{position:relative}.psearch input{width:100%}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:300px;overflow:auto}
+.suggest .si{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;border-bottom:1px solid #f2ede8}
+.suggest .si:last-child{border-bottom:0}.suggest .si:hover{background:#FFF4EA}
+.suggest .si .nm{flex:1;font-weight:600;font-size:14px}
+.suggest .si .el{font-size:12px;color:var(--o);font-weight:700;font-variant-numeric:tabular-nums}
+.suggest .si.new{color:var(--o);font-weight:700}
+.suggest .si.dis{opacity:.5;cursor:default;background:#faf7f4}
+.roster{margin-top:10px;display:grid;gap:6px}
+.rchip{display:flex;align-items:center;gap:8px;border:1px solid var(--bd);border-radius:8px;padding:7px 10px}
+.rchip.newp{border-style:dashed}
+.rchip .nm{flex:1;font-weight:600;font-size:14px}
+.rchip .el{font-size:12px;font-weight:700;color:var(--o);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+.rchip select{font-size:12px;padding:4px}
+.rchip .rm{border:0;background:none;color:#a3271a;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
 .team{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .sc{font-weight:700;font-size:15px}.win{color:var(--ok)}
 .muted{color:var(--mut);font-size:13px}
@@ -85,11 +100,15 @@ a.btn{display:inline-block;text-decoration:none}
       <div><label>Gelombang Fase 1 (seeding)</label><input id="f_p1" type="number" value="5"></div>
       <div><label>Gelombang Fase 2 (tier)</label><input id="f_p2" type="number" value="6"></div>
     </div>
-    <div class="grid g2"><div><label>Kategori</label><select id="f_cat"><option value="open">Open (campur, gender disimpan per pemain)</option><option value="men">Putra</option><option value="women">Putri</option><option value="mixed">Mixed</option></select></div>
+    <div class="grid g2"><div><label>Kategori</label><select id="f_cat" onchange="renderRoster()"><option value="open">Open (campur, gender disimpan per pemain)</option><option value="men">Putra</option><option value="women">Putri</option><option value="mixed">Mixed</option></select></div>
     <div><label>Level default (untuk pemain yang belum punya ELO)</label><select id="f_level"></select></div></div>
-    <label>Daftar pemain — satu nama per baris (kelipatan 12, ideal 36)</label>
-    <textarea id="f_players" placeholder="Reza A.&#10;Andi P. | gold | M&#10;Sari W. | silver | F&#10;..."></textarea>
-    <div class="muted" style="margin-top:4px">Tip: set per orang dengan format <b>Nama | level | gender</b> (mis. "Sari | silver | F"). Tanpa level → level default; tanpa gender → ikut kategori (Putra=M, Putri=F, Open/Mixed=M). Pemain yang sudah punya ELO global pakai ELO-nya.</div>
+    <label>Daftar pemain — cek ke database satu per satu (kelipatan 12, ideal 36)</label>
+    <div class="psearch">
+      <input id="f_search" placeholder="Ketik nama pemain…" autocomplete="off" autocorrect="off" spellcheck="false" oninput="renderSuggest()" onfocus="renderSuggest()">
+      <div id="f_suggest" class="suggest hide"></div>
+    </div>
+    <div class="muted" style="margin-top:4px">Ketik nama lalu pilih dari database — ELO pemain otomatis dipakai untuk seeding (<b>court 1 = ELO tertinggi</b>, court berikutnya menurun). Nama belum terdaftar? Pilih "Tambah sebagai pemain baru" lalu set level & gender.</div>
+    <div id="f_roster" class="roster"></div>
     <div class="row" style="margin-top:6px"><span class="muted" id="pcount">0 pemain</span><div class="sp"></div><button class="pri" id="createBtn" onclick="submitNewEvent()">Buat event</button></div>
   </div>
 </div>
@@ -150,13 +169,73 @@ async function api(path,opts){
 }
 function show(id){['home','create','panel'].forEach(x=>$('#'+x).classList.toggle('hide',x!==id));}
 function showHome(){clearInterval(POLL);show('home');loadEvents();}
-function showCreate(){show('create');}
+function showCreate(){show('create');SELECTED=[];renderRoster();if($('#f_search'))$('#f_search').value='';if($('#f_suggest'))$('#f_suggest').classList.add('hide');loadPlayerDB();}
 function gp(){return Object.fromEntries(new URLSearchParams(location.search));}
 const LEVELS=[['upper_beginner','Upper Beginner'],['lower_bronze','Lower Bronze'],['bronze','Bronze'],['upper_bronze','Upper Bronze'],['silver','Silver'],['gold','Gold'],['platinum','Platinum']];
+const TIER_LBL={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};
+const tierLbl=t=>TIER_LBL[t]||t||'';
 function levelOpts(sel){return LEVELS.map(([k,l])=>`<option value="${k}"${k===sel?' selected':''}>${l}</option>`).join('');}
 $('#f_level').innerHTML=levelOpts('lower_bronze');
 
-$('#f_players').addEventListener('input',()=>{const n=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean).length;$('#pcount').textContent=n+' pemain';});
+// ---- player picker: DB-checked entry, one by one (like ranked match) ----
+let PLIST=null, SELECTED=[], SUGG=[];
+const normKey=s=>String(s||'').trim().toLowerCase();
+const catGender=()=>{const c=$('#f_cat').value;return c==='men'?'M':(c==='women'?'F':'');};
+async function loadPlayerDB(){
+  if(PLIST) return;
+  try{
+    const [pd,ed]=await Promise.all([api('players'),api('elo/latest')]);
+    const elo={}, el=(ed&&ed.players)||{};
+    Object.keys(el).forEach(k=>{elo[normKey(k)]=el[k].elo;});
+    PLIST=((pd&&pd.players)||[]).map(p=>({name:p.name,gender:(p.gender||'M').toUpperCase(),elo:elo[normKey(p.name)]!=null?elo[normKey(p.name)]:null}));
+    PLIST.sort((a,b)=>(b.elo||0)-(a.elo||0));
+  }catch(e){PLIST=[];err('Gagal memuat database pemain: '+e.message);}
+}
+function renderSuggest(){
+  const box=$('#f_suggest'); if(!box) return;
+  const q=normKey($('#f_search').value);
+  if(!q){box.classList.add('hide');box.innerHTML='';return;}
+  const picked=new Set(SELECTED.map(s=>normKey(s.name)));
+  SUGG=(PLIST||[]).filter(p=>normKey(p.name).includes(q)).slice(0,8);
+  let html=SUGG.map((p,i)=>{
+    const dup=picked.has(normKey(p.name));
+    const elo=p.elo!=null?`<span class="el">${p.elo}</span>`:'<span class="muted" style="font-size:11px">belum ada ELO</span>';
+    return `<div class="si${dup?' dis':''}"${dup?'':` onclick="pickIdx(${i})"`}><span class="nm">${esc(p.name)}</span>${elo}${dup?'<span class="muted" style="font-size:11px">✓ dipilih</span>':''}</div>`;
+  }).join('');
+  const exact=(PLIST||[]).some(p=>normKey(p.name)===q);
+  if(!exact){const disp=$('#f_search').value.trim();html+=`<div class="si new" onclick="pickNew()">＋ Tambah "${esc(disp)}" sebagai pemain baru</div>`;}
+  box.innerHTML=html||'<div class="si dis">Tak ada hasil</div>';
+  box.classList.remove('hide');
+}
+function pickIdx(i){
+  const p=SUGG[i]; if(!p) return;
+  if(SELECTED.some(s=>normKey(s.name)===normKey(p.name))) return;
+  SELECTED.push({name:p.name,elo:p.elo,gender:p.gender,level:'',isNew:false});
+  afterPick();
+}
+function pickNew(){
+  const name=$('#f_search').value.trim(); if(!name) return;
+  if(SELECTED.some(s=>normKey(s.name)===normKey(name))) return;
+  SELECTED.push({name,elo:null,gender:catGender()||'M',level:$('#f_level').value,isNew:true});
+  afterPick();
+}
+function afterPick(){$('#f_search').value='';$('#f_suggest').classList.add('hide');renderRoster();$('#f_search').focus();}
+function removeSel(i){SELECTED.splice(i,1);renderRoster();}
+function selGender(i,v){if(SELECTED[i])SELECTED[i].gender=v;}
+function selLevel(i,v){if(SELECTED[i])SELECTED[i].level=v;}
+function renderRoster(){
+  const box=$('#f_roster'); if(!box) return;
+  const fixed=(function(){const c=$('#f_cat').value;return c==='men'||c==='women';})();
+  box.innerHTML=SELECTED.map((s,i)=>{
+    const elo=s.elo!=null?`<span class="el">${s.elo}</span>`
+      :(s.isNew?`<select onchange="selLevel(${i},this.value)">${levelOpts(s.level)}</select>`:'<span class="muted" style="font-size:11px">ELO floor</span>');
+    const g=fixed?'':`<select onchange="selGender(${i},this.value)"><option value="M"${s.gender!=='F'?' selected':''}>Putra</option><option value="F"${s.gender==='F'?' selected':''}>Putri</option></select>`;
+    return `<div class="rchip${s.isNew?' newp':''}"><span class="nm">${esc(s.name)}</span>${g}${elo}<button class="rm" title="hapus" onclick="removeSel(${i})">✕</button></div>`;
+  }).join('');
+  const n=SELECTED.length, ok=n>=24&&n%12===0;
+  $('#pcount').textContent=n+' pemain'+(n?(ok?' ✓ siap':' — butuh kelipatan 12, min 24'):'');
+}
+document.addEventListener('click',e=>{if($('#f_suggest')&&!e.target.closest('.psearch'))$('#f_suggest').classList.add('hide');});
 
 async function loadEvents(){
   try{
@@ -171,7 +250,10 @@ async function loadEvents(){
   }catch(e){err(e.message);}
 }
 async function submitNewEvent(){
-  const players=$('#f_players').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const n=SELECTED.length;
+  if(n<24||n%12!==0){err(`Jumlah pemain harus kelipatan 12 dan minimal 24 (sekarang ${n}).`);return;}
+  const cat=$('#f_cat').value, cg=cat==='men'?'M':(cat==='women'?'F':'');
+  const players=SELECTED.map(s=>({name:s.name,level:s.isNew?(s.level||$('#f_level').value):'',gender:cg||s.gender||''}));
   const body={name:$('#f_name').value||'Ranked Event',venue:$('#f_venue').value,date:$('#f_date').value,startTime:$('#f_start').value,
     courts:+$('#f_courts').value,matchMinutes:+$('#f_min').value,p1Waves:+$('#f_p1').value,p2Waves:+$('#f_p2').value,defaultLevel:$('#f_level').value,category:$('#f_cat').value,players};
   $('#createBtn').disabled=true;
@@ -244,7 +326,7 @@ function ctCard(m,subs){
   const slots=[{id:(m.aIds||[])[0],name:m.teamA[0]},{id:(m.aIds||[])[1],name:m.teamA[1]},{id:(m.bIds||[])[0],name:m.teamB[0]},{id:(m.bIds||[])[1],name:m.teamB[1]}];
   const swap=done?'':`<details style="margin-top:8px"><summary style="font-size:12px;color:var(--o);cursor:pointer">Ganti pemain</summary>
    <div class="row" style="gap:5px;margin-top:6px"><select id="out_${m.matchId}" style="font-size:12px;padding:5px;flex:1">${slots.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><span>→</span><select id="in_${m.matchId}" style="font-size:12px;padding:5px;flex:1">${(subs||[]).length?subs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''):'<option value="">(tak ada pemain bebas)</option>'}</select><button onclick="swapDo('${m.matchId}')" style="font-size:12px;padding:5px 9px">Ganti</button></div></details>`;
-  return `<div class="ct"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${m.tier}</span>`:`<span class="muted" style="font-size:11px">${done?'selesai':'berjalan'}</span>`}</div>
+  return `<div class="ct"><div class="h"><b>Court ${m.court}</b>${m.tier?`<span class="tier">${tierLbl(m.tier)}</span>`:`<span class="muted" style="font-size:11px">${done?'selesai':'berjalan'}</span>`}</div>
    <div class="team"><span>${esc(m.teamA.join(' / '))}</span><span class="sc ${aw?'win':''}">${done?m.scoreA:'–'}</span></div>
    <div class="team"><span>${esc(m.teamB.join(' / '))}</span><span class="sc ${bw?'win':''}">${done?m.scoreB:'–'}</span></div>${swap}</div>`;
 }
@@ -260,7 +342,7 @@ async function renderRank(){
     let last='';
     $('#t_rank').innerHTML=(final?'<h3>Ranking final</h3>':'<h3>Klasemen live</h3>')+ranking.map(r=>{
       let hdr='';
-      if(r.tier&&r.tier!==last){last=r.tier;hdr=`<div class="muted" style="margin:8px 0 4px;font-weight:600">${r.tier}</div>`;}
+      if(r.tier&&r.tier!==last){last=r.tier;hdr=`<div class="muted" style="margin:8px 0 4px;font-weight:600">${tierLbl(r.tier)}</div>`;}
       return hdr+`<div class="lb" ${r.withdrawn?'style="opacity:.55"':''}><span><span class="rk">${r.rank}</span>${esc(r.name||'')}${r.withdrawn?' <span class="muted">(withdrawn)</span>':''}</span><span>${r.diff>0?'+':''}${r.diff} · ${r.elo}</span></div>`;
     }).join('');
   }catch(e){$('#t_rank').innerHTML='<div class="muted">'+e.message+'</div>';}
@@ -280,7 +362,7 @@ function renderPeople(){
 }
 function playerRow(p,base){
   const wd=p.status==='withdrawn';
-  const badge=wd?'<span class="pill" style="background:#fdecea;color:#a3271a">withdrawn</span>':(p.tier?`<span class="tier">${p.tier}</span>`:'');
+  const badge=wd?'<span class="pill" style="background:#fdecea;color:#a3271a">withdrawn</span>':(p.tier?`<span class="tier">${tierLbl(p.tier)}</span>`:'');
   return `<div class="lb" style="border:1px solid var(--bd);border-radius:8px;${wd?'opacity:.6':''}">
     <span style="flex:1;display:flex;align-items:center;gap:6px"><a href="${base}?e=${CUR}&p=${p.id}" target="_blank" style="color:inherit;text-decoration:none">${esc(p.name)}</a>${p.claimed?' ✓':''} ${badge}</span>
     <span style="display:flex;align-items:center;gap:6px">

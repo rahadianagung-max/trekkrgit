@@ -46,7 +46,7 @@ h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em
 const API='https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,POLL=null;
-const TIER_EN={Emas:'Upper',Perak:'Middle',Perunggu:'Lower'};
+const TIER_EN={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};
 const CAT={open:'Open',men:'Men',women:'Women',mixed:'Mixed'};
 function tierEN(t){return TIER_EN[t]||t;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
