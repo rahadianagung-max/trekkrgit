@@ -449,17 +449,7 @@
   }
   function catBody(cat){
     return tourPodium(cat)
-      +'<div class="vmode" style="margin-top:16px"><button class="vmode-b on" data-ct="stand">Standings</button><button class="vmode-b" data-ct="perf">Player Performance</button></div>'
-      +'<div class="ct-stand ct-pane"><div class="sec-label" style="margin-top:14px">Final standings &middot; by pair</div>'+tourPairsTable(cat)+'</div>'
-      +'<div class="ct-perf ct-pane" style="display:none"><div class="sec-label" style="margin-top:14px">Player performance &middot; ranked by ELO</div>'+tourPlayersTable(cat)+'</div>';
-  }
-  function wireSubTabs(box){
-    var mb=box.querySelectorAll('.vmode-b[data-ct]');
-    Array.prototype.forEach.call(mb,function(b){b.addEventListener('click',function(){
-      Array.prototype.forEach.call(mb,function(x){x.classList.toggle('on',x===b);});
-      box.querySelector('.ct-stand').style.display=b.getAttribute('data-ct')==='stand'?'':'none';
-      box.querySelector('.ct-perf').style.display=b.getAttribute('data-ct')==='perf'?'':'none';
-    });});
+      +'<div class="sec-label" style="margin-top:16px">Final standings &middot; by pair</div>'+tourPairsTable(cat);
   }
   function loadTournamentPage(cslug){
     content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
@@ -477,7 +467,7 @@
       html+='<div id="catBody"></div>';
       content.innerHTML=html;
       var body=document.getElementById('catBody');
-      function renderCat(i){ body.innerHTML=catBody(cats[i]); wireSubTabs(body); }
+      function renderCat(i){ body.innerHTML=catBody(cats[i]); }
       renderCat(0);
       var cb=content.querySelectorAll('.catbar .vmode-b[data-ci]');
       Array.prototype.forEach.call(cb,function(b){b.addEventListener('click',function(){
