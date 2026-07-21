@@ -132,6 +132,7 @@ a.btn{display:inline-block;text-decoration:none}
     <div class="row" style="margin-top:12px">
       <button class="pri" id="genBtn" onclick="genWave()">Generate gelombang berikutnya</button>
       <button class="gho" onclick="loadPanel()">↻ Refresh</button>
+      <button class="gho" id="finishBtn" onclick="finishEvent()" style="color:#a3271a;border-color:#f0c8c0">Akhiri event sekarang</button>
       <div class="sp"></div>
       <span class="muted" id="p_wave"></span>
     </div>
@@ -318,6 +319,9 @@ async function loadPanel(){
     const gb=$('#genBtn');
     gb.disabled=!cw.canGenerateNext;
     gb.textContent=e.currentWave===0?'Mulai gelombang 1':(cw.canGenerateNext?(e.currentWave>=e.p1Waves&&e.phase<2?'Potong tier & mulai Fase 2':'Generate gelombang '+(e.currentWave+1)):`Menunggu skor (${cw.done}/${cw.total})`);
+    const fb=$('#finishBtn');
+    if(e.status==='done'){fb.disabled=true;fb.textContent='Event selesai ✓';}
+    else{fb.disabled=false;fb.textContent='Akhiri event sekarang';}
     $('#topstat').textContent=e.name;
     renderBoard();renderRank();renderPeople();renderLinks();
   }catch(e){err(e.message);}
@@ -326,6 +330,15 @@ async function genWave(){
   $('#genBtn').disabled=true;
   try{ await api('re/event/'+CUR+'/wave',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); await loadPanel(); }
   catch(e){err(e.message);loadPanel();}
+}
+async function finishEvent(){
+  if(DATA&&DATA.event&&DATA.event.status==='done'){err('Event sudah selesai.');return;}
+  const cw=(DATA&&DATA.currentWave)||{done:0,total:0};
+  const pending=cw.total-cw.done;
+  if(!confirm('Akhiri event sekarang?\n\n• Klasemen saat ini dikunci sebagai RANKING FINAL & juara ditampilkan.\n• Gelombang berikutnya tidak bisa dibuat lagi.\n\nELO tiap match yang SUDAH diskor sudah otomatis terhitung — mengakhiri tidak menambah/mengubah ELO.'+(pending>0?'\n\n⚠︎ Ada '+pending+' court gelombang ini yang belum diskor — itu tidak akan dihitung.':''))) return;
+  const b=$('#finishBtn');b.disabled=true;b.textContent='Mengakhiri...';
+  try{ await api('re/event/'+CUR+'/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); await loadPanel(); }
+  catch(e){err(e.message);b.disabled=false;b.textContent='Akhiri event sekarang';}
 }
 async function rebuildElo(){
   if(!confirm('Hitung ulang ELO event ini? Baris ELO yang salah dihapus lalu match diputar ulang dengan ELO benar. Skor tidak hilang.'))return;
