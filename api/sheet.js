@@ -3360,11 +3360,14 @@ function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
 // passports show match history + best-performing-partner (both derived from venue
 // matches). Registers the venue + creates the tab if missing. Idempotent: rows are
 // tagged by sourceTag, and a re-run replaces only this tournament's prior rows.
-async function writeTournamentVenueRows(sheets, venueName, rows, sourceTag) {
+async function writeTournamentVenueRows(sheets, venueName, rows, sourceTag, opts = {}) {
   if (!venueName || !rows || !rows.length) return;
   const now = new Date().toISOString();
-  // 1) register the venue if it isn't listed (so the passport iterates it)
-  try {
+  // 1) register the venue if it isn't listed (so the passport iterates it).
+  //    Skipped for fallback pseudo-venues (register:false) — the passport also
+  //    reads orphan Venue_* tabs, so history still shows without polluting the
+  //    public Venues directory.
+  if (opts.register !== false) try {
     const vr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:A` });
     const have = (vr.data.values || []).some((r) => (r[0] || "").trim().toLowerCase() === venueName.trim().toLowerCase());
     if (!have) {
@@ -5050,7 +5053,9 @@ async function rePurge(eventId, body) {
   if (doVenue) {
     const evRows = await reGet(sheets, RE.events, "A2:N");
     const ev = evRows.find((r) => r[0] === eventId);
-    if (ev && ev[2]) { try { await writeTournamentVenueRows(sheets, ev[2], [], "RE_" + eventId); removed.venue = 1; } catch (e) { console.error("venue purge:", e); } }
+    // Clear rows from whichever tab this event wrote to — the real Venue or the
+    // fallback (event-name) tab used when no Venue was set.
+    if (ev) { try { await writeTournamentVenueRows(sheets, reVenueLabel(reEventObj(ev)), [], "RE_" + eventId); removed.venue = 1; } catch (e) { console.error("venue purge:", e); } }
   }
   if (doEvent) {
     for (const [tab, range, key] of [[RE.matches, "A2:O", "matches"], [RE.waves, "A2:F", "waves"], [RE.players, "A2:J", "players"], [RE.events, "A2:N", "events"]]) {
@@ -5150,13 +5155,16 @@ async function reSubmitScore(eventId, body) {
         await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:N${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 14)] } });
         eventDone = true;
       }
-      // Sync this event's finished matches into the venue weekly log (idempotent).
-      if (ev.venue) {
+      // Sync this event's finished matches into the venue weekly log (idempotent)
+      // so results reach player passports. Always runs — if no Venue was set we
+      // file under a fallback label (event name) without registering it publicly.
+      {
         try {
           const allDone = mRows.filter((r) => r[0] === eventId).map(reMatchObj);
           allDone.push({ ...m, scoreA, scoreB, status: "done" }); // include the just-saved one
           const vrows = reVenueRows(ev, players, allDone);
-          if (vrows.length) await writeTournamentVenueRows(sheets, ev.venue, vrows, "RE_" + eventId);
+          const named = !!(ev.venue && ev.venue.trim());
+          if (vrows.length) await writeTournamentVenueRows(sheets, reVenueLabel(ev), vrows, "RE_" + eventId, { register: named });
         } catch (e) { console.error("re venue sync:", e); }
       }
     }
@@ -5181,15 +5189,23 @@ async function reFinishEvent(eventId) {
     const row = evRows[ei].slice(); while (row.length < 14) row.push(""); row[5] = "done";
     await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:N${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 14)] } });
   }
-  if (ev.venue) {
-    try { const vrows = reVenueRows(ev, players, doneMatches); if (vrows.length) await writeTournamentVenueRows(sheets, ev.venue, vrows, "RE_" + eventId); }
-    catch (e) { console.error("re finish venue:", e); }
-  }
+  try {
+    const vrows = reVenueRows(ev, players, doneMatches);
+    const named = !!(ev.venue && ev.venue.trim());
+    if (vrows.length) await writeTournamentVenueRows(sheets, reVenueLabel(ev), vrows, "RE_" + eventId, { register: named });
+  } catch (e) { console.error("re finish venue:", e); }
   reCacheClear();
-  return respond(200, { ok: true, status: "done", scored: doneMatches.length });
+  return respond(200, { ok: true, status: "done", scored: doneMatches.length, venue: reVenueLabel(ev) });
 }
 
 // Build venue weekly-log rows (13-col per-player-gender layout) from finished event matches.
+// Where a Ranked Event's results are filed on player passports. Prefer the
+// event's Venue; if it was left blank fall back to the event name (or a generic
+// label) so results still land in a Venue_ tab and show up in passport history.
+function reVenueLabel(ev) {
+  const v = (ev.venue || "").trim(); if (v) return v;
+  const n = (ev.name || "").trim(); return n || "Ranked Event";
+}
 function reVenueRows(event, players, matches) {
   const nameById = {}, genderById = {};
   players.forEach((p) => { nameById[p.id] = p.name; genderById[p.id] = p.gender || "M"; });
