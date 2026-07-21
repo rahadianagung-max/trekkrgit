@@ -488,6 +488,8 @@ const netlifyHandler = async (event) => {
       return await rePurge(decodeURIComponent(path.replace("re/event/", "").replace("/purge", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/rebuild-elo") && method === "POST")
       return await reRebuildElo(decodeURIComponent(path.replace("re/event/", "").replace("/rebuild-elo", "")));
+    if (path.startsWith("re/event/") && path.endsWith("/finish") && method === "POST")
+      return await reFinishEvent(decodeURIComponent(path.replace("re/event/", "").replace("/finish", "")));
     if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
       return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
     if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
@@ -5161,6 +5163,30 @@ async function reSubmitScore(eventId, body) {
   }
   reCacheClear();
   return respond(200, { ok: true, matchId, scoreA, scoreB, waveComplete, eventDone });
+}
+
+// End an event early: lock the current standings as the final ranking/champion
+// and stop further waves. ELO is NOT recomputed here — every scored match has
+// already been rated into ELO_Log live by reSubmitScore, so ending just closes
+// the event and does a final idempotent sync of scored matches to the venue log.
+async function reFinishEvent(eventId) {
+  const sheets = getSheets(); await reEnsureTabs(sheets); RE_QU = "re:finish:" + eventId;
+  const [evRows, pRows, mRows] = await reBatchGet(sheets, [`${RE.events}!A2:N`, `${RE.players}!A2:J`, `${RE.matches}!A2:O`], null, true);
+  const ei = evRows.findIndex((r) => r[0] === eventId);
+  if (ei < 0) return respond(404, { error: "Event not found" });
+  const ev = reEventObj(evRows[ei]);
+  const players = pRows.filter((r) => r[0] === eventId).map(rePlayerObj);
+  const doneMatches = mRows.filter((r) => r[0] === eventId).map(reMatchObj).filter((m) => m.status === "done");
+  if (ev.status !== "done") {
+    const row = evRows[ei].slice(); while (row.length < 14) row.push(""); row[5] = "done";
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${RE.events}!A${ei + 2}:N${ei + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [row.slice(0, 14)] } });
+  }
+  if (ev.venue) {
+    try { const vrows = reVenueRows(ev, players, doneMatches); if (vrows.length) await writeTournamentVenueRows(sheets, ev.venue, vrows, "RE_" + eventId); }
+    catch (e) { console.error("re finish venue:", e); }
+  }
+  reCacheClear();
+  return respond(200, { ok: true, status: "done", scored: doneMatches.length });
 }
 
 // Build venue weekly-log rows (13-col per-player-gender layout) from finished event matches.
