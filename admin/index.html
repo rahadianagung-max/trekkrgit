@@ -1463,7 +1463,7 @@ function rmGenerateRound(isFirst=false) {
   const sorted = isFirst
     ? players.sort((a,b)=>b.elo-a.elo)
     : players.sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.pointDiff||0)-(a.pointDiff||0)||b.elo-a.elo);
-  const {byeCount}=rmBuildHistory();
+  const {byeCount,partnerCount,opponentCount}=rmBuildHistory();
   const n=sorted.length;
   const playCount=Math.min(maxPlay, Math.floor(n/4)*4);   // only full courts of 4 play
   const extra=n-playCount;
@@ -1474,10 +1474,30 @@ function rmGenerateRound(isFirst=false) {
     activePlayers=sorted.filter(p=>!byePlayers.includes(p.name));
   }
   const ap=[...activePlayers];
+  // Anti-repeat: the 4 players on a court are already the same level band (grouped
+  // by rank), so ANY 2v2 split stays "selevel". Among the 3 possible splits pick
+  // the one that least repeats past partnerships & oppositions — so matches are
+  // both balanced AND varied. Ties fall back to the balanced 1+4 vs 2+3.
+  const partnered=(a,b)=>((partnerCount[a]&&partnerCount[a][b])||0);
+  const opposed=(a,b)=>((opponentCount[a]&&opponentCount[a][b])||0);
+  const splitCost=(t1,t2)=>{
+    const nm=x=>x.name;
+    // partner repeats weigh more than opponent repeats (facing again is milder).
+    let cost=3*(partnered(nm(t1[0]),nm(t1[1]))+partnered(nm(t2[0]),nm(t2[1])));
+    cost+=opposed(nm(t1[0]),nm(t2[0]))+opposed(nm(t1[0]),nm(t2[1]))+opposed(nm(t1[1]),nm(t2[0]))+opposed(nm(t1[1]),nm(t2[1]));
+    return cost;
+  };
   const matches=[];
   for(let c=0;c<ap.length/4;c++){
-    const i=c*4;  // ranks i..i+3 within this court -> 1+4 vs 2+3
-    matches.push({court:c+1, team1:[ap[i],ap[i+3]], team2:[ap[i+1],ap[i+2]], score1:null, score2:null});
+    const g=ap.slice(c*4,c*4+4);
+    if(g.length<4) break;
+    const opts=[
+      {t1:[g[0],g[3]],t2:[g[1],g[2]],bal:0}, // 1+4 vs 2+3 — most balanced (tie-break winner)
+      {t1:[g[0],g[2]],t2:[g[1],g[3]],bal:1},
+      {t1:[g[0],g[1]],t2:[g[2],g[3]],bal:2},
+    ].map(o=>({...o,cost:splitCost(o.t1,o.t2)}));
+    opts.sort((a,b)=>a.cost-b.cost||a.bal-b.bal);
+    matches.push({court:c+1, team1:opts[0].t1, team2:opts[0].t2, score1:null, score2:null});
   }
   return {matches,byePlayers};
 }
