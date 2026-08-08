@@ -3494,8 +3494,14 @@ async function tFinalizeElo(eventId, force) {
   }
   // Record tournament matches into the event's venue log (for passport history + best partner).
   try {
-    const venueName = evRow[2] || "";
-    if (venueName) {
+    // Venue is OPTIONAL on a tournament event. When it's blank, fall back to the event
+    // NAME so the matches still land in a Venue_* tab — the passport reads orphan Venue_*
+    // tabs too, so history shows up either way. The fallback is NOT registered in the
+    // public Venues directory (register:false) to avoid polluting it. Without this, an
+    // event with no venue finalised ELO but never logged any Playing History.
+    const realVenue = (evRow[2] || "").trim();
+    const logVenue = realVenue || (evRow[1] || "").trim() || ("Turnamen " + eventId);
+    {
       const vDate = evRow[3] || now.split("T")[0];
       const vWeek = `W${getWeekNumber(new Date(vDate))}`;
       const catByTid = {};
@@ -3525,7 +3531,7 @@ async function tFinalizeElo(eventId, force) {
           scoreT1: Number(m.scoreA), scoreT2: Number(m.scoreB), genders, source: srcTag,
         }));
       }
-      await writeTournamentVenueRows(sheets, venueName, venueRows, srcTag);
+      await writeTournamentVenueRows(sheets, logVenue, venueRows, srcTag, { register: !!realVenue });
     }
   } catch (e) { console.error("Tournament venue log error:", e); }
 
