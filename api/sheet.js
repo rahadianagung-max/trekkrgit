@@ -579,7 +579,7 @@ async function getPlayers(params) {
 
 async function getPlayerDetail(name) {
   const sheets = getSheets();
-  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
+  const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
   const pRows = pRes.data.values || [];
   const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
   if (!pRow) return respond(404, { error: "Player not found" });
@@ -589,6 +589,9 @@ async function getPlayerDetail(name) {
     displayName: pRow[3] || pRow[0], gender: (pRow[4] || "M").toUpperCase(),
     region: pRow[5] || "", photoUrl: ibbHostFix(pRow[6] || ""), clubs: pRow[7] || "", createdAt: pRow[8] || "",
     winnerAt: pRow[9] || "", tournaments: pRow[10] || "",
+    // Claim_Email (col L) set => profile has been claimed; the passport then gates
+    // further edits behind the registered email. We never expose the email itself.
+    claimed: !!String(pRow[11] || "").trim(),
   };
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
@@ -788,7 +791,7 @@ async function claimProfile({ name, ig_handle, session_id }) {
 }
 
 // ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
-const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At"];
+const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At", "Email", "Gender"];
 // Create the Edit_Requests tab (with header row) if it does not exist yet, so the
 // feature is self-bootstrapping and the first submitted edit doesn't fail with
 // "Unable to parse range: Edit_Requests!A:H".
@@ -809,9 +812,20 @@ async function submitEditRequest(body) {
   const { name } = body;
   if (!name) return respond(400, { error: "name required" });
   const sheets = getSheets();
-  const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+  const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
   const prows = pres.data.values || [];
-  if (prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase()) === -1) return respond(404, { error: "Player not found" });
+  const pi = prows.findIndex((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  if (pi === -1) return respond(404, { error: "Player not found" });
+  // Claim gate: once a profile has been claimed (Claim_Email in col L is set), any
+  // further edit must present the SAME registered email. A brand-new claim requires
+  // a valid email, which becomes the profile's Claim_Email on approval.
+  const claimEmail = normEmail(prows[pi][11] || "");
+  const submittedEmail = normEmail(body.email || "");
+  if (claimEmail) {
+    if (submittedEmail !== claimEmail) return respond(403, { error: "Email tidak cocok dengan yang terdaftar untuk profil ini." });
+  } else {
+    if (!validEmail(submittedEmail)) return respond(400, { error: "Email wajib diisi untuk klaim profil." });
+  }
   await ensureEditRequestsTab(sheets);
   let photoUrl = "", photoError = "";
   const photoFolderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
@@ -821,9 +835,10 @@ async function submitEditRequest(body) {
   const now = new Date().toISOString();
   const displayName = String(body.displayName || "").trim();
   const ig = String(body.ig || "").trim().replace(/^@+/, "");
+  const gender = String(body.gender || "").trim().toUpperCase().startsWith("F") ? "F" : (String(body.gender || "").trim() ? "M" : "");
   await sheets.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H`, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, ""]] },
+    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:J`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[reqId, name, displayName, ig, photoUrl, "PENDING", now, "", submittedEmail, gender]] },
   });
   return respond(200, { success: true, reqId, photoUrl, photoError });
 }
@@ -832,11 +847,11 @@ async function listEditRequests(params) {
   // Read from row 1 (not A2:H) so requests are found whether or not a header
   // row exists — a manually-created tab has no header, putting the first
   // request in row 1. The header row itself is skipped by label below.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:J` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
-    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: ibbHostFix(r[4] || ""), status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "" }))
+    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: ibbHostFix(r[4] || ""), status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "", email: r[8] || "", gender: r[9] || "" }))
     .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
@@ -847,27 +862,40 @@ async function resolveEditRequest(body) {
   const sheets = getSheets();
   // Read from row 1 so the sheet-row math (ri + 1) is correct regardless of
   // whether the tab has a header row.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:H` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:J` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0] === reqId);
   if (ri === -1) return respond(404, { error: "Request not found" });
   const r = rows[ri], sr = ri + 1, now = new Date().toISOString();
   if (String(r[5] || "").toUpperCase() !== "PENDING") return respond(400, { error: "Already resolved" });
   if (action === "approve") {
-    const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:J` });
+    const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
     const prows = pres.data.values || [];
     const pi = prows.findIndex((x) => x[0]?.toLowerCase() === String(r[1] || "").toLowerCase());
     if (pi !== -1) {
       const psr = pi + 2, c = prows[pi];
+      // Option A guard: if the profile is already claimed (Claim_Email set), only a
+      // request from that SAME email may be approved. A stale/foreign claim is rejected
+      // instead of overwriting the owner's profile.
+      const existingClaim = normEmail(c[11] || ""), reqEmailG = normEmail(r[8] || "");
+      if (existingClaim && reqEmailG && existingClaim !== reqEmailG) {
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["REJECTED", r[6] || "", now]] } });
+        return respond(200, { success: true, applied: false, reason: "email_mismatch" });
+      }
       const nn = String(r[2] || "").trim(), ig = String(r[3] || "").trim(), ph = String(r[4] || "").trim();
-      // Passport edits change the canonical Name (col A) — the passport shows and
-      // is keyed by this. Display_Name (col D, used only by the turnamenpadel
-      // mobile/TV boards) is left untouched.
+      const reqEmail = normEmail(r[8] || ""), reqGender = String(r[9] || "").trim().toUpperCase();
+      const genderVal = (reqGender === "F" || reqGender === "M") ? reqGender : (c[4] || "M");
+      // Claim approval writes the profile to Players: it is now VERIFIED, its gender
+      // is applied, and the registered email is stored in Claim_Email (col L). Option A:
+      // the FIRST approved claim's email wins — keep an existing Claim_Email if set.
+      // Passport edits change the canonical Name (col A); Display_Name (col D, used by
+      // the turnamenpadel boards) is left untouched.
       const updated = [
-        nn || c[0] || "", ig || c[1] || "", ig ? "TRUE" : (c[2] || "FALSE"),
-        c[3] || "", c[4] || "M", c[5] || "", ibbHostFix(ph || c[6] || ""), c[7] || "", c[8] || "", c[9] || "",
+        nn || c[0] || "", ig || c[1] || "", "TRUE",
+        c[3] || "", genderVal, c[5] || "", ibbHostFix(ph || c[6] || ""), c[7] || "", c[8] || "", c[9] || "", c[10] || "",
+        (String(c[11] || "").trim() || reqEmail || ""),
       ];
-      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:J${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${psr}:L${psr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
       // If the approval renamed the player (col A), re-point their ELO_Log and
       // Venue match rows to the new name so Playing History / ELO don't orphan.
       const oldName = String(c[0] || "").trim();
