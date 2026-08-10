@@ -883,7 +883,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   document.title=`${p.name} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
-  <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-pencil" aria-hidden="true"></i> Edit profile</button>
+  <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-${p.claimed?'pencil':'shield-check'}" aria-hidden="true"></i> ${p.claimed?'Edit profile':'Claim your profile'}</button>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
     <div><p class="pp-meta-label">Level</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
@@ -1861,13 +1861,44 @@ function downloadNightCard(){
 <script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();
 var _editPhotoData="";
 var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";
+var _gateEmail='';
 function openEditModal(){
   if(!playerData)return; var p=playerData.player;
+  _editPhotoData=''; _gateEmail='';
   document.getElementById('editName').value=p.name||'';
   document.getElementById('editIg').value=(p.ig||'').replace(/^@+/,'');
+  var g=document.getElementById('editGender'); if(g) g.value=(p.gender==='F'?'F':'M');
+  document.getElementById('editEmail').value='';
+  document.getElementById('gateEmail').value='';
   document.getElementById('editPhotoPrev').src=p.photoUrl||_EDIT_PH;
-  _editPhotoData=''; var m=document.getElementById('editMsg'); m.textContent='';
+  var m=document.getElementById('editMsg'); m.textContent=''; var gm=document.getElementById('gateMsg'); if(gm)gm.textContent='';
+  var title=document.getElementById('editModalTitle');
+  if(p.claimed){
+    // Already claimed → ask for the registered email before revealing the form.
+    title.textContent='Edit profile';
+    document.getElementById('editGate').style.display='';
+    document.getElementById('editForm').style.display='none';
+    document.getElementById('claimBanner').style.display='none';
+    document.getElementById('emailField').style.display='none';
+  } else {
+    // Unclaimed → claim form with the email field visible & required.
+    title.textContent='Claim your profile';
+    document.getElementById('editGate').style.display='none';
+    document.getElementById('editForm').style.display='';
+    document.getElementById('claimBanner').style.display='';
+    document.getElementById('emailField').style.display='';
+  }
   document.getElementById('editModal').classList.add('open');
+}
+function unlockEdit(){
+  var em=(document.getElementById('gateEmail').value||'').trim();
+  var gm=document.getElementById('gateMsg');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ gm.style.color='var(--danger)'; gm.textContent='Masukkan email yang valid.'; return; }
+  _gateEmail=em; if(gm)gm.textContent='';
+  document.getElementById('editGate').style.display='none';
+  document.getElementById('editForm').style.display='';
+  document.getElementById('claimBanner').style.display='none';
+  document.getElementById('emailField').style.display='none';
 }
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
 // ── Square photo cropper (mugshot): pan + zoom, exports a 512×512 compressed JPEG ──
@@ -1934,7 +1965,12 @@ function cropApply(){
 function submitEdit(){
   if(!playerData)return; var p=playerData.player;
   var btn=document.getElementById('editSubmitBtn'), m=document.getElementById('editMsg');
-  var body={name:p.name, displayName:(document.getElementById('editName').value||'').trim(), ig:(document.getElementById('editIg').value||'').trim().replace(/^@+/,'')};
+  var email = p.claimed ? _gateEmail : (document.getElementById('editEmail').value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ m.style.color='var(--danger)'; m.textContent='Email wajib diisi.'; return; }
+  var body={name:p.name, email:email,
+    displayName:(document.getElementById('editName').value||'').trim(),
+    gender:(document.getElementById('editGender')||{}).value||'',
+    ig:(document.getElementById('editIg').value||'').trim().replace(/^@+/,'')};
   if(_editPhotoData) body.photo=_editPhotoData;
   btn.disabled=true; btn.textContent='Submitting…'; m.style.color='var(--on-surface-variant)'; m.textContent='';
   fetch('https://trekkr.online/api/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
@@ -1952,21 +1988,42 @@ function submitEdit(){
 <div class="share-modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
   <div class="share-modal">
     <div class="share-modal-handle"></div>
-    <div class="share-modal-head"><div class="share-modal-title">Edit profile</div><button class="share-modal-close" onclick="closeEditModal()">&times;</button></div>
-    <p class="share-modal-sub">Changes are reviewed by an admin before they go live. Your ELO and match history never change.</p>
-    <div style="display:flex;align-items:center;gap:14px;margin:6px 0 16px">
-      <img id="editPhotoPrev" alt="" style="width:66px;height:66px;border-radius:14px;object-fit:cover;background:#EFEFF1"/>
-      <div>
-        <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Change photo<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
-        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — akan dipotong kotak & dikecilkan otomatis.</div>
-      </div>
+    <div class="share-modal-head"><div class="share-modal-title" id="editModalTitle">Claim your profile</div><button class="share-modal-close" onclick="closeEditModal()">&times;</button></div>
+    <p class="share-modal-sub" id="editModalSub">Changes are reviewed by an admin before they go live. Your ELO and match history never change.</p>
+
+    <!-- Gate: shown only for an already-claimed profile — the registered email must match. -->
+    <div id="editGate" style="display:none">
+      <div style="background:#F4F2F0;border:1px solid var(--outline,#E6E3E0);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:12px">🔒 Profil ini sudah diklaim. Masukkan <b>email yang kamu daftarkan</b> untuk bisa mengedit lagi.</div>
+      <label class="pp-info-label" style="display:block;margin-bottom:6px">Registered email</label>
+      <input id="gateEmail" class="edit-in" type="email" placeholder="you@email.com" autocomplete="email">
+      <button class="btn btn--primary" style="width:100%;margin-top:16px" id="gateBtn" onclick="unlockEdit()">Continue</button>
+      <div id="gateMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
     </div>
-    <label class="pp-info-label" style="display:block;margin-bottom:6px">Display name</label>
-    <input id="editName" class="edit-in" placeholder="Your name">
-    <label class="pp-info-label" style="display:block;margin:14px 0 6px">Instagram</label>
-    <input id="editIg" class="edit-in" placeholder="username (without @)">
-    <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Submit for review</button>
-    <div id="editMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+
+    <!-- Profile fields -->
+    <div id="editForm">
+      <div id="claimBanner" style="background:rgba(255,106,0,.08);border:1px solid rgba(255,106,0,.3);color:#9a4d00;border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:14px">Klaim profil ini untuk mendapatkan badge <b>Verified</b> dan mengelola datanya.</div>
+      <div style="display:flex;align-items:center;gap:14px;margin:6px 0 16px">
+        <img id="editPhotoPrev" alt="" style="width:66px;height:66px;border-radius:14px;object-fit:cover;background:#EFEFF1"/>
+        <div>
+          <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Upload foto<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
+          <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — akan dipotong kotak & dikecilkan otomatis.</div>
+        </div>
+      </div>
+      <div id="emailField">
+        <label class="pp-info-label" style="display:block;margin-bottom:6px">Email <span style="color:var(--primary,#FF6A00)">*</span></label>
+        <input id="editEmail" class="edit-in" type="email" placeholder="you@email.com" autocomplete="email">
+        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Dipakai untuk verifikasi saat kamu ingin mengedit profil lagi nanti.</div>
+      </div>
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Display name</label>
+      <input id="editName" class="edit-in" placeholder="Your name">
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Gender</label>
+      <select id="editGender" class="edit-in"><option value="M">Male</option><option value="F">Female</option></select>
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Instagram</label>
+      <input id="editIg" class="edit-in" placeholder="username (without @)">
+      <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Submit for review</button>
+      <div id="editMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+    </div>
   </div>
 </div>
 
