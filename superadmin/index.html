@@ -417,11 +417,14 @@ function erDiff(k,o,n){ if(!n||String(o||"")===String(n))return ""; return '<div
 function renderER(x){
   var cur=erCur(x.name);
   var gLbl=function(g){return g==='F'?'Female':(g==='M'?'Male':(g||''));};
+  var isNew=(x.type||'')==='NEW';
   var diffs=erDiff("Display name",cur.displayName||cur.name,x.displayName)+erDiff("Instagram",(cur.ig||"").replace(/^@+/,""),x.ig)+erDiff("Gender",gLbl(cur.gender||""),gLbl(x.gender||""));
-  var info=x.email?('<div class="er-row"><span class="er-k">Email</span><span class="er-new">'+erEsc(x.email)+'</span></div>'):"";
+  var info=(x.email?('<div class="er-row"><span class="er-k">Email</span><span class="er-new">'+erEsc(x.email)+'</span></div>'):"")
+    +(x.region?('<div class="er-row"><span class="er-k">Region</span><span class="er-new">'+erEsc(x.region)+'</span></div>'):"");
+  var newTag=isNew?' <span style="font-size:9px;font-weight:800;letter-spacing:.06em;background:#FF6A00;color:#1a0d06;padding:2px 6px;border-radius:5px;vertical-align:middle">NEW PLAYER</span>':'';
   var photo=x.photoUrl?('<div class="er-photos"><div class="er-ph"><img src="'+erEsc(cur.photoUrl||"")+'" onerror="erImg(this)"/><small>Current</small></div><span class="er-ar">→</span><div class="er-ph"><img class="new" src="'+erEsc(x.photoUrl)+'" onerror="erImg(this)"/><small class="new">New</small></div></div>'):"";
   if(!diffs&&!photo&&!info)diffs='<div class="er-row" style="color:var(--muted2)">Tidak ada perubahan.</div>';
-  return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(x.displayName||x.name)+'</b><div style="font-size:11px;color:var(--muted2)">'+erEsc(x.name)+' · '+erEsc((x.createdAt||"").slice(0,10))+'</div></div><span class="er-pend">Pending</span></div><div class="er-body">'+info+diffs+photo+'</div><div class="er-btns"><button class="er-rej" onclick="resolveEdit(\''+x.reqId+'\',\'reject\')">Reject</button><button class="er-app" onclick="resolveEdit(\''+x.reqId+'\',\'approve\')">Approve</button></div></div>';
+  return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(x.displayName||x.name)+'</b>'+newTag+'<div style="font-size:11px;color:var(--muted2)">'+erEsc(x.name)+' · '+erEsc((x.createdAt||"").slice(0,10))+'</div></div><span class="er-pend">Pending</span></div><div class="er-body">'+info+diffs+photo+'</div><div class="er-btns"><button class="er-rej" onclick="resolveEdit(\''+x.reqId+'\',\'reject\')">Reject</button><button class="er-app" onclick="resolveEdit(\''+x.reqId+'\',\'approve\')">Approve</button></div></div>';
 }
 async function loadEditRequests(){
   var box=document.getElementById("er-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
