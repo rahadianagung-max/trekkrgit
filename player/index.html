@@ -26,6 +26,10 @@
 .pp-hero{margin-top:var(--space-7);border-radius:var(--radius-xl);padding:24px;background:linear-gradient(140deg,rgba(255,106,0,0.08),rgba(255,176,0,0.08));display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;box-shadow:var(--shadow-soft)}
 .pp-photo{width:120px;height:120px;border-radius:var(--radius-lg);object-fit:cover;background:var(--surface-container)}
 .pp-verified{display:inline-block;margin-top:8px;border-radius:var(--radius-pill);padding:4px 10px;background:rgba(34,160,82,0.12);color:#15803D;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase}
+.pp-unverified{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:1px solid rgba(255,106,0,0.45);border-radius:var(--radius-pill);padding:5px 12px;background:rgba(255,106,0,0.08);color:#B24700;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:background .15s,border-color .15s}
+.pp-unverified:hover{background:rgba(255,106,0,0.16);border-color:rgba(255,106,0,0.7)}
+.pp-unverified .ti{font-size:13px}
+.pp-unverified .cta{letter-spacing:0.02em;text-transform:none;font-weight:800;color:var(--primary,#FF6A00)}
 .pp-name{font-family:'Saira Condensed',sans-serif;font-size:clamp(28px,4vw,46px);line-height:0.95;letter-spacing:-0.03em;text-transform:uppercase;font-weight:900}
 .pp-meta-grid{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .pp-meta-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--on-surface-variant)}
@@ -882,7 +886,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   const ti=tierProg(s.currentElo);
   document.title=`${p.name} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
-  ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
+  ${p.verified?'<span class="pp-verified">Verified</span>':'<button type="button" class="pp-unverified" onclick="openEditModal()" title="Claim this profile"><i class="ti ti-alert-circle" aria-hidden="true"></i> Unverified <span class="cta">· Claim profile</span></button>'}</div>
   <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-${p.claimed?'pencil':'shield-check'}" aria-hidden="true"></i> ${p.claimed?'Edit profile':'Claim your profile'}</button>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
