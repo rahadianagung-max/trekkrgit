@@ -50,6 +50,11 @@
   to = "/rankings.html"
   status = 200
 
+[[redirects]]
+  from = "/join"
+  to = "/join.html"
+  status = 200
+
 # Halaman struktur baru (5 menu)
 [[redirects]]
   from = "/playrank"

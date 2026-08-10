@@ -353,6 +353,8 @@ const netlifyHandler = async (event) => {
     if (path === "players/claim" && method === "POST") return await claimProfile(body);
     if (path === "players/sync-clubs" && method === "POST") return await syncPlayerClubs();
     if (path === "players/edit-request" && method === "POST") return await submitEditRequest(body);
+    if (path === "players/check-name" && method === "GET") return await checkPlayerName(params);
+    if (path === "players/register" && method === "POST") return await registerNewPlayer(body);
     if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
     if (path === "players/edit-requests/resolve" && method === "POST") return await resolveEditRequest(body);
     if (path.startsWith("players/") && path.endsWith("/matches") && method === "GET") {
@@ -791,7 +793,7 @@ async function claimProfile({ name, ig_handle, session_id }) {
 }
 
 // ── PROFILE EDIT REQUESTS (moderated: display name / IG / photo only) ──
-const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At", "Email", "Gender"];
+const EDIT_REQUESTS_HEADER = ["Request_ID", "Player_Name", "Display_Name", "IG", "Photo_URL", "Status", "Created_At", "Resolved_At", "Email", "Gender", "Type", "Region"];
 // Create the Edit_Requests tab (with header row) if it does not exist yet, so the
 // feature is self-bootstrapping and the first submitted edit doesn't fail with
 // "Unable to parse range: Edit_Requests!A:H".
@@ -842,16 +844,57 @@ async function submitEditRequest(body) {
   });
   return respond(200, { success: true, reqId, photoUrl, photoError });
 }
+// Live name check for the New Player Registration form: does a player with this
+// name already exist? If so, the form recommends claiming instead of re-registering.
+async function checkPlayerName(params) {
+  const name = String((params && params.name) || "").trim();
+  if (!name) return respond(200, { exists: false });
+  const sheets = getSheets();
+  const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
+  const hit = (pres.data.values || []).find((r) => normName(r[0]) === normName(name));
+  if (!hit) return respond(200, { exists: false });
+  const canonical = hit[0];
+  return respond(200, { exists: true, name: canonical, slug: String(canonical).toLowerCase().replace(/[^a-z0-9]+/g, "") });
+}
+// New Player Registration (moderated like the claim flow). Files a PENDING request
+// tagged Type=NEW; on approval a fresh Players row is created (see resolveEditRequest).
+async function registerNewPlayer(body) {
+  const first = String((body && body.firstName) || "").trim();
+  const last = String((body && body.lastName) || "").trim();
+  const name = (first + " " + last).replace(/\s+/g, " ").trim();
+  if (!name) return respond(400, { error: "Nama depan & belakang wajib diisi." });
+  const email = normEmail(body && body.email);
+  if (!validEmail(email)) return respond(400, { error: "Email tidak valid." });
+  const sheets = getSheets();
+  const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
+  const exists = (pres.data.values || []).some((r) => normName(r[0]) === normName(name));
+  if (exists) return respond(409, { error: "Nama sudah terdaftar. Silakan klaim profil tersebut.", exists: true, name, slug: String(name).toLowerCase().replace(/[^a-z0-9]+/g, "") });
+  await ensureEditRequestsTab(sheets);
+  let photoUrl = "", photoError = "";
+  const photoFolderId = process.env.GOOGLE_PHOTO_FOLDER_ID || process.env.REG_DRIVE_FOLDER_ID || "";
+  try { if (body.photo) photoUrl = await uploadImage(body.photo, `pp_${name.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.jpg`, photoFolderId); }
+  catch (e) { photoError = e.message || "upload failed"; console.error("register photo upload:", photoError); }
+  const reqId = "ER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const now = new Date().toISOString();
+  const ig = String(body.ig || "").trim().replace(/^@+/, "");
+  const gender = String(body.gender || "").trim().toUpperCase().startsWith("F") ? "F" : "M";
+  const region = String(body.region || "").trim();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:L`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[reqId, name, name, ig, photoUrl, "PENDING", now, "", email, gender, "NEW", region]] },
+  });
+  return respond(200, { success: true, reqId, photoUrl, photoError });
+}
 async function listEditRequests(params) {
   const sheets = getSheets();
   // Read from row 1 (not A2:H) so requests are found whether or not a header
   // row exists — a manually-created tab has no header, putting the first
   // request in row 1. The header row itself is skipped by label below.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:J` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:L` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const want = String(params.status || "PENDING").toUpperCase();
   const requests = rows
-    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: ibbHostFix(r[4] || ""), status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "", email: r[8] || "", gender: r[9] || "" }))
+    .map((r) => ({ reqId: r[0], name: r[1], displayName: r[2] || "", ig: r[3] || "", photoUrl: ibbHostFix(r[4] || ""), status: (r[5] || "PENDING").toUpperCase(), createdAt: r[6] || "", resolvedAt: r[7] || "", email: r[8] || "", gender: r[9] || "", type: (r[10] || "EDIT").toUpperCase(), region: r[11] || "" }))
     .filter((x) => x.reqId && x.reqId !== EDIT_REQUESTS_HEADER[0] && (want === "ALL" || x.status === want))
     .reverse();
   return respond(200, { requests });
@@ -862,7 +905,7 @@ async function resolveEditRequest(body) {
   const sheets = getSheets();
   // Read from row 1 so the sheet-row math (ri + 1) is correct regardless of
   // whether the tab has a header row.
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:J` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!A:L` });
   const rows = res.data.values || [];
   const ri = rows.findIndex((r) => r[0] === reqId);
   if (ri === -1) return respond(404, { error: "Request not found" });
@@ -872,6 +915,21 @@ async function resolveEditRequest(body) {
     const pres = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
     const prows = pres.data.values || [];
     const pi = prows.findIndex((x) => x[0]?.toLowerCase() === String(r[1] || "").toLowerCase());
+    // New-player registration (Type=NEW): approval creates a brand-new Players row.
+    if (String(r[10] || "").toUpperCase() === "NEW") {
+      if (pi !== -1) {
+        // The name was taken since the form was filed → don't create a duplicate.
+        await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["REJECTED", r[6] || "", now]] } });
+        return respond(200, { success: true, applied: false, reason: "name_taken" });
+      }
+      const nn = String(r[2] || r[1] || "").trim(), ig = String(r[3] || "").trim(), ph = String(r[4] || "").trim();
+      const email = normEmail(r[8] || ""), gender = (String(r[9] || "").trim().toUpperCase() === "F") ? "F" : "M", region = String(r[11] || "").trim();
+      // No ELO seed — the rating forms once they play recorded matches at a partner venue.
+      const newRow = [nn, ig, "TRUE", nn, gender, region, ibbHostFix(ph), "", now, "", "", email];
+      await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A:L`, valueInputOption: "USER_ENTERED", requestBody: { values: [newRow] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.edit_requests}!F${sr}:H${sr}`, valueInputOption: "USER_ENTERED", requestBody: { values: [["APPROVED", r[6] || "", now]] } });
+      return respond(200, { success: true, applied: true, created: true });
+    }
     if (pi !== -1) {
       const psr = pi + 2, c = prows[pi];
       // Option A guard: if the profile is already claimed (Claim_Email set), only a

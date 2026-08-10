@@ -4,9 +4,13 @@
       "source": "/api/:match*", 
       "destination": "/api/sheet" 
     },
-    { 
-      "source": "/player/:match*", 
-      "destination": "/player/index.html" 
+    {
+      "source": "/player/:match*",
+      "destination": "/player/index.html"
+    },
+    {
+      "source": "/join",
+      "destination": "/join.html"
     }
   ]
 }

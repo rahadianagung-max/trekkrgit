@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trekkr — New Player Registration</title>
+<meta name="description" content="Register as a new player on Trekkr to start building your padel rating."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+  body{background:var(--bg,#F4F2F0);color:var(--text,#1A1A1E);font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 60px}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{font-family:var(--display,'Saira Condensed');font-weight:800;font-style:italic;text-transform:uppercase;font-size:20px;color:var(--orange,#FF6A00);text-decoration:none}
+  .back{font-size:13px;color:var(--muted,#6B6B72);text-decoration:none}
+  .back:hover{color:var(--text)}
+  h1{font-family:var(--display,'Saira Condensed');font-weight:800;text-transform:uppercase;font-size:26px;line-height:1.05;margin:0 0 6px}
+  .lead{font-size:13px;color:var(--muted,#6B6B72);line-height:1.55;margin-bottom:18px}
+  .card{background:var(--surface,#fff);border:1px solid var(--border,#E6E3E0);border-radius:18px;padding:18px 16px;box-shadow:0 8px 30px rgba(0,0,0,.05)}
+  label.lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#6B6B72);margin:14px 0 6px}
+  label.lbl:first-of-type{margin-top:0}
+  .in{width:100%;box-sizing:border-box;border:1px solid var(--border,#E6E3E0);border-radius:12px;padding:12px 13px;font:inherit;font-size:14px;outline:none;background:#fff}
+  .in:focus{border-color:var(--orange,#FF6A00);box-shadow:0 0 0 3px rgba(255,106,0,.12)}
+  select.in{appearance:none;background:#fff}
+  .row2{display:flex;gap:10px}.row2>div{flex:1;min-width:0}
+  .hint{font-size:12px;margin-top:6px;min-height:15px}
+  .hint.ok{color:#15803D}.hint.busy{color:var(--muted,#6B6B72)}
+  .rec{margin-top:10px;border:1px solid rgba(255,106,0,.4);background:rgba(255,106,0,.08);border-radius:12px;padding:12px 13px}
+  .rec .t{font-size:13px;line-height:1.55;color:#9a4d00}
+  .rec .who{font-weight:800;color:var(--text)}
+  .rec .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .photo{display:flex;align-items:center;gap:14px}
+  .photo .pv{width:62px;height:62px;border-radius:14px;object-fit:cover;background:#EFEFF1;display:flex;align-items:center;justify-content:center;color:#B7B2AD;font-size:22px;flex:0 0 auto}
+  .note{font-size:11px;color:var(--muted,#6B6B72);margin-top:5px}
+  .btn{display:inline-block;border:none;border-radius:12px;padding:13px 18px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--orange,#FF6A00);cursor:pointer;text-decoration:none;text-align:center}
+  .btn[disabled]{opacity:.6;cursor:default}
+  .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--border,#E6E3E0)}
+  .btn.sm{padding:9px 14px;font-size:12.5px}
+  .btn.block{width:100%;margin-top:18px}
+  .msg{font-size:12.5px;margin-top:10px;text-align:center;min-height:16px}
+  .msg.err{color:#C0341B}
+  /* confirmation */
+  .conf{text-align:center;padding:8px 4px}
+  .conf .ic{width:56px;height:56px;border-radius:50%;background:rgba(34,160,82,.12);color:#15803D;display:flex;align-items:center;justify-content:center;font-size:30px;margin:4px auto 14px}
+  .conf h2{font-family:var(--display,'Saira Condensed');font-weight:800;text-transform:uppercase;font-size:22px;margin-bottom:10px}
+  .conf p{font-size:13.5px;color:var(--muted,#6B6B72);line-height:1.65;margin-bottom:12px}
+  .conf .box{display:block;text-align:left;background:var(--bg,#F4F2F0);border:1px solid var(--border,#E6E3E0);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.6}
+  .conf a{color:var(--orange,#FF6A00);font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="https://trekkr.online/">Trekkr</a>
+    <a class="back" href="https://trekkr.online/">&larr; Back to home</a>
+  </div>
+
+  <div id="formView">
+    <h1>New Player Registration</h1>
+    <p class="lead">Create your player profile to start building your rating. A Trekkr admin will review and approve it before it goes live.</p>
+    <div class="card">
+      <div class="row2">
+        <div><label class="lbl">First name</label><input id="fFirst" class="in" placeholder="First name" autocomplete="given-name"></div>
+        <div><label class="lbl">Last name</label><input id="fLast" class="in" placeholder="Last name" autocomplete="family-name"></div>
+      </div>
+      <div class="hint" id="nameHint"></div>
+      <div id="claimRec"></div>
+
+      <div class="row2">
+        <div><label class="lbl">Gender</label><select id="fGender" class="in"><option value="M">Male</option><option value="F">Female</option></select></div>
+        <div><label class="lbl">Region</label><input id="fRegion" class="in" placeholder="e.g. Jakarta" autocomplete="off"></div>
+      </div>
+
+      <label class="lbl">Email</label>
+      <input id="fEmail" class="in" type="email" placeholder="you@email.com" autocomplete="email">
+
+      <label class="lbl">Instagram <span style="text-transform:none;font-weight:400">(optional)</span></label>
+      <input id="fIg" class="in" placeholder="username (without @)" autocomplete="off">
+
+      <label class="lbl">Photo <span style="text-transform:none;font-weight:400">(optional)</span></label>
+      <div class="photo">
+        <img id="fPhotoPrev" class="pv" alt="" style="display:none">
+        <span class="pv" id="fPhotoPh">👤</span>
+        <div>
+          <label class="btn ghost sm" style="cursor:pointer;display:inline-block">Upload photo<input type="file" id="fPhoto" accept="image/*" style="display:none"></label>
+          <div class="note">Face photo — resized automatically.</div>
+        </div>
+      </div>
+
+      <button class="btn block" id="submitBtn">Submit registration</button>
+      <div class="msg" id="formMsg"></div>
+    </div>
+  </div>
+
+  <div id="doneView" style="display:none">
+    <div class="card">
+      <div class="conf">
+        <div class="ic">✓</div>
+        <h2>Registration submitted!</h2>
+        <p>Please wait for a Trekkr admin to review and approve your profile. You'll appear as a verified player once it's approved.</p>
+        <div class="box">Once you're approved, make sure to play at a <b>venue or community that has partnered with Trekkr</b> so your matches are recorded and count toward your rating.<br><br>If the venue or community where you play isn't on Trekkr yet, they can sign up through the <a href="https://trekkr.online/playrank">PlayRank</a> menu on this website.</div>
+        <p style="margin-top:18px"><a href="https://trekkr.online/">&larr; Back to home</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var API='https://trekkr.online/api';
+var _photoData='';
+var $=function(id){return document.getElementById(id);};
+function fullName(){return (($('fFirst').value||'').trim()+' '+($('fLast').value||'').trim()).replace(/\s+/g,' ').trim();}
+function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+function validEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||''));}
+
+// ---- live name check ----
+var _chkTimer=null, _lastChecked='';
+function scheduleCheck(){
+  clearTimeout(_chkTimer);
+  var n=fullName();
+  $('claimRec').innerHTML='';
+  if(($('fFirst').value||'').trim() && ($('fLast').value||'').trim()){
+    $('nameHint').className='hint busy'; $('nameHint').textContent='Checking name…';
+    _chkTimer=setTimeout(function(){ doCheck(n); }, 500);
+  } else { $('nameHint').textContent=''; $('nameHint').className='hint'; }
+}
+function doCheck(n){
+  _lastChecked=n;
+  fetch(API+'/players/check-name?name='+encodeURIComponent(n))
+    .then(function(r){return r.json();}).then(function(d){
+      if(fullName()!==_lastChecked) return; // stale
+      if(d && d.exists){
+        $('nameHint').textContent=''; $('nameHint').className='hint';
+        var url='https://trekkr.online/player/'+(d.slug||slug(d.name));
+        $('claimRec').innerHTML='<div class="rec"><div class="t">We found an existing player <span class="who">"'+esc(d.name)+'"</span> on Trekkr. If that\'s you, <b>claim that profile</b> instead of creating a new one — you\'ll keep its match history and rating.</div><div class="acts"><a class="btn sm" href="'+url+'">Claim this profile</a><button class="btn ghost sm" type="button" onclick="dismissRec()">No, register as new</button></div></div>';
+      } else {
+        $('claimRec').innerHTML='';
+        $('nameHint').className='hint ok'; $('nameHint').textContent='✓ This name is available.';
+      }
+    }).catch(function(){ $('nameHint').textContent=''; $('nameHint').className='hint'; });
+}
+function dismissRec(){ $('claimRec').innerHTML=''; $('nameHint').className='hint ok'; $('nameHint').textContent='OK — continuing as a new registration.'; }
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+
+$('fFirst').addEventListener('input',scheduleCheck);
+$('fLast').addEventListener('input',scheduleCheck);
+
+// ---- photo (optional): downscale to <=512px jpeg ----
+$('fPhoto').addEventListener('change',function(e){
+  var f=e.target.files&&e.target.files[0]; if(!f)return;
+  if(!/^image\//.test(f.type)){ setMsg('File must be an image.',true); return; }
+  var r=new FileReader();
+  r.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var M=512, s=Math.min(1,M/Math.max(im.width,im.height));
+      var w=Math.round(im.width*s), h=Math.round(im.height*s);
+      var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(im,0,0,w,h);
+      _photoData=cv.toDataURL('image/jpeg',0.85);
+      var pv=$('fPhotoPrev'); pv.src=_photoData; pv.style.display=''; $('fPhotoPh').style.display='none';
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(f); e.target.value='';
+});
+
+function setMsg(t,err){ var m=$('formMsg'); m.textContent=t||''; m.className='msg'+(err?' err':''); }
+
+$('submitBtn').addEventListener('click',function(){
+  var first=($('fFirst').value||'').trim(), last=($('fLast').value||'').trim();
+  var email=($('fEmail').value||'').trim();
+  if(!first||!last){ setMsg('Please enter your first and last name.',true); return; }
+  if(!validEmail(email)){ setMsg('Please enter a valid email.',true); return; }
+  var body={firstName:first,lastName:last,gender:$('fGender').value,region:($('fRegion').value||'').trim(),email:email,ig:($('fIg').value||'').trim().replace(/^@+/,'')};
+  if(_photoData) body.photo=_photoData;
+  var btn=$('submitBtn'); btn.disabled=true; btn.textContent='Submitting…'; setMsg('');
+  fetch(API+'/players/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+    .then(function(res){
+      btn.disabled=false; btn.textContent='Submit registration';
+      var d=res.d||{};
+      if(res.ok && d.success){
+        $('formView').style.display='none'; $('doneView').style.display=''; window.scrollTo(0,0);
+      } else if(d.exists){
+        var url='https://trekkr.online/player/'+(d.slug||slug(d.name||fullName()));
+        setMsg('',false);
+        $('claimRec').innerHTML='<div class="rec"><div class="t">"'+esc(d.name||fullName())+'" is already on Trekkr. Please <b>claim that profile</b> instead.</div><div class="acts"><a class="btn sm" href="'+url+'">Claim this profile</a></div></div>';
+      } else {
+        setMsg((d && d.error) || 'Something went wrong. Please try again.',true);
+      }
+    }).catch(function(){ btn.disabled=false; btn.textContent='Submit registration'; setMsg('Network error. Please try again.',true); });
+});
+</script>
+</body>
+</html>
