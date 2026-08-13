@@ -3981,6 +3981,25 @@ function buildEngineCategory(tid, catStr, groupRows, allMatches, pinfo) {
   const LABEL = { MD: "Men's Doubles", WD: "Women's Doubles", MIXED: "Fixed Mixed" };
   return { key: code, label: LABEL[code] || catStr || "Results", pairs, players };
 }
+// When an event is archived, the engine's operational rows (Tournaments,
+// Tournament_Groups, Tournament_Matches) are moved out of the live tabs into
+// the Tournament_Archive backup tab as JSON. Read them back so a competition
+// page keeps showing its podium/standings after archiving. Returns arrays in
+// the same shape as the live tabs, filtered to this event.
+async function loadArchivedTournamentRows(sheets, eventId) {
+  const res = await sheets.spreadsheets.values
+    .get({ spreadsheetId: SHEET_ID, range: `Tournament_Archive!A2:D` })
+    .catch(() => ({ data: { values: [] } }));
+  const out = { [TABS.t_tournaments]: [], [TABS.t_groups]: [], [TABS.t_matches]: [] };
+  for (const r of (res.data.values || [])) {
+    if (r[1] !== eventId) continue;            // col B = Event_ID
+    const tab = r[2];                           // col C = Source_Tab (tab name)
+    if (!(tab in out)) continue;
+    try { const row = JSON.parse(r[3]); if (Array.isArray(row)) out[tab].push(row); } catch (e) { /* skip bad row */ }
+  }
+  return { tournaments: out[TABS.t_tournaments], groups: out[TABS.t_groups], matches: out[TABS.t_matches] };
+}
+
 async function tournamentFromEngine(sheets, comp, base) {
   const br = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: SHEET_ID,
@@ -3988,7 +4007,14 @@ async function tournamentFromEngine(sheets, comp, base) {
   });
   const vr = br.data.valueRanges || [];
   const val = (i) => (vr[i] && vr[i].values) || [];
-  const trRows = val(0), grRows = val(1), mRows = val(2), plRows = val(3), elRows = val(4);
+  let trRows = val(0), grRows = val(1), mRows = val(2);
+  const plRows = val(3), elRows = val(4);
+  // Fallback: if the event has no live tournament rows (archived), rebuild from
+  // the Tournament_Archive backup. Players/ELO stay live (unaffected by archive).
+  if (!trRows.some((t) => t[1] === comp.eventId)) {
+    const arch = await loadArchivedTournamentRows(sheets, comp.eventId);
+    if (arch.tournaments.length) { trRows = arch.tournaments; grRows = arch.groups; mRows = arch.matches; }
+  }
   const info = {};
   for (const r of plRows) { if (!r[0]) continue; const rec = { name: r[0], photo: ibbHostFix(r[6] || "") }; info[normName(r[0])] = rec; const a = normName(r[3]); if (a && !info[a]) info[a] = rec; }
   const latestElo = {};
