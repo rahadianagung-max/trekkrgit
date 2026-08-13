@@ -1744,7 +1744,7 @@ async function importMatches(body) {
     if (names.some((n) => !n)) errors.push(`Row ${rowNo}: four players required`);
     else if (new Set(names.map((n) => n.toLowerCase())).size !== 4) errors.push(`Row ${rowNo}: players must be distinct`);
     if (isNaN(s1) || isNaN(s2)) errors.push(`Row ${rowNo}: scores must be numbers`);
-    matches.push({ venue, pg, names, s1, s2, rowNo });
+    matches.push({ venue, pg, names, s1, s2, rowNo, week: String(m.week == null ? "" : m.week).trim() });
   });
   if (errors.length) return respond(400, { error: "Validation failed", details: errors.slice(0, 50) });
 
@@ -1761,7 +1761,13 @@ async function importMatches(body) {
   const sheetTitles = new Set();
   try { const ss = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID }); ss.data.sheets.forEach((s) => sheetTitles.add(s.properties.title)); } catch (e) {}
 
-  const week = `W${getWeekNumber(new Date())}`, dateStr = new Date().toISOString().split("T")[0], tsNow = new Date().toISOString();
+  // Week column drives the league "Series" split. Optional: an admin can pass a
+  // series/week per batch (body.week) or per row (m.week) — e.g. "1", "2" — so each
+  // import becomes its own Series. When absent, fall back to the calendar ISO week
+  // (unchanged behaviour, used by PlayRank weekly rankings).
+  const batchWeek = String((body && body.week != null ? body.week : "")).trim();
+  const defaultWeek = `W${getWeekNumber(new Date())}`;
+  const dateStr = new Date().toISOString().split("T")[0], tsNow = new Date().toISOString();
   const sessionId = `SES_IMP_${Date.now()}`;
   const eloLogRows = [], venueRows = {}, venueDisplay = {}, newPlayerRows = [], newVenueRows = [], stat = {};
   const mk = (name) => { const k = name.toLowerCase(); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(newPlayerLevel), matchCount: 0 }; };
@@ -1779,7 +1785,8 @@ async function importMatches(body) {
     m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", venueRegion[String(m.venue).toLowerCase()] || "", "", m.venue, tsNow]); } });
     const tab = venueTabName(m.venue);
     if (!venueRows[tab]) { venueRows[tab] = []; venueDisplay[tab] = m.venue; }
-    venueRows[tab].push(buildVenueRow({ week, date: dateStr, p1t1: n1, p2t1: n2, p1t2: n3, p2t2: n4, scoreT1: m.s1, scoreT2: m.s2, genders: m.pg, source: "import" }));
+    const wk = m.week || batchWeek || defaultWeek;
+    venueRows[tab].push(buildVenueRow({ week: wk, date: dateStr, p1t1: n1, p2t1: n2, p1t2: n3, p2t2: n4, scoreT1: m.s1, scoreT2: m.s2, genders: m.pg, source: "import" }));
     const vk = m.venue.toLowerCase();
     if (!existingVenues.has(vk)) { existingVenues.add(vk); newVenueRows.push([m.venue, "Community", "", "", "", "", "", tsNow, ""]); }
   }

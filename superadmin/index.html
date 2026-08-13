@@ -439,7 +439,7 @@ async function resolveEdit(reqId,action){
 }
 
 var IMP_LEVELS=["Beginner","Upper Beginner","Lower Bronze","Bronze","Upper Bronze","Silver","Gold","Platinum"];
-var impState={matches:[],newPlayers:[],level:"Lower Bronze",similar:[],decisions:{},mergeTarget:{}};
+var impState={matches:[],newPlayers:[],level:"Lower Bronze",series:"",similar:[],decisions:{},mergeTarget:{}};
 function impLev(a,b){a=a.toLowerCase();b=b.toLowerCase();var m=a.length,n=b.length;if(!m)return n;if(!n)return m;var d=[];for(var i=0;i<=m;i++)d[i]=[i];for(var j=0;j<=n;j++)d[0][j]=j;for(var i2=1;i2<=m;i2++)for(var j2=1;j2<=n;j2++){var c=a[i2-1]===b[j2-1]?0:1;d[i2][j2]=Math.min(d[i2-1][j2]+1,d[i2][j2-1]+1,d[i2-1][j2-1]+c);}return d[m][n];}
 function impSim(a,b){var L=Math.max(a.length,b.length)||1;return 1-impLev(a,b)/L;}
 function impBest(name){var nl=String(name).toLowerCase().trim(),best=null,bs=0;(allPC||[]).forEach(function(pp){var pn=String(pp.name||""),pl=pn.toLowerCase().trim();if(!pl||pl===nl)return;var s=impSim(nl,pl);if(pl.indexOf(nl)===0||nl.indexOf(pl)===0)s=Math.max(s,0.9);if(s>bs){bs=s;best=pn;}});return bs>=0.80?{name:best,score:bs}:null;}
@@ -472,7 +472,8 @@ function impParse(rows){
     g3:col("teambplayer1gender","teamb1gender","player3gender"),
     g4:col("teambplayer2gender","teamb2gender","player4gender"),
     gender:col("gender"),
-    a1:col("teamaplayer1","teama1"),a2:col("teamaplayer2","teama2"),b1:col("teambplayer1","teamb1"),b2:col("teambplayer2","teamb2"),sa:col("scorea"),sb:col("scoreb")};
+    a1:col("teamaplayer1","teama1"),a2:col("teamaplayer2","teama2"),b1:col("teambplayer1","teamb1"),b2:col("teambplayer2","teamb2"),sa:col("scorea"),sb:col("scoreb"),
+    series:col("series","week")};
   if(c.venue<0||c.a1<0||c.a2<0||c.b1<0||c.b2<0||c.sa<0||c.sb<0){document.getElementById("imp-summary").innerHTML='<p style="color:#e03b30;font-size:13px">Header tidak dikenali. Gunakan template baku (Venue, Team A/B Player 1/2, Score A/B).</p>';return;}
   var gnorm=function(v){v=String(v||"").toUpperCase().trim();return v.charAt(0)==="F"?"F":v.charAt(0)==="M"?"M":"";};
   var known={}; (allPC||[]).forEach(function(p){known[String(p.name||"").toLowerCase()]=true;});
@@ -493,12 +494,12 @@ function impParse(rows){
     if(!impIsInt(sa)||!impIsInt(sb))errors.push("Skor bukan angka");
     var hasNew=false;
     if(errors.length===0){ players.forEach(function(n){ if(!known[n.toLowerCase()]){newSet[n]=true;hasNew=true;} }); }
-    matches.push({row:i+1,venue:venue,gender:category,genders:genders,p1t1:p1t1,p2t1:p2t1,p1t2:p1t2,p2t2:p2t2,sa:sa,sb:sb,errors:errors,hasNew:hasNew});
+    matches.push({row:i+1,venue:venue,gender:category,genders:genders,p1t1:p1t1,p2t1:p2t1,p1t2:p1t2,p2t2:p2t2,sa:sa,sb:sb,series:g(c.series),errors:errors,hasNew:hasNew});
   }
   var np=Object.keys(newSet);
   var similar=[],decisions={},mergeTarget={};
   np.forEach(function(n){var b=impBest(n);if(b){similar.push({newName:n,match:b.name,score:b.score});mergeTarget[n]=b.name;}});
-  impState={matches:matches,newPlayers:np,level:"Lower Bronze",similar:similar,decisions:decisions,mergeTarget:mergeTarget};
+  impState={matches:matches,newPlayers:np,level:"Lower Bronze",series:(impState&&impState.series)||"",similar:similar,decisions:decisions,mergeTarget:mergeTarget};
   impRender();
 }
 function impRender(){
@@ -519,6 +520,7 @@ function impRender(){
     var opts=IMP_LEVELS.map(function(l){return '<option'+(l==="Lower Bronze"?" selected":"")+'>'+l+'</option>';}).join("");
     html+='<div class="imp-card"><div class="imp-sec">Pemain baru — satu level untuk seluruh turnamen</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><label style="font-size:13px;font-weight:700">Level semua pemain baru</label><select id="imp-level" class="imp-lvl" onchange="impState.level=this.value">'+opts+'</select><span style="font-size:12px;color:var(--muted2)">'+effNew.length+' pemain akan dibuat dengan level ini.</span></div><div class="imp-npchips">'+effNew.map(function(n){return '<span class="imp-npc">'+erEsc(n)+'</span>';}).join("")+'</div></div>';
   }
+  html='<div class="imp-card"><div class="imp-sec">Series / Week (opsional)</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><label style="font-size:13px;font-weight:700">Nomor series untuk impor ini</label><input id="imp-series" type="number" min="1" placeholder="mis. 2" value="'+erEsc(s.series||"")+'" oninput="impState.series=this.value" class="imp-lvl" style="width:90px"><span style="font-size:12px;color:var(--muted2)">Kosongkan = pakai minggu kalender (perilaku lama). Isi angka → semua match impor ini masuk sebagai <b>Series</b> tsb di halaman league.</span></div></div>'+html;
   document.getElementById("imp-newplayers").innerHTML=html;
   var body=s.matches.map(function(m){
     var st=m.errors.length?('<span class="imp-badge err">'+erEsc(m.errors[0])+'</span>'):(m.hasNew?'<span class="imp-badge newp">New players</span>':'<span class="imp-badge ok">OK</span>');
@@ -537,7 +539,7 @@ async function impSubmit(){
   var btn=document.getElementById("imp-submit"); if(btn)btn.disabled=true;
   var prog=document.getElementById("imp-progress");
   prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i style="width:100%"></i></div><div class="imp-prog-t">Mengimpor '+valid.length+' match — batch (all-or-nothing, urutan dijaga)…</div></div>';
-  var payload={ newPlayerLevel:impState.level, matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,genders:m.genders,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb};}) };
+  var payload={ newPlayerLevel:impState.level, week:impState.series||"", matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,genders:m.genders,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb,week:m.series||""};}) };
   try{
     var r=await fetch("https://trekkr.online/api/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     var d=await r.json();
