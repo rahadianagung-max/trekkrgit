@@ -1614,15 +1614,44 @@ async function getVenueWeeklyRanking(venueName, params) {
 }
 
 // ── SESSIONS ──
+// Impor eksternal (americano-padel.com) — dipakai penjaga idempotensi di bawah.
+function isExternalImportUrl(u) {
+  return typeof u === "string" && /americano-padel\.com\/r\//i.test(u);
+}
+
 async function saveSession(body) {
-  const { sessionName, venue, sourceUrl, matchCount, playerCount, players, matches, elo_results } = body;
+  const { sessionName, venue, sourceUrl, format, matchCount, playerCount, players, matches, elo_results } = body;
   const sheets = getSheets();
   const sessionId = `SES_${Date.now()}`;
   const now = new Date().toISOString();
-  
+
+  // Metadata sesi: jangan lagi hardcode "Americano" / default 0. Pakai nilai dari
+  // body kalau ada, kalau tidak turunkan dari data yang dikirim (players/elo_results
+  // untuk jumlah pemain; matches untuk jumlah match/ronde). Ini yang membuat
+  // playerCount/roundCount terisi di /api/sessions dan menghapus "sidik jari"
+  // Americano/0/0 yang dipakai audit untuk menandai baris rusak.
+  const sessFormat = (format && String(format).trim()) || "Americano";
+  const pCount = Number(playerCount) ||
+    (Array.isArray(players) ? players.length : 0) ||
+    (Array.isArray(elo_results) ? elo_results.length : 0);
+  const mCount = Number(matchCount) ||
+    (Array.isArray(matches) ? matches.length : 0);
+
+  // A2 — penjaga idempotensi: tolak impor eksternal (americano-padel.com) yang
+  // URL sumbernya sudah pernah masuk. Hanya berlaku untuk URL impor nyata;
+  // tag konstan seperti "Trekkr Mexicano Daily Match" sengaja dilewati agar
+  // submit per-ronde biasa tidak saling menolak.
+  if (isExternalImportUrl(sourceUrl)) {
+    try {
+      const prev = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A2:I` });
+      const dup = (prev.data.values || []).some((r) => (r[2] || "").trim() === String(sourceUrl).trim());
+      if (dup) return respond(409, { error: "Sumber impor ini sudah pernah dimasukkan.", duplicate: true, sourceUrl });
+    } catch (e) { console.error("idempotency check:", e); }
+  }
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[ sessionId, sessionName || "Manual Entry", sourceUrl || "", "Americano", "N/A", venue || "Unknown", playerCount || 0, matchCount || 0, now ]] },
+    requestBody: { values: [[ sessionId, sessionName || "Manual Entry", sourceUrl || "", sessFormat, "N/A", venue || "Unknown", pCount, mCount, now ]] },
   });
 
   if (elo_results && elo_results.length > 0) {

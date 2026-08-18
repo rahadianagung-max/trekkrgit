@@ -785,6 +785,15 @@ async function saveSession(body) {
   const sheets = getSheets();
   const now = new Date().toISOString();
   const sessionId = `S-${Date.now().toString(36).toUpperCase()}`;
+  // A2 — penjaga idempotensi: tolak impor eksternal (americano-padel.com) yang
+  // URL sumbernya sudah pernah masuk. Tag konstan non-URL sengaja dilewati.
+  if (typeof source_url === "string" && /americano-padel\.com\/r\//i.test(source_url)) {
+    try {
+      const prev = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A2:I` });
+      const dup = (prev.data.values || []).some((r) => (r[2] || "").trim() === source_url.trim());
+      if (dup) return respond(409, { error: "Sumber impor ini sudah pernah dimasukkan.", duplicate: true, sourceUrl: source_url });
+    } catch (e) { console.error("idempotency check:", e); }
+  }
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${TABS.sessions}!A:I`,

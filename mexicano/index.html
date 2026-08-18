@@ -1800,6 +1800,7 @@ async function submitRound() {
         format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
         courts: state.courts, venue: state.venue,
         players: roundPlayers, rounds: [],
+        playerCount: roundPlayers.length, matchCount: round.matches.length,
         elo_results: eloResults,
       };
 
@@ -1922,6 +1923,7 @@ async function endMatch() {
           venue: state.venue,
           players: state.selectedPlayers.map(p => p.name),
           rounds: [],  // Sudah dikirim per ronde, tidak perlu ulang
+          playerCount: state.selectedPlayers.length, matchCount: submittedRounds,
           elo_results: standings.map(p => ({
             player:     p.name,
             new_elo:    p.elo,

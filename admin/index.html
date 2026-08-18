@@ -2037,6 +2037,7 @@ async function rmEndMatch(){
         format:RM.format==='fixed'?'Ranked Match Fixed Partner':'Ranked Match Individual',
         courts:RM.courts, venue:RM.venue,
         players:RM.selectedPlayers.map(p=>p.name), rounds:[],
+        playerCount:RM.selectedPlayers.length, matchCount:RM.rounds.filter(r=>r.submitted).length,
         elo_results:standings.map(p=>({
           player:p.name, new_elo:p.elo,
           elo_change:p.elo-(RM.selectedPlayers.find(s=>s.name===p.name)?.elo||RM.startElo),
