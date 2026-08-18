@@ -79,38 +79,48 @@ dokumen spesifikasi. Bagian itu mencetak, dari data terkini:
 - Perbaikan 4: pasangan sesi kembar (`keep` / `remove`).
 - Perbaikan 5: placeholder walkover.
 
-### B4 — Hapus sesi duplikat (Perbaikan 4)
+> ### ⚠️ Kontrak replay — WIPE-AND-REWRITE (bukan tambal)
+>
+> **Fungsi replay harus menghapus SELURUH tab `ELO_Log` lalu menulisnya ulang
+> dari nol — termasuk semua baris `INITIAL` — bukan menambal baris yang sudah
+> ada.** Konsekuensinya, langkah B4–B7 di bawah **bukan** operasi edit manual
+> pada Sheet, melainkan **aturan yang dikonsumsi replay** saat regenerasi:
+>
+> - **Perbaikan 1 & 2 (INITIAL) menjadi otomatis.** Karena replay menulis ulang
+>   setiap baris `INITIAL` dari awal (@1500, di-backdate 1 ms sebelum match
+>   pertama pemain, dan selalu diproses pertama), tidak ada backfill/backdate
+>   manual. Tidak ada INITIAL lama yang dipertahankan.
+> - **Perbaikan 4 & 5 menjadi filter input.** Sesi duplikat (`remove`) dan match
+>   walkover **dikecualikan dari korpus** sebelum replay menghitung — bukan
+>   dihapus baris-per-baris dari ledger lama (ledger lama dibuang seluruhnya).
+>
+> Model ini menjamin zero-sum & determinisme by construction: ledger hasil = 100%
+> keluaran satu proses, tanpa sisa baris warisan.
 
-Untuk tiap pasangan di worklist, hapus baris `remove` (baik di tab **Sessions**
-maupun seluruh baris ber-`sessionId` itu di **ELO_Log**). Jangan hapus `keep`.
+### B4 — Tandai sesi duplikat untuk dikecualikan (Perbaikan 4)
 
-> Jangan hapus pemain/sesi tanpa menghapus baris ELO_Log-nya juga — itu merusak
-> zero-sum yang saat ini PASS.
+Dari worklist, kumpulkan `sessionId` kolom `remove` sebagai daftar-kecuali.
+Replay tidak akan memasukkan match sesi itu ke korpus. (Jangan edit ledger lama
+secara manual — ledger lama akan dibuang seluruhnya oleh replay.)
 
 ### B5 — Match walkover (Perbaikan 5)
 
 Keputusan aturan (Pasal 14.4): **Opsi A (rekomendasi)** — kecualikan match
-walkover dari perhitungan ELO saat replay, lalu hapus 4 pemain placeholder;
-atau **Opsi B** — biarkan memengaruhi ELO dan ubah rulebook. Terapkan konsisten.
+walkover dari korpus replay & jangan tulis pemain placeholder ke ledger baru;
+atau **Opsi B** — biarkan memengaruhi ELO dan ubah rulebook. Terapkan konsisten
+sebagai filter input replay.
 
-### B6 — Backfill INITIAL @1500 (Perbaikan 1)
+### B6 / B7 — INITIAL (Perbaikan 1 & 2) — otomatis via replay
 
-Untuk tiap pemain di worklist Perbaikan 1, sisipkan baris ELO_Log:
-
-```
-sessionId=INITIAL, elo=1500, delta=0, w=0, l=0,
-timestamp = 1 ms sebelum entri pertama pemain
-```
-
-### B7 — Backdate INITIAL (Perbaikan 2)
-
-Untuk tiap pemain di worklist Perbaikan 2, ubah timestamp baris INITIAL menjadi
-1 ms sebelum match pertamanya. (Engine replay juga memaksa INITIAL diproses
-pertama apa pun timestamp-nya — penjaga permanen.)
+Tidak ada langkah manual. Replay menulis ulang tiap baris `INITIAL` @1500,
+di-backdate 1 ms sebelum match pertama pemain, dan memaksanya diproses pertama.
+Lihat kontrak wipe-and-rewrite di atas.
 
 ### B8 — Replay
 
-Lihat **Keputusan desain replay** di bawah. Engine belum dibangun.
+Hapus seluruh `ELO_Log`, lalu tulis ulang dari korpus match (dengan sesi
+duplikat & walkover terkecuali) mulai 1500. Lihat **Keputusan desain replay** di
+bawah. Engine belum dibangun.
 
 ### B9 / B10 — Verifikasi + determinisme
 
@@ -138,29 +148,40 @@ tier Musim 0.
 
 ---
 
-## Keputusan desain replay (B8) — **butuh keputusan sebelum dibangun**
+## Keputusan desain replay (B8)
 
-Temuan penting dari kode: baris match `Venue_*` hanya menyimpan kolom **Date**
+> **Kontrak keras (berlaku untuk R1 maupun R2): WIPE-AND-REWRITE.**
+> Replay **menghapus seluruh tab `ELO_Log`** lalu menulisnya ulang **dari nol,
+> termasuk semua baris `INITIAL`**. Tidak ada baris warisan yang dipertahankan
+> atau ditambal. Ledger hasil = 100% keluaran satu proses regenerasi.
+> Ini keputusan yang sudah ditetapkan, bukan opsi.
+
+**Keputusan alur: bangun R1 lalu R2 ("keduanya").** R1 dulu untuk konsistensi
+ledger yang cepat & aman, R2 di atasnya untuk menetralkan seed demi tier Musim 0.
+
+Temuan yang melatari: baris match `Venue_*` hanya menyimpan kolom **Date**
 (resolusi hari), tanpa timestamp per-match. Urutan kronologis milidetik hanya
-ada di `ELO_Log`, yang menyimpan agregat per-pemain per-ronde (bukan skor/lawan
-per-match). Konsekuensinya ada dua bentuk "replay" yang berbeda:
+ada di `ELO_Log` (yang menyimpan agregat per-pemain per-ronde, bukan skor/lawan
+per-match). Karena itu R1 dan R2 memakai sumber urutan berbeda:
 
-### Opsi R1 — Re-chain ledger (deterministik, aman)
+### R1 — Regenerasi ledger dari delta (deterministik, aman)
 
-Setelah B4–B7, hitung ulang **kolom `elo`** tiap pemain sebagai jumlah kumulatif
-`delta` dari seed INITIAL, dalam urutan INITIAL-first lalu timestamp. Delta lama
-dipertahankan.
+Baca ledger lama untuk mengekstrak, per pemain, urutan `delta` (INITIAL-first →
+timestamp). **Buang seluruh `ELO_Log`**, lalu tulis ledger baru dari nol: baris
+`INITIAL` @1500 segar + baris berurutan dengan kolom `elo` = jumlah kumulatif
+delta. Nilai delta lama dipertahankan, tapi tiap baris ditulis ulang (bukan
+ditambal).
 
-- ✅ Menuntaskan Tes 1/5/6 secara pasti dan deterministik (`Berubah: 0` dijamin).
+- ✅ Menuntaskan Tes 1/5/6 pasti & deterministik (`Berubah: 0` dijamin).
 - ✅ Tidak butuh rekonstruksi match; risiko rendah.
-- ❌ **Tidak** menetralkan seed "deklarasi Silver" (44 pemain @2100) — delta
-  historis tetap dihitung dengan seed lama, jadi klaim seed masih tersirat di
-  magnitudo delta.
+- ❌ **Tidak** menetralkan seed "deklarasi Silver" (44 pemain @2100) — magnitudo
+  delta historis tetap terbawa.
 
-### Opsi R2 — Replay penuh dari match (sesuai maksud spec)
+### R2 — Replay penuh dari match (sesuai maksud spec)
 
-Bangun ulang ELO_Log dari korpus match (`Venue_*` + `Tournament_Matches`),
-semua mulai 1500, lewat engine `rmCalcElo`, kecualikan walkover & sesi duplikat.
+**Buang seluruh `ELO_Log`**, lalu bangun ulang dari korpus match (`Venue_*` +
+`Tournament_Matches`), semua mulai 1500, lewat engine `rmCalcElo`, dengan
+walkover & sesi duplikat terkecuali.
 
 - ✅ Menetralkan seed deklaratif — rating murni dari hasil pertandingan.
 - ✅ Deterministik **asalkan** aturan urutan kanonik ditetapkan.
@@ -168,11 +189,16 @@ semua mulai 1500, lewat engine `rmCalcElo`, kecualikan walkover & sesi duplikat.
   identik dengan histori dan butuh aturan urutan kanonik yang disepakati
   (mis. Date → nama tab venue → indeks baris). Lebih kompleks, perlu review.
 
-**Rekomendasi:** R2 kalau tujuan utamanya menghapus seed deklaratif untuk tier
-Musim 0 (itu alasan replay ada di spec); R1 kalau tujuannya sekadar
-mengonsistenkan ledger dengan cepat dan aman. Keduanya bisa dibangun sebagai
-alat **dry-run** yang menulis usulan ELO_Log ke berkas untuk diaudit lebih dulu,
-baru `--apply` setelah `Berubah: 0` terbukti.
+### Masih terbuka (sebelum engine dibangun)
+
+- **Bentuk & bahasa implementasi** — Python dry-run (baca CSV/Sheets, tulis
+  usulan `ELO_Log` ke berkas untuk diaudit dulu; `--apply` hanya setelah
+  `Berubah: 0`) **vs** endpoint Node di `api/sheet.js` (reuse helper venue +
+  `rmCalcElo`). **Belum diputuskan.**
+- **Aturan urutan kanonik R2** (mis. Date → nama tab venue → indeks baris).
+
+Apa pun bentuknya, engine harus **dry-run dulu** (tulis usulan ledger, audit,
+buktikan `Berubah: 0`) sebelum benar-benar menimpa `ELO_Log`.
 
 ## Penetapan tier (setelah replay bersih)
 
