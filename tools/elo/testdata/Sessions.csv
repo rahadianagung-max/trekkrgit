@@ -1,0 +1,9 @@
+id,name,sourceUrl,format,courts,venue,playerCount,roundCount,createdAt
+SES_1000,Mexicano Daily,Trekkr Mexicano Daily Match,Mexicano Individual,2,The Field,8,3,2026-08-02T10:00:00.000Z
+SES_1001,Mexicano Daily,Trekkr Mexicano Daily Match,Mexicano Individual,2,The Field,8,3,2026-08-03T10:00:00.000Z
+SES_IMP_1783351369421,Bulk Import,,Americano,N/A,Various,0,0,2026-08-02T09:00:00.000Z
+SES_1002,Mexicano Daily,,Americano,N/A,The Field,0,0,2026-08-04T09:00:00.000Z
+SES_1784819331856,Mexicano Daily,https://americano-padel.com/r/abc,Americano,N/A,The Field,0,0,2026-07-23T10:00:00.000Z
+SES_1780200383067,Mexicano Daily,,Americano,N/A,The Field,0,0,2026-05-31T12:00:00.000Z
+SES_1780200397429,Mexicano Daily,,Americano,N/A,The Field,0,0,2026-05-31T12:00:14.000Z
+SES_2000,Walkover Session,,Americano,N/A,HKBP 165,0,0,2026-06-02T00:00:00.000Z
