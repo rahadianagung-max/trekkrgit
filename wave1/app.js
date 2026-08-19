@@ -90,7 +90,11 @@
       return apiGet("/elo/leaderboard" + (limit ? "?limit=" + limit : ""));
     },
     players: function () { return apiGet("/players"); },
-    claimRequest: function (payload) { return apiPost("/claim-request", payload); },
+    // Wave 1 claim reuses the existing moderated flow so approvals land in the
+    // admin "Edit Requests" screen and apply on approve (verified=TRUE, email
+    // stored as Claim_Email). No separate inbox.
+    editRequest: function (payload) { return apiPost("/players/edit-request", payload); },
+    registerPlayer: function (payload) { return apiPost("/players/register", payload); },
   };
 
   // --- Formatters ------------------------------------------------------

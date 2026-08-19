@@ -38,9 +38,9 @@
     <form id="claimform" novalidate>
       <label class="field-label" for="f-name">Your name</label>
       <input class="input" id="f-name" required autocomplete="name">
-      <label class="field-label" for="f-wa">WhatsApp number</label>
-      <input class="input" id="f-wa" type="tel" inputmode="tel" required autocomplete="tel"
-        placeholder="08…">
+      <label class="field-label" for="f-email">Email</label>
+      <input class="input" id="f-email" type="email" inputmode="email" required autocomplete="email"
+        placeholder="you@email.com">
       <label class="field-label" for="f-ig">Instagram <span style="text-transform:none;color:var(--dim)">(optional)</span></label>
       <input class="input" id="f-ig" autocomplete="off" placeholder="@handle">
       <div class="note" id="form-error" hidden></div>
@@ -63,7 +63,7 @@
 </main>
 
 <footer class="w1-footer">
-  Trekkr · Ranked padel, Indonesia · Verification is done by hand — we’ll message you on WhatsApp.
+  Trekkr · Ranked padel, Indonesia · Verification is done by hand — an admin confirms your claim by email.
 </footer>
 
 <script src="/wave1/config.js"></script>
@@ -191,31 +191,54 @@
   $("cancel").addEventListener("click", function () { show("search"); });
 
   // --- submit ---
+  // Opt A: reuse the existing moderated flow. A claim files a players/edit-request
+  // (admin approve → profile becomes verified, email stored as Claim_Email); a new
+  // player files players/register (admin approve → a fresh Players row). Both land
+  // in the admin "Edit Requests" screen. We never mutate a player record here.
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   $("claimform").addEventListener("submit", function (e) {
     e.preventDefault();
     var name = $("f-name").value.trim();
-    var wa = $("f-wa").value.trim();
-    var ig = $("f-ig").value.trim();
-    var err = $("form-error");
-    if (name.length < 2) { return showErr("Please enter your name."); }
-    if (wa.replace(/\D/g, "").length < 8) { return showErr("Please enter a valid WhatsApp number."); }
+    var email = $("f-email").value.trim();
+    var ig = $("f-ig").value.trim().replace(/^@+/, "");
     var btn = $("submit");
+    if (name.length < 2) { return showErr("Please enter your name."); }
+    if (!EMAIL_RE.test(email)) { return showErr("Please enter a valid email — we use it to verify it’s you."); }
     btn.disabled = true; btn.textContent = "Sending…";
-    W.api.claimRequest({
-      player: selected ? selected.name : "",
-      name: name, whatsapp: wa, ig: ig,
-      type: selected ? "CLAIM" : "NEW",
-    }).then(function () {
+
+    var req;
+    if (selected) {
+      // Claim: keep the canonical name unchanged (omit displayName so approval
+      // doesn't rename the record) — just attach email + optional IG.
+      req = W.api.editRequest({ name: selected.name, email: email, ig: ig });
+    } else {
+      // New player: split the typed name into first/last for players/register.
+      var parts = name.split(/\s+/);
+      var firstName = parts.shift();
+      var lastName = parts.join(" ");
+      req = W.api.registerPlayer({ firstName: firstName, lastName: lastName, email: email, ig: ig });
+    }
+
+    req.then(function () {
       $("done-msg").textContent = selected
-        ? "We’ll check the match records and message you on WhatsApp to confirm " +
-          (selected.displayName || selected.name) + " is you."
-        : "We’ve got your details. We’ll set up your profile and message you on WhatsApp.";
+        ? "Thanks. An admin will verify the match records for " +
+          (selected.displayName || selected.name) + " and confirm your claim by email."
+        : "Thanks. An admin will review your details and set up your profile — you’ll hear back by email.";
       show("done");
     }).catch(function (e2) {
       btn.disabled = false; btn.textContent = "Send claim request";
+      // Registering a name that already exists → steer them to claim it instead.
+      if (!selected && e2 && e2.status === 409) {
+        return showErr("A player with that name already exists — go back and claim that profile instead.");
+      }
       showErr((e2 && e2.message) || "Something went wrong — please try again.");
     });
-    function showErr(m) { err.textContent = m; err.hidden = false; btn.disabled = false; btn.textContent = "Send claim request"; }
+
+    function showErr(m) {
+      var err = $("form-error");
+      err.textContent = m; err.hidden = false;
+      btn.disabled = false; btn.textContent = "Send claim request";
+    }
   });
 })();
 </script>

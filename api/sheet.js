@@ -110,7 +110,6 @@ const TABS = {
   venue_leads: "Venue_Leads",
   player_auth: "Player_Auth",
   schedule: "Schedule",              // Wave 1: hand-maintained session/series/championship calendar
-  claim_requests: "ClaimRequests",   // Wave 1: profile claim-request inbox (manual verification)
 };
 
 const headers = {
@@ -307,10 +306,11 @@ async function ensureTabs(sheets) {
 }
 
 // ==============================================================
-// WAVE 1 — Championship landing / calendar / sessions / claim
-// Read-only against existing data, plus two new hand-maintained tabs
-// (Schedule, ClaimRequests). Does NOT touch ELO, writes, or any
-// existing response shape.
+// WAVE 1 — Championship landing / calendar / sessions
+// Read-only against existing data, plus one new hand-maintained tab
+// (Schedule). Profile claim reuses the existing moderated flow
+// (players/edit-request, players/register). Does NOT touch ELO, writes,
+// or any existing response shape.
 // ==============================================================
 
 // --- 60s server-side read cache (Build Spec §2) ----------------------
@@ -398,46 +398,6 @@ async function getSchedule(params) {
   return respond(200, { schedule });
 }
 
-// ClaimRequests columns A..H
-const CLAIM_REQUESTS_HEADER = ["id", "player", "name", "whatsapp", "ig", "type", "status", "createdAt"];
-async function ensureClaimRequestsTab(sheets) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
-  if (existing.includes(TABS.claim_requests)) return;
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: SHEET_ID,
-    requestBody: { requests: [{ addSheet: { properties: { title: TABS.claim_requests } } }] },
-  });
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID, range: `${TABS.claim_requests}!A1`, valueInputOption: "RAW",
-    requestBody: { values: [CLAIM_REQUESTS_HEADER] },
-  });
-}
-
-// POST /api/claim-request
-// Body: { player?, name, whatsapp, ig?, type? }  (type: CLAIM | NEW)
-// Appends to ClaimRequests. Verification is manual in Wave 1 — this NEVER
-// mutates any player record.
-async function submitClaimRequest(body) {
-  body = body || {};
-  const name = String(body.name || "").trim();
-  const whatsapp = String(body.whatsapp || "").trim();
-  const player = String(body.player || "").trim();
-  const ig = String(body.ig || "").trim().replace(/^@+/, "");
-  const type = String(body.type || (player ? "CLAIM" : "NEW")).trim().toUpperCase() === "NEW" ? "NEW" : "CLAIM";
-  if (!name) return respond(400, { error: "Name is required" });
-  if (!whatsapp) return respond(400, { error: "WhatsApp number is required" });
-  const sheets = getSheets();
-  await ensureClaimRequestsTab(sheets);
-  const id = "CR_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-  const now = new Date().toISOString();
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID, range: `${TABS.claim_requests}!A:H`, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[id, player, name, whatsapp, ig, type, "PENDING", now]] },
-  });
-  return respond(200, { success: true, id });
-}
-
 // ==============================================================
 // 1. HANDLER UTAMA (LOGIKA BACKEND API)
 // ==============================================================
@@ -518,9 +478,10 @@ const netlifyHandler = async (event) => {
     if (path === "sessions" && method === "POST") return await saveSession(body);
     if (path === "sessions" && method === "GET") return await listSessions(params);
 
-    // --- WAVE 1 (calendar + profile claim) ---
+    // --- WAVE 1 (calendar) ---
+    // Profile claim reuses the existing moderated flow (players/edit-request,
+    // players/register), so approvals surface in the admin "Edit Requests" screen.
     if (path === "schedule" && method === "GET") return await getSchedule(params);
-    if (path === "claim-request" && method === "POST") return await submitClaimRequest(body);
 
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
