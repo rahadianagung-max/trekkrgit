@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranked sessions — Trekkr</title>
+<meta name="description" content="Upcoming Trekkr ranked sessions. Sign up on your own, pay when you book — every match counts toward your rating.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/wave1/tokens.css">
+</head>
+<body>
+
+<header class="w1-appbar">
+  <a class="w1-logo" href="/">TREK<span>KR</span></a>
+  <nav class="w1-nav" aria-label="Primary">
+    <a href="/">Home</a>
+    <a href="/season">Season</a>
+    <a href="/sessions" aria-current="page">Sessions</a>
+    <a href="/claim">Find profile</a>
+  </nav>
+</header>
+
+<main class="w1-shell">
+  <h1>SESSIONS</h1>
+  <p class="lede">Sign up on your own. Pay when you book — your spot is held, and every match counts
+    toward your rating.</p>
+
+  <div id="list" class="mt16" aria-live="polite"></div>
+</main>
+
+<footer class="w1-footer">
+  Trekkr · Ranked padel, Indonesia · <a href="/season">Full season calendar</a>
+</footer>
+
+<script src="/wave1/config.js"></script>
+<script src="/wave1/app.js"></script>
+<script>
+(function () {
+  var W = window.TrekkrW1;
+  var list = document.getElementById("list");
+
+  function row(s) {
+    var full = s.status === "FULL" || s.spotsLeft <= 0;
+    var spots = full
+      ? '<div class="spots full"><b>Full</b><span>waitlist</span></div>'
+      : '<div class="spots"><b>' + s.spotsLeft + "</b><span>left</span></div>";
+    var timeline = (s.startTime || "") + (s.endTime ? "–" + s.endTime : "");
+    var loc = W.esc(s.venue) + (s.area ? " · " + W.esc(s.area.split(",")[0]) : "");
+    return '<a class="srow" href="/sessions/' + encodeURIComponent(s.id) + '">' +
+      '<div class="sdate"><b>' + W.dayNum(s.date) + "</b><span>" + W.monShort(s.date) + "</span></div>" +
+      '<div class="sbody"><b>' + loc + "</b><span>" +
+        W.esc(timeline + (s.courts ? " · " + s.courts + " court" + (s.courts === 1 ? "" : "s") : "")) +
+      "</span></div>" + spots + "</a>";
+  }
+
+  list.innerHTML =
+    '<div class="srow" aria-hidden="true"><div class="sdate"><b class="skel">00</b><span class="skel">···</span></div>' +
+    '<div class="sbody"><b class="skel">·······</b><span class="skel">····</span></div>' +
+    '<div class="spots"><b class="skel">0</b></div></div>';
+
+  var todayISO = new Date().toISOString().slice(0, 10);
+  W.api.schedule({ type: "RANKPLAY", from: todayISO }).then(function (r) {
+    var rows = (r && r.schedule) || [];
+    if (!rows.length) {
+      list.innerHTML = '<div class="locked"><b>No sessions this week</b>' +
+        '<span>See the full season calendar for what’s coming next.</span>' +
+        '<a class="btn ghost sm" style="margin-top:12px" href="/season">See the full season</a></div>';
+      return;
+    }
+    // group by day
+    var out = "", lastDay = null;
+    rows.forEach(function (s) {
+      var head = W.dowShort(s.date) + " " + W.dayNum(s.date) + " " + W.monFull(s.date);
+      if (head !== lastDay) {
+        out += '<div class="eyebrow" style="margin-top:20px">' + W.esc(head) + "</div>";
+        lastDay = head;
+      }
+      out += row(s);
+    });
+    list.innerHTML = out;
+  }).catch(function () {
+    list.innerHTML = '<div class="locked"><b>Couldn’t load sessions</b>' +
+      '<span>Give it a moment and reload.</span>' +
+      '<button class="btn ghost sm" style="margin-top:12px" onclick="location.reload()">Reload</button></div>';
+  });
+})();
+</script>
+</body>
+</html>

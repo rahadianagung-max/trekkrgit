@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Season calendar — Trekkr</title>
+<meta name="description" content="The full Trekkr season: ranked sessions, Trekkr Series, and the Championship. Every event, one calendar.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/wave1/tokens.css">
+<style>
+  .prizecol{ font-family:var(--mono); font-size:10px; text-align:right; flex:none; }
+  .prizecol b{ display:block; font-family:var(--display); font-size:16px; color:var(--flare); line-height:1; }
+  .prizecol span{ color:var(--dim); }
+  .typetag{ display:inline-block; font-family:var(--mono); font-size:8px; letter-spacing:.1em;
+    text-transform:uppercase; padding:2px 6px; margin-bottom:4px; }
+  .typetag.RANKPLAY{ background:var(--flare-soft); color:var(--flare-deep); }
+  .typetag.SERIES{ background:var(--teal-soft); color:var(--teal); }
+  .typetag.CHAMPIONSHIP{ background:var(--ink); color:#fff; }
+</style>
+</head>
+<body>
+
+<header class="w1-appbar">
+  <a class="w1-logo" href="/">TREK<span>KR</span></a>
+  <nav class="w1-nav" aria-label="Primary">
+    <a href="/">Home</a>
+    <a href="/season" aria-current="page">Season</a>
+    <a href="/sessions">Sessions</a>
+    <a href="/claim">Find profile</a>
+  </nav>
+</header>
+
+<main class="w1-shell">
+  <div class="eyebrow">Season 0 · Sep–Dec 2026</div>
+  <h1>SEASON<br>CALENDAR</h1>
+  <p class="lede">Every ranked session, every Trekkr Series, and the Championship — one calendar.</p>
+
+  <div class="seg mt16" id="filters" role="tablist" aria-label="Filter by event type">
+    <button class="on" data-type="" role="tab" aria-selected="true">All</button>
+    <button data-type="RANKPLAY" role="tab" aria-selected="false">RankPlay</button>
+    <button data-type="SERIES" role="tab" aria-selected="false">Series</button>
+    <button data-type="CHAMPIONSHIP" role="tab" aria-selected="false">Championship</button>
+  </div>
+
+  <div id="calendar" aria-live="polite"></div>
+</main>
+
+<footer class="w1-footer">
+  Trekkr · Ranked padel, Indonesia · <a href="/sessions">Book a session</a>
+</footer>
+
+<script src="/wave1/config.js"></script>
+<script src="/wave1/app.js"></script>
+<script>
+(function () {
+  var W = window.TrekkrW1, C = window.TREKKR;
+  var cal = document.getElementById("calendar");
+  var all = null;      // cached full schedule
+  var current = "";    // active type filter
+
+  function prizeFor(s) {
+    if (s.type === "CHAMPIONSHIP") return C.championship.prizePool;
+    if (s.type === "SERIES") return C.series.prizePool;
+    return 0;
+  }
+
+  function rightCol(s) {
+    var prize = prizeFor(s);
+    if (prize) return '<div class="prizecol"><b>' + W.rp(prize).replace("Rp", "Rp") + "</b><span>prize pool</span></div>";
+    var full = s.status === "FULL" || s.spotsLeft <= 0;
+    return full
+      ? '<div class="spots full"><b>Full</b><span>waitlist</span></div>'
+      : '<div class="spots"><b>' + s.spotsLeft + "</b><span>left</span></div>";
+  }
+
+  function row(s) {
+    var isRank = s.type === "RANKPLAY";
+    var href = isRank ? ' href="/sessions/' + encodeURIComponent(s.id) + '"' : "";
+    var tag = '<span class="typetag ' + s.type + '">' + s.type + "</span>";
+    var timeline = (s.startTime || "") + (s.endTime ? "–" + s.endTime : "");
+    var loc = W.esc(s.venue) + (s.area ? " · " + W.esc(s.area.split(",")[0]) : "");
+    var el = isRank ? "a" : "div";
+    return "<" + el + ' class="srow"' + href + ' style="cursor:' + (isRank ? "pointer" : "default") + '">' +
+      '<div class="sdate"><b>' + W.dayNum(s.date) + "</b><span>" + W.monShort(s.date) + "</span></div>" +
+      '<div class="sbody">' + tag + "<b>" + loc + "</b><span>" +
+        W.esc(W.dowShort(s.date) + (timeline ? " " + timeline : "")) + "</span></div>" +
+      rightCol(s) + "</" + el + ">";
+  }
+
+  function render() {
+    var rows = (all || []).filter(function (s) { return current ? s.type === current : true; });
+    if (!rows.length) {
+      cal.innerHTML = '<div class="locked" style="margin-top:16px"><b>Nothing here yet</b>' +
+        '<span>No ' + (current ? current.toLowerCase() + " events" : "events") +
+        ' on the calendar right now. New dates are added as venues confirm.</span>' +
+        (current ? '<button class="btn ghost sm" style="margin-top:12px" id="showall">See the full season</button>' : "") +
+        "</div>";
+      var b = document.getElementById("showall");
+      if (b) b.onclick = function () { setType(""); };
+      return;
+    }
+    // group by month
+    var out = "", lastMonth = null;
+    rows.forEach(function (s) {
+      var mk = W.monthLabel(s.date);
+      if (mk !== lastMonth) { out += '<div class="monthhead">' + W.esc(mk) + "</div>"; lastMonth = mk; }
+      out += row(s);
+    });
+    cal.innerHTML = out;
+  }
+
+  function setType(t) {
+    current = t;
+    Array.prototype.forEach.call(document.querySelectorAll("#filters button"), function (btn) {
+      var on = (btn.getAttribute("data-type") || "") === t;
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    render();
+  }
+
+  document.getElementById("filters").addEventListener("click", function (e) {
+    var btn = e.target.closest("button"); if (!btn) return;
+    setType(btn.getAttribute("data-type") || "");
+  });
+
+  cal.innerHTML = '<div class="monthhead skel">Loading</div>' +
+    '<div class="srow" aria-hidden="true"><div class="sdate"><b class="skel">00</b><span class="skel">···</span></div>' +
+    '<div class="sbody"><b class="skel">·······</b><span class="skel">····</span></div></div>';
+
+  W.api.schedule({}).then(function (r) {
+    all = (r && r.schedule) || [];
+    render();
+  }).catch(function () {
+    cal.innerHTML = '<div class="locked" style="margin-top:16px"><b>Couldn’t load the calendar</b>' +
+      '<span>Give it a moment and reload.</span>' +
+      '<button class="btn ghost sm" style="margin-top:12px" onclick="location.reload()">Reload</button></div>';
+  });
+})();
+</script>
+</body>
+</html>

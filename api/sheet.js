@@ -109,6 +109,8 @@ const TABS = {
   edit_requests: "Edit_Requests",
   venue_leads: "Venue_Leads",
   player_auth: "Player_Auth",
+  schedule: "Schedule",              // Wave 1: hand-maintained session/series/championship calendar
+  claim_requests: "ClaimRequests",   // Wave 1: profile claim-request inbox (manual verification)
 };
 
 const headers = {
@@ -305,6 +307,138 @@ async function ensureTabs(sheets) {
 }
 
 // ==============================================================
+// WAVE 1 — Championship landing / calendar / sessions / claim
+// Read-only against existing data, plus two new hand-maintained tabs
+// (Schedule, ClaimRequests). Does NOT touch ELO, writes, or any
+// existing response shape.
+// ==============================================================
+
+// --- 60s server-side read cache (Build Spec §2) ----------------------
+// Additive only: caches a successful ({statusCode:200}) response object per
+// key for a short TTL to cut request volume on the high-traffic leaderboard
+// and players reads. Never caches errors, never alters the response shape.
+const _w1Cache = new Map();
+async function cached60(key, producer) {
+  const now = Date.now();
+  const hit = _w1Cache.get(key);
+  if (hit && hit.exp > now) return hit.val;
+  const val = await producer();
+  if (val && val.statusCode === 200) _w1Cache.set(key, { val, exp: now + 60000 });
+  return val;
+}
+
+// Schedule columns A..N (order is a contract with the hand-maintained sheet)
+const SCHEDULE_HEADER = [
+  "id", "type", "venue", "area", "date", "startTime", "endTime",
+  "courts", "capacity", "booked", "pricePerPlayer", "status", "whatsappUrl", "note",
+];
+async function ensureScheduleTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.schedule)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.schedule } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [SCHEDULE_HEADER] },
+  });
+}
+
+function toNum(v) { const n = parseInt(String(v == null ? "" : v).replace(/[^\d-]/g, ""), 10); return isNaN(n) ? 0 : n; }
+
+// GET /api/schedule?from=<ISO>&to=<ISO>&type=<TYPE>
+// → { schedule: [ ...row, spotsLeft ] }. Sorted by date+startTime ascending,
+// excludes DONE and CANCELLED by default.
+async function getSchedule(params) {
+  const sheets = getSheets();
+  await ensureScheduleTab(sheets);
+  const res = await sheets.spreadsheets.values
+    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` })
+    .catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const from = params && params.from ? String(params.from).slice(0, 10) : null;
+  const to = params && params.to ? String(params.to).slice(0, 10) : null;
+  const type = params && params.type ? String(params.type).trim().toUpperCase() : null;
+
+  let schedule = rows
+    .filter((r) => (r[0] || "").trim()) // must have an id
+    .map((r) => {
+      const capacity = toNum(r[8]);
+      const booked = toNum(r[9]);
+      return {
+        id: (r[0] || "").trim(),
+        type: (r[1] || "").trim().toUpperCase(),
+        venue: (r[2] || "").trim(),
+        area: (r[3] || "").trim(),
+        date: (r[4] || "").trim(),
+        startTime: (r[5] || "").trim(),
+        endTime: (r[6] || "").trim(),
+        courts: toNum(r[7]),
+        capacity,
+        booked,
+        pricePerPlayer: toNum(r[10]),
+        status: (r[11] || "").trim().toUpperCase(),
+        whatsappUrl: (r[12] || "").trim(),
+        note: (r[13] || "").trim(),
+        spotsLeft: Math.max(0, capacity - booked),
+      };
+    })
+    .filter((s) => s.status !== "DONE" && s.status !== "CANCELLED")
+    .filter((s) => (type ? s.type === type : true))
+    .filter((s) => (from ? s.date >= from : true))
+    .filter((s) => (to ? s.date <= to : true));
+
+  schedule.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return (a.startTime || "") < (b.startTime || "") ? -1 : (a.startTime || "") > (b.startTime || "") ? 1 : 0;
+  });
+
+  return respond(200, { schedule });
+}
+
+// ClaimRequests columns A..H
+const CLAIM_REQUESTS_HEADER = ["id", "player", "name", "whatsapp", "ig", "type", "status", "createdAt"];
+async function ensureClaimRequestsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const existing = (meta.data.sheets || []).map((s) => s.properties.title);
+  if (existing.includes(TABS.claim_requests)) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: TABS.claim_requests } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: `${TABS.claim_requests}!A1`, valueInputOption: "RAW",
+    requestBody: { values: [CLAIM_REQUESTS_HEADER] },
+  });
+}
+
+// POST /api/claim-request
+// Body: { player?, name, whatsapp, ig?, type? }  (type: CLAIM | NEW)
+// Appends to ClaimRequests. Verification is manual in Wave 1 — this NEVER
+// mutates any player record.
+async function submitClaimRequest(body) {
+  body = body || {};
+  const name = String(body.name || "").trim();
+  const whatsapp = String(body.whatsapp || "").trim();
+  const player = String(body.player || "").trim();
+  const ig = String(body.ig || "").trim().replace(/^@+/, "");
+  const type = String(body.type || (player ? "CLAIM" : "NEW")).trim().toUpperCase() === "NEW" ? "NEW" : "CLAIM";
+  if (!name) return respond(400, { error: "Name is required" });
+  if (!whatsapp) return respond(400, { error: "WhatsApp number is required" });
+  const sheets = getSheets();
+  await ensureClaimRequestsTab(sheets);
+  const id = "CR_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const now = new Date().toISOString();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.claim_requests}!A:H`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[id, player, name, whatsapp, ig, type, "PENDING", now]] },
+  });
+  return respond(200, { success: true, id });
+}
+
+// ==============================================================
 // 1. HANDLER UTAMA (LOGIKA BACKEND API)
 // ==============================================================
 const netlifyHandler = async (event) => {
@@ -347,7 +481,7 @@ const netlifyHandler = async (event) => {
     if (path === "auth/claims/resolve" && method === "POST") return await resolveAccountClaim(body);
     if (path === "players/me" && method === "PUT") return await updateOwnProfile(body);
 
-    if (path === "players" && method === "GET") return await getPlayers(params);
+    if (path === "players" && method === "GET") return await cached60("players:" + JSON.stringify(params || {}), () => getPlayers(params));
     if (path === "players" && method === "POST") return await addPlayer(body);
     if (path === "players/update" && method === "PUT") return await updatePlayer(body);
     if (path === "players/claim" && method === "POST") return await claimProfile(body);
@@ -384,9 +518,13 @@ const netlifyHandler = async (event) => {
     if (path === "sessions" && method === "POST") return await saveSession(body);
     if (path === "sessions" && method === "GET") return await listSessions(params);
 
+    // --- WAVE 1 (calendar + profile claim) ---
+    if (path === "schedule" && method === "GET") return await getSchedule(params);
+    if (path === "claim-request" && method === "POST") return await submitClaimRequest(body);
+
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
-    if (path === "elo/leaderboard" && method === "GET") return await getNationalLeaderboard(params);
+    if (path === "elo/leaderboard" && method === "GET") return await cached60("leaderboard:" + JSON.stringify(params || {}), () => getNationalLeaderboard(params));
     if (path === "elo/record-match" && method === "POST") return await recordManualMatch(body);
     if (path === "elo/import-matches" && method === "POST") return await importMatches(body);
 

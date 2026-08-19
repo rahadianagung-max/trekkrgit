@@ -55,6 +55,43 @@
   to = "/join.html"
   status = 200
 
+# ── WAVE 1 — Championship landing / calendar / sessions / claim ─────
+[[redirects]]
+  from = "/season"
+  to = "/season.html"
+  status = 200
+
+[[redirects]]
+  from = "/sessions"
+  to = "/sessions.html"
+  status = 200
+
+[[redirects]]
+  from = "/sessions/:id"
+  to = "/session.html"
+  status = 200
+
+[[redirects]]
+  from = "/claim"
+  to = "/claim.html"
+  status = 200
+
+# Wave 2 route stubs (coming soon)
+[[redirects]]
+  from = "/passport"
+  to = "/passport.html"
+  status = 200
+
+[[redirects]]
+  from = "/ranking"
+  to = "/ranking.html"
+  status = 200
+
+[[redirects]]
+  from = "/series"
+  to = "/series.html"
+  status = 200
+
 # Halaman struktur baru (5 menu)
 [[redirects]]
   from = "/playrank"

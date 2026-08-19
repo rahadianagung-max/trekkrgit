@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find my profile — Trekkr</title>
+<meta name="description" content="If you've played at a partner venue, your matches are already recorded. Search your name to claim them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/wave1/tokens.css">
+</head>
+<body>
+
+<div class="backbar"><a href="/" aria-label="Back home">←</a> Find my profile</div>
+
+<main class="w1-shell">
+
+  <!-- SEARCH VIEW -->
+  <section id="view-search">
+    <p class="lede" style="margin-top:0">If you’ve played at a partner venue, your matches are already
+      recorded. Search your name to claim them.</p>
+    <label class="sr-only" for="q">Search your name</label>
+    <input class="input mt16" id="q" type="search" inputmode="search" autocomplete="off"
+      placeholder="Type your name…" aria-describedby="hint">
+    <div class="eyebrow" id="hint" aria-live="polite">Type at least 2 letters</div>
+    <div id="results"></div>
+  </section>
+
+  <!-- CLAIM FORM VIEW -->
+  <section id="view-form" hidden>
+    <div class="card">
+      <div class="eyebrow" id="form-kicker">Claim this profile</div>
+      <div id="form-target" style="font-family:var(--display);font-weight:800;font-size:22px;
+        text-transform:uppercase;line-height:1"></div>
+      <div id="form-sub" style="font-size:12.5px;color:var(--mute);margin-top:5px"></div>
+    </div>
+    <form id="claimform" novalidate>
+      <label class="field-label" for="f-name">Your name</label>
+      <input class="input" id="f-name" required autocomplete="name">
+      <label class="field-label" for="f-wa">WhatsApp number</label>
+      <input class="input" id="f-wa" type="tel" inputmode="tel" required autocomplete="tel"
+        placeholder="08…">
+      <label class="field-label" for="f-ig">Instagram <span style="text-transform:none;color:var(--dim)">(optional)</span></label>
+      <input class="input" id="f-ig" autocomplete="off" placeholder="@handle">
+      <div class="note" id="form-error" hidden></div>
+      <button class="btn" type="submit" id="submit">Send claim request</button>
+      <button class="btn ghost sm mt8" type="button" id="cancel">Back to search</button>
+    </form>
+  </section>
+
+  <!-- CONFIRMATION VIEW -->
+  <section id="view-done" hidden>
+    <div class="card flare" style="text-align:center">
+      <div style="font-family:var(--display);font-weight:800;font-size:26px;text-transform:uppercase;
+        color:var(--flare-deep);line-height:1;margin-bottom:8px">Request sent</div>
+      <p style="font-size:13px;color:var(--flare-deep);line-height:1.55" id="done-msg"></p>
+    </div>
+    <a class="btn ghost mt8" href="/sessions">Book a ranked session</a>
+    <a class="btn ghost mt8" href="/">Back home</a>
+  </section>
+
+</main>
+
+<footer class="w1-footer">
+  Trekkr · Ranked padel, Indonesia · Verification is done by hand — we’ll message you on WhatsApp.
+</footer>
+
+<script src="/wave1/config.js"></script>
+<script src="/wave1/app.js"></script>
+<script>
+(function () {
+  var W = window.TrekkrW1;
+  var $ = function (id) { return document.getElementById(id); };
+  var players = null;      // [{name, displayName, verified, clubs, ...}]
+  var matchMap = null;     // folded name -> totalMatches
+  var loadErr = false;
+  var selected = null;     // { player, sub } | null (null => new player)
+
+  // --- load data (players + match counts) once, with graceful degrade ---
+  var loading = Promise.all([
+    W.api.players().then(function (r) { return (r && r.players) || []; }),
+    W.api.leaderboard(100000).then(function (r) { return (r && r.leaderboard) || []; })
+      .catch(function () { return []; }), // counts are a nice-to-have; search still works
+  ]).then(function (out) {
+    players = out[0];
+    matchMap = {};
+    out[1].forEach(function (p) {
+      var k = W.foldText(p.name);
+      if (k) matchMap[k] = Number(p.totalMatches) || 0;
+    });
+  }).catch(function () { loadErr = true; });
+
+  function matchesFor(p) {
+    var m = matchMap && matchMap[W.foldText(p.name)];
+    return m == null ? 0 : m;
+  }
+  function firstClub(p) {
+    return String(p.clubs || "").split(/[,;/]+/)[0].trim();
+  }
+
+  // --- search ---
+  var results = $("results"), hint = $("hint"), q = $("q");
+  var t = null;
+  q.addEventListener("input", function () {
+    clearTimeout(t);
+    t = setTimeout(runSearch, 300); // debounce 300ms
+  });
+
+  function runSearch() {
+    var term = W.foldText(q.value);
+    if (term.length < 2) { results.innerHTML = ""; hint.textContent = "Type at least 2 letters"; return; }
+    loading.then(function () {
+      if (loadErr || !players) {
+        hint.textContent = "";
+        results.innerHTML = newProfileCard("Search is taking a moment", "You can still send a new-player request.");
+        wireNew();
+        return;
+      }
+      var hits = players.filter(function (p) {
+        return W.foldText(p.name).indexOf(term) !== -1 ||
+               W.foldText(p.displayName).indexOf(term) !== -1;
+      });
+      // Most-played first — the match count is the identifier people recognise.
+      hits.sort(function (a, b) { return matchesFor(b) - matchesFor(a); });
+      hits = hits.slice(0, 12);
+
+      if (!hits.length) {
+        hint.textContent = "";
+        results.innerHTML = newProfileCard("Not here?",
+          "Create a new profile — your rating starts at your first session.");
+        wireNew();
+        return;
+      }
+      hint.textContent = hits.length + (hits.length === 1 ? " match found" : " matches found");
+      results.innerHTML = hits.map(resultRow).join("") +
+        newProfileCard("Not you?", "None of these are me — create a new profile.");
+      Array.prototype.forEach.call(results.querySelectorAll("[data-idx]"), function (el) {
+        el.addEventListener("click", function () { pick(hits[+el.getAttribute("data-idx")]); });
+      });
+      wireNew();
+    });
+  }
+
+  function resultRow(p, i) {
+    var mc = matchesFor(p);
+    var club = firstClub(p);
+    var id = (mc ? mc + (mc === 1 ? " match" : " matches") : "New") + (club ? " · " + club : "");
+    var tag = p.verified ? "" : '<span class="ghost-tag">Unclaimed</span>';
+    return '<button class="result" data-idx="' + i + '" type="button">' +
+      '<span class="rav">' + W.esc(W.initials(p.displayName || p.name)) + "</span>" +
+      '<span style="flex:1"><b style="display:block;font-size:15px">' + W.esc(p.displayName || p.name) + "</b>" +
+      '<span style="font-size:12px;color:var(--mute)">' + W.esc(id) + "</span>" + tag + "</span>" +
+      '<span style="color:var(--flare);font-size:20px">→</span></button>';
+  }
+
+  function newProfileCard(title, body) {
+    return '<div class="locked" style="margin-top:14px"><b>' + W.esc(title) + "</b>" +
+      "<span>" + W.esc(body) + "</span>" +
+      '<button class="btn ghost sm" style="margin-top:12px" id="newbtn" type="button">Create new profile</button></div>';
+  }
+  function wireNew() {
+    var b = $("newbtn");
+    if (b) b.addEventListener("click", function () { pick(null); });
+  }
+
+  // --- selection → form ---
+  function show(view) {
+    ["search", "form", "done"].forEach(function (v) { $("view-" + v).hidden = v !== view; });
+    window.scrollTo(0, 0);
+  }
+  function pick(p) {
+    selected = p;
+    if (p) {
+      $("form-kicker").textContent = "Claim this profile";
+      $("form-target").textContent = p.displayName || p.name;
+      var mc = matchesFor(p), club = firstClub(p);
+      $("form-sub").textContent = (mc ? mc + (mc === 1 ? " match" : " matches") : "New profile") +
+        (club ? " · " + club : "");
+      $("f-name").value = p.displayName || p.name;
+    } else {
+      $("form-kicker").textContent = "New player";
+      $("form-target").textContent = "Create your profile";
+      $("form-sub").textContent = "Your rating starts at your first ranked session.";
+      $("f-name").value = q.value.trim();
+    }
+    $("form-error").hidden = true;
+    show("form");
+  }
+
+  $("cancel").addEventListener("click", function () { show("search"); });
+
+  // --- submit ---
+  $("claimform").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("f-name").value.trim();
+    var wa = $("f-wa").value.trim();
+    var ig = $("f-ig").value.trim();
+    var err = $("form-error");
+    if (name.length < 2) { return showErr("Please enter your name."); }
+    if (wa.replace(/\D/g, "").length < 8) { return showErr("Please enter a valid WhatsApp number."); }
+    var btn = $("submit");
+    btn.disabled = true; btn.textContent = "Sending…";
+    W.api.claimRequest({
+      player: selected ? selected.name : "",
+      name: name, whatsapp: wa, ig: ig,
+      type: selected ? "CLAIM" : "NEW",
+    }).then(function () {
+      $("done-msg").textContent = selected
+        ? "We’ll check the match records and message you on WhatsApp to confirm " +
+          (selected.displayName || selected.name) + " is you."
+        : "We’ve got your details. We’ll set up your profile and message you on WhatsApp.";
+      show("done");
+    }).catch(function (e2) {
+      btn.disabled = false; btn.textContent = "Send claim request";
+      showErr((e2 && e2.message) || "Something went wrong — please try again.");
+    });
+    function showErr(m) { err.textContent = m; err.hidden = false; btn.disabled = false; btn.textContent = "Send claim request"; }
+  });
+})();
+</script>
+</body>
+</html>

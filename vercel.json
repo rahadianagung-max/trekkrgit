@@ -1,8 +1,8 @@
 {
   "rewrites": [
-    { 
-      "source": "/api/:match*", 
-      "destination": "/api/sheet" 
+    {
+      "source": "/api/:match*",
+      "destination": "/api/sheet"
     },
     {
       "source": "/player/:match*",
@@ -11,6 +11,14 @@
     {
       "source": "/join",
       "destination": "/join.html"
-    }
+    },
+
+    { "source": "/season", "destination": "/season.html" },
+    { "source": "/sessions", "destination": "/sessions.html" },
+    { "source": "/sessions/:id", "destination": "/session.html" },
+    { "source": "/claim", "destination": "/claim.html" },
+    { "source": "/passport", "destination": "/passport.html" },
+    { "source": "/ranking", "destination": "/ranking.html" },
+    { "source": "/series", "destination": "/series.html" }
   ]
 }

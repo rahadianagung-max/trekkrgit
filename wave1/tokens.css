@@ -1,0 +1,273 @@
+/* =====================================================================
+ * TREKKR — WAVE 1 DESIGN TOKENS + COMPONENT PRIMITIVES
+ * ---------------------------------------------------------------------
+ * Extracted from Trekkr_Redesign_Prototype_v3 (Build Spec §4).
+ * Wave 2 and 3 reuse this — never inline colours in a page.
+ *
+ * Rules baked in here:
+ *  - Mobile-first. Designed at 390px, scales up.
+ *  - Square corners throughout (only avatars + ladder circles are round).
+ *  - One accent only: --flare (orange) marks the single most important
+ *    thing on any screen.
+ *  - Respect prefers-reduced-motion.
+ *  - Visible keyboard focus on every interactive element.
+ * ===================================================================== */
+
+:root {
+  --field:#E7EDF1;        /* brand court grey (page ground) */
+  --card:#FFFFFF;
+  --ink:#0D1A24;
+  --mute:#5C7080;
+  --dim:#93A8B4;
+  --line:#D3DFE7;
+  --flare:#FF6A00;        /* THE accent */
+  --flare-soft:#FFF0E5;
+  --flare-deep:#B84A00;
+  --teal:#1F6F8B;
+  --teal-soft:#E4EFF3;
+  --gold:#B8860B;
+  --gold-soft:#FBF3DE;
+  --ok:#1B7F5A;
+  --ok-soft:#E4F2EC;
+
+  --display:'Saira Condensed', system-ui, sans-serif;
+  --body:'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono:'Azeret Mono', ui-monospace, monospace;
+
+  /* mobile-first content column */
+  --shell-max: 480px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  background:var(--field);
+  color:var(--ink);
+  font-family:var(--body);
+  min-height:100vh;
+  line-height:1.5;
+  overflow-x:hidden; /* acceptance #1: no horizontal scroll at 390px */
+}
+
+img{max-width:100%;display:block}
+
+/* --- Accessibility: visible keyboard focus everywhere ---------------- */
+a,button,input,select,textarea,[tabindex]{ outline:none; }
+a:focus-visible,button:focus-visible,input:focus-visible,
+select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid var(--flare);
+  outline-offset:2px;
+}
+
+/* --- App shell ------------------------------------------------------- */
+.w1-shell{ max-width:var(--shell-max); margin:0 auto; padding:0 20px 64px; }
+
+.w1-appbar{
+  max-width:var(--shell-max); margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px 14px;
+}
+.w1-logo{
+  font-family:var(--display); font-weight:800; font-size:22px;
+  text-transform:uppercase; letter-spacing:-.01em; color:var(--ink);
+  text-decoration:none; line-height:1;
+}
+.w1-logo span{ color:var(--flare); }
+.w1-nav{ display:flex; gap:4px; flex-wrap:wrap; }
+.w1-nav a{
+  font-family:var(--mono); font-size:10px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--mute); text-decoration:none;
+  padding:7px 9px; border:1px solid transparent;
+}
+.w1-nav a:hover{ color:var(--ink); border-color:var(--line); }
+.w1-nav a[aria-current="page"]{ color:var(--flare); border-color:var(--flare); font-weight:700; }
+
+.backbar{
+  max-width:var(--shell-max); margin:0 auto;
+  display:flex; align-items:center; gap:12px; padding:14px 20px 10px;
+  font-family:var(--display); font-weight:700; font-size:19px; text-transform:uppercase;
+}
+.backbar a{ font-style:normal; color:var(--flare); font-size:24px; line-height:1;
+  text-decoration:none; }
+
+/* --- Type ------------------------------------------------------------ */
+.eyebrow{ font-family:var(--mono); font-size:9.5px; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--dim); margin-bottom:9px; }
+h1,.h1{ font-family:var(--display); font-weight:800; font-size:38px; line-height:1.02;
+  text-transform:uppercase; letter-spacing:-.01em; }
+h2,.h2{ font-family:var(--display); font-weight:700; font-size:22px; text-transform:uppercase;
+  margin-bottom:12px; }
+.lede{ color:var(--mute); font-size:14.5px; line-height:1.55; margin-top:12px; }
+
+/* --- Cards ----------------------------------------------------------- */
+.card{ background:var(--card); border:1px solid var(--line); padding:16px; margin-bottom:10px; }
+.card.flare{ background:var(--flare-soft); border-color:#FFD9BF; }
+.card.teal{ background:var(--teal-soft); border-color:#C4DCE5; }
+.card.dark{ background:var(--ink); border-color:var(--ink); color:#fff; }
+
+/* --- Buttons --------------------------------------------------------- */
+.btn{ display:block; width:100%; background:var(--flare); color:#fff; border:none;
+  font-family:var(--display); font-weight:700; font-size:17px; text-transform:uppercase;
+  letter-spacing:.03em; padding:15px; cursor:pointer; text-align:center; text-decoration:none; }
+.btn:hover{ filter:brightness(1.08); }
+.btn.ghost{ background:var(--card); border:1px solid var(--line); color:var(--ink); }
+.btn.dark{ background:var(--ink); color:#fff; }
+.btn.sm{ font-size:13px; padding:11px; }
+.btn[disabled]{ opacity:.5; cursor:not-allowed; }
+
+/* --- Countdown + prize pool ------------------------------------------ */
+.countdown{ display:flex; align-items:center; gap:14px; margin-top:16px; background:var(--ink);
+  color:#fff; padding:14px 16px; }
+.countdown .cd-days{ text-align:center; }
+.countdown b{ font-family:var(--display); font-weight:800; font-size:38px; line-height:1; display:block; }
+.countdown span{ font-family:var(--mono); font-size:9px; letter-spacing:.12em;
+  text-transform:uppercase; color:#9FB2C0; }
+.cdline{ width:1px; height:38px; background:#2A3E4D; flex:none; }
+.cd-pool{ flex:1; }
+.cd-pool b{ font-size:31px; color:var(--flare); }
+.cd-pool span{ color:var(--mute); }
+
+.prizes{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.prize{ display:flex; justify-content:space-between; align-items:center; padding:11px 14px;
+  border:1px solid var(--line); background:var(--card); }
+.prize.t1{ background:var(--flare-soft); border-color:#FFD9BF; }
+.prize .pt{ font-family:var(--display); font-weight:700; font-size:17px; text-transform:uppercase; }
+.prize b{ font-family:var(--display); font-weight:800; font-size:23px; letter-spacing:-.01em; }
+.prize.t1 b{ color:var(--flare-deep); }
+
+/* --- Ascending ladder (how you get in) ------------------------------- */
+.ladder{ position:relative; }
+.rung{ display:flex; gap:13px; position:relative; padding-bottom:18px; }
+.rung::before{ content:""; position:absolute; left:16px; top:36px; bottom:0; width:2px;
+  background:var(--line); }
+.rung.last::before{ display:none; }
+.rnum{ width:34px; height:34px; flex:none; background:var(--ink); color:#fff;
+  font-family:var(--display); font-weight:800; font-size:18px; display:grid; place-items:center;
+  z-index:2; border-radius:50%; }
+.rbody{ flex:1; padding-top:3px; }
+.rbody > b{ display:block; font-family:var(--display); font-weight:800; font-size:20px;
+  text-transform:uppercase; line-height:1; margin-bottom:6px; }
+.rbody > span{ font-size:13px; color:var(--mute); line-height:1.55; display:block; }
+.minicards{ display:flex; gap:6px; margin-top:11px; }
+.minicards div{ flex:1; background:var(--card); border:1px solid var(--line); padding:9px 6px;
+  text-align:center; }
+.minicards b{ display:block; font-family:var(--display); font-weight:800; font-size:15px;
+  margin-bottom:2px; }
+.minicards span{ font-family:var(--mono); font-size:8px; letter-spacing:.08em; color:var(--dim);
+  text-transform:uppercase; }
+
+/* --- SIGNATURE: three-session meter (standalone component) ----------- */
+.sesmeter{ display:flex; gap:7px; margin:14px 0 10px; }
+.sesblock{ flex:1; height:58px; border:2px solid var(--line); background:var(--card);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  transition:all .35s cubic-bezier(.2,.8,.3,1); }
+.sesblock b{ font-family:var(--display); font-weight:800; font-size:21px; line-height:1;
+  color:var(--dim); }
+.sesblock span{ font-family:var(--mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--dim); }
+.sesblock.done{ background:var(--flare); border-color:var(--flare); }
+.sesblock.done b,.sesblock.done span{ color:#fff; }
+.sesblock.now{ border-color:var(--flare); background:var(--flare-soft); }
+.sesblock.now b,.sesblock.now span{ color:var(--flare-deep); }
+
+/* --- Session rows ---------------------------------------------------- */
+.srow{ display:flex; gap:13px; align-items:center; background:var(--card); border:1px solid var(--line);
+  padding:13px; margin-bottom:8px; cursor:pointer; transition:border .15s; text-decoration:none;
+  color:inherit; }
+.srow:hover{ border-color:var(--flare); }
+.sdate{ width:46px; flex:none; text-align:center; }
+.sdate b{ display:block; font-family:var(--display); font-weight:800; font-size:25px; line-height:1; }
+.sdate span{ font-family:var(--mono); font-size:9px; letter-spacing:.1em; color:var(--dim);
+  text-transform:uppercase; }
+.sbody{ flex:1; min-width:0; }
+.sbody b{ display:block; font-size:14.5px; font-weight:700; margin-bottom:3px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.sbody span{ font-size:12px; color:var(--mute); }
+.spots{ font-family:var(--mono); font-size:10px; text-align:right; flex:none; }
+.spots b{ display:block; font-size:15px; color:var(--flare); }
+.spots span{ color:var(--dim); }
+.spots.full b{ color:var(--dim); }
+
+/* --- Segmented control ----------------------------------------------- */
+.seg{ display:flex; background:var(--card); border:1px solid var(--line); margin-bottom:14px; }
+.seg button{ flex:1; background:none; border:none; color:var(--mute); padding:10px 4px;
+  font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  cursor:pointer; }
+.seg button.on{ background:var(--flare); color:#fff; font-weight:700; }
+
+/* --- Three-up stat block --------------------------------------------- */
+.stat3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+.stat3 > div{ background:var(--card); border:1px solid var(--line); padding:12px 10px; }
+.stat3 b{ display:block; font-family:var(--display); font-weight:800; font-size:25px; line-height:1; }
+.stat3 span{ font-family:var(--mono); font-size:8.5px; letter-spacing:.1em; color:var(--dim);
+  text-transform:uppercase; display:block; margin-top:5px; line-height:1.4; }
+
+/* --- Numbered steps -------------------------------------------------- */
+.step{ display:flex; gap:13px; margin-bottom:16px; }
+.stepn{ width:27px; height:27px; flex:none; background:var(--flare); color:#fff;
+  font-family:var(--display); font-weight:800; font-size:15px; display:grid; place-items:center; }
+.step b{ display:block; font-size:15px; margin-bottom:3px; }
+.step span{ font-size:13px; color:var(--mute); line-height:1.5; }
+
+/* --- Notes / locked / soon ------------------------------------------- */
+.note{ background:var(--flare-soft); border-left:3px solid var(--flare); padding:12px 13px;
+  font-size:12.5px; line-height:1.55; color:var(--flare-deep); margin-bottom:10px; }
+.locked{ background:var(--card); border:1px dashed var(--line); padding:15px; text-align:center;
+  margin-bottom:10px; }
+.locked b{ display:block; font-family:var(--display); font-size:18px; text-transform:uppercase;
+  margin-bottom:5px; }
+.locked span{ font-size:12.5px; color:var(--mute); line-height:1.5; display:block; }
+.soon{ display:inline-block; font-family:var(--mono); font-size:8.5px; letter-spacing:.12em;
+  text-transform:uppercase; background:var(--teal); color:#fff; padding:3px 7px; margin-bottom:8px; }
+
+/* --- Search results (claim) ------------------------------------------ */
+.result{ display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line);
+  padding:13px; margin-bottom:8px; cursor:pointer; width:100%; text-align:left; }
+.result:hover{ border-color:var(--flare); }
+.rav{ width:38px; height:38px; flex:none; border-radius:50%; background:var(--teal-soft); color:var(--teal);
+  display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:15px; }
+.ghost-tag{ font-family:var(--mono); font-size:8.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--gold); border:1px solid var(--gold); padding:2px 5px; display:inline-block; margin-top:3px; }
+
+/* --- Inputs ---------------------------------------------------------- */
+.input,label > .input{ width:100%; background:var(--card); border:1px solid var(--line); color:var(--ink);
+  padding:14px; font-family:var(--body); font-size:15px; margin-bottom:10px; }
+.field-label{ display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--mute); margin:4px 0 6px; }
+
+/* --- Month heading (season) ------------------------------------------ */
+.monthhead{ font-family:var(--display); font-weight:800; font-size:20px; text-transform:uppercase;
+  margin:22px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--ink); }
+
+/* --- Footer ---------------------------------------------------------- */
+.w1-footer{ max-width:var(--shell-max); margin:0 auto; padding:26px 20px 40px;
+  font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--dim); border-top:1px solid var(--line); }
+.w1-footer a{ color:var(--mute); text-decoration:none; }
+
+/* --- Utilities ------------------------------------------------------- */
+.mt8{margin-top:8px}.mt14{margin-top:14px}.mt16{margin-top:16px}.mt22{margin-top:22px}
+.mt26{margin-top:26px}.mt28{margin-top:28px}
+.center{text-align:center}
+.cap{ text-align:center; margin-top:11px; font-size:12px; color:var(--dim); }
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+[hidden]{ display:none !important; }
+
+/* --- Skeleton / loading (never a stuck spinner as final state) ------- */
+.skel{ background:linear-gradient(90deg,var(--line) 25%,#E9F0F5 50%,var(--line) 75%);
+  background-size:200% 100%; animation:skel 1.2s ease-in-out infinite; color:transparent !important; }
+@keyframes skel{ from{background-position:200% 0} to{background-position:-200% 0} }
+
+@media(prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+
+/* Scale up from mobile: on wider screens keep the single readable column
+   but give the hero a touch more air. */
+@media(min-width:560px){
+  :root{ --shell-max:520px; }
+  h1,.h1{ font-size:44px; }
+}
