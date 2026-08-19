@@ -181,5 +181,11 @@ const TrekkrAPI = (() => {
       }
       return null;
     },
+    // Tier eligibility (Wave 1). A player has no settled tier until calibrated
+    // (>= MIN_TIER_MATCHES matches). REPLAY_COMPLETE flips to true after the
+    // season ELO replay and clears the "provisional" note shown across the site.
+    MIN_TIER_MATCHES: 15,
+    REPLAY_COMPLETE: false,
+    isTierEligible(totalMatches) { return (Number(totalMatches) || 0) >= this.MIN_TIER_MATCHES; },
   };
 })();
