@@ -81,6 +81,12 @@
       { id: "T2", label: "Contender", min: 1500, max: 1999 },
       { id: "T3", label: "Rising", min: 0, max: 1499 },
     ],
+    // Tier eligibility. A player has no settled tier until calibrated
+    // (minMatches). replayComplete flips to true after the season ELO replay
+    // and clears the "provisional" note across the site. Mirrored in the shared
+    // client (trekkr-api.js: MIN_TIER_MATCHES/REPLAY_COMPLETE) and on the
+    // passport/rankings — keep them in sync.
+    tierEligibility: { minMatches: 15, replayComplete: false },
   };
 
   window.TREKKR_CONFIG = CONFIG;

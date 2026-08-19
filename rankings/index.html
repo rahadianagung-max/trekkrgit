@@ -143,6 +143,8 @@
     <div class="select"><select id="levelSel" aria-label="Tier"><option value="">All tiers</option></select></div>
   </div>
 
+  <div id="tierNote"></div>
+
   <div class="cols">
     <div>
       <div class="col-head"><span class="dot" style="background:var(--orange)"></span><span class="label">MEN</span><span class="count" id="countM"></span></div>
@@ -185,6 +187,10 @@
   var TIERS=[{v:'T1',label:'T1 · Open',min:2000,max:Infinity},{v:'T2',label:'T2 · Contender',min:1500,max:1999},{v:'T3',label:'T3 · Rising',min:0,max:1499}];
   function tierName(elo){elo=Number(elo)||0;if(elo>=2000)return'T1 · Open';if(elo>=1500)return'T2 · Contender';return'T3 · Rising';}
   function tierBand(v){for(var i=0;i<TIERS.length;i++){if(TIERS[i].v===v)return TIERS[i];}return null;}
+  // Tier eligibility: a player is only ranked once calibrated (>= MIN_TIER_MATCHES
+  // matches). REPLAY_COMPLETE flips true after the season ELO replay.
+  var MIN_TIER_MATCHES=15, REPLAY_COMPLETE=false;
+  function isEligible(p){return (Number(p.totalMatches)||0)>=MIN_TIER_MATCHES;}
 
   /* Mobile menu */
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
@@ -232,9 +238,9 @@
   }
 
   function params(){
-    // Tier filter is applied client-side by ELO band, so pull the full list when one is set.
-    var lvl=document.getElementById('levelSel').value;
-    var p={limit: lvl?100000:50};
+    // Eligibility + tier filtering are applied client-side, so pull the full list
+    // and page it here (the leaderboard is cached 60s server-side).
+    var p={limit:100000};
     var reg=document.getElementById('regionSel'); if(!document.getElementById('regionWrap').classList.contains('hidden')&&reg.value)p.region=reg.value;
     return p;
   }
@@ -245,10 +251,11 @@
     var qs=new URLSearchParams(Object.assign({gender:g},params())).toString();
     return fetch(BASE+'/elo/leaderboard?'+qs).then(function(r){return r.json();}).then(function(d){
       data[g]=(d&&d.leaderboard)||[];
+      // Only rank players whose tier is settled (calibrated).
+      data[g]=data[g].filter(isEligible);
       var band=tierBand(document.getElementById('levelSel').value);
       if(band){data[g]=data[g].filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
-      var cnt=band?data[g].length:(d&&typeof d.total==='number'?d.total:data[g].length);
-      document.getElementById(g==='M'?'countM':'countF').textContent=cnt+' players';
+      document.getElementById(g==='M'?'countM':'countF').textContent=data[g].length+' players';
       expanded[g]=false; render(g);
     }).catch(function(){box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
   }
@@ -256,6 +263,14 @@
 
   document.getElementById('moreM').addEventListener('click',function(){expanded.M=!expanded.M;render('M');});
   document.getElementById('moreF').addEventListener('click',function(){expanded.F=!expanded.F;render('F');});
+
+  /* Provisional note: rankings only list calibrated players; tiers firm up after the replay. */
+  (function(){var n=document.getElementById('tierNote');if(!n)return;
+    n.innerHTML='<div style="margin:0 0 14px;padding:11px 14px;border:1px solid rgba(255,176,0,0.42);'
+      +'background:rgba(255,176,0,0.12);border-radius:12px;font-size:12.5px;line-height:1.5;color:#8a5d00">'
+      +'Showing calibrated players only (15+ matches).'
+      +(REPLAY_COMPLETE?'':' Tiers are <strong>provisional</strong> until the season ELO replay is complete.')
+      +'</div>';})();
 
   /* Filters */
   TIERS.forEach(function(t){var o=document.createElement('option');o.value=t.v;o.textContent=t.label;document.getElementById('levelSel').appendChild(o);});
