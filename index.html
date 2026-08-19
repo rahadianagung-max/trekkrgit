@@ -13,9 +13,52 @@
   .hero-h1{ margin-top:2px; }
   .prizes{ margin-top:14px; }
   .counters .stat3 b.skel{ min-width:2ch; display:inline-block; }
+
+  /* ============================================================
+     Responsive home — mobile-first single column (base, unchanged),
+     expanding into a wider multi-column layout on tablet/desktop.
+     Scoped to .home so other Wave 1 pages keep the narrow column.
+     ============================================================ */
+  @media (min-width:760px){
+    .home .w1-appbar, .home .w1-shell{ max-width:1080px; }
+    .home h1, .home .h1{ font-size:60px; }
+
+    /* Hero → two columns: message left, countdown + prizes right */
+    .home .hero-grid{ display:grid; grid-template-columns:1.05fr .95fr; gap:44px; align-items:center; }
+    .home .hero-left .lede{ max-width:42ch; }
+    .home .hero-right .countdown{ margin-top:0; }
+
+    /* Prize rows sit side by side */
+    .home .prizes{ flex-direction:row; margin-top:12px; }
+    .home .prizes .prize{ flex:1; flex-direction:column; align-items:flex-start; gap:6px; }
+
+    /* Ladder → three columns, drop the vertical connector */
+    .home .ladder{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+    .home .ladder .rung{ padding-bottom:0; }
+    .home .ladder .rung::before{ display:none; }
+
+    /* Next sessions → responsive grid; empty/error card spans full width */
+    .home #next-sessions{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px; }
+    .home #next-sessions > .srow{ margin-bottom:0; }
+    .home #next-sessions > .locked{ grid-column:1 / -1; }
+
+    /* Actions → buttons in a row, caption on its own line */
+    .home .s-actions{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .home .s-actions .btn{ width:auto; flex:1 1 260px; margin-top:0; }
+    .home .s-actions .cap{ flex-basis:100%; margin-top:4px; }
+
+    /* Give the section rhythm a little more air on wide screens */
+    .home .s-getin{ margin-top:40px; }
+    .home .s-next, .home .s-counters{ margin-top:40px; }
+  }
+
+  @media (min-width:1024px){
+    .home h1, .home .h1{ font-size:72px; }
+    .home .w1-shell{ padding-bottom:80px; }
+  }
 </style>
 </head>
-<body>
+<body class="home">
 
 <header class="w1-appbar">
   <a class="w1-logo" href="/">TREK<span>KR</span></a>
@@ -32,21 +75,27 @@
 <main class="w1-shell">
 
   <!-- BLOCK 1 — Championship hero -->
-  <section aria-labelledby="champ-title">
-    <div class="eyebrow" id="champ-eyebrow">Championship</div>
-    <h1 id="champ-title" class="hero-h1">TREKKR<br>CHAMPIONSHIP</h1>
-    <div class="countdown">
-      <div class="cd-days"><b id="cd-days">—</b><span>days</span></div>
-      <div class="cdline"></div>
-      <div class="cd-pool"><b id="cd-pool">—</b><span>Total prize pool</span></div>
+  <section class="s-hero" aria-labelledby="champ-title">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="eyebrow" id="champ-eyebrow">Championship</div>
+        <h1 id="champ-title" class="hero-h1">TREKKR<br>CHAMPIONSHIP</h1>
+        <p class="lede">One champion per tier. You compete only against players at your own level — so
+          every tier is genuinely winnable.</p>
+      </div>
+      <div class="hero-right">
+        <div class="countdown">
+          <div class="cd-days"><b id="cd-days">—</b><span>days</span></div>
+          <div class="cdline"></div>
+          <div class="cd-pool"><b id="cd-pool">—</b><span>Total prize pool</span></div>
+        </div>
+        <div class="prizes" id="champ-prizes"></div>
+      </div>
     </div>
-    <div class="prizes" id="champ-prizes"></div>
-    <p class="lede">One champion per tier. You compete only against players at your own level — so every
-      tier is genuinely winnable.</p>
   </section>
 
   <!-- BLOCK 2 — How you get in -->
-  <section class="mt26" aria-labelledby="ladder-title">
+  <section class="s-getin mt26" aria-labelledby="ladder-title">
     <h2 id="ladder-title">How you get in</h2>
     <div class="ladder">
       <div class="rung">
@@ -77,20 +126,20 @@
   </section>
 
   <!-- BLOCK 3 — Actions -->
-  <section class="mt8">
+  <section class="s-actions mt8">
     <a class="btn" href="/sessions">Start now — book a ranked session</a>
     <a class="btn ghost mt8" href="/claim">I've played before — find my profile</a>
     <p class="cap" id="qual-caption">Qualifying closes 30 November</p>
   </section>
 
   <!-- BLOCK 4 — Next ranked sessions -->
-  <section class="mt28" aria-labelledby="next-title">
+  <section class="s-next mt28" aria-labelledby="next-title">
     <h2 id="next-title">Next ranked sessions</h2>
     <div id="next-sessions" aria-live="polite"></div>
   </section>
 
   <!-- BLOCK 5 — Platform counters (hidden until data is confirmed) -->
-  <section class="mt26 counters" id="counters" hidden>
+  <section class="s-counters mt26 counters" id="counters" hidden>
     <div class="stat3">
       <div><b id="c-players">—</b><span>Players tracked</span></div>
       <div><b id="c-matches">—</b><span>Matches recorded</span></div>
@@ -99,7 +148,7 @@
   </section>
 
   <!-- BLOCK 6 — Challenges, coming soon -->
-  <section class="mt16">
+  <section class="s-challenges mt16">
     <div class="card teal">
       <span class="soon">Coming soon</span>
       <div style="font-family:var(--display);font-weight:800;font-size:24px;line-height:1;
