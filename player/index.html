@@ -628,14 +628,23 @@ canvas#shareCanvas{display:none}
 .share-opt-label{font-size:13px;font-weight:700;color:var(--on-surface)}
 .share-opt-sub{font-size:11px;color:var(--on-surface-variant);margin-top:1px}
 
-.menu-toggle{display:none;background:transparent;border:1px solid var(--surface-high);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--on-surface);font-size:20px;cursor:pointer}.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 14px}.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:700;font-size:13px;color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif}.mobile-nav a:hover{background:var(--surface-container);color:var(--on-surface)}.mobile-nav.open{display:flex}@media(max-width:1023px){.menu-toggle{display:flex}}
+/* Unified dropdown menu (matches the Wave 1 home): one control on every viewport */
+.site-header__inner{position:relative}
+.nav-links{display:none}
+.menu-toggle{display:inline-flex;background:var(--surface);border:1px solid var(--surface-high);border-radius:10px;height:40px;align-items:center;justify-content:center;gap:7px;color:var(--on-surface);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0 14px}
+.menu-toggle:hover{border-color:var(--on-surface-variant)}
+.mobile-nav{display:none;position:absolute;top:100%;right:0;margin-top:8px;min-width:214px;flex-direction:column;gap:2px;padding:8px;background:var(--surface);border:1px solid var(--surface-high);border-radius:12px;box-shadow:0 18px 44px rgba(13,26,36,.18);z-index:70}
+.mobile-nav a{padding:12px 14px;border-radius:8px;font-weight:700;font-size:13px;color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif;text-decoration:none}
+.mobile-nav a:hover{background:var(--surface-container);color:var(--on-surface)}
+.mobile-nav a.is-active{color:var(--primary)}
+.mobile-nav.open{display:flex}
 .pp-edit-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,106,0,.4);color:var(--primary);background:transparent;border-radius:var(--radius-pill);padding:7px 15px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--motion-base)}
 .pp-edit-btn:hover{background:rgba(255,106,0,.08)}
 .edit-in{width:100%;border:1px solid rgba(115,118,136,.22);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;background:#F9FAFC;color:var(--on-surface)}
 </style>
 </head>
 <body>
-<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online/" class="brand">Trekkr</a><nav class="nav-links" aria-label="Primary"><a class="nav-link" href="https://trekkr.online/">Home</a><a class="nav-link" href="https://trekkr.online/rankings">Rankings</a><a class="nav-link" href="https://trekkr.online/playrank">PlayRank</a><a class="nav-link" href="https://trekkr.online/tournament">Tourney &amp; League</a><a class="nav-link" href="https://trekkr.online/get-listed">Get Listed</a><a class="nav-link" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav><button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button></div><div class="container"><nav class="mobile-nav" id="mobileNav" aria-label="Mobile"><a href="https://trekkr.online/">Home</a><a href="https://trekkr.online/rankings">Rankings</a><a href="https://trekkr.online/playrank">PlayRank</a><a href="https://trekkr.online/tournament">Tourney &amp; League</a><a href="https://trekkr.online/get-listed">Get Listed</a><a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></nav></div></header>
+<header class="site-header"><div class="container site-header__inner"><a href="https://trekkr.online/" class="brand">Trekkr</a><button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-haspopup="true" aria-expanded="false" aria-controls="mobileNav">Menu ▾</button><nav class="mobile-nav" id="mobileNav" aria-label="Primary"><a href="https://trekkr.online/">Home</a><a href="https://trekkr.online/season">Season</a><a href="https://trekkr.online/sessions">Sessions</a><a href="https://trekkr.online/rankings">Rankings</a><a href="https://trekkr.online/claim">Find profile</a></nav></div></header>
 <main>
   <section class="pp-header"><div class="container"><span class="pp-label" id="ppLabel">Trekkr Passport</span><h1 class="pp-title" id="ppTitle">Player Passport</h1><p class="pp-intro">Your Player Passport is your padel identity on Trekkr. Every match you play is recorded and turned into a single rating that reflects your real level — no self-rating, no guesswork. It updates automatically after each match and follows you across every venue, league, and tournament powered by Trekkr.</p></div></section>
   <section><div class="container" id="content"><div class="pp-loading"><div class="pp-spinner"></div><p class="pp-loading-text">Memuat passport…</p><p class="pp-loading-sub">Menyiapkan data & riwayat pertandingan</p></div></div></section>
@@ -681,7 +690,7 @@ canvas#shareCanvas{display:none}
         <div class="calib-step-num">1</div>
         <div>
           <div class="calib-step-title">You start at the floor of your level</div>
-          <div class="calib-step-text">New players are entered at the <strong>lowest ELO of their starting level</strong> — e.g. Upper Beginner = 900, Lower Bronze = 1200, Bronze = 1500, and so on. You begin at the bottom of the level you were entered in, then prove you belong there.</div>
+          <div class="calib-step-text">New players are entered at the <strong>lowest ELO of their starting band</strong>. You begin at the bottom of the band you were entered in, then prove you belong there.</div>
         </div>
       </div>
       <div class="calib-step">
@@ -702,7 +711,7 @@ canvas#shareCanvas{display:none}
         <div class="calib-step-num">4</div>
         <div>
           <div class="calib-step-title">Then you become Rated</div>
-          <div class="calib-step-text">After 15 matches, your Calibrating badge becomes <strong>Rated</strong>. Your ELO is now a trusted reflection of your skill. The tier you land in — Bronze, Silver, Gold — is earned, not assigned.</div>
+          <div class="calib-step-text">After 15 matches, your Calibrating badge becomes <strong>Rated</strong>. Your ELO is now a trusted reflection of your skill. The tier you land in — T3, T2, T1 — is earned, not assigned.</div>
         </div>
       </div>
     </div>
@@ -741,8 +750,9 @@ function ibbFallback(img){
   img.onerror=null; img.src=IBB_PH;
 }
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-function tcCls(e){if(e>=3000)return'Platinum';if(e>=2500)return'Gold';if(e>=2100)return'Silver';if(e>=1800)return'Upper Bronze';if(e>=1500)return'Bronze';if(e>=1200)return'Lower Bronze';if(e>=900)return'Upper Beginner';return'Beginner'}
-function tierProg(e){const t=[{name:'Beginner',min:0,max:899},{name:'Upper Beginner',min:900,max:1199},{name:'Lower Bronze',min:1200,max:1499},{name:'Bronze',min:1500,max:1799},{name:'Upper Bronze',min:1800,max:2099},{name:'Silver',min:2100,max:2399},{name:'Gold',min:2500,max:2999},{name:'Platinum',min:3000,max:9999}];const c=t.find(x=>e>=x.min&&e<=x.max)||t[0];const p=((e-c.min)/(c.max-c.min+1))*100;const ni=t.indexOf(c)+1;const n=ni<t.length?t[ni]:null;return{current:c.name,progress:Math.min(p,100),next:n,ptsAway:n?n.min-e:0}}
+// Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
+function tcCls(e){if(e>=2000)return'T1 · Open';if(e>=1500)return'T2 · Contender';return'T3 · Rising'}
+function tierProg(e){const t=[{name:'T3 · Rising',min:0,max:1499},{name:'T2 · Contender',min:1500,max:1999},{name:'T1 · Open',min:2000,max:9999}];const c=t.find(x=>e>=x.min&&e<=x.max)||t[0];const p=((e-c.min)/(c.max-c.min+1))*100;const ni=t.indexOf(c)+1;const n=ni<t.length?t[ni]:null;return{current:c.name,progress:Math.min(p,100),next:n,ptsAway:n?n.min-e:0}}
 
 async function loadPlayer(){
   const parts=window.location.pathname.split('/').filter(Boolean);
@@ -1630,9 +1640,10 @@ function openResultModal(){
   var ti=tierProg(s.currentElo);
   document.getElementById('ncpName').textContent=(p.name).toUpperCase();
   document.getElementById('ncpSub').textContent=p.clubs||p.region||'';
-  document.getElementById('ncpRankPill').textContent=ti.current.toUpperCase();
+  var ncpTierShort=ti.current.split(' · ')[0];
+  document.getElementById('ncpRankPill').textContent=ncpTierShort.toUpperCase();
   document.getElementById('ncpElo').textContent=s.currentElo;
-  document.getElementById('ncpTier').textContent=ti.current;
+  document.getElementById('ncpTier').textContent=ncpTierShort;
   document.getElementById('ncpM').textContent=s.totalMatches;
   document.getElementById('ncpWR').textContent=s.winRate+'%';
   document.getElementById('ncpWL').textContent=s.totalW+'W-'+s.totalL+'L';
@@ -1690,7 +1701,7 @@ function downloadNightCard(){
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
     ctx.fillStyle='#fff';ctx.font='700 120px Saira Condensed,sans-serif';ctx.fillText(String(s.currentElo),60,eloY+118);
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
-    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(ti.current,W-60,eloY+50);
+    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(ti.current.split(' · ')[0],W-60,eloY+50);
 
     // Stat boxes
     var bY=eloY+148,bW=306,bH=128,bGap=30,bX=60;
@@ -1807,7 +1818,7 @@ function downloadNightCard(){
           <div class="ncp-photo" id="ncpPhoto">
             <div class="ncp-initials" id="ncpInitials">TP</div>
             <div class="ncp-gradient"></div>
-            <div class="ncp-rank-pill" id="ncpRankPill">BRONZE</div>
+            <div class="ncp-rank-pill" id="ncpRankPill">T3</div>
             <div class="ncp-name-area">
               <div class="ncp-pname" id="ncpName">TOMMY PRASS</div>
               <div class="ncp-psub" id="ncpSub">Gabuters</div>
@@ -1816,7 +1827,7 @@ function downloadNightCard(){
           <div class="ncp-bottom">
             <div class="ncp-elo-row">
               <div><div class="ncp-elo-lbl">ELO RATING</div><div class="ncp-elo-val" id="ncpElo">1412</div></div>
-              <div><div class="ncp-tier-lbl">TIER</div><div class="ncp-tier-val" id="ncpTier">Bronze</div></div>
+              <div><div class="ncp-tier-lbl">TIER</div><div class="ncp-tier-val" id="ncpTier">T3</div></div>
             </div>
             <div class="ncp-stats">
               <div class="ncp-sbox"><div class="ncp-sv" id="ncpM">7</div><div class="ncp-sl">PLAYED</div></div>
@@ -1858,7 +1869,14 @@ function downloadNightCard(){
   </div>
 </div>
 
-<script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();
+<script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');if(!t||!m)return;
+  function close(){m.classList.remove('open');t.setAttribute('aria-expanded','false');}
+  t.addEventListener('click',function(e){e.stopPropagation();var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});
+  document.addEventListener('click',function(e){if(m.classList.contains('open')&&!m.contains(e.target)&&e.target!==t)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  // Mark the current page in the menu.
+  var path=location.pathname.replace(/\/$/,'')||'/';
+  Array.prototype.forEach.call(m.querySelectorAll('a'),function(a){try{var u=new URL(a.href).pathname.replace(/\/$/,'')||'/';if(u===path)a.classList.add('is-active');}catch(_){}}); })();
 var _editPhotoData="";
 var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";
 var _gateEmail='';

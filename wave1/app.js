@@ -169,6 +169,33 @@
     setTimeout(function () { render(); setInterval(render, 86400000); }, nextMidnight - now);
   }
 
+  // --- Dropdown nav (auto-wired) ---------------------------------------
+  function initNav() {
+    var btn = document.querySelector(".w1-menu-btn");
+    var panel = document.querySelector(".w1-menu-panel");
+    if (!btn || !panel) return;
+    function close() { panel.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = panel.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.addEventListener("click", function (e) {
+      if (panel.classList.contains("open") && !panel.contains(e.target) && e.target !== btn) close();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    // Mark the current page.
+    var path = location.pathname.replace(/\/$/, "") || "/";
+    Array.prototype.forEach.call(panel.querySelectorAll("a"), function (a) {
+      try {
+        var u = new URL(a.href, location.origin).pathname.replace(/\/$/, "") || "/";
+        if (u === path) a.setAttribute("aria-current", "page");
+      } catch (_) {}
+    });
+  }
+  if (document.readyState !== "loading") initNav();
+  else document.addEventListener("DOMContentLoaded", initNav);
+
   // --- Escape (all API strings are untrusted for the DOM) --------------
   function esc(s) {
     return String(s == null ? "" : s)

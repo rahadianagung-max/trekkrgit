@@ -140,7 +140,7 @@
       <button data-scope="region" role="tab" aria-selected="false">By region</button>
     </div>
     <div class="select hidden" id="regionWrap"><select id="regionSel" aria-label="Region"><option value="">All regions</option></select></div>
-    <div class="select"><select id="levelSel" aria-label="Level"><option value="">All levels</option></select></div>
+    <div class="select"><select id="levelSel" aria-label="Tier"><option value="">All tiers</option></select></div>
   </div>
 
   <div class="cols">
@@ -181,7 +181,10 @@
 <script>
 (function(){
   var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
-  var LEVELS=['Platinum','Gold','Silver','Upper Bronze','Bronze','Lower Bronze','Upper Beginner','Beginner'];
+  // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
+  var TIERS=[{v:'T1',label:'T1 · Open',min:2000,max:Infinity},{v:'T2',label:'T2 · Contender',min:1500,max:1999},{v:'T3',label:'T3 · Rising',min:0,max:1499}];
+  function tierName(elo){elo=Number(elo)||0;if(elo>=2000)return'T1 · Open';if(elo>=1500)return'T2 · Contender';return'T3 · Rising';}
+  function tierBand(v){for(var i=0;i<TIERS.length;i++){if(TIERS[i].v===v)return TIERS[i];}return null;}
 
   /* Mobile menu */
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
@@ -195,7 +198,7 @@
     if(p.photoUrl) return '<img class="'+cls+'" src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\''+cls+'\',textContent:\''+esc(initials(p.name))+'\'}))"/>';
     return '<span class="'+cls+'">'+esc(initials(p.name))+'</span>';
   }
-  function meta(p){var parts=[p.level];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
+  function meta(p){var parts=[tierName(p.elo)];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
 
   function rowHTML(p,rank){
@@ -229,8 +232,9 @@
   }
 
   function params(){
-    var p={limit:50};
-    var lvl=document.getElementById('levelSel').value; if(lvl)p.level=lvl;
+    // Tier filter is applied client-side by ELO band, so pull the full list when one is set.
+    var lvl=document.getElementById('levelSel').value;
+    var p={limit: lvl?100000:50};
     var reg=document.getElementById('regionSel'); if(!document.getElementById('regionWrap').classList.contains('hidden')&&reg.value)p.region=reg.value;
     return p;
   }
@@ -241,7 +245,10 @@
     var qs=new URLSearchParams(Object.assign({gender:g},params())).toString();
     return fetch(BASE+'/elo/leaderboard?'+qs).then(function(r){return r.json();}).then(function(d){
       data[g]=(d&&d.leaderboard)||[];
-      document.getElementById(g==='M'?'countM':'countF').textContent=(d&&typeof d.total==='number'?d.total:data[g].length)+' players';
+      var band=tierBand(document.getElementById('levelSel').value);
+      if(band){data[g]=data[g].filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
+      var cnt=band?data[g].length:(d&&typeof d.total==='number'?d.total:data[g].length);
+      document.getElementById(g==='M'?'countM':'countF').textContent=cnt+' players';
       expanded[g]=false; render(g);
     }).catch(function(){box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
   }
@@ -251,7 +258,7 @@
   document.getElementById('moreF').addEventListener('click',function(){expanded.F=!expanded.F;render('F');});
 
   /* Filters */
-  LEVELS.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;document.getElementById('levelSel').appendChild(o);});
+  TIERS.forEach(function(t){var o=document.createElement('option');o.value=t.v;o.textContent=t.label;document.getElementById('levelSel').appendChild(o);});
   document.getElementById('levelSel').addEventListener('change',loadAll);
   document.getElementById('regionSel').addEventListener('change',loadAll);
   document.querySelectorAll('.seg button').forEach(function(b){
@@ -286,7 +293,7 @@
         fr.innerHTML=list.map(function(p){
           return '<a class="fr-item" href="'+passportUrl(p)+'">'+avatar(p)
             +'<span class="name">'+esc(p.name)+'</span>'
-            +'<span class="meta">'+esc((p.gender==='F'?'Women':'Men')+' · '+p.level+' · '+p.elo)+'</span></a>';
+            +'<span class="meta">'+esc((p.gender==='F'?'Women':'Men')+' · '+tierName(p.elo)+' · '+p.elo)+'</span></a>';
         }).join('');
       }).catch(function(){fr.classList.add('show');fr.innerHTML='<div class="fr-empty">Search failed. Try again.</div>';});
   }
