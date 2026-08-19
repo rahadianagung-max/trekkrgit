@@ -142,16 +142,31 @@
     });
   }
 
+  var CLAIMED_TAG = '<span style="font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;' +
+    'text-transform:uppercase;color:var(--ok);border:1px solid var(--ok);padding:2px 5px;' +
+    'display:inline-block;margin-top:3px">Claimed</span>';
+
   function resultRow(p, i) {
     var mc = matchesFor(p);
     var club = firstClub(p);
-    var id = (mc ? mc + (mc === 1 ? " match" : " matches") : "New") + (club ? " · " + club : "");
-    var tag = p.verified ? "" : '<span class="ghost-tag">Unclaimed</span>';
-    return '<button class="result" data-idx="' + i + '" type="button">' +
-      '<span class="rav">' + W.esc(W.initials(p.displayName || p.name)) + "</span>" +
-      '<span style="flex:1"><b style="display:block;font-size:15px">' + W.esc(p.displayName || p.name) + "</b>" +
-      '<span style="font-size:12px;color:var(--mute)">' + W.esc(id) + "</span>" + tag + "</span>" +
-      '<span style="color:var(--flare);font-size:20px">→</span></button>';
+    var base = (mc ? mc + (mc === 1 ? " match" : " matches") : "New") + (club ? " · " + club : "");
+    var avatar = '<span class="rav">' + W.esc(W.initials(p.displayName || p.name)) + "</span>";
+    var arrow = '<span style="color:var(--flare);font-size:20px">→</span>';
+    var name = '<b style="display:block;font-size:15px">' + W.esc(p.displayName || p.name) + "</b>";
+
+    // Already claimed → this profile has an owner. Don't ask to claim it again;
+    // send them straight to the public passport.
+    if (p.verified) {
+      return '<a class="result" href="/player/' + encodeURIComponent(p.name) + '">' + avatar +
+        '<span style="flex:1">' + name +
+        '<span style="font-size:12px;color:var(--mute)">' + W.esc(base) + " · View profile</span>" +
+        CLAIMED_TAG + "</span>" + arrow + "</a>";
+    }
+    // Unclaimed → open the claim form.
+    return '<button class="result" data-idx="' + i + '" type="button">' + avatar +
+      '<span style="flex:1">' + name +
+      '<span style="font-size:12px;color:var(--mute)">' + W.esc(base) + "</span>" +
+      '<span class="ghost-tag">Unclaimed</span></span>' + arrow + "</button>";
   }
 
   function newProfileCard(title, body) {
