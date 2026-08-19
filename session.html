@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session — Trekkr</title>
+<meta name="description" content="A Trekkr ranked session. Same as a normal court booking — except you don't have to find anyone, and every match counts.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/wave1/tokens.css">
+<style>
+  .price-big{ font-family:var(--display); font-weight:800; font-size:38px; line-height:1; }
+  .price-note{ margin-top:12px; padding-top:12px; border-top:1px solid #FFD9BF; font-size:12.5px;
+    color:var(--flare-deep); line-height:1.55; }
+</style>
+</head>
+<body>
+
+<div class="backbar"><a href="/sessions" aria-label="Back to sessions">←</a> RankPlay</div>
+
+<main class="w1-shell" id="root" aria-live="polite">
+  <div class="eyebrow skel" style="width:60%">Loading session</div>
+  <h1 class="skel" style="width:80%">·······</h1>
+</main>
+
+<footer class="w1-footer">
+  Trekkr · Ranked padel, Indonesia · <a href="/season">Season calendar</a>
+</footer>
+
+<script src="/wave1/config.js"></script>
+<script src="/wave1/app.js"></script>
+<script>
+(function () {
+  var W = window.TrekkrW1, C = window.TREKKR;
+  var root = document.getElementById("root");
+
+  // id from /sessions/<id> path, or ?id= fallback
+  function sessionId() {
+    var m = /\/sessions\/([^/?#]+)/.exec(location.pathname);
+    if (m) return decodeURIComponent(m[1]);
+    return new URLSearchParams(location.search).get("id") || "";
+  }
+  var id = sessionId();
+
+  function fail(title, body) {
+    root.innerHTML = '<div class="locked" style="margin-top:16px"><b>' + W.esc(title) + "</b>" +
+      "<span>" + W.esc(body) + "</span>" +
+      '<a class="btn ghost sm" style="margin-top:12px" href="/sessions">See all sessions</a></div>';
+  }
+
+  if (!id) { fail("Session not found", "That link is missing a session id."); return; }
+
+  W.api.schedule({}).then(function (r) {
+    var rows = (r && r.schedule) || [];
+    var s = rows.filter(function (x) { return x.type === "RANKPLAY"; })
+                .find(function (x) { return x.id === id; })
+             || rows.find(function (x) { return x.id === id; });
+    if (!s) { fail("Session not found", "This session may have filled or moved. See what else is on."); return; }
+    render(s);
+  }).catch(function () {
+    fail("Couldn’t load this session", "Give it a moment and reload.");
+  });
+
+  function render(s) {
+    var price = s.pricePerPlayer || C.rankPlay.pricePerPlayer;
+    var full = s.status === "FULL" || s.spotsLeft <= 0;
+    var wa = s.whatsappUrl || C.waFallback;
+    var rp = C.rankPlay;
+    var timeline = (s.startTime || "") + (s.endTime ? "–" + s.endTime : "");
+    var area = s.area ? s.area.split(",")[0] : "";
+
+    root.innerHTML =
+      '<div class="eyebrow">' + W.esc(W.longDate(s.date).replace(/ \d{4}$/, "")) +
+        (timeline ? " · " + W.esc(timeline) : "") + "</div>" +
+      "<h1>" + W.esc(s.venue) + (area ? "<br>" + W.esc(area) : "") + "</h1>" +
+
+      '<div class="stat3 mt16">' +
+        "<div><b>" + (s.capacity || "—") + "</b><span>Players</span></div>" +
+        "<div><b>" + rp.matchesEach + "</b><span>Matches each</span></div>" +
+        "<div><b>" + (s.courts || "—") + "</b><span>Courts</span></div>" +
+      "</div>" +
+
+      '<div class="card flare">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+          '<div><div class="eyebrow" style="margin-bottom:5px;color:var(--flare-deep)">Your share</div>' +
+          '<div class="price-big">' + W.rp(price) + "</div></div>" +
+          '<div style="text-align:right;font-size:12px;color:var(--flare-deep);line-height:1.5">Court split<br>' +
+            (s.capacity ? s.capacity + " ways" : "") + "</div>" +
+        "</div>" +
+        '<div class="price-note">Same as a normal 3-hour booking — except you don’t have to find anyone, ' +
+          "and every match counts toward your rating.</div>" +
+      "</div>" +
+
+      '<h2 class="mt22">How the night runs</h2>' +
+      step(1, "Arrive " + rp.arrive, "Check in. Partners are drawn on the spot.") +
+      step(2, rp.rounds + " rounds, rotating", "New partner every round. You play " + rp.matchesEach + " of them.") +
+      step(3, "Scores go in live", "Venue staff enter results. Rating updates before you leave.") +
+
+      (s.note ? '<div class="note">' + W.esc(s.note) + "</div>" : "") +
+
+      '<div style="padding:6px 0 8px">' +
+        (full
+          ? '<a class="btn dark" href="' + W.esc(wa) + '" target="_blank" rel="noopener">Join the waitlist</a>'
+          : '<a class="btn" href="' + W.esc(wa) + '" target="_blank" rel="noopener">Book my spot · ' + W.rp(price) + "</a>") +
+        '<p class="cap">' +
+          (full ? "Session full — waitlist open" : s.spotsLeft + " spot" + (s.spotsLeft === 1 ? "" : "s") + " left") +
+          " · Free cancellation until " + rp.freeCancelHours + "h before</p>" +
+      "</div>";
+  }
+
+  function step(n, title, body) {
+    return '<div class="step"><div class="stepn">' + n + "</div><div><b>" +
+      W.esc(title) + "</b><span>" + W.esc(body) + "</span></div></div>";
+  }
+})();
+</script>
+</body>
+</html>
