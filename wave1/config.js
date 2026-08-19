@@ -71,10 +71,15 @@
     // the ELO replay must complete first, otherwise ~60% of calibrated
     // players would land in the wrong tier. Left in place, unused.
     tier: null,
+    // Championship tier bands by ELO. Cutoffs confirmed with the founder:
+    // T3 < 1500 | T2 1500–1999 | T1 ≥ 2000. NOTE: the same cutoffs are also
+    // hardcoded in the shared display helpers (trekkr-api.js getTierName/
+    // getTierClass/getNextTier and player/index.html tcCls/tierProg) — keep
+    // them in sync if you change the bands here.
     tiers: [
-      { id: "T1", label: "Open" },
-      { id: "T2", label: "Contender" },
-      { id: "T3", label: "Rising" },
+      { id: "T1", label: "Open", min: 2000, max: Infinity },
+      { id: "T2", label: "Contender", min: 1500, max: 1999 },
+      { id: "T3", label: "Rising", min: 0, max: 1499 },
     ],
   };
 

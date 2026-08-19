@@ -161,34 +161,20 @@ const TrekkrAPI = (() => {
     },
 
     getTierName(elo) {
-      if (elo >= 3000) return "Platinum";
-      if (elo >= 2500) return "Gold";
-      if (elo >= 2100) return "Silver";
-      if (elo >= 1800) return "Upper Bronze";
-      if (elo >= 1500) return "Bronze";
-      if (elo >= 1200) return "Lower Bronze";
-      if (elo >= 900) return "Upper Beginner";
-      return "Beginner";
+      // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
+      if (elo >= 2000) return "T1 · Open";
+      if (elo >= 1500) return "T2 · Contender";
+      return "T3 · Rising";
     },
     getTierClass(elo) {
-      if (elo >= 3000) return "tier-platinum";
-      if (elo >= 2500) return "tier-gold";
-      if (elo >= 2100) return "tier-silver";
-      if (elo >= 1800) return "tier-ubronze";
-      if (elo >= 1500) return "tier-bronze";
-      if (elo >= 1200) return "tier-lbronze";
-      if (elo >= 900) return "tier-ubeginner";
-      return "tier-beginner";
+      if (elo >= 2000) return "tier-t1";
+      if (elo >= 1500) return "tier-t2";
+      return "tier-t3";
     },
     getNextTier(elo) {
       const tiers = [
-        { name: "Upper Beginner", min: 900 },
-        { name: "Lower Bronze", min: 1200 },
-        { name: "Bronze", min: 1500 },
-        { name: "Upper Bronze", min: 1800 },
-        { name: "Silver", min: 2100 },
-        { name: "Gold", min: 2500 },
-        { name: "Platinum", min: 3000 },
+        { name: "T2 · Contender", min: 1500 },
+        { name: "T1 · Open", min: 2000 },
       ];
       for (const t of tiers) {
         if (elo < t.min) return { name: t.name, ptsAway: t.min - elo };
