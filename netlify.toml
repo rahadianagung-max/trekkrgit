@@ -55,7 +55,12 @@
   to = "/join.html"
   status = 200
 
-# ── WAVE 1 — Championship landing / calendar / sessions / claim ─────
+# ── WAVE 1 — Liga Trekkr / calendar / sessions / claim ─────
+[[redirects]]
+  from = "/liga-trekkr"
+  to = "/liga-trekkr.html"
+  status = 200
+
 [[redirects]]
   from = "/season"
   to = "/season.html"
