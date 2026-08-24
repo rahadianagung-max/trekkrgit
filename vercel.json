@@ -13,6 +13,7 @@
       "destination": "/join.html"
     },
 
+    { "source": "/liga-trekkr", "destination": "/liga-trekkr.html" },
     { "source": "/season", "destination": "/season.html" },
     { "source": "/sessions", "destination": "/sessions.html" },
     { "source": "/sessions/:id", "destination": "/session.html" },
