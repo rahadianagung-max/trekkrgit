@@ -1,8 +1,6 @@
 {
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/:venue/tv", "destination": "/tv.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
