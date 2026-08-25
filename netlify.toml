@@ -31,6 +31,12 @@
   force = true
 
 [[redirects]]
+  from = "https://venue.trekkr.online/qrcode.js"
+  to = "/venue/qrcode.js"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "https://admin.trekkr.online/trekkr-api.js"
   to = "/admin/trekkr-api.js"
   status = 200
@@ -179,6 +185,14 @@
   from = "/venues"
   to = "/venue/index.html"
   status = 200
+
+# ── HALAMAN TV LEADERBOARD (per-venue, big screen) ──────────────────
+# Harus di ATAS fallback SPA subdomain. /<venue>/tv → venue/tv.html
+[[redirects]]
+  from = "https://venue.trekkr.online/:venue/tv"
+  to = "/venue/tv.html"
+  status = 200
+  force = true
 
 # ── SPA FALLBACK UNTUK SUBDOMAIN ────────────────────────────────────
 [[redirects]]
