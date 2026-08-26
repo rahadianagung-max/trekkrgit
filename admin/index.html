@@ -366,6 +366,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     </nav>
     <div class="hdr-actions">
       <span id="hdrVenue" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pr);display:none"></span>
+      <a class="btn btn-ghost btn-sm" id="hdrTV" style="display:none;text-decoration:none" target="_blank" rel="noopener" title="Open the big-screen leaderboard for this venue">📺 TV</a>
       <button class="btn btn-danger btn-sm" id="hdrLogout" style="display:none" onclick="doLogout()">Sign Out</button>
       <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
     </div>
@@ -1028,6 +1029,14 @@ function showDash(s) {
   document.getElementById('dashVenue').textContent = RM.venue ? '📍 ' + RM.venue : 'All Venues';
   document.getElementById('hdrVenue').textContent = RM.venue;
   document.getElementById('hdrVenue').style.display = RM.venue ? 'inline' : 'none';
+  var tvBtn = document.getElementById('hdrTV');
+  if (RM.venue) {
+    var vslug = RM.venue.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    tvBtn.href = 'https://venue.trekkr.online/' + vslug + '/tv';
+    tvBtn.style.display = 'inline-flex';
+  } else {
+    tvBtn.style.display = 'none';
+  }
   document.getElementById('hdrLogout').style.display = 'inline-flex';
   loadVenueInfo();
   // Ranked Match is the default tab — init immediately after login
