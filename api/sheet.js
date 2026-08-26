@@ -4171,6 +4171,15 @@ function leagueBoards(rows, pinfo) {
   const women = rows.filter((r) => matchCategory(venueRowGenders(r)) === "F");
   return { men: leagueBoard(men, pinfo), women: leagueBoard(women, pinfo) };
 }
+// Season ELO ranking: every player who appeared in the league, ranked by their
+// current ELO rating (highest first). Unlike the W/L boards this is a single
+// combined list (men + women) and exposes each player's live ELO.
+function leagueEloBoard(rows, pinfo) {
+  return Object.values(playerStatsFromRows(rows))
+    .map((s) => { const x = pinfo(s.name); return { name: x.display, slug: x.slug, photo: x.photo, elo: x.elo, wins: s.w, losses: s.l, gd: s.pd }; })
+    .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins) || (b.gd - a.gd))
+    .map((p, i) => ({ rank: i + 1, ...p }));
+}
 async function getLeagueCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "league", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
   const load = await loadVenueForCompetition(sheets, comp.source);
@@ -4192,6 +4201,8 @@ async function getLeagueCompetition(sheets, comp) {
     const tot = leagueBoards(rows, pinfo);
     views.push({ key: "TOTAL", label: "Season 1", men: tot.men, women: tot.women });
   }
+  // Extra tab: whole-season ranking by highest ELO, listing every player's rating.
+  views.push({ key: "ELO", kind: "elo", label: "Season ELO Ranking", players: leagueEloBoard(rows, pinfo) });
   return respond(200, { ...base, views });
 }
 

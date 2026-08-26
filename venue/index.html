@@ -495,7 +495,18 @@
     return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
       +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div></div>';
   }
+  function leagueEloBody(list){
+    if(!list||!list.length)return '<div class="state" style="margin-top:16px">No players yet.</div>';
+    var rows=list.map(function(p){
+      return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td>'
+        +'<td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td>'
+        +'<td>'+(p.wins||0)+'</td><td>'+(p.losses||0)+'</td><td class="eloc">'+(p.elo||'—')+'</td></tr>';
+    }).join('');
+    return '<div class="sec-label" style="margin-top:0">Total season ranking &middot; by ELO</div>'
+      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div>';
+  }
   function leagueViewBody(v){
+    if(v&&(v.kind==='elo'||v.key==='ELO'))return leagueEloBody(v.players||[]);
     return '<div class="lg-boards">'
       +leagueBoard('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
       +leagueBoard('<span class="dot" style="background:var(--red)"></span> Women', v.women)
@@ -511,12 +522,14 @@
         html+='<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu series di-input.</div>';
         content.innerHTML=html;return;
       }
-      html+='<div class="vmode lgviews" style="margin-top:16px">'+views.map(function(v,i){return '<button class="vmode-b'+(i===views.length-1?' on':'')+'" data-vi="'+i+'">'+esc(v.label)+'</button>';}).join('')+'</div>';
+      var defIdx=views.length-1;
+      for(var di=views.length-1;di>=0;di--){if(views[di].kind!=='elo'&&views[di].key!=='ELO'){defIdx=di;break;}}
+      html+='<div class="vmode lgviews" style="margin-top:16px">'+views.map(function(v,i){return '<button class="vmode-b'+(i===defIdx?' on':'')+'" data-vi="'+i+'">'+esc(v.label)+'</button>';}).join('')+'</div>';
       html+='<div id="lgBody"></div>';
       content.innerHTML=html;
       var body=document.getElementById('lgBody');
       function renderView(i){ body.innerHTML=leagueViewBody(views[i]); }
-      renderView(views.length-1);
+      renderView(defIdx);
       var vb=content.querySelectorAll('.lgviews .vmode-b[data-vi]');
       Array.prototype.forEach.call(vb,function(b){b.addEventListener('click',function(){
         Array.prototype.forEach.call(vb,function(x){x.classList.toggle('on',x===b);});
