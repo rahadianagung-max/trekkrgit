@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kalkulator Bisnis Padel — Trekkr</title>
+<meta name="description" content="Kalkulator interaktif model bisnis lapangan padel: membership bulanan, liga dengan prize pool mingguan, dan event Americano/Mexicano. Ubah asumsi, lihat surplus & profit langsung."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+/* ==== Page head ==== */
+.page-head{padding:26px 0 4px}
+.page-head h1{font-size:clamp(30px,5vw,46px);margin:8px 0 0}
+.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:640px}
+
+/* ==== Mono numerals ==== */
+.mono{font-family:'Azeret Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ==== Model card ==== */
+.model{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:0;margin-top:22px;overflow:hidden}
+.model__head{display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border-soft);background:var(--surface-2)}
+.model__head .idx{font-family:var(--display);font-style:italic;font-weight:800;font-size:22px;color:var(--orange);line-height:1;min-width:26px}
+.model__head h2{font-size:19px;margin:0;font-weight:700}
+.model__head p{font-size:12.5px;color:var(--muted);margin:5px 0 0;max-width:70ch}
+.model__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0}
+.pane{padding:18px 20px}
+.pane--in{border-right:1px solid var(--border-soft)}
+.pane--out{background:linear-gradient(180deg,var(--surface),var(--surface-2))}
+.pane h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--subtle);font-weight:700;margin:0 0 14px}
+
+/* ==== Inputs ==== */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px}
+.field label .note{font-weight:500;color:var(--subtle);font-size:11px}
+.ctl{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:9px;padding:0 12px;transition:border-color .15s}
+.ctl:focus-within{border-color:var(--orange)}
+.ctl .pre{font-size:12px;color:var(--subtle);font-weight:600;padding-right:8px}
+.ctl input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:'Azeret Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:var(--text);padding:10px 0;text-align:right}
+.ctl .suf{font-size:12px;color:var(--subtle);font-weight:600;padding-left:8px;white-space:nowrap}
+.range-row{display:flex;align-items:center;gap:12px}
+.range-row input[type=range]{flex:1;accent-color:var(--orange)}
+.range-row .rv{font-family:'Azeret Mono',ui-monospace,monospace;font-weight:700;font-size:13px;min-width:4ch;text-align:right;color:var(--orange)}
+
+/* ==== Output rows ==== */
+.orow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border-soft);font-size:13px}
+.orow:last-of-type{border-bottom:0}
+.orow .k{color:var(--muted)}
+.orow .v{font-family:'Azeret Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text);text-align:right}
+
+/* headline result */
+.result{margin-top:14px;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--warm-border);background:var(--warm)}
+.result .lbl{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--text)}
+.result .lbl span{display:block;font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:0}
+.result .amt{font-family:'Azeret Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:22px;font-weight:700;color:var(--orange);white-space:nowrap}
+.result.neg{border-color:#F3C7C4;background:#FFF1F0}
+.result.neg .amt{color:var(--red)}
+.result.pos .amt{color:var(--green)}
+
+/* two headline results side by side (membership card) */
+.result-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.result-2 .result{margin-top:0}
+
+/* chips / hints */
+.hint{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5}
+.hint b{color:var(--text)}
+.flag{display:inline-flex;gap:6px;align-items:center;background:#FFF4EA;border:1px solid var(--warm-border);color:#8A4B12;font-size:11px;font-weight:600;border-radius:var(--radius-pill);padding:4px 10px;margin:2px 6px 2px 0}
+
+/* schedule grid */
+.days{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.day{display:flex;flex-direction:column;gap:4px}
+.day label{font-size:11px;font-weight:600;color:var(--muted)}
+.reset{background:transparent;border:0;color:var(--orange);font-size:11.5px;font-weight:600;padding:4px;margin-top:2px}
+
+.callout{margin-top:22px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.callout h3{margin:0 0 8px;font-size:13px;font-weight:700}
+.callout ul{margin:0;padding-left:18px;color:var(--muted);font-size:12.5px;line-height:1.65}
+.callout li b{color:var(--text)}
+
+.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:40px}
+
+@media(max-width:760px){
+  .model__body{grid-template-columns:1fr}
+  .pane--in{border-right:0;border-bottom:1px solid var(--border-soft)}
+  .result-2{grid-template-columns:1fr}
+}
+@media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="https://trekkr.online/" class="brand">Trekkr</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
+      <a href="https://trekkr.online/get-listed">Get Listed</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+    </nav>
+    <div class="header-actions">
+      <button class="menu-toggle" id="menuToggle" aria-label="Buka menu" aria-expanded="false">≡</button>
+    </div>
+  </div>
+  <div class="container">
+    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+      <a href="https://trekkr.online/">Home</a>
+      <a href="https://trekkr.online/rankings">Rankings</a>
+      <a href="https://trekkr.online/playrank">PlayRank</a>
+      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
+      <a href="https://trekkr.online/get-listed">Get Listed</a>
+      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="page-head">
+    <span class="eyebrow">Model Bisnis Padel</span>
+    <h1 class="display">Kalkulator Bisnis Padel</h1>
+    <p>Ubah asumsi di kiri, hasil surplus &amp; profit langsung terhitung di kanan. Tiga model:
+      membership bulanan, liga dengan prize pool mingguan, dan event Americano/Mexicano.
+      Semua angka default diambil dari model spreadsheet dan sudah dirapikan agar konsisten.</p>
+  </div>
+
+  <!-- ============================================================
+       MODEL 1 + 2 — Membership bulanan & Liga (asumsi bersama)
+       ============================================================ -->
+  <section class="model" id="m-member">
+    <div class="model__head">
+      <div class="idx">1</div>
+      <div>
+        <h2>Membership Bulanan &amp; Liga Prize Pool</h2>
+        <p>Satu set asumsi pendapatan untuk dua skenario: <b>Standard</b> (membership + slot reguler) dan
+          <b>Liga</b> (skenario yang sama, ditambah hadiah juara mingguan &amp; biaya operasional). Dulu dua
+          blok terpisah dengan angka kembar — kini asumsinya disatukan agar tidak bisa lagi tidak sinkron.</p>
+      </div>
+    </div>
+    <div class="model__body">
+      <div class="pane pane--in">
+        <h3>Input Variabel</h3>
+        <div class="field">
+          <label>Jumlah Lapangan <span class="note">dipakai untuk biaya sewa</span></label>
+          <div class="ctl"><input id="i_courts" type="number" min="1" step="1" value="2"><span class="suf">lapangan</span></div>
+        </div>
+        <div class="field">
+          <label>Slot Pemain per Sesi <span class="note">total gabungan</span></label>
+          <div class="ctl"><input id="i_slots" type="number" min="1" step="1" value="12"><span class="suf">slot</span></div>
+        </div>
+        <div class="field">
+          <label>Total Sesi per Bulan <span class="note" id="i_sess_note"></span></label>
+          <div class="ctl"><input id="i_sessions" type="number" min="1" step="1" value="16"><span class="suf">sesi</span></div>
+        </div>
+        <div class="field">
+          <label>Biaya Sewa / Lapangan / Sesi</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="i_rent" type="number" min="0" step="10000" value="400000"></div>
+        </div>
+        <div class="field">
+          <label>Harga Membership / Bulan</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="i_memfee" type="number" min="0" step="10000" value="500000"></div>
+        </div>
+        <div class="field">
+          <label>Harga Reguler / Sesi</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="i_reg" type="number" min="0" step="5000" value="85000"></div>
+        </div>
+        <div class="field">
+          <label>Jumlah Member</label>
+          <div class="ctl"><input id="i_members" type="number" min="0" step="1" value="20"><span class="suf">orang</span></div>
+        </div>
+        <div class="field">
+          <label>Rata-rata Main Member / Bulan</label>
+          <div class="ctl"><input id="i_visit" type="number" min="0" step="1" value="7"><span class="suf">sesi</span></div>
+        </div>
+        <div class="field">
+          <label>Estimasi Okupansi Slot Reguler <span class="note">sisa slot yang benar-benar terjual</span></label>
+          <div class="range-row">
+            <input id="i_occ" type="range" min="0" max="100" step="5" value="100">
+            <span class="rv" id="i_occ_v">100%</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px">Tambahan Khusus Liga</h3>
+        <div class="field">
+          <label>Hadiah Juara 1 / Minggu</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="i_prize" type="number" min="0" step="10000" value="250000"></div>
+        </div>
+        <div class="field">
+          <label>Jumlah Minggu / Bulan</label>
+          <div class="ctl"><input id="i_weeks" type="number" min="1" step="1" value="4"><span class="suf">minggu</span></div>
+        </div>
+        <div class="field">
+          <label>Biaya Operasional <span class="note">bola &amp; admin</span></label>
+          <div class="ctl"><span class="pre">Rp</span><input id="i_ops" type="number" min="0" step="10000" value="400000"></div>
+        </div>
+      </div>
+
+      <div class="pane pane--out">
+        <h3>Output &amp; Kalkulasi</h3>
+        <div class="orow"><span class="k">Total Kapasitas Slot / Bulan</span><span class="v mono" id="o_cap">—</span></div>
+        <div class="orow"><span class="k">Slot Terpakai Member</span><span class="v mono" id="o_memslot">—</span></div>
+        <div class="orow"><span class="k">Sisa Slot Reguler (terjual)</span><span class="v mono" id="o_regslot">—</span></div>
+        <div class="orow"><span class="k">Total Biaya Sewa Lapangan</span><span class="v mono" id="o_rent">—</span></div>
+        <div class="orow"><span class="k">Pendapatan Membership</span><span class="v mono" id="o_memrev">—</span></div>
+        <div class="orow"><span class="k">Pendapatan Reguler</span><span class="v mono" id="o_regrev">—</span></div>
+        <div class="orow"><span class="k">Total Pendapatan Bulanan</span><span class="v mono" id="o_totrev">—</span></div>
+        <div class="orow"><span class="k">Prize Pool Liga (hadiah × minggu)</span><span class="v mono" id="o_prize">—</span></div>
+        <div class="orow"><span class="k">Total Beban Liga (sewa + hadiah + ops)</span><span class="v mono" id="o_liabil">—</span></div>
+
+        <div class="result-2">
+          <div class="result" id="res_std">
+            <div class="lbl">Surplus Standard<span>pendapatan − sewa</span></div>
+            <div class="amt mono" id="o_std">—</div>
+          </div>
+          <div class="result" id="res_liga">
+            <div class="lbl">Net Surplus Liga<span>pendapatan − total beban</span></div>
+            <div class="amt mono" id="o_liga">—</div>
+          </div>
+        </div>
+        <p class="hint" id="h_member"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODEL 3 — Event Americano / Mexicano
+       ============================================================ -->
+  <section class="model" id="m-event">
+    <div class="model__head">
+      <div class="idx">2</div>
+      <div>
+        <h2>Event Individual — Americano / Mexicano</h2>
+        <p>Event sekali jalan dengan prize pool dari biaya pendaftaran. Jumlah lapangan kini jadi input
+          tunggal yang langsung menggerakkan biaya sewa — <b>tidak ada lagi tulisan "2 lapangan" yang
+          bertabrakan dengan hitungan 4 lapangan</b> seperti di spreadsheet.</p>
+      </div>
+    </div>
+    <div class="model__body">
+      <div class="pane pane--in">
+        <h3>Input Variabel Event</h3>
+        <div class="field">
+          <label>Jumlah Pemain</label>
+          <div class="ctl"><input id="e_players" type="number" min="0" step="1" value="28"><span class="suf">orang</span></div>
+        </div>
+        <div class="field">
+          <label>Biaya Pendaftaran / Pemain</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="e_fee" type="number" min="0" step="5000" value="75000"></div>
+        </div>
+        <div class="field">
+          <label>Alokasi Prize Pool <span class="note" id="e_alloc_note"></span></label>
+          <div class="range-row">
+            <input id="e_alloc" type="range" min="0" max="60" step="5" value="20">
+            <span class="rv" id="e_alloc_v">20%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Jumlah Lapangan Dipakai <span class="note" id="e_pcourt_note"></span></label>
+          <div class="ctl"><input id="e_courts" type="number" min="1" step="1" value="2"><span class="suf">lapangan</span></div>
+        </div>
+        <div class="field">
+          <label>Durasi <span class="note">blok sesi (± 2 jam / blok)</span></label>
+          <div class="ctl"><input id="e_dur" type="number" min="1" step="1" value="1"><span class="suf">sesi</span></div>
+        </div>
+        <div class="field">
+          <label>Biaya Sewa / Lapangan / Sesi</label>
+          <div class="ctl"><span class="pre">Rp</span><input id="e_rent" type="number" min="0" step="10000" value="400000"></div>
+        </div>
+        <div class="field">
+          <label>Biaya Operasional Sesi <span class="note">bola, score admin</span></label>
+          <div class="ctl"><span class="pre">Rp</span><input id="e_ops" type="number" min="0" step="10000" value="100000"></div>
+        </div>
+      </div>
+
+      <div class="pane pane--out">
+        <h3>Output &amp; Kalkulasi Event</h3>
+        <div class="orow"><span class="k">Total Pemasukan Pendaftaran</span><span class="v mono" id="eo_rev">—</span></div>
+        <div class="orow"><span class="k">Total Prize Pool Hadiah</span><span class="v mono" id="eo_prize">—</span></div>
+        <div class="orow"><span class="k">Biaya Sewa Lapangan</span><span class="v mono" id="eo_rent">—</span></div>
+        <div class="orow"><span class="k">Biaya Operasional Sesi</span><span class="v mono" id="eo_ops">—</span></div>
+        <div class="orow"><span class="k">Total Pengeluaran</span><span class="v mono" id="eo_cost">—</span></div>
+        <div class="result" id="res_event">
+          <div class="lbl">Net Profit per Event<span>pemasukan − total pengeluaran</span></div>
+          <div class="amt mono" id="eo_net">—</div>
+        </div>
+        <p class="hint" id="h_event"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Helper — Okupansi & jadwal mingguan
+       ============================================================ -->
+  <section class="model" id="m-sched">
+    <div class="model__head">
+      <div class="idx">3</div>
+      <div>
+        <h2>Okupansi &amp; Jadwal Mingguan</h2>
+        <p>Rancang jumlah sesi tiap hari, lihat perkiraan sesi per bulan dan okupansi lapangan.
+          Bisa dikirim langsung menjadi "Total Sesi / Bulan" di Model 1.</p>
+      </div>
+    </div>
+    <div class="model__body">
+      <div class="pane pane--in">
+        <h3>Target Sesi per Hari</h3>
+        <div class="days" id="daysGrid"></div>
+        <button class="reset" id="schedReset" type="button">↺ Kembalikan ke pola default</button>
+        <div class="field" style="margin-top:16px">
+          <label>Kapasitas Maks. Blok / Hari <span class="note">seluruh venue, untuk okupansi</span></label>
+          <div class="ctl"><input id="s_cap" type="number" min="1" step="1" value="9"><span class="suf">blok</span></div>
+        </div>
+      </div>
+      <div class="pane pane--out">
+        <h3>Hasil</h3>
+        <div class="orow"><span class="k">Total Sesi / Minggu</span><span class="v mono" id="so_week">—</span></div>
+        <div class="orow"><span class="k">Estimasi Sesi / Bulan (30 hari)</span><span class="v mono" id="so_month">—</span></div>
+        <div class="orow"><span class="k">Okupansi Lapangan</span><span class="v mono" id="so_occ">—</span></div>
+        <button class="btn btn--outline" id="schedApply" type="button" style="margin-top:16px;width:100%">
+          Pakai sebagai Sesi / Bulan di Model 1
+        </button>
+        <p class="hint">Okupansi = sesi terpakai per bulan ÷ (kapasitas blok/hari × 30). Default pola
+          (Sen 2 · Sel 2 · Rab 4 · Kam 2 · Jum 4 · Sab 4 · Min 4) ≈ 95 sesi/bulan, okupansi ± 35%.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Catatan perbaikan
+       ============================================================ -->
+  <section class="callout">
+    <h3>Yang dirapikan dari spreadsheet asli</h3>
+    <ul>
+      <li><b>Event tidak lagi rugi karena asumsi lapangan bentrok.</b> Header menulis "2 lapangan" tapi
+        hitungan memakai 4 lapangan (sewa Rp 1,6 jt) sehingga net −Rp 20.000. Kini lapangan jadi satu
+        input; default 2 lapangan menghasilkan profit sehat, dan kamu bebas menaikkannya untuk melihat
+        titik impasnya.</li>
+      <li><b>Keterangan Prize Pool disamakan dengan nilainya.</b> Dulu tertulis "20%" tapi catatannya
+        "30% dari total pendaftaran". Sekarang labelnya mengikuti slider secara otomatis.</li>
+      <li><b>Asumsi Standard &amp; Liga disatukan.</b> Dua blok yang punya angka kembar (member, iuran,
+        reguler, sewa) kini berbagi satu set input, jadi mustahil lagi tidak sinkron.</li>
+      <li><b>Margin Liga sangat tipis.</b> Dengan default, net hanya ± Rp 220 rb — turunkan okupansi
+        reguler sedikit saja dan langsung minus. Kalkulator ini memperlihatkan sensitivitas itu secara live.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span class="footer-brand">Trekkr</span>
+    <div class="footer-links">
+      <a href="https://trekkr.online/about">About</a>
+      <a href="https://trekkr.online/market">Market Intelligence</a>
+      <a href="https://trekkr.online/get-listed">Get Listed</a>
+    </div>
+    <span class="footer-copy">Model bisnis — estimasi, bukan angka final.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var num = function(id){ var v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+
+  // Rupiah formatter (id-ID): 12.800.000
+  var nfID = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+  function rp(n){ var s = nfID.format(Math.round(Math.abs(n))); return (n < 0 ? '−Rp ' : 'Rp ') + s; }
+  function n0(n){ return nfID.format(Math.round(n)); }
+
+  function setMoney(id, n){
+    var el = $(id); el.textContent = rp(n);
+    el.style.color = n < 0 ? 'var(--red)' : '';
+  }
+  function setResult(cardId, amtId, n){
+    var card = $(cardId), amt = $(amtId);
+    amt.textContent = rp(n);
+    card.classList.remove('neg','pos');
+    card.classList.add(n < 0 ? 'neg' : 'pos');
+  }
+
+  /* ---- Mobile menu ---- */
+  var mt = $('menuToggle'), mn = $('mobileNav');
+  mt && mt.addEventListener('click', function(){
+    var o = mn.classList.toggle('open');
+    mt.setAttribute('aria-expanded', o ? 'true' : 'false');
+  });
+
+  /* ============ Model 1 + 2 — Membership & Liga ============ */
+  function calcMember(){
+    var courts   = num('i_courts');
+    var slots    = num('i_slots');
+    var sessions = num('i_sessions');
+    var rent     = num('i_rent');
+    var memfee   = num('i_memfee');
+    var regPrice = num('i_reg');
+    var members  = num('i_members');
+    var visit    = num('i_visit');
+    var occ      = num('i_occ') / 100;
+
+    var prize = num('i_prize');
+    var weeks = num('i_weeks');
+    var ops   = num('i_ops');
+
+    var capacity   = slots * sessions;                       // total slot / bulan
+    var memSlots   = members * visit;                        // slot terpakai member
+    var regSlots   = Math.max(0, capacity - memSlots);       // sisa slot reguler
+    var regSold    = Math.round(regSlots * occ);             // yang benar-benar terjual
+    var totalRent  = courts * sessions * rent;
+
+    var memRev = members * memfee;
+    var regRev = regSold * regPrice;
+    var totRev = memRev + regRev;
+
+    var prizePool = prize * weeks;
+    var ligaCost  = totalRent + prizePool + ops;
+
+    var surplusStd  = totRev - totalRent;
+    var netLiga     = totRev - ligaCost;
+
+    $('o_cap').textContent     = n0(capacity) + ' slot';
+    $('o_memslot').textContent = n0(memSlots) + ' slot';
+    $('o_regslot').textContent = n0(regSold) + ' slot';
+    setMoney('o_rent', totalRent);
+    setMoney('o_memrev', memRev);
+    setMoney('o_regrev', regRev);
+    setMoney('o_totrev', totRev);
+    setMoney('o_prize', prizePool);
+    setMoney('o_liabil', ligaCost);
+
+    setResult('res_std', 'o_std', surplusStd);
+    setResult('res_liga', 'o_liga', netLiga);
+
+    // notes
+    $('i_sess_note').textContent = '≈ ' + n0(sessions/ (weeks||4)) + ' sesi/minggu';
+    var perCourt = courts > 0 ? (slots / courts) : 0;
+    $('h_member').innerHTML =
+      'Kapasitas <b>' + n0(capacity) + ' slot</b> = ' + n0(slots) + ' slot × ' + n0(sessions) +
+      ' sesi. Sewa <b>' + rp(totalRent) + '</b> = ' + n0(courts) + ' lap × ' + n0(sessions) +
+      ' sesi × ' + rp(rent) + '. ' +
+      (netLiga < 0
+        ? 'Skenario Liga <b style="color:var(--red)">rugi</b> — naikkan okupansi/iuran atau tekan hadiah.'
+        : 'Selisih Standard → Liga = biaya hadiah + ops (' + rp(prizePool + ops) + ').');
+  }
+
+  /* ============ Model 3 — Event ============ */
+  function calcEvent(){
+    var players = num('e_players');
+    var fee     = num('e_fee');
+    var allocP  = num('e_alloc') / 100;
+    var courts  = num('e_courts');
+    var dur     = num('e_dur');
+    var rent    = num('e_rent');
+    var ops     = num('e_ops');
+
+    var rev   = players * fee;
+    var prize = Math.round(rev * allocP);
+    var rentC = courts * dur * rent;
+    var cost  = rentC + prize + ops;
+    var net   = rev - cost;
+
+    setMoney('eo_rev', rev);
+    setMoney('eo_prize', prize);
+    setMoney('eo_rent', rentC);
+    setMoney('eo_ops', ops);
+    setMoney('eo_cost', cost);
+    setResult('res_event', 'eo_net', net);
+
+    $('e_alloc_note').textContent = 'dari total pendaftaran (' + rp(rev) + ')';
+    var pc = courts > 0 ? (players / courts) : 0;
+    $('e_pcourt_note').textContent = '± ' + (Math.round(pc*10)/10) + ' pemain / lapangan';
+    $('h_event').innerHTML =
+      (net < 0
+        ? 'Event <b style="color:var(--red)">rugi ' + rp(net) + '</b> — kurangi lapangan, naikkan biaya daftar, atau tekan prize pool.'
+        : 'Event <b style="color:var(--green)">untung ' + rp(net) + '</b>. ') +
+      ' Impas biaya daftar ≈ <b>' + rp(players > 0 ? Math.ceil(cost / players) : 0) + '</b> / pemain.';
+  }
+
+  /* ============ Helper — schedule ============ */
+  var DAYS = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+  var DEFAULT_SCHED = [2,2,4,2,4,4,4];
+  function buildDays(){
+    var g = $('daysGrid');
+    g.innerHTML = DAYS.map(function(d,i){
+      return '<div class="day"><label>'+d+'</label>' +
+        '<div class="ctl"><input class="d-in" data-i="'+i+'" type="number" min="0" step="1" value="'+DEFAULT_SCHED[i]+'"><span class="suf">sesi</span></div></div>';
+    }).join('');
+    Array.prototype.forEach.call(g.querySelectorAll('.d-in'), function(inp){
+      inp.addEventListener('input', calcSched);
+    });
+  }
+  function calcSched(){
+    var week = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('#daysGrid .d-in'), function(inp){
+      week += parseFloat(inp.value) || 0;
+    });
+    var month = Math.round(week * 30 / 7);
+    var cap = num('s_cap');
+    var occ = cap > 0 ? (month / (cap * 30)) * 100 : 0;
+    $('so_week').textContent  = n0(week) + ' sesi';
+    $('so_month').textContent = n0(month) + ' sesi';
+    $('so_occ').textContent   = (Math.round(occ*100)/100).toFixed(2).replace('.', ',') + '%';
+    $('m-sched').dataset.month = month;
+  }
+  $('schedReset').addEventListener('click', function(){
+    Array.prototype.forEach.call(document.querySelectorAll('#daysGrid .d-in'), function(inp,i){
+      inp.value = DEFAULT_SCHED[i];
+    });
+    calcSched();
+  });
+  $('schedApply').addEventListener('click', function(){
+    var m = parseInt($('m-sched').dataset.month, 10);
+    if (m > 0){
+      $('i_sessions').value = m;
+      calcMember();
+      $('m-member').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+  });
+
+  /* ---- ranges: live label ---- */
+  function bindRange(id, valId, suffix){
+    var r = $(id), v = $(valId);
+    r.addEventListener('input', function(){ v.textContent = r.value + suffix; });
+  }
+  bindRange('i_occ', 'i_occ_v', '%');
+  bindRange('e_alloc', 'e_alloc_v', '%');
+
+  /* ---- wire all inputs ---- */
+  ['i_courts','i_slots','i_sessions','i_rent','i_memfee','i_reg','i_members','i_visit','i_occ','i_prize','i_weeks','i_ops']
+    .forEach(function(id){ $(id).addEventListener('input', calcMember); });
+  ['e_players','e_fee','e_alloc','e_courts','e_dur','e_rent','e_ops']
+    .forEach(function(id){ $(id).addEventListener('input', calcEvent); });
+  $('s_cap').addEventListener('input', calcSched);
+
+  /* ---- first paint ---- */
+  buildDays();
+  calcMember();
+  calcEvent();
+  calcSched();
+})();
+</script>
+</body>
+</html>
