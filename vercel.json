@@ -20,6 +20,7 @@
     { "source": "/claim", "destination": "/claim.html" },
     { "source": "/passport", "destination": "/passport.html" },
     { "source": "/ranking", "destination": "/ranking.html" },
-    { "source": "/series", "destination": "/series.html" }
+    { "source": "/series", "destination": "/series.html" },
+    { "source": "/kalkulator-bisnis", "destination": "/kalkulator-bisnis.html" }
   ]
 }

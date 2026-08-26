@@ -103,6 +103,11 @@
   to = "/series.html"
   status = 200
 
+[[redirects]]
+  from = "/kalkulator-bisnis"
+  to = "/kalkulator-bisnis.html"
+  status = 200
+
 # Halaman struktur baru (5 menu)
 [[redirects]]
   from = "/playrank"
