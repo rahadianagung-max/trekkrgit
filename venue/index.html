@@ -495,18 +495,24 @@
     return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
       +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div></div>';
   }
-  function leagueEloBody(list){
-    if(!list||!list.length)return '<div class="state" style="margin-top:16px">No players yet.</div>';
+  function leagueEloCol(title,list){
+    if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
     var rows=list.map(function(p){
       return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td>'
         +'<td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td>'
         +'<td>'+(p.wins||0)+'</td><td>'+(p.losses||0)+'</td><td class="eloc">'+(p.elo||'—')+'</td></tr>';
     }).join('');
-    return '<div class="sec-label" style="margin-top:0">Total season ranking &middot; by ELO</div>'
-      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div>';
+    return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
+      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div></div>';
+  }
+  function leagueEloBody(v){
+    return '<div class="lg-boards">'
+      +leagueEloCol('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
+      +leagueEloCol('<span class="dot" style="background:var(--red)"></span> Women', v.women)
+      +'</div>';
   }
   function leagueViewBody(v){
-    if(v&&(v.kind==='elo'||v.key==='ELO'))return leagueEloBody(v.players||[]);
+    if(v&&(v.kind==='elo'||v.key==='ELO'))return leagueEloBody(v);
     return '<div class="lg-boards">'
       +leagueBoard('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
       +leagueBoard('<span class="dot" style="background:var(--red)"></span> Women', v.women)

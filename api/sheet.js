@@ -4171,14 +4171,19 @@ function leagueBoards(rows, pinfo) {
   const women = rows.filter((r) => matchCategory(venueRowGenders(r)) === "F");
   return { men: leagueBoard(men, pinfo), women: leagueBoard(women, pinfo) };
 }
-// Season ELO ranking: every player who appeared in the league, ranked by their
-// current ELO rating (highest first). Unlike the W/L boards this is a single
-// combined list (men + women) and exposes each player's live ELO.
+// Season ELO ranking: players who appeared in the league, ranked by their
+// current ELO rating (highest first). Same Men/Women split as the W/L boards,
+// but each board exposes every player's live ELO.
 function leagueEloBoard(rows, pinfo) {
   return Object.values(playerStatsFromRows(rows))
     .map((s) => { const x = pinfo(s.name); return { name: x.display, slug: x.slug, photo: x.photo, elo: x.elo, wins: s.w, losses: s.l, gd: s.pd }; })
     .sort((a, b) => (b.elo - a.elo) || (b.wins - a.wins) || (b.gd - a.gd))
     .map((p, i) => ({ rank: i + 1, ...p }));
+}
+function leagueEloBoards(rows, pinfo) {
+  const men = rows.filter((r) => matchCategory(venueRowGenders(r)) === "M");
+  const women = rows.filter((r) => matchCategory(venueRowGenders(r)) === "F");
+  return { men: leagueEloBoard(men, pinfo), women: leagueEloBoard(women, pinfo) };
 }
 async function getLeagueCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "league", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
@@ -4201,8 +4206,10 @@ async function getLeagueCompetition(sheets, comp) {
     const tot = leagueBoards(rows, pinfo);
     views.push({ key: "TOTAL", label: "Season 1", men: tot.men, women: tot.women });
   }
-  // Extra tab: whole-season ranking by highest ELO, listing every player's rating.
-  views.push({ key: "ELO", kind: "elo", label: "Season ELO Ranking", players: leagueEloBoard(rows, pinfo) });
+  // Extra tab: whole-season ranking by highest ELO (Men/Women split like the
+  // W/L boards), listing every player's rating.
+  const eloTot = leagueEloBoards(rows, pinfo);
+  views.push({ key: "ELO", kind: "elo", label: "Season ELO Ranking", men: eloTot.men, women: eloTot.women });
   return respond(200, { ...base, views });
 }
 
