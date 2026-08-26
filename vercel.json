@@ -21,6 +21,6 @@
     { "source": "/passport", "destination": "/passport.html" },
     { "source": "/ranking", "destination": "/ranking.html" },
     { "source": "/series", "destination": "/series.html" },
-    { "source": "/kalkulator-bisnis", "destination": "/kalkulator-bisnis.html" }
+    { "source": "/biz", "destination": "/kalkulator-bisnis.html" }
   ]
 }

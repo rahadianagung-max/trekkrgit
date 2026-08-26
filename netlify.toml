@@ -104,7 +104,7 @@
   status = 200
 
 [[redirects]]
-  from = "/kalkulator-bisnis"
+  from = "/biz"
   to = "/kalkulator-bisnis.html"
   status = 200
 
