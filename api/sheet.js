@@ -447,6 +447,13 @@ const netlifyHandler = async (event) => {
     if (path === "auth/claims/resolve" && method === "POST") return await resolveAccountClaim(body);
     if (path === "players/me" && method === "PUT") return await updateOwnProfile(body);
 
+    // --- PLAYER ACCOUNTS (Supabase Auth: self-service profiles) ---
+    if (path === "account/me" && method === "GET") return await accountMe(params);
+    if (path === "account/claim" && method === "POST") return await accountClaim(body);
+    if (path === "account/profile" && method === "PUT") return await accountProfile(body);
+    if (path === "account/claims" && method === "GET") return await accountClaimsList(params);
+    if (path === "account/claims/resolve" && method === "POST") return await accountClaimsResolve(body);
+
     if (path === "players" && method === "GET") return await cached60("players:" + JSON.stringify(params || {}), () => getPlayers(params));
     if (path === "players" && method === "POST") return await addPlayer(body);
     if (path === "players/update" && method === "PUT") return await updatePlayer(body);
@@ -620,6 +627,110 @@ const netlifyHandler = async (event) => {
 // ==============================================================
 // 2. VERCEL ADAPTER (JEMBATAN UNTUK HOSTING VERCEL)
 // ==============================================================
+// ==============================================================
+// PLAYER ACCOUNTS — Supabase Auth-backed self-service profiles.
+// These endpoints talk to Supabase directly (PostgREST + GoTrue) with the
+// service key, and verify the caller by their Supabase access token. Players
+// sign up via Supabase Auth (client side), request to claim an existing player
+// row (admin-approved), then edit their own profile.
+// ==============================================================
+function supaUrl() { return String(process.env.SUPABASE_URL || "").replace(/\/+$/, ""); }
+function supaKey() { return process.env.SUPABASE_SERVICE_KEY || ""; }
+async function supaRest(method, pathq, body, prefer) {
+  const r = await fetch(`${supaUrl()}/rest/v1/${pathq}`, {
+    method,
+    headers: { apikey: supaKey(), Authorization: `Bearer ${supaKey()}`, "Content-Type": "application/json", Prefer: prefer || (method === "POST" ? "return=representation" : "return=minimal") },
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+  const t = await r.text();
+  if (!r.ok) throw new Error(`Supabase ${method} ${pathq} -> ${r.status}: ${t.slice(0, 200)}`);
+  return t ? JSON.parse(t) : null;
+}
+// Verify a Supabase user access token; returns { id, email } or null.
+async function supaVerifyUser(token) {
+  if (!token) return null;
+  try {
+    const r = await fetch(`${supaUrl()}/auth/v1/user`, { headers: { apikey: supaKey(), Authorization: `Bearer ${token}` } });
+    if (!r.ok) return null;
+    const u = await r.json();
+    return u && u.id ? { id: u.id, email: u.email || "" } : null;
+  } catch (e) { return null; }
+}
+const PROFILE_FIELDS = ["display_name", "ig", "gender", "region", "clubs", "photo_url"];
+
+async function accountMe(params) {
+  const user = await supaVerifyUser(params && params.token);
+  if (!user) return respond(401, { error: "Belum login" });
+  const rows = await supaRest("GET", `players?user_id=eq.${user.id}&select=name,ig,display_name,gender,region,photo_url,clubs,verified,tournaments,winner_at&limit=1`);
+  const player = (rows && rows[0]) || null;
+  let claim = null;
+  if (!player) {
+    const cr = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&order=created_at.desc&limit=1&select=player_name,status,created_at`);
+    claim = (cr && cr[0]) || null;
+  }
+  return respond(200, { email: user.email, player, claim });
+}
+
+async function accountClaim(body) {
+  const user = await supaVerifyUser(body && body.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  const wanted = String((body && body.player_name) || "").trim();
+  if (!wanted) return respond(400, { error: "Nama pemain wajib dipilih" });
+  const mine = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
+  if (mine && mine.length) return respond(400, { error: "Akun kamu sudah terhubung ke profil " + mine[0].name });
+  const pl = await supaRest("GET", `players?name=eq.${encodeURIComponent(wanted)}&select=name,user_id&limit=1`);
+  if (!pl || !pl.length) return respond(404, { error: "Pemain tidak ditemukan" });
+  if (pl[0].user_id) return respond(400, { error: "Profil ini sudah diklaim akun lain" });
+  const ex = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&status=eq.pending&select=id&limit=1`);
+  if (ex && ex.length) return respond(400, { error: "Kamu sudah punya permintaan klaim yang menunggu persetujuan admin" });
+  await supaRest("POST", "profile_claims", [{ user_id: user.id, email: user.email, player_name: pl[0].name, status: "pending" }], "return=minimal");
+  return respond(200, { ok: true });
+}
+
+async function accountProfile(body) {
+  const user = await supaVerifyUser(body && body.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  const rows = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
+  if (!rows || !rows.length) return respond(403, { error: "Akun belum terhubung ke profil (menunggu persetujuan admin)" });
+  const u = (body && body.updates) || {};
+  const patch = {};
+  for (const k of PROFILE_FIELDS) if (u[k] !== undefined) patch[k] = String(u[k] == null ? "" : u[k]);
+  // Optional new profile photo (base64 data URL) -> upload then store the URL.
+  if (u.photo) {
+    try { const url = await uploadImage(u.photo, `profile_${rows[0].name}_${Date.now()}.jpg`); if (url) patch.photo_url = url; }
+    catch (e) { return respond(500, { error: "Gagal mengunggah foto: " + e.message }); }
+  }
+  if (patch.photo_url) patch.photo_url = ibbHostFix(patch.photo_url);
+  if (!Object.keys(patch).length) return respond(400, { error: "Tidak ada perubahan" });
+  await supaRest("PATCH", `players?user_id=eq.${user.id}`, patch);
+  return respond(200, { ok: true });
+}
+
+async function accountClaimsList(params) {
+  const status = String((params && params.status) || "pending");
+  const rows = await supaRest("GET", `profile_claims?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,player_name,status,created_at`);
+  return respond(200, { claims: rows || [] });
+}
+
+async function accountClaimsResolve(body) {
+  const claimId = parseInt((body && body.claimId), 10);
+  const action = String((body && body.action) || "").toLowerCase();
+  const admin = String((body && body.admin) || "");
+  if (!claimId || (action !== "approve" && action !== "reject")) return respond(400, { error: "claimId & action wajib" });
+  const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,player_name,status&limit=1`);
+  if (!cr || !cr.length) return respond(404, { error: "Klaim tidak ditemukan" });
+  const claim = cr[0];
+  const now = new Date().toISOString();
+  if (action === "approve") {
+    // Link the player row only if still unclaimed (guards a race / double-claim).
+    await supaRest("PATCH", `players?name=eq.${encodeURIComponent(claim.player_name)}&user_id=is.null`, { user_id: claim.user_id });
+    await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "approved", resolved_at: now, resolved_by: admin });
+  } else {
+    await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
+  }
+  return respond(200, { ok: true });
+}
+
 module.exports = async (req, res) => {
   const event = {
     path: req.url,
