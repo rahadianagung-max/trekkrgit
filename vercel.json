@@ -22,6 +22,7 @@
     { "source": "/ranking", "destination": "/ranking.html" },
     { "source": "/series", "destination": "/series.html" },
     { "source": "/biz", "destination": "/kalkulator-bisnis.html" },
-    { "source": "/akun", "destination": "/akun.html" }
+    { "source": "/akun", "destination": "/akun.html" },
+    { "source": "/klaim-admin", "destination": "/klaim-admin.html" }
   ]
 }
