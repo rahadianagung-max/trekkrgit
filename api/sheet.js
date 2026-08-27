@@ -15,6 +15,12 @@ function getAuth() {
 }
 
 function getSheets() {
+  // Switch: when Supabase env vars are present, route all "Sheets" access to
+  // Supabase via the drop-in in ./_supasheets. Otherwise keep using Google
+  // Sheets exactly as before (safe on/off switch — nothing changes until set).
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    return require("./_supasheets").makeSupabaseSheets();
+  }
   return google.sheets({ version: "v4", auth: getAuth() });
 }
 
