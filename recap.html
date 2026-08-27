@@ -40,7 +40,7 @@
 <div class="toast" id="toast"></div>
 <canvas id="buf" width="1080" height="1350" style="display:none"></canvas>
 <script>
-const API='https://trekkr.online/api';
+const API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
 let DATA=null;
 function $(id){return document.getElementById(id);}
 function toast(m,e){const t=$('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',2200);}

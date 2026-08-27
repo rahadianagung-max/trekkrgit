@@ -123,7 +123,7 @@
 </script>
 <script>
 (function(){
-  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  var BASE=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function inits(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
   function gender(g){return g==='M'||g==='Putra'?'Putra':g==='F'||g==='Putri'?'Putri':g||'';}

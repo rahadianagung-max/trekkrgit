@@ -109,7 +109,7 @@
 </div>
 
 <script>
-var API='https://trekkr.online/api';
+var API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
 var _photoData='';
 var _nameTaken=false;
 function setSubmit(on){ var b=$('submitBtn'); if(b) b.disabled=!on; }

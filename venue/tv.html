@@ -299,7 +299,7 @@ body{background:var(--ink);color:var(--text);font-family:var(--body);overflow:hi
 <script src="/qrcode.js"></script>
 <script>
 (function(){
-  var BASE = location.hostname==='trekkr.online' ? '/api' : 'https://trekkr.online/api';
+  var BASE = (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app')) ? '/api' : 'https://trekkr.online/api';
 
   /* ---------- helpers ---------- */
   function $(id){return document.getElementById(id);}

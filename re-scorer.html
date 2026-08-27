@@ -58,7 +58,7 @@ input,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radiu
 </div>
 </div>
 <script>
-const API='https://trekkr.online/api';
+const API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,SET='A',POLL=null,DATA=null,LOCAL={};
 function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}

@@ -778,7 +778,7 @@ async function loadPlayer(){
       // played at. Replaces fetching every venue's full match list in the browser.
       let myMatches = [];
       try {
-          const pmRes = await fetch(`https://trekkr.online/api/players/${encodeURIComponent(name)}/matches`);
+          const pmRes = await fetch(`${((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')}/players/${encodeURIComponent(name)}/matches`);
           const pmData = await pmRes.json();
           myMatches = (pmData && pmData.matches) || [];
           d.playedVenues = (pmData && pmData.playedVenues) || [];
@@ -1992,7 +1992,7 @@ function submitEdit(){
     ig:(document.getElementById('editIg').value||'').trim().replace(/^@+/,'')};
   if(_editPhotoData) body.photo=_editPhotoData;
   btn.disabled=true; btn.textContent='Submitting…'; m.style.color='var(--on-surface-variant)'; m.textContent='';
-  fetch('https://trekkr.online/api/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  fetch(((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')+'/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(d){
       btn.disabled=false; btn.textContent='Submit for review';
       if(d&&d.success){

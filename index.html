@@ -190,7 +190,7 @@
 </script>
 <script>
 (function(){
-  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  var BASE=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function normName(n){return String(n||'').trim().toLowerCase();}
@@ -337,7 +337,7 @@
 </script>
 <script>
 (function(){
-  var BASE=location.hostname==='trekkr.online'?'/api':'https://trekkr.online/api';
+  var BASE=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
