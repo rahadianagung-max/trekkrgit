@@ -62,7 +62,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const API_BASE=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API_BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 let FORMS=[], FE=null, TOURNS=[], VIEW='list';
 let CL=[], SEEDS=[], SEED_FORM='', SEED_TITLE='';
 

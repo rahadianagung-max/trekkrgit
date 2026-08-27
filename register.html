@@ -63,7 +63,7 @@
   <div class="foot">POWERED BY <b>TREKKR</b></div>
 </div>
 <script>
-const API_BASE=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API_BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 const FORM_ID=new URLSearchParams(location.search).get('form')||'';
 let CONFIG=null, STATUS='active';
 const uploads={}; // key -> {dataUrl} for photo/payment_proof fields

@@ -80,7 +80,7 @@ input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:9px;
 </div>
 </div>
 <script>
-const API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,PID=null,POLL=null,PLAYERS=[];
 const TIER_EN={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};

@@ -961,7 +961,7 @@ const RM = { // shared state for ranked match
   newGender: 'M', matchId: '', activeTab: 'courts',
   _inited: false, _savedToRestore: null,
 };
-const API_BASE = (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 
 function tStatus(el, type, msg) {
   el.className = 't-status ' + type; el.textContent = msg;

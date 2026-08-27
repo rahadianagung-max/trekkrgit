@@ -45,7 +45,7 @@ h3{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em
 <div class="wrap" id="wrap"><div class="muted">Loading event…</div></div>
 <div class="foot">Rate. Compete. Rise. · trekkr.online</div>
 <script>
-const API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,POLL=null;
 const TIER_EN={Emas:'Advance',Perak:'Intermediate',Perunggu:'Prospect'};

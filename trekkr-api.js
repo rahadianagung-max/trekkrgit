@@ -2,7 +2,7 @@ const TrekkrAPI = (() => {
   // Always call API on main domain — subdomains rewrite paths and break /api/.
   // Vercel preview deploys (*.vercel.app) call their own /api so a preview can be
   // tested end-to-end (e.g. against Supabase) instead of hitting production.
-  const BASE = (window.location.hostname === "trekkr.online" || window.location.hostname.endsWith(".vercel.app"))
+  const BASE = (window.location.hostname === "trekkr.online" || (window.location.hostname.endsWith(".vercel.app")&&window.location.hostname.startsWith("trekkrgit")))
     ? "/api"
     : "https://trekkr.online/api";
 

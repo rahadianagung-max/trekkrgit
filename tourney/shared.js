@@ -20,7 +20,7 @@
    ============================================================ */
 const TREKKR = {
   base: (typeof location !== 'undefined' && /(^|\.)trekkr\.online$/i.test(location.hostname))
-    ? '/api' : (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api',
+    ? '/api' : (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api',
   elo: { base: 1350, k: 32, scale: 400, marginBonus: true },
 };
 

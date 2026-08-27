@@ -396,7 +396,7 @@ async function recordMatch(){
   RM_IDS.forEach(id=>{const v=document.getElementById(id).value.trim();if(v&&!isExistingPlayer(v)){const ls=document.getElementById(id+'-level');if(ls)levels[v]=ls.value;}});
   show('','Menyimpan & menghitung ELO...');
   try{
-    const r=await fetch(((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')+'/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,genders,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
+    const r=await fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+'/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,genders,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
     const d=await r.json();
     if(!r.ok||!d.success){show('error',d.error||'Gagal menyimpan match.');return;}
     show('success',`✓ Match direkam di "${d.venue}". ELO diperbarui.`);
@@ -428,12 +428,12 @@ function renderER(x){
 }
 async function loadEditRequests(){
   var box=document.getElementById("er-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
-  try{ var r=await fetch(((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')+"/players/edit-requests?status=PENDING"); var d=await r.json(); var reqs=(d&&d.requests)||[];
+  try{ var r=await fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+"/players/edit-requests?status=PENDING"); var d=await r.json(); var reqs=(d&&d.requests)||[];
     box.innerHTML=reqs.length?reqs.map(renderER).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan pending.</p>';
   }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat.</p>'; }
 }
 async function resolveEdit(reqId,action){
-  try{ var r=await fetch(((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')+"/players/edit-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action})});
+  try{ var r=await fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+"/players/edit-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action})});
     var d=await r.json(); if(d&&d.success){ if(action==="approve"&&typeof loadPlayers==="function")loadPlayers(); loadEditRequests(); } else alert((d&&d.error)||"Gagal.");
   }catch(e){ alert("Error jaringan."); }
 }
@@ -541,7 +541,7 @@ async function impSubmit(){
   prog.innerHTML='<div class="imp-prog"><div class="imp-bar"><i style="width:100%"></i></div><div class="imp-prog-t">Mengimpor '+valid.length+' match — batch (all-or-nothing, urutan dijaga)…</div></div>';
   var payload={ newPlayerLevel:impState.level, week:impState.series||"", matches:valid.map(function(m){return {row:m.row,venue:m.venue,gender:m.gender,genders:m.genders,p1t1:impResolve(m.p1t1),p2t1:impResolve(m.p2t1),p1t2:impResolve(m.p1t2),p2t2:impResolve(m.p2t2),scoreT1:m.sa,scoreT2:m.sb,week:m.series||""};}) };
   try{
-    var r=await fetch(((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api')+"/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    var r=await fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+"/elo/import-matches",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     var d=await r.json();
     if(!r.ok||!d.success){
       prog.innerHTML='<div class="imp-note err" style="padding:14px;background:rgba(224,57,43,.06);border:1px solid rgba(224,57,43,.3);border-radius:12px"><b>Gagal (tidak ada yang tertulis):</b> '+erEsc((d&&d.error)||"error")+((d&&d.details)?('<div class="imp-fails">'+d.details.slice(0,20).map(function(x){return '<div>'+erEsc(x)+'</div>';}).join("")+'</div>'):"")+'</div>';

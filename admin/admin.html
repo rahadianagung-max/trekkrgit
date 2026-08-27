@@ -865,7 +865,7 @@ window.addEventListener('load', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG & STATE
 // ═══════════════════════════════════════════════════════════════════════════
-const API_BASE = (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 
 // Auth: sessionStorage = per-tab (safe for multi-venue on same browser)
 //       localStorage = fallback for single-tab users who reload the page

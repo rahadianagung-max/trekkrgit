@@ -139,7 +139,7 @@
 
 <script>
 (function(){
-  var BASE = (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app')) ? '/api' : 'https://trekkr.online/api';
+  var BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit'))) ? '/api' : 'https://trekkr.online/api';
 
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});

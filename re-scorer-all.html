@@ -61,7 +61,7 @@ input,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radiu
 </div>
 <div id="savebar" class="savebar" style="display:none"><div class="inner"><button id="saveAllBtn" onclick="saveAll()">Simpan semua court (<span id="nfill">0</span>)</button></div></div>
 <script>
-const API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+const API=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 const $=s=>document.querySelector(s);
 let EV=null,POLL=null,DATA=null,LOCAL={};
 function err(m){const e=$('#err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}

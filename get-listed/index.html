@@ -204,7 +204,7 @@
   mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
   // Always call the API on the main domain so previews/subdomains still submit.
-  var API = ((location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))) ? '/api' : 'https://trekkr.online/api';
+  var API = ((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))) ? '/api' : 'https://trekkr.online/api';
   var form=document.getElementById('leadForm');
   var btn=document.getElementById('submitBtn');
   var msg=document.getElementById('formMsg');

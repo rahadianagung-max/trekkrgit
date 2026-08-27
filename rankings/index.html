@@ -182,7 +182,7 @@
 
 <script>
 (function(){
-  var BASE = (location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app')) ? '/api' : 'https://trekkr.online/api';
+  var BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit'))) ? '/api' : 'https://trekkr.online/api';
   // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
   var TIERS=[{v:'T1',label:'T1 · Open',min:2000,max:Infinity},{v:'T2',label:'T2 · Contender',min:1500,max:1999},{v:'T3',label:'T3 · Rising',min:0,max:1499}];
   function tierName(elo){elo=Number(elo)||0;if(elo>=2000)return'T1 · Open';if(elo>=1500)return'T2 · Contender';return'T3 · Rising';}
