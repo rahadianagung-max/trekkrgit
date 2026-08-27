@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Akun Pemain — Trekkr</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--or:#FF6A00;--ink:#16161A;--mu:#6B6B72;--bd:#E6E6EA;--bg:#F7F7F8;--card:#fff;--grn:#16A34A;--red:#DC2626;--grad:linear-gradient(90deg,#FF3830,#FFB000)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh}
+.wrap{max-width:480px;margin:0 auto;padding:26px 16px 60px}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em}
+.brand b{color:var(--or)}
+h1{font-size:26px;margin:14px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mu);font-size:14px;margin:0 0 22px;line-height:1.5}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--mu);margin:0 0 5px}
+.field{margin-bottom:14px}
+input,select{width:100%;padding:12px 13px;border:1px solid var(--bd);border-radius:11px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--or)}
+.btn{width:100%;padding:13px;border:none;border-radius:11px;background:var(--grad);color:#fff;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--bd)}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;padding:11px;border:1px solid var(--bd);border-radius:11px;background:#fff;color:var(--mu);font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.link{background:none;border:none;color:var(--or);font:inherit;font-weight:700;cursor:pointer;padding:0;font-size:13.5px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.msg{padding:11px 13px;border-radius:10px;font-size:13.5px;font-weight:600;margin-bottom:14px;display:none}
+.msg.ok{display:block;background:#eafaf0;border:1px solid #bfe9cf;color:var(--grn)}
+.msg.err{display:block;background:#fdecec;border:1px solid #f6c9c9;color:var(--red)}
+.msg.info{display:block;background:#fff6ee;border:1px solid #ffd9b8;color:#9a4a00}
+.plist{margin-top:10px;max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:11px}
+.pitem{width:100%;text-align:left;padding:11px 13px;border:none;border-bottom:1px solid var(--bd);background:#fff;font:inherit;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.pitem:last-child{border-bottom:none}
+.pitem:hover{background:#fafafa}
+.pitem b{font-weight:700}.pitem span{color:var(--mu);font-size:12.5px}
+.selbox{background:#fff6ee;border:1px solid #ffd9b8;border-radius:11px;padding:12px 14px;margin:12px 0;font-size:14px}
+.avatar{width:74px;height:74px;border-radius:50%;object-fit:cover;border:2px solid var(--bd);background:#eee}
+.muted{color:var(--mu);font-size:12.5px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.badge{display:inline-block;background:#f0f0f2;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--mu)}
+.center{text-align:center}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Trekk<b>r</b></div>
+    <button class="link hidden" id="logout">Keluar</button>
+  </div>
+
+  <div id="msg" class="msg"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+const SUPA_URL = "https://ftkbankqixnwssfrbqyc.supabase.co";
+const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0a2JhbmtxaXhud3NzZnJicXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0MDEsImV4cCI6MjEwMzM2NDQwMX0.RWVf6xehxQ9BPSK3ykDW8cikP9O5gvGRINwj9TAMaJQ";
+const API = (location.hostname==="trekkr.online" || location.hostname.endsWith(".vercel.app")) ? "/api" : "https://trekkr.online/api";
+const TK = "trekkr_player_token";
+const $ = (id)=>document.getElementById(id);
+const app = ()=>$("app");
+function tok(){ return localStorage.getItem(TK)||""; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function msg(t,k){ const m=$("msg"); if(!t){m.className="msg";m.textContent="";return;} m.textContent=t; m.className="msg "+(k||"err"); window.scrollTo({top:0,behavior:"smooth"}); }
+
+// ---- Supabase Auth (GoTrue REST) ----
+async function gotrue(path, body, token){
+  const r = await fetch(`${SUPA_URL}/auth/v1/${path}`, {method:"POST",headers:{apikey:SUPA_ANON,"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.msg||d.error_description||d.error||d.message||("HTTP "+r.status));
+  return d;
+}
+async function apiGet(path){ const r=await fetch(`${API}/${path}`); const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||("HTTP "+r.status)); return d; }
+async function apiSend(path,method,body){ const r=await fetch(`${API}/${path}`,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||("HTTP "+r.status)); return d; }
+
+// ---- views ----
+function viewAuth(mode){
+  $("logout").classList.add("hidden");
+  app().innerHTML = `
+    <h1>Akun Pemain</h1>
+    <p class="sub">Masuk atau daftar untuk mengelola profil Trekkr kamu sendiri.</p>
+    <div class="tabs">
+      <button class="tab ${mode!=="signup"?"on":""}" id="tLogin">Masuk</button>
+      <button class="tab ${mode==="signup"?"on":""}" id="tSignup">Daftar</button>
+    </div>
+    <div class="card">
+      <div class="field"><label>Email</label><input id="email" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
+      <div class="field"><label>Password</label><input id="pass" type="password" placeholder="Minimal 6 karakter" autocomplete="current-password"/></div>
+      <button class="btn" id="go">${mode==="signup"?"Daftar":"Masuk"}</button>
+      ${mode==="signup"?"":'<div class="center" style="margin-top:12px"><button class="link" id="forgot">Lupa password?</button></div>'}
+    </div>`;
+  $("tLogin").onclick=()=>viewAuth("login"); $("tSignup").onclick=()=>viewAuth("signup");
+  $("go").onclick=()=>mode==="signup"?doSignup():doLogin();
+  if($("forgot")) $("forgot").onclick=doForgot;
+}
+async function doSignup(){
+  const email=$("email").value.trim(), password=$("pass").value;
+  if(!email||password.length<6){ msg("Isi email dan password (min 6 karakter)."); return; }
+  const b=$("go"); b.disabled=true; b.textContent="Memproses…";
+  try{
+    const d = await gotrue("signup",{email,password});
+    if(d.access_token){ localStorage.setItem(TK,d.access_token); msg("Akun dibuat & masuk!","ok"); await route(); }
+    else { msg("Akun dibuat. Cek email kamu untuk verifikasi, lalu masuk.","info"); viewAuth("login"); }
+  }catch(e){ msg("Gagal daftar: "+e.message); } finally{ b.disabled=false; b.textContent="Daftar"; }
+}
+async function doLogin(){
+  const email=$("email").value.trim(), password=$("pass").value;
+  if(!email||!password){ msg("Isi email dan password."); return; }
+  const b=$("go"); b.disabled=true; b.textContent="Memproses…";
+  try{
+    const d = await gotrue("token?grant_type=password",{email,password});
+    localStorage.setItem(TK,d.access_token); msg(""); await route();
+  }catch(e){ msg("Gagal masuk: "+e.message); } finally{ b.disabled=false; b.textContent="Masuk"; }
+}
+async function doForgot(){
+  const email=$("email").value.trim();
+  if(!email){ msg("Isi email dulu untuk reset."); return; }
+  try{ await gotrue("recover",{email}); msg("Link reset password dikirim ke email kamu.","ok"); }
+  catch(e){ msg("Gagal kirim reset: "+e.message); }
+}
+
+function viewRecover(){
+  $("logout").classList.add("hidden");
+  app().innerHTML=`<h1>Password Baru</h1><p class="sub">Masukkan password baru untuk akunmu.</p>
+    <div class="card"><div class="field"><label>Password baru</label><input id="np" type="password" placeholder="Min 6 karakter"/></div>
+    <button class="btn" id="save">Simpan Password</button></div>`;
+  $("save").onclick=async()=>{
+    const np=$("np").value; if(np.length<6){ msg("Min 6 karakter."); return; }
+    const rtok=sessionStorage.getItem("recover_tok");
+    try{ await gotrue("user",{password:np},rtok); msg("Password diperbarui! Silakan masuk.","ok"); history.replaceState(null,"",location.pathname); sessionStorage.removeItem("recover_tok"); viewAuth("login"); }
+    catch(e){ msg("Gagal: "+e.message); }
+  };
+}
+
+async function route(){
+  msg("");
+  let me;
+  try{ me = await apiGet(`account/me?token=${encodeURIComponent(tok())}`); }
+  catch(e){ localStorage.removeItem(TK); viewAuth("login"); return; }
+  $("logout").classList.remove("hidden");
+  if(me.player) return viewProfile(me);
+  if(me.claim && me.claim.status==="pending") return viewPending(me.claim);
+  return viewClaim(me);
+}
+
+function viewPending(claim){
+  app().innerHTML=`<h1>Menunggu Persetujuan</h1>
+    <p class="sub">Permintaan klaim profil <b>${esc(claim.player_name)}</b> sedang menunggu persetujuan admin. Kamu akan bisa mengedit profil setelah disetujui.</p>
+    <div class="card center"><span class="badge">⏳ Menunggu admin</span></div>`;
+}
+
+let selName="";
+function viewClaim(me){
+  selName="";
+  app().innerHTML=`<h1>Klaim Profil</h1>
+    <p class="sub">Login sebagai <b>${esc(me.email)}</b>. Cari & pilih nama kamu di daftar pemain Trekkr, lalu ajukan klaim (disetujui admin dulu).</p>
+    <div class="card">
+      <div class="field"><label>Cari nama pemain</label><input id="q" placeholder="Ketik nama kamu…" autocomplete="off"/></div>
+      <div id="plist" class="plist hidden"></div>
+      <div id="selbox"></div>
+      <button class="btn" id="claim" disabled>Ajukan Klaim</button>
+    </div>`;
+  let t=null;
+  $("q").oninput=(e)=>{ clearTimeout(t); const q=e.target.value.trim(); if(q.length<2){ $("plist").classList.add("hidden"); return; } t=setTimeout(()=>searchPlayers(q),300); };
+  $("claim").onclick=submitClaim;
+}
+async function searchPlayers(q){
+  try{
+    const d = await apiGet(`players?search=${encodeURIComponent(q)}`);
+    const list=(d.players||[]).slice(0,30);
+    const el=$("plist");
+    el.innerHTML = list.length ? list.map(p=>`<button class="pitem" data-n="${esc(p.name)}"><b>${esc(p.displayName||p.name)}</b><span>${esc(p.region||"")}</span></button>`).join("") : '<div style="padding:12px" class="muted">Tidak ada yang cocok</div>';
+    el.classList.remove("hidden");
+    el.querySelectorAll(".pitem").forEach(b=>b.onclick=()=>{ selName=b.getAttribute("data-n"); $("selbox").innerHTML=`<div class="selbox">Dipilih: <b>${esc(selName)}</b></div>`; $("claim").disabled=false; el.classList.add("hidden"); $("q").value=selName; });
+  }catch(e){ msg("Gagal mencari: "+e.message); }
+}
+async function submitClaim(){
+  if(!selName) return;
+  const b=$("claim"); b.disabled=true; b.textContent="Mengirim…";
+  try{ await apiSend("account/claim","POST",{token:tok(),player_name:selName}); msg("Klaim diajukan! Menunggu persetujuan admin.","ok"); route(); }
+  catch(e){ msg("Gagal klaim: "+e.message); b.disabled=false; b.textContent="Ajukan Klaim"; }
+}
+
+function viewProfile(me){
+  const p=me.player;
+  app().innerHTML=`<h1>Profil Saya</h1>
+    <p class="sub">Login sebagai <b>${esc(me.email)}</b>. Edit data profilmu di sini.</p>
+    <div class="card">
+      <div class="row" style="margin-bottom:16px">
+        <img id="av" class="avatar" src="${esc(p.photo_url||"")}" onerror="this.style.visibility='hidden'"/>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:17px">${esc(p.name)}</div>
+          <div class="muted">${p.verified==="TRUE"?"✔ Terverifikasi":"Belum terverifikasi"}</div>
+        </div>
+      </div>
+      <div class="field"><label>Nama tampilan</label><input id="display_name" value="${esc(p.display_name||"")}"/></div>
+      <div class="field"><label>Instagram</label><input id="ig" value="${esc(p.ig||"")}" placeholder="@username"/></div>
+      <div class="field"><label>Gender</label><select id="gender"><option value="M"${(p.gender||"M")==="M"?" selected":""}>Laki-laki</option><option value="F"${p.gender==="F"?" selected":""}>Perempuan</option></select></div>
+      <div class="field"><label>Region / Kota</label><input id="region" value="${esc(p.region||"")}"/></div>
+      <div class="field"><label>Klub</label><input id="clubs" value="${esc(p.clubs||"")}"/></div>
+      <div class="field"><label>Foto profil</label><input id="photo" type="file" accept="image/*"/></div>
+      <button class="btn" id="save">Simpan Perubahan</button>
+    </div>`;
+  $("save").onclick=saveProfile;
+}
+function fileToDataUrl(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); }); }
+async function saveProfile(){
+  const updates={ display_name:$("display_name").value.trim(), ig:$("ig").value.trim(), gender:$("gender").value, region:$("region").value.trim(), clubs:$("clubs").value.trim() };
+  const f=$("photo").files[0];
+  const b=$("save"); b.disabled=true; b.textContent="Menyimpan…";
+  try{
+    if(f){ if(f.size>6*1024*1024){ throw new Error("Foto terlalu besar (maks 6MB)"); } updates.photo=await fileToDataUrl(f); }
+    await apiSend("account/profile","PUT",{token:tok(),updates});
+    msg("Profil tersimpan!","ok"); route();
+  }catch(e){ msg("Gagal simpan: "+e.message); } finally{ b.disabled=false; b.textContent="Simpan Perubahan"; }
+}
+
+$("logout").onclick=()=>{ localStorage.removeItem(TK); msg(""); viewAuth("login"); };
+
+// ---- init: handle password-recovery redirect, else route ----
+(function init(){
+  const h = new URLSearchParams((location.hash||"").replace(/^#/,""));
+  if(h.get("type")==="recovery" && h.get("access_token")){ sessionStorage.setItem("recover_tok",h.get("access_token")); viewRecover(); return; }
+  if(tok()) route(); else viewAuth("login");
+})();
+</script>
+</body>
+</html>
