@@ -130,7 +130,8 @@ async function doForgot(){
   if(!email){ msg("Isi email dulu."); return; }
   const b=$("send"); b.disabled=true; b.textContent="Mengirim…";
   try{
-    await gotrue("recover",{email},null);
+    // Send the recovery email with a redirect to /reset (allowlisted in Supabase Auth).
+    await gotrue("recover?redirect_to="+encodeURIComponent("https://trekkr.online/reset"),{email},null);
     msg("Kalau email itu terdaftar, link reset sudah dikirim. Cek inbox (dan folder spam).","ok");
   }catch(e){ msg("Gagal kirim reset: "+e.message); }
   finally{ b.disabled=false; b.textContent="Kirim link reset"; }
