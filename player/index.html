@@ -728,6 +728,45 @@ canvas#shareCanvas{display:none}
 
 <script>
 let playerData=null;
+// ── Player session (logged-in owner can edit this passport) ──
+const PP_API=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+const PP_HOME=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'':'https://trekkr.online';
+const PP_TK='trekkr_player_token';
+function ppSlug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+function ppTok(){try{return localStorage.getItem(PP_TK)||'';}catch(e){return '';}}
+var _session={token:'',myName:'',owns:false,loaded:false};
+async function initSession(){
+  _session.token=ppTok();
+  if(_session.token){
+    try{
+      const r=await fetch(`${PP_API}/account/me?token=${encodeURIComponent(_session.token)}`);
+      const d=await r.json().catch(()=>({}));
+      if(r.ok && d.player){ _session.myName=d.player.name||''; }
+      else if(r.status===401){ try{localStorage.removeItem(PP_TK);}catch(e){} _session.token=''; }
+    }catch(e){}
+  }
+  _session.loaded=true;
+  refreshEditBtn();
+}
+function ppOwnsThis(){
+  if(!_session.myName || !playerData || !playerData.player) return false;
+  const a=String(_session.myName).toLowerCase().trim();
+  const b=String(playerData.player.name||'').toLowerCase().trim();
+  return a && a===b;
+}
+function refreshEditBtn(){
+  const btn=document.getElementById('ppEditBtn'); if(!btn) return;
+  _session.owns=ppOwnsThis();
+  btn.innerHTML=_session.owns
+    ? '<i class="ti ti-pencil" aria-hidden="true"></i> Edit profil'
+    : '<i class="ti ti-shield-check" aria-hidden="true"></i> Klaim profil ini';
+}
+function onEditBtn(){
+  if(_session.owns){ openEditModal(); return; }
+  // Not the owner (or not logged in) → go claim/register this name.
+  const nm=(playerData&&playerData.player&&playerData.player.name)||'';
+  location.href=`${PP_HOME}/join?name=${encodeURIComponent(nm)}`;
+}
 var IBB_PH='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3C/svg%3E';
 // imgbb serves the same image on both i.ibb.co and i.ibb.co.com; some networks
 // (e.g. certain Indonesian ISPs/DNS filters) can only reach one of the two hosts.
@@ -885,7 +924,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
   document.title=`${p.name} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
-  <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" onclick="openEditModal()"><i class="ti ti-${p.claimed?'pencil':'shield-check'}" aria-hidden="true"></i> ${p.claimed?'Edit profile':'Claim your profile'}</button>
+  <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()"><i class="ti ti-shield-check" aria-hidden="true"></i> Klaim profil ini</button>
   <div class="pp-meta-grid">
     <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
     <div><p class="pp-meta-label">Tier</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
@@ -1024,6 +1063,7 @@ function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, ba
 
   document.getElementById('content').innerHTML=h;
   if(history&&history.length>1)drawChart(history);
+  refreshEditBtn();
 }
 
 function drawChart(history){const canvas=document.getElementById('eloChart');if(!canvas)return;const ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1;const rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={t:10,r:10,b:24,l:40};const elos=history.map(e=>e.elo),minE=Math.min(...elos)-20,maxE=Math.max(...elos)+20;const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;ctx.strokeStyle='rgba(234,241,255,0.15)';ctx.lineWidth=0.5;for(let i=0;i<=4;i++){const y=pad.t+(plotH/4)*i;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();const v=Math.round(maxE-((maxE-minE)/4)*i);ctx.fillStyle='rgba(234,241,255,0.5)';ctx.font='9px Plus Jakarta Sans';ctx.textAlign='right';ctx.fillText(v,pad.l-6,y+3)}ctx.beginPath();ctx.strokeStyle='#FF9A4D';ctx.lineWidth=2;ctx.lineJoin='round';history.forEach((e,i)=>{const x=pad.l+(plotW/(history.length-1))*i;const y=pad.t+plotH-((e.elo-minE)/(maxE-minE))*plotH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke();history.forEach((e,i)=>{const x=pad.l+(plotW/(history.length-1))*i;const y=pad.t+plotH-((e.elo-minE)/(maxE-minE))*plotH;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#FF9A4D';ctx.fill()})}
@@ -1625,7 +1665,8 @@ function buildCalibBadge(totalMatches) {
 }
 
 // Start as soon as the DOM is ready (don't wait for fonts/images/all resources).
-if(document.readyState!=='loading')loadPlayer();else document.addEventListener('DOMContentLoaded',loadPlayer);
+function ppBoot(){ loadPlayer(); initSession(); }
+if(document.readyState!=='loading')ppBoot();else document.addEventListener('DOMContentLoaded',ppBoot);
 
 function openUrlModal(){
   if(!playerData)return;
@@ -1880,44 +1921,19 @@ function downloadNightCard(){
 <script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();
 var _editPhotoData="";
 var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";
-var _gateEmail='';
+// Session-based edit: only the logged-in owner reaches this (see onEditBtn).
 function openEditModal(){
-  if(!playerData)return; var p=playerData.player;
-  _editPhotoData=''; _gateEmail='';
-  document.getElementById('editName').value=p.name||'';
+  if(!playerData || !_session.owns)return; var p=playerData.player;
+  _editPhotoData='';
+  document.getElementById('editName').value=p.display_name||p.displayName||p.name||'';
   document.getElementById('editIg').value=(p.ig||'').replace(/^@+/,'');
+  document.getElementById('editRegion').value=p.region||'';
   var g=document.getElementById('editGender'); if(g) g.value=(p.gender==='F'?'F':'M');
-  document.getElementById('editEmail').value='';
-  document.getElementById('gateEmail').value='';
   document.getElementById('editPhotoPrev').src=p.photoUrl||_EDIT_PH;
-  var m=document.getElementById('editMsg'); m.textContent=''; var gm=document.getElementById('gateMsg'); if(gm)gm.textContent='';
-  var title=document.getElementById('editModalTitle');
-  if(p.claimed){
-    // Already claimed → ask for the registered email before revealing the form.
-    title.textContent='Edit profile';
-    document.getElementById('editGate').style.display='';
-    document.getElementById('editForm').style.display='none';
-    document.getElementById('claimBanner').style.display='none';
-    document.getElementById('emailField').style.display='none';
-  } else {
-    // Unclaimed → claim form with the email field visible & required.
-    title.textContent='Claim your profile';
-    document.getElementById('editGate').style.display='none';
-    document.getElementById('editForm').style.display='';
-    document.getElementById('claimBanner').style.display='';
-    document.getElementById('emailField').style.display='';
-  }
+  var m=document.getElementById('editMsg'); m.textContent='';
+  var np=document.getElementById('newPass'); if(np)np.value='';
+  var pm=document.getElementById('pwMsg'); if(pm)pm.textContent='';
   document.getElementById('editModal').classList.add('open');
-}
-function unlockEdit(){
-  var em=(document.getElementById('gateEmail').value||'').trim();
-  var gm=document.getElementById('gateMsg');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ gm.style.color='var(--danger)'; gm.textContent='Masukkan email yang valid.'; return; }
-  _gateEmail=em; if(gm)gm.textContent='';
-  document.getElementById('editGate').style.display='none';
-  document.getElementById('editForm').style.display='';
-  document.getElementById('claimBanner').style.display='none';
-  document.getElementById('emailField').style.display='none';
 }
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
 // ── Square photo cropper (mugshot): pan + zoom, exports a 512×512 compressed JPEG ──
@@ -1979,69 +1995,87 @@ function cropApply(){
   _editPhotoData=out.toDataURL('image/jpeg',0.85);
   document.getElementById('editPhotoPrev').src=_editPhotoData;
   document.getElementById('cropModal').classList.remove('open');
-  var m=document.getElementById('editMsg'); if(m){m.style.color='var(--ok)';m.textContent='✓ Foto siap. Klik "Submit for review".';}
+  var m=document.getElementById('editMsg'); if(m){m.style.color='var(--ok)';m.textContent='✓ Foto siap. Klik "Simpan perubahan".';}
 }
+// Save profile changes directly (logged-in owner) — no admin review needed.
 function submitEdit(){
-  if(!playerData)return; var p=playerData.player;
+  if(!playerData || !_session.owns){ return; }
   var btn=document.getElementById('editSubmitBtn'), m=document.getElementById('editMsg');
-  var email = p.claimed ? _gateEmail : (document.getElementById('editEmail').value||'').trim();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ m.style.color='var(--danger)'; m.textContent='Email wajib diisi.'; return; }
-  var body={name:p.name, email:email,
-    displayName:(document.getElementById('editName').value||'').trim(),
+  var updates={
+    display_name:(document.getElementById('editName').value||'').trim(),
     gender:(document.getElementById('editGender')||{}).value||'',
+    region:(document.getElementById('editRegion').value||'').trim(),
     ig:(document.getElementById('editIg').value||'').trim().replace(/^@+/,'')};
-  if(_editPhotoData) body.photo=_editPhotoData;
-  btn.disabled=true; btn.textContent='Submitting…'; m.style.color='var(--on-surface-variant)'; m.textContent='';
-  fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+'/players/edit-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){return r.json();}).then(function(d){
-      btn.disabled=false; btn.textContent='Submit for review';
-      if(d&&d.success){
-        if(body.photo && !d.photoUrl){ m.style.color='var(--danger)'; m.textContent='⚠ Data terkirim, tapi foto gagal diunggah'+(d.photoError?(': '+d.photoError):'. Coba lagi atau hubungi admin.'); }
-        else { m.style.color='var(--ok)'; m.textContent='✓ Terkirim! Menunggu persetujuan admin.'; setTimeout(closeEditModal,1700); }
+  if(_editPhotoData) updates.photo=_editPhotoData;
+  btn.disabled=true; btn.textContent='Menyimpan…'; m.style.color='var(--on-surface-variant)'; m.textContent='';
+  fetch(PP_API+'/account/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_session.token,updates:updates})})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});}).then(function(res){
+      btn.disabled=false; btn.textContent='Simpan perubahan';
+      var d=res.d||{};
+      if(res.ok && d.ok){
+        m.style.color='var(--ok)'; m.textContent='✓ Tersimpan!';
+        // Reflect changes locally without a full reload.
+        var p=playerData.player;
+        p.display_name=updates.display_name; p.ig=updates.ig; p.region=updates.region; p.gender=updates.gender;
+        if(_editPhotoData) p.photoUrl=_editPhotoData;
+        try{ renderPlayer(playerData); }catch(e){}
+        setTimeout(closeEditModal,1100);
+      } else {
+        m.style.color='var(--danger)'; m.textContent=(d&&d.error)||'Gagal menyimpan.';
       }
-      else { m.style.color='var(--danger)'; m.textContent=(d&&d.error)||'Gagal mengirim.'; }
-    }).catch(function(){ btn.disabled=false; btn.textContent='Submit for review'; m.style.color='var(--danger)'; m.textContent='Error jaringan.'; });
+    }).catch(function(){ btn.disabled=false; btn.textContent='Simpan perubahan'; m.style.color='var(--danger)'; m.textContent='Error jaringan.'; });
 }
+// Change password (logged-in owner).
+function doChangePassword(){
+  var np=(document.getElementById('newPass').value||''); var pm=document.getElementById('pwMsg');
+  var btn=document.getElementById('pwBtn');
+  if(np.length<6){ pm.style.color='var(--danger)'; pm.textContent='Password minimal 6 karakter.'; return; }
+  btn.disabled=true; btn.textContent='Menyimpan…'; pm.textContent='';
+  fetch(PP_API+'/account/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_session.token,new_password:np})})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});}).then(function(res){
+      btn.disabled=false; btn.textContent='Ganti password';
+      if(res.ok && res.d && res.d.ok){ pm.style.color='var(--ok)'; pm.textContent='✓ Password diganti.'; document.getElementById('newPass').value=''; }
+      else { pm.style.color='var(--danger)'; pm.textContent=(res.d&&res.d.error)||'Gagal ganti password.'; }
+    }).catch(function(){ btn.disabled=false; btn.textContent='Ganti password'; pm.style.color='var(--danger)'; pm.textContent='Error jaringan.'; });
+}
+function ppLogout(){ try{localStorage.removeItem(PP_TK);}catch(e){} _session={token:'',myName:'',owns:false,loaded:true}; closeEditModal(); refreshEditBtn(); }
 </script>
 
 <div class="share-modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
   <div class="share-modal">
     <div class="share-modal-handle"></div>
-    <div class="share-modal-head"><div class="share-modal-title" id="editModalTitle">Claim your profile</div><button class="share-modal-close" onclick="closeEditModal()">&times;</button></div>
-    <p class="share-modal-sub" id="editModalSub">Changes are reviewed by an admin before they go live. Your ELO and match history never change.</p>
+    <div class="share-modal-head"><div class="share-modal-title" id="editModalTitle">Edit profil</div><button class="share-modal-close" onclick="closeEditModal()">&times;</button></div>
+    <p class="share-modal-sub" id="editModalSub">Perubahan langsung tersimpan. ELO &amp; riwayat pertandinganmu tidak berubah.</p>
 
-    <!-- Gate: shown only for an already-claimed profile — the registered email must match. -->
-    <div id="editGate" style="display:none">
-      <div style="background:#F4F2F0;border:1px solid var(--outline,#E6E3E0);border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:12px">🔒 Profil ini sudah diklaim. Masukkan <b>email yang kamu daftarkan</b> untuk bisa mengedit lagi.</div>
-      <label class="pp-info-label" style="display:block;margin-bottom:6px">Registered email</label>
-      <input id="gateEmail" class="edit-in" type="email" placeholder="you@email.com" autocomplete="email">
-      <button class="btn btn--primary" style="width:100%;margin-top:16px" id="gateBtn" onclick="unlockEdit()">Continue</button>
-      <div id="gateMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
-    </div>
-
-    <!-- Profile fields -->
+    <!-- Profile fields (owner only) -->
     <div id="editForm">
-      <div id="claimBanner" style="background:rgba(255,106,0,.08);border:1px solid rgba(255,106,0,.3);color:#9a4d00;border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:14px">Klaim profil ini untuk mendapatkan badge <b>Verified</b> dan mengelola datanya.</div>
       <div style="display:flex;align-items:center;gap:14px;margin:6px 0 16px">
         <img id="editPhotoPrev" alt="" style="width:66px;height:66px;border-radius:14px;object-fit:cover;background:#EFEFF1"/>
         <div>
-          <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Upload foto<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
-          <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — akan dipotong kotak & dikecilkan otomatis.</div>
+          <label class="btn btn--ghost" style="cursor:pointer;display:inline-block">Ganti foto<input type="file" id="editPhotoInput" accept="image/*" style="display:none" onchange="onEditPhoto(event)"></label>
+          <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — dipotong kotak &amp; dikecilkan otomatis.</div>
         </div>
       </div>
-      <div id="emailField">
-        <label class="pp-info-label" style="display:block;margin-bottom:6px">Email <span style="color:var(--primary,#FF6A00)">*</span></label>
-        <input id="editEmail" class="edit-in" type="email" placeholder="you@email.com" autocomplete="email">
-        <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Dipakai untuk verifikasi saat kamu ingin mengedit profil lagi nanti.</div>
-      </div>
-      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Display name</label>
-      <input id="editName" class="edit-in" placeholder="Your name">
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Nama tampilan</label>
+      <input id="editName" class="edit-in" placeholder="Nama kamu">
       <label class="pp-info-label" style="display:block;margin:14px 0 6px">Gender</label>
       <select id="editGender" class="edit-in"><option value="M">Male</option><option value="F">Female</option></select>
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Region / Kota</label>
+      <input id="editRegion" class="edit-in" placeholder="cth. Jakarta">
       <label class="pp-info-label" style="display:block;margin:14px 0 6px">Instagram</label>
-      <input id="editIg" class="edit-in" placeholder="username (without @)">
-      <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Submit for review</button>
+      <input id="editIg" class="edit-in" placeholder="username (tanpa @)">
+      <button class="btn btn--primary" style="width:100%;margin-top:18px" id="editSubmitBtn" onclick="submitEdit()">Simpan perubahan</button>
       <div id="editMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+
+      <!-- Change password -->
+      <div style="border-top:1px solid var(--outline,#E6E3E0);margin-top:20px;padding-top:16px">
+        <label class="pp-info-label" style="display:block;margin-bottom:6px">Ganti password</label>
+        <input id="newPass" class="edit-in" type="password" placeholder="Password baru (min 6 karakter)" autocomplete="new-password">
+        <button class="btn btn--ghost" style="width:100%;margin-top:12px" id="pwBtn" onclick="doChangePassword()">Ganti password</button>
+        <div id="pwMsg" style="font-size:12px;margin-top:10px;text-align:center"></div>
+      </div>
+
+      <div style="text-align:center;margin-top:18px"><button onclick="ppLogout()" style="background:none;border:none;color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Keluar</button></div>
     </div>
   </div>
 </div>

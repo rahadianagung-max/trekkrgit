@@ -12,6 +12,8 @@
       "source": "/join",
       "destination": "/join.html"
     },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/reset", "destination": "/reset.html" },
 
     { "source": "/liga-trekkr", "destination": "/liga-trekkr.html" },
     { "source": "/season", "destination": "/season.html" },

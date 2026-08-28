@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Reset Password — Trekkr</title>
+<meta name="description" content="Buat password baru untuk akun pemain Trekkr-mu."/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--or:#FF6A00;--ink:#16161A;--mu:#6B6B72;--bd:#E6E6EA;--bg:#F7F7F8;--card:#fff;--grn:#16A34A;--red:#DC2626;--grad:linear-gradient(90deg,#FF3830,#FFB000)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh}
+.wrap{max-width:440px;margin:0 auto;padding:26px 16px 60px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em;text-decoration:none;color:var(--ink)}
+.brand b{color:var(--or)}
+.back{font-size:13px;color:var(--mu);text-decoration:none}
+h1{font-size:26px;margin:10px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mu);font-size:14px;margin:0 0 22px;line-height:1.55}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--mu);margin:0 0 5px}
+.field{margin-bottom:14px}
+input{width:100%;padding:12px 13px;border:1px solid var(--bd);border-radius:11px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
+input:focus{outline:none;border-color:var(--or)}
+.btn{width:100%;padding:13px;border:none;border-radius:11px;background:var(--grad);color:#fff;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.link{background:none;border:none;color:var(--or);font:inherit;font-weight:700;cursor:pointer;padding:0;font-size:13.5px;text-decoration:none}
+.center{text-align:center}
+.msg{padding:11px 13px;border-radius:10px;font-size:13.5px;font-weight:600;margin-bottom:14px;display:none}
+.msg.ok{display:block;background:#eafaf0;border:1px solid #bfe9cf;color:var(--grn)}
+.msg.err{display:block;background:#fdecec;border:1px solid #f6c9c9;color:var(--red)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="https://trekkr.online/">Trekk<b>r</b></a>
+    <a class="back" href="https://trekkr.online/">&larr; Beranda</a>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+const SUPA_URL = "https://ftkbankqixnwssfrbqyc.supabase.co";
+const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0a2JhbmtxaXhud3NzZnJicXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0MDEsImV4cCI6MjEwMzM2NDQwMX0.RWVf6xehxQ9BPSK3ykDW8cikP9O5gvGRINwj9TAMaJQ";
+const HOME = (location.hostname==="trekkr.online"||location.hostname.endsWith(".vercel.app")) ? "" : "https://trekkr.online";
+const $=(id)=>document.getElementById(id); const app=()=>$("app");
+let _rtok="";
+function msg(t,k){const m=$("msg");if(!t){m.className="msg";m.textContent="";return;}m.textContent=t;m.className="msg "+(k||"err");window.scrollTo({top:0,behavior:"smooth"});}
+async function gotrue(path, body, token){
+  const r = await fetch(`${SUPA_URL}/auth/v1/${path}`, {method:"PUT",headers:{apikey:SUPA_ANON,"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.msg||d.error_description||d.error||d.message||("HTTP "+r.status));
+  return d;
+}
+
+function viewForm(){
+  app().innerHTML=`
+    <h1>Password Baru</h1>
+    <p class="sub">Masukkan password baru untuk akun pemainmu.</p>
+    <div class="card">
+      <div class="field"><label>Password baru</label><input id="np" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password"/></div>
+      <div class="field"><label>Ulangi password</label><input id="np2" type="password" placeholder="Ketik ulang" autocomplete="new-password"/></div>
+      <button class="btn" id="save">Simpan password</button>
+    </div>`;
+  $("save").onclick=doSave;
+}
+async function doSave(){
+  const np=$("np").value||"", np2=$("np2").value||"";
+  if(np.length<6){ msg("Password minimal 6 karakter."); return; }
+  if(np!==np2){ msg("Password tidak sama, coba lagi."); return; }
+  const b=$("save"); b.disabled=true; b.textContent="Menyimpan…";
+  try{
+    await gotrue("user",{password:np},_rtok);
+    msg("Password berhasil diperbarui ✓ Silakan masuk.","ok");
+    app().innerHTML=`<div class="card center"><div style="font-size:34px;margin-bottom:8px">✅</div><div style="font-weight:700;margin-bottom:14px">Password diperbarui</div><a class="btn" href="${HOME}/login" style="display:block;text-decoration:none">Masuk sekarang</a></div>`;
+  }catch(e){ msg("Gagal: "+e.message); b.disabled=false; b.textContent="Simpan password"; }
+}
+function viewInvalid(){
+  app().innerHTML=`
+    <h1>Link tidak valid</h1>
+    <p class="sub">Link reset password ini tidak valid atau sudah kedaluwarsa. Minta link baru dari halaman login.</p>
+    <div class="card"><a class="btn" href="${HOME}/login" style="display:block;text-align:center;text-decoration:none">Ke halaman login</a></div>`;
+}
+
+(function init(){
+  const h = new URLSearchParams((location.hash||"").replace(/^#/,""));
+  const at=h.get("access_token"), type=h.get("type");
+  if(at && (type==="recovery"||!type)){
+    _rtok=at; history.replaceState(null,"",location.pathname); viewForm(); return;
+  }
+  if(h.get("error_description")){ msg("Link bermasalah: "+h.get("error_description")); }
+  viewInvalid();
+})();
+</script>
+</body>
+</html>

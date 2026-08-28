@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Player Login — Trekkr</title>
+<meta name="description" content="Masuk ke akun pemain Trekkr untuk mengelola profil dan passport-mu."/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--or:#FF6A00;--ink:#16161A;--mu:#6B6B72;--bd:#E6E6EA;--bg:#F7F7F8;--card:#fff;--grn:#16A34A;--red:#DC2626;--grad:linear-gradient(90deg,#FF3830,#FFB000)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh}
+.wrap{max-width:440px;margin:0 auto;padding:26px 16px 60px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em;text-decoration:none;color:var(--ink)}
+.brand b{color:var(--or)}
+.back{font-size:13px;color:var(--mu);text-decoration:none}
+h1{font-size:26px;margin:10px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mu);font-size:14px;margin:0 0 22px;line-height:1.55}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--mu);margin:0 0 5px}
+.field{margin-bottom:14px}
+input{width:100%;padding:12px 13px;border:1px solid var(--bd);border-radius:11px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
+input:focus{outline:none;border-color:var(--or)}
+.btn{width:100%;padding:13px;border:none;border-radius:11px;background:var(--grad);color:#fff;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--bd)}
+.link{background:none;border:none;color:var(--or);font:inherit;font-weight:700;cursor:pointer;padding:0;font-size:13.5px;text-decoration:none}
+.center{text-align:center}
+.msg{padding:11px 13px;border-radius:10px;font-size:13.5px;font-weight:600;margin-bottom:14px;display:none}
+.msg.ok{display:block;background:#eafaf0;border:1px solid #bfe9cf;color:var(--grn)}
+.msg.err{display:block;background:#fdecec;border:1px solid #f6c9c9;color:var(--red)}
+.msg.info{display:block;background:#fff6ee;border:1px solid #ffd9b8;color:#9a4a00}
+.sep{display:flex;align-items:center;gap:10px;color:var(--mu);font-size:12.5px;margin:18px 0 14px}
+.sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--bd)}
+.foot{text-align:center;font-size:13.5px;color:var(--mu);line-height:1.6}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="https://trekkr.online/">Trekk<b>r</b></a>
+    <a class="back" href="https://trekkr.online/">&larr; Beranda</a>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+const SUPA_URL = "https://ftkbankqixnwssfrbqyc.supabase.co";
+const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0a2JhbmtxaXhud3NzZnJicXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0MDEsImV4cCI6MjEwMzM2NDQwMX0.RWVf6xehxQ9BPSK3ykDW8cikP9O5gvGRINwj9TAMaJQ";
+const API = (location.hostname==="trekkr.online"||(location.hostname.endsWith(".vercel.app")&&location.hostname.startsWith("trekkrgit"))) ? "/api" : "https://trekkr.online/api";
+const HOME = (location.hostname==="trekkr.online"||location.hostname.endsWith(".vercel.app")) ? "" : "https://trekkr.online";
+const TK = "trekkr_player_token";
+const $=(id)=>document.getElementById(id); const app=()=>$("app");
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function slug(n){return String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"");}
+function tok(){return localStorage.getItem(TK)||"";}
+function msg(t,k){const m=$("msg");if(!t){m.className="msg";m.textContent="";return;}m.textContent=t;m.className="msg "+(k||"err");window.scrollTo({top:0,behavior:"smooth"});}
+
+async function gotrue(path, body, token){
+  const r = await fetch(`${SUPA_URL}/auth/v1/${path}`, {method:"POST",headers:{apikey:SUPA_ANON,"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.msg||d.error_description||d.error||d.message||("HTTP "+r.status));
+  return d;
+}
+async function apiGet(path){const r=await fetch(`${API}/${path}`);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||("HTTP "+r.status));return d;}
+
+// After we have a token, figure out where the player belongs and go there.
+async function afterLogin(){
+  let me;
+  try{ me = await apiGet(`account/me?token=${encodeURIComponent(tok())}`); }
+  catch(e){ localStorage.removeItem(TK); msg("Sesi tidak valid, silakan masuk lagi."); return viewLogin(); }
+  if(me.player){
+    msg("");
+    location.href = `${HOME}/player/${slug(me.player.name)}`;
+    return;
+  }
+  if(me.claim && me.claim.status==="pending") return viewPending(me.claim);
+  // Logged in but no linked profile yet — send them to /join to claim/register.
+  viewNoProfile(me);
+}
+
+function viewLogin(){
+  app().innerHTML=`
+    <h1>Player Login</h1>
+    <p class="sub">Masuk dengan email &amp; password yang kamu daftarkan untuk mengelola profil pemainmu.</p>
+    <div class="card">
+      <div class="field"><label>Email</label><input id="email" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
+      <div class="field"><label>Password</label><input id="pass" type="password" placeholder="Password kamu" autocomplete="current-password"/></div>
+      <button class="btn" id="go">Masuk</button>
+      <div class="center" style="margin-top:14px"><button class="link" id="forgot">Lupa password?</button></div>
+    </div>
+    <div class="sep">belum punya akun?</div>
+    <div class="foot">Baru di Trekkr atau mau klaim profilmu? <a class="link" href="${HOME}/join">Daftar / Klaim di sini &rarr;</a></div>`;
+  $("go").onclick=doLogin;
+  $("forgot").onclick=()=>viewForgot();
+  $("pass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+}
+async function doLogin(){
+  const email=($("email").value||"").trim(), password=$("pass").value||"";
+  if(!email||!password){ msg("Isi email dan password."); return; }
+  const b=$("go"); b.disabled=true; b.textContent="Memproses…";
+  try{
+    const d=await gotrue("token?grant_type=password",{email,password});
+    localStorage.setItem(TK,d.access_token); msg("");
+    b.textContent="Memuat profil…";
+    await afterLogin();
+  }catch(e){
+    const t=/confirm|verified|not confirmed/i.test(e.message) ? "Email belum dikonfirmasi. Cek email kamu untuk link konfirmasi." : ("Gagal masuk: "+e.message);
+    msg(t); b.disabled=false; b.textContent="Masuk";
+  }
+}
+
+function viewForgot(){
+  app().innerHTML=`
+    <h1>Lupa Password</h1>
+    <p class="sub">Masukkan email akunmu. Kami kirim link untuk membuat password baru.</p>
+    <div class="card">
+      <div class="field"><label>Email</label><input id="femail" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
+      <button class="btn" id="send">Kirim link reset</button>
+      <div class="center" style="margin-top:14px"><button class="link" id="toLogin">&larr; Kembali ke login</button></div>
+    </div>`;
+  $("send").onclick=doForgot;
+  $("toLogin").onclick=()=>{msg("");viewLogin();};
+}
+async function doForgot(){
+  const email=($("femail").value||"").trim();
+  if(!email){ msg("Isi email dulu."); return; }
+  const b=$("send"); b.disabled=true; b.textContent="Mengirim…";
+  try{
+    await gotrue("recover",{email},null);
+    msg("Kalau email itu terdaftar, link reset sudah dikirim. Cek inbox (dan folder spam).","ok");
+  }catch(e){ msg("Gagal kirim reset: "+e.message); }
+  finally{ b.disabled=false; b.textContent="Kirim link reset"; }
+}
+
+function viewPending(claim){
+  app().innerHTML=`
+    <h1>Menunggu Persetujuan</h1>
+    <p class="sub">Klaim profil <b>${esc(claim.player_name)}</b> sedang ditinjau admin. Kamu akan dapat email begitu disetujui, lalu bisa login untuk mengelola profil.</p>
+    <div class="card center"><div style="font-size:34px;margin-bottom:6px">⏳</div><div style="font-weight:700">Sedang ditinjau admin</div></div>
+    <div class="foot" style="margin-top:6px"><button class="link" id="lo">Keluar</button></div>`;
+  $("lo").onclick=()=>{localStorage.removeItem(TK);msg("");viewLogin();};
+}
+function viewNoProfile(me){
+  app().innerHTML=`
+    <h1>Halo!</h1>
+    <p class="sub">Kamu masuk sebagai <b>${esc(me.email||"")}</b>, tapi akun ini belum terhubung ke profil pemain.</p>
+    <div class="card">
+      <a class="btn" href="${HOME}/join" style="display:block;text-align:center;text-decoration:none">Klaim / daftar profil</a>
+      <div class="center" style="margin-top:14px"><button class="link" id="lo">Keluar</button></div>
+    </div>`;
+  $("lo").onclick=()=>{localStorage.removeItem(TK);msg("");viewLogin();};
+}
+
+// ---- init: handle email-confirmation redirect hash, else login ----
+(function init(){
+  const h = new URLSearchParams((location.hash||"").replace(/^#/,""));
+  const type=h.get("type"), at=h.get("access_token");
+  if(at && (type==="signup"||type==="magiclink"||type==="email_change"||!type)){
+    // Confirmed via email link → we already have a session token.
+    localStorage.setItem(TK,at);
+    history.replaceState(null,"",location.pathname);
+    msg("Email terkonfirmasi ✓ Selamat datang!","ok");
+    afterLogin();
+    return;
+  }
+  if(h.get("error_description")){
+    msg("Link tidak valid / kedaluwarsa: "+h.get("error_description"));
+    history.replaceState(null,"",location.pathname);
+  }
+  if(tok()){ afterLogin(); } else { viewLogin(); }
+})();
+</script>
+</body>
+</html>

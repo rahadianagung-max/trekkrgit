@@ -1,11 +1,12 @@
-/* Injects an "Akun/Masuk" link into the site nav (desktop + mobile).
-   Shows "Akun" when a player is logged in, otherwise "Masuk". Idempotent. */
+/* Injects a "Player Login / Akun" link into the site nav (desktop + mobile).
+   Points to /login: logged-out players sign in there; logged-in players are
+   auto-forwarded to their own passport. Idempotent. */
 (function () {
   var onMain = location.hostname === "trekkr.online" || location.hostname.endsWith(".vercel.app");
-  var href = (onMain ? "" : "https://trekkr.online") + "/akun";
+  var href = (onMain ? "" : "https://trekkr.online") + "/login";
   var loggedIn = false;
   try { loggedIn = !!localStorage.getItem("trekkr_player_token"); } catch (e) {}
-  var label = loggedIn ? "Akun" : "Masuk";
+  var label = loggedIn ? "Akun" : "Player Login";
   function addTo(nav) {
     if (!nav || nav.querySelector("a[data-akun]")) return;
     var a = document.createElement("a");
