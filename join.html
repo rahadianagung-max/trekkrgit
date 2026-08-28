@@ -138,9 +138,10 @@ function renderNew(){
   $("dyn").innerHTML=`
     <div class="banner new">Nama belum terdaftar — buat profil baru. Kamu mulai <b>tanpa rating</b>; host akan menentukan level saat kamu bermain pertama kali di venue/komunitas mitra Trekkr.</div>
     <div class="row2">
+      <div class="field"><label>Gender</label><select id="nGender"><option value="M">Male</option><option value="F">Female</option></select></div>
       <div class="field"><label>Region / Kota <span class="opt">(opsional)</span></label><input id="nRegion" placeholder="cth. Jakarta" autocomplete="off"/></div>
-      <div class="field"><label>Instagram <span class="opt">(opsional)</span></label><input id="nIg" placeholder="username tanpa @" autocomplete="off"/></div>
     </div>
+    <div class="field"><label>Instagram <span class="opt">(opsional)</span></label><input id="nIg" placeholder="username tanpa @" autocomplete="off"/></div>
     <div class="field"><label>Email</label><input id="nEmail" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
     <div class="field"><label>Buat password</label><input id="nPass" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password"/><div class="note">Password ini yang kamu pakai untuk login nanti.</div></div>
     <div class="field"><label>Foto <span class="opt">(opsional)</span></label>
@@ -184,7 +185,7 @@ async function submitNew(){
   if(name.length<2){ m.className="msg err"; m.textContent="Masukkan nama lengkap."; return; }
   if(!validEmail(email)){ m.className="msg err"; m.textContent="Masukkan email yang valid."; return; }
   if(pass.length<6){ m.className="msg err"; m.textContent="Password minimal 6 karakter."; return; }
-  const body={name,email,password:pass,region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
+  const body={name,email,password:pass,gender:($("nGender").value||"M"),region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
   if(_photoData) body.photo=_photoData;
   const b=$("nGo"); b.disabled=true; b.textContent="Mendaftar…"; m.className="msg";
   const {ok,d}=await apiSend("account/register-new","POST",body);

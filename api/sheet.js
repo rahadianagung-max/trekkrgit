@@ -703,10 +703,11 @@ async function accountRegisterNew(body) {
   let user;
   try { user = await supaSignupEmail(email, password, { player_name: name }, `${appBaseUrl()}/login`); }
   catch (e) { return respond(400, { error: /registered|already/i.test(e.message) ? "Email ini sudah dipakai. Silakan login." : ("Gagal membuat akun: " + e.message) }); }
+  const gender = String(b.gender || "").trim().toUpperCase() === "F" ? "F" : "M";
   const now = new Date().toISOString();
   await supaRest("POST", "players", [{
     name, ig: String(b.ig || "").trim(), verified: "FALSE", display_name: name,
-    gender: "", region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
+    gender, region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
     clubs: "", created_at: now, user_id: user.id,
   }], "return=minimal");
   return respond(200, { ok: true });
@@ -909,6 +910,9 @@ async function getPlayerDetail(name) {
   const totalL = history.reduce((s, h) => s + h.l, 0);
   const totalMatches = totalW + totalL;
   const winRate = totalMatches > 0 ? Math.round((totalW / totalMatches) * 100) : 0;
+  // Unrated = no ELO_Log history at all (a self-registered player who has not been
+  // given a starting rating yet). Their ELO is assigned at their first PlayRank match.
+  const unrated = history.length === 0;
   const currentElo = history.length > 0 ? history[history.length - 1].elo : 1350;
 
   let streak = 0, streakType = "";
@@ -917,7 +921,7 @@ async function getPlayerDetail(name) {
     else if (history[i].delta < 0) { if (streakType === "" || streakType === "L") { streak++; streakType = "L"; } else break; }
   }
 
-  return respond(200, { player, stats: { currentElo, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history });
+  return respond(200, { player, stats: { currentElo, unrated, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history });
 }
 
 // Return a single player's matches across all venue tabs, de-duplicated, in ONE

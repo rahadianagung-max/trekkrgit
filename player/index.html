@@ -632,6 +632,9 @@ canvas#shareCanvas{display:none}
 .menu-toggle{display:none;background:transparent;border:1px solid var(--surface-high);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--on-surface);font-size:20px;cursor:pointer}.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 14px}.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:700;font-size:13px;color:var(--on-surface-variant);font-family:'Plus Jakarta Sans',sans-serif}.mobile-nav a:hover{background:var(--surface-container);color:var(--on-surface)}.mobile-nav.open{display:flex}@media(max-width:1023px){.menu-toggle{display:flex}}
 .pp-edit-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,106,0,.4);color:var(--primary);background:transparent;border-radius:var(--radius-pill);padding:7px 15px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--motion-base)}
 .pp-edit-btn:hover{background:rgba(255,106,0,.08)}
+.pp-unrated{display:flex;align-items:flex-start;gap:10px;margin:16px 0 4px;padding:13px 15px;border:1px solid rgba(255,106,0,.3);background:rgba(255,106,0,.06);border-radius:var(--radius-lg,16px);font-size:13px;line-height:1.55;color:var(--on-surface)}
+.pp-unrated .ti{color:var(--primary);font-size:18px;flex:0 0 auto;margin-top:1px}
+.pp-unrated b{font-weight:800}
 .edit-in{width:100%;border:1px solid rgba(115,118,136,.22);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;background:#F9FAFC;color:var(--on-surface)}
 </style>
 </head>
@@ -921,27 +924,32 @@ async function loadPlayer(){
 
 function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
   const ti=tierProg(s.currentElo);
+  const unrated=!!s.unrated;
+  const eloDisp=unrated?'Unrated':s.currentElo;
   document.title=`${p.name} — Trekkr Passport`;
   let h=`<article class="pp-hero"><div><img class="pp-photo" src="${p.photoUrl||'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%27120%27%3E%3Crect width=%27120%27 height=%27120%27 rx=%2716%27 fill=%27%23e5eeff%27/%3E%3Ccircle cx=%2760%27 cy=%2745%27 r=%2720%27 fill=%27%23d3e4fe%27/%3E%3Cpath d=%27M25 110c0-19 16-35 35-35s35 16 35 35%27 fill=%27%23d3e4fe%27/%3E%3C/svg%3E'}" onerror="ibbFallback(this)">
   ${p.verified?'<span class="pp-verified">Verified</span>':''}</div>
   <div><h2 class="pp-name">${(p.name).toUpperCase()}</h2><button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()"><i class="ti ti-shield-check" aria-hidden="true"></i> Klaim profil ini</button>
   <div class="pp-meta-grid">
-    <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value">${s.currentElo}</p></div>
-    <div><p class="pp-meta-label">Tier</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${ti.current}${buildCalibBadge(s.totalMatches)}</p></div>
+    <div><p class="pp-meta-label">ELO Rating</p><p class="pp-meta-value"${unrated?' style="color:var(--on-surface-variant)"':''}>${eloDisp}</p></div>
+    <div><p class="pp-meta-label">Tier</p><p class="pp-meta-value" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">${unrated?'<span style="color:var(--on-surface-variant)">Unrated</span>':ti.current+buildCalibBadge(s.totalMatches)}</p></div>
     <div><p class="pp-meta-label">Gender</p><p class="pp-meta-value">${p.gender==='F'?'Women':'Men'}</p></div>
     ${p.ig?`<div><p class="pp-meta-label">Instagram</p><p class="pp-meta-value">${p.ig}</p></div>`:`<div><p class="pp-meta-label">Region</p><p class="pp-meta-value">${p.region||'—'}</p></div>`}
   </div></div></article>`;
+
+  if(unrated) h+=`<div class="pp-unrated"><i class="ti ti-bolt" aria-hidden="true"></i><div><b>You're not rated yet.</b> Your ELO appears after your first <b>PlayRank</b> match. Play at any Trekkr-powered venue, league, or tournament to earn your rating.</div></div>`;
 
   h+=`<div class="pp-stats">
     <div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">${s.totalMatches}</p></div>
     <div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">${s.winRate}%</p></div>
     <div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">${s.totalW}/${s.totalL}</p></div>
     <div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">${s.streak||'—'}</p></div>
-    <div class="pp-stat"><p class="pp-stat-label">ELO</p><p class="pp-stat-val">${s.currentElo}</p></div>
+    <div class="pp-stat"><p class="pp-stat-label">ELO</p><p class="pp-stat-val"${unrated?' style="font-size:15px;color:var(--on-surface-variant)"':''}>${eloDisp}</p></div>
   </div>`;
 
-  // Inject calibration banner if still calibrating
-  if (isCalibrating(s.totalMatches)) {
+  // Inject calibration banner if still calibrating (but not for unrated players —
+  // they get the "not rated yet" note instead, until their first match seeds an ELO).
+  if (!unrated && isCalibrating(s.totalMatches)) {
     h += buildCalibBanner(s.totalMatches);
   }
 
@@ -2056,8 +2064,9 @@ function ppLogout(){ try{localStorage.removeItem(PP_TK);}catch(e){} _session={to
           <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px">Foto wajah — dipotong kotak &amp; dikecilkan otomatis.</div>
         </div>
       </div>
-      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Nama tampilan</label>
-      <input id="editName" class="edit-in" placeholder="Nama kamu">
+      <label class="pp-info-label" style="display:block;margin:14px 0 6px">Display name</label>
+      <input id="editName" class="edit-in" placeholder="Your name">
+      <div style="font-size:11px;color:var(--on-surface-variant);margin-top:5px;line-height:1.5">Shown only on tournament boards &amp; schedules. Your passport and rankings always use your full name.</div>
       <label class="pp-info-label" style="display:block;margin:14px 0 6px">Gender</label>
       <select id="editGender" class="edit-in"><option value="M">Male</option><option value="F">Female</option></select>
       <label class="pp-info-label" style="display:block;margin:14px 0 6px">Region / Kota</label>
