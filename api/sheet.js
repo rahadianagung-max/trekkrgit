@@ -449,7 +449,9 @@ const netlifyHandler = async (event) => {
 
     // --- PLAYER ACCOUNTS (Supabase Auth: self-service profiles) ---
     if (path === "account/me" && method === "GET") return await accountMe(params);
+    if (path === "account/register-new" && method === "POST") return await accountRegisterNew(body);
     if (path === "account/claim" && method === "POST") return await accountClaim(body);
+    if (path === "account/change-password" && method === "POST") return await accountChangePassword(body);
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
     if (path === "account/claims" && method === "GET") return await accountClaimsList(params);
     if (path === "account/claims/resolve" && method === "POST") return await accountClaimsResolve(body);
@@ -657,6 +659,73 @@ async function supaVerifyUser(token) {
   } catch (e) { return null; }
 }
 const PROFILE_FIELDS = ["display_name", "ig", "gender", "region", "clubs", "photo_url"];
+function supaAnonKey() { return process.env.SUPABASE_ANON_KEY || ""; }
+// Supabase Auth admin API (service key). e.g. supaAdmin("POST","users",{...}).
+async function supaAdmin(method, path, body) {
+  const r = await fetch(`${supaUrl()}/auth/v1/admin/${path}`, {
+    method, headers: { apikey: supaKey(), Authorization: `Bearer ${supaKey()}`, "Content-Type": "application/json" },
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+  const t = await r.text(); let d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+  if (!r.ok) throw new Error((d && (d.msg || d.error_description || d.error || d.message)) || `admin ${path} ${r.status}: ${t.slice(0, 150)}`);
+  return d;
+}
+// Public sign-up via GoTrue (sends the confirmation email). Uses the anon key.
+async function supaSignupEmail(email, password, data, redirectTo) {
+  const q = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : "";
+  const r = await fetch(`${supaUrl()}/auth/v1/signup${q}`, {
+    method: "POST", headers: { apikey: supaAnonKey(), "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, data: data || {} }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.msg || d.error_description || d.error || d.message || `signup ${r.status}`);
+  const u = d.user || d;
+  return { id: u && u.id, email: (u && u.email) || email };
+}
+function playerSlug(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+function passportUrl(name) { return `${appBaseUrl()}/player/${playerSlug(name)}`; }
+
+// Register a brand-new player: creates the login account (confirmation email) +
+// a new player row. New players are UNRATED until the host sets their level at
+// the first recorded match — so no ELO_Log row is written here.
+async function accountRegisterNew(body) {
+  const b = body || {};
+  const name = String(b.name || "").trim();
+  const email = normEmail(b.email);
+  const password = String(b.password || "");
+  if (!name) return respond(400, { error: "Nama wajib diisi" });
+  if (!validEmail(email)) return respond(400, { error: "Email tidak valid" });
+  if (password.length < 6) return respond(400, { error: "Password minimal 6 karakter" });
+  const exists = await supaRest("GET", `players?name=eq.${encodeURIComponent(name)}&select=name&limit=1`);
+  if (exists && exists.length) return respond(409, { error: "Nama sudah terdaftar di Trekkr — silakan klaim profil itu.", claim: true });
+  let photoUrl = "";
+  if (b.photo) { try { photoUrl = await uploadImage(b.photo, `profile_${playerSlug(name)}_${Date.now()}.jpg`); } catch (e) {} }
+  let user;
+  try { user = await supaSignupEmail(email, password, { player_name: name }, `${appBaseUrl()}/login`); }
+  catch (e) { return respond(400, { error: /registered|already/i.test(e.message) ? "Email ini sudah dipakai. Silakan login." : ("Gagal membuat akun: " + e.message) }); }
+  const now = new Date().toISOString();
+  await supaRest("POST", "players", [{
+    name, ig: String(b.ig || "").trim(), verified: "FALSE", display_name: name,
+    gender: "", region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
+    clubs: "", created_at: now, user_id: user.id,
+  }], "return=minimal");
+  return respond(200, { ok: true });
+}
+
+// Player changes their own password (must be logged in).
+async function accountChangePassword(body) {
+  const token = body && body.token;
+  const np = String((body && body.new_password) || "");
+  const user = await supaVerifyUser(token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  if (np.length < 6) return respond(400, { error: "Password minimal 6 karakter" });
+  const r = await fetch(`${supaUrl()}/auth/v1/user`, {
+    method: "PUT", headers: { apikey: supaAnonKey(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ password: np }),
+  });
+  if (!r.ok) { const t = await r.text(); return respond(400, { error: "Gagal ganti password: " + t.slice(0, 120) }); }
+  return respond(200, { ok: true });
+}
 
 async function accountMe(params) {
   const user = await supaVerifyUser(params && params.token);
@@ -671,19 +740,24 @@ async function accountMe(params) {
   return respond(200, { email: user.email, player, claim });
 }
 
+// Claim an existing player profile: creates the login account now (email +
+// password, no confirmation email — admin approval is the gate) and queues a
+// pending claim for admin moderation.
 async function accountClaim(body) {
-  const user = await supaVerifyUser(body && body.token);
-  if (!user) return respond(401, { error: "Silakan login dulu" });
-  const wanted = String((body && body.player_name) || "").trim();
+  const b = body || {};
+  const wanted = String(b.player_name || "").trim();
+  const email = normEmail(b.email);
+  const password = String(b.password || "");
   if (!wanted) return respond(400, { error: "Nama pemain wajib dipilih" });
-  const mine = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
-  if (mine && mine.length) return respond(400, { error: "Akun kamu sudah terhubung ke profil " + mine[0].name });
+  if (!validEmail(email)) return respond(400, { error: "Email tidak valid" });
+  if (password.length < 6) return respond(400, { error: "Password minimal 6 karakter" });
   const pl = await supaRest("GET", `players?name=eq.${encodeURIComponent(wanted)}&select=name,user_id&limit=1`);
   if (!pl || !pl.length) return respond(404, { error: "Pemain tidak ditemukan" });
   if (pl[0].user_id) return respond(400, { error: "Profil ini sudah diklaim akun lain" });
-  const ex = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&status=eq.pending&select=id&limit=1`);
-  if (ex && ex.length) return respond(400, { error: "Kamu sudah punya permintaan klaim yang menunggu persetujuan admin" });
-  await supaRest("POST", "profile_claims", [{ user_id: user.id, email: user.email, player_name: pl[0].name, status: "pending" }], "return=minimal");
+  let user;
+  try { user = await supaAdmin("POST", "users", { email, password, email_confirm: false }); }
+  catch (e) { return respond(400, { error: /registered|already|exist/i.test(e.message) ? "Email ini sudah dipakai. Kalau itu akunmu, login lalu ajukan klaim." : ("Gagal membuat akun: " + e.message) }); }
+  await supaRest("POST", "profile_claims", [{ user_id: user.id, email, player_name: pl[0].name, status: "pending" }], "return=minimal");
   return respond(200, { ok: true });
 }
 
@@ -717,14 +791,23 @@ async function accountClaimsResolve(body) {
   const action = String((body && body.action) || "").toLowerCase();
   const admin = String((body && body.admin) || "");
   if (!claimId || (action !== "approve" && action !== "reject")) return respond(400, { error: "claimId & action wajib" });
-  const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,player_name,status&limit=1`);
+  const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,email,player_name,status&limit=1`);
   if (!cr || !cr.length) return respond(404, { error: "Klaim tidak ditemukan" });
   const claim = cr[0];
   const now = new Date().toISOString();
   if (action === "approve") {
     // Link the player row only if still unclaimed (guards a race / double-claim).
     await supaRest("PATCH", `players?name=eq.${encodeURIComponent(claim.player_name)}&user_id=is.null`, { user_id: claim.user_id });
+    // Auto-confirm the account's email so they can log in right away.
+    try { await supaAdmin("PUT", `users/${claim.user_id}`, { email_confirm: true }); } catch (e) { console.error("confirm email:", e.message); }
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "approved", resolved_at: now, resolved_by: admin });
+    try {
+      const url = passportUrl(claim.player_name);
+      await sendBrevoEmail(claim.email, "Klaim profil Trekkr disetujui ✅",
+        `<p>Halo,</p><p>Klaim profil <b>${claim.player_name}</b> di Trekkr sudah <b>disetujui</b>. Kamu sekarang bisa login untuk mengelola profilmu.</p>`
+        + `<p><a href="${url}" style="background:#FF6A00;color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:700">Buka profil saya</a></p>`
+        + `<p style="color:#666;font-size:13px">Atau login di <a href="${appBaseUrl()}/login">${appBaseUrl()}/login</a> dengan email &amp; password yang kamu daftarkan.</p>`);
+    } catch (e) { console.error("claim approved email:", e.message); }
   } else {
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
   }
