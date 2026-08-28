@@ -83,7 +83,7 @@ function viewAuth(mode){
   $("logout").classList.add("hidden");
   app().innerHTML = `
     <h1>Akun Pemain</h1>
-    <p class="sub">Masuk atau daftar untuk mengelola profil Trekkr kamu sendiri.</p>
+    <p class="sub">${mode==="signup"?"Buat akun baru: isi email & <b>password baru buatanmu sendiri</b> — ini yang kamu pakai untuk login nanti.":"Sudah punya akun? Masuk di sini. <b>Baru pertama kali?</b> Klik tab <b>Daftar</b> dulu untuk membuat akun & password."}</p>
     <div class="tabs">
       <button class="tab ${mode!=="signup"?"on":""}" id="tLogin">Masuk</button>
       <button class="tab ${mode==="signup"?"on":""}" id="tSignup">Daftar</button>
