@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Trekkr",
+    "slug": "trekkr-player",
+    "scheme": "trekkr",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F6F3F0",
+    "splash": {
+      "backgroundColor": "#141110",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "online.trekkr.player"
+    },
+    "android": {
+      "package": "online.trekkr.player",
+      "adaptiveIcon": {
+        "backgroundColor": "#141110"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBase": "https://trekkr.online/api"
+    }
+  }
+}
