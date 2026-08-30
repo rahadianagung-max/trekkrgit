@@ -114,7 +114,16 @@
   }
 
   /* ---------- SHELL ---------- */
-  function renderShell() { setHTML('<div id="view"></div>' + tabbarHTML()); bindTabs(); renderView(); }
+  function renderShell() {
+    var header = S.session ? "" :
+      '<div class="appheader"><span class="ah-brand">Trekk<b>r</b></span>' +
+      '<button class="ah-signin" id="ah-signin">Sign in</button></div>';
+    setHTML(header + '<div id="view"></div>' + tabbarHTML());
+    var si = d.getElementById("ah-signin");
+    if (si) si.onclick = function () { S.view = "login"; render(); };
+    bindTabs();
+    renderView();
+  }
   function tabbarHTML() {
     var tabs = [["passport", "🎾", "Passport"], ["rankings", "🏆", "Rankings"], ["main", "📅", "Play"], ["profil", "👤", "Profile"]];
     var active = S.view;

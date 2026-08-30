@@ -106,6 +106,14 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .ttable td{padding:8px 4px;border-top:1px solid var(--line-soft)}
 .ttable td.r{text-align:right;font-variant-numeric:tabular-nums}
 
+/* guest top header */
+.appheader{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--safe-t) + 10px) 16px 10px;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.ah-brand{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:22px;letter-spacing:-.5px;color:var(--ink)}
+.ah-brand b{color:var(--or)}
+.ah-signin{border:none;background:var(--or);color:#fff;font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:10px}
+
 /* bottom tab bar */
 .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 8px calc(10px + var(--safe-b));z-index:30}
 .tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--faint);padding:4px}
