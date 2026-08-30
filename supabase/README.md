@@ -43,6 +43,5 @@ Data lama diimpor via CSV (Table Editor → Import data from CSV).
 ## Catatan
 
 - `league_series` belum dibuat (tab kosong/tak dipakai di kode).
-- `netlify/functions/sheet.js` (deploy Netlify lama) **belum** disambungkan ke
-  Supabase — masih Google Sheets. Target utama adalah Vercel (`api/sheet.js`).
+- Backend tunggal: Vercel `api/sheet.js` (Netlify sudah dipensiunkan/dihapus).
 - Kolom semua bertipe `text` (lift-and-shift). Bisa diperketat nanti.

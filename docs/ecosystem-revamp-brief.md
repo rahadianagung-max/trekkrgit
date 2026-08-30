@@ -1,6 +1,6 @@
 # SportsActvd Ecosystem Revamp — Design Brief for Claude Code
 
-**Scope:** Revamp of `trekkr.online` and `turnamenpadel.com` so the SportsActvd ecosystem synergy is visible in the interface itself. Both sites are static HTML deployed on Vercel/Netlify with a Google Sheets + serverless backend. Do not change backend endpoints or data contracts — this is a frontend/IA revamp only.
+**Scope:** Revamp of `trekkr.online` and `turnamenpadel.com` so the SportsActvd ecosystem synergy is visible in the interface itself. Both sites are static HTML deployed on Vercel with a Supabase / Google Sheets serverless backend. Do not change backend endpoints or data contracts — this is a frontend/IA revamp only.
 
 ---
 

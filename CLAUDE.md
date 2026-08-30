@@ -17,9 +17,10 @@ that bridges to a **Google Sheet** used as the database.
   service account.
 - **Database:** a Google Spreadsheet (`GOOGLE_SHEET_ID`). Each logical table is
   a tab (see `TABS` in `api/sheet.js`).
-- **Hosting:** deployed to both **Vercel** (`vercel.json`, primary) and
-  **Netlify** (`netlify.toml`). Subdomains (`venue.`, `admin.`, `superadmin.`)
-  are served by rewrites to their respective subdirectories.
+- **Hosting:** deployed to **Vercel** (`vercel.json`). Subdomains (`venue.`,
+  `admin.`, `superadmin.`) are served as separate Vercel projects on the same
+  repo (each pointed at its subdirectory). Stack is GitHub + Vercel + Supabase
+  only (Netlify has been retired).
 
 Note: much of the code, comments, and commit history is in **Indonesian**.
 Match the surrounding language when editing comments; keep code identifiers
@@ -28,13 +29,10 @@ in English.
 ## Repository layout
 
 ### Backend
-- `api/sheet.js` — **the active backend** (~4500 lines). Vercel serverless
+- `api/sheet.js` — **the active backend** (~5800 lines). Vercel serverless
   function; ends with a Vercel adapter (`module.exports = async (req, res)`)
-  wrapping the internal `netlifyHandler`. All routes are registered here.
-- `netlify/functions/sheet.js` — **older/partial copy** (~1200 lines) used only
-  by the Netlify deploy target. It lags behind `api/sheet.js`. Treat
-  `api/sheet.js` as the source of truth; only touch the Netlify copy if you are
-  deliberately maintaining the Netlify deployment.
+  wrapping the internal request handler (`netlifyHandler`, a legacy name — the
+  Netlify target is gone). All routes are registered here.
 - `package.json` — backend deps only (`googleapis`). Root has no build.
 
 ### Shared frontend assets
@@ -52,8 +50,9 @@ in English.
 `how-trekkr-works.html`, `about.html`, `market.html`, `register.html`,
 `recap.html`, plus the `re-*.html` (Ranked Event) and `reg-admin.html` /
 `marketintelligence.html` tools. Clean URLs (`/rankings` → `rankings.html`) are
-configured in `netlify.toml`. Some `dir/index.html` variants exist for the same
-routes — keep them in sync when restyling.
+handled by Vercel (`vercel.json` rewrites + Vercel clean-URL handling). Some
+`dir/index.html` variants exist for the same routes — keep them in sync when
+restyling.
 
 ### App subdirectories
 - `admin/`, `superadmin/`, `venue/` — role-scoped SPAs served on subdomains.
@@ -145,9 +144,9 @@ cd analytics && npm install && npm run build   # esbuild → self-contained bund
 - **Shared JS is duplicated across app folders** (`trekkr-api.js` copies). If
   you change the API client, update every copy (`./`, `admin/`, `player/`,
   `superadmin/`, `venue/`) so subdomains don't drift.
-- **Routing lives in `netlify.toml` and `vercel.json`.** Adding a page usually
-  means adding a rewrite. Don't rename or delete existing routes without a
-  redirect — external links depend on them.
+- **Routing lives in `vercel.json`.** Adding a page usually means adding a
+  rewrite. Don't rename or delete existing routes without a redirect — external
+  links depend on them.
 - **API contract stability.** The Google Sheet column order and JSON field
   names are a contract shared by many pages. Adding fields is fine; renaming or
   reordering existing ones is a breaking change.
