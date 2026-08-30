@@ -1,7 +1,7 @@
 {
   "name": "Trekkr Player",
   "short_name": "Trekkr",
-  "description": "Passport, ranking & event padel kamu — ELO Trekkr.",
+  "description": "Your padel passport, ranking & events — Trekkr ELO.",
   "start_url": "/app",
   "scope": "/app/",
   "display": "standalone",
