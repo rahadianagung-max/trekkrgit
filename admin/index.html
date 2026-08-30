@@ -741,6 +741,11 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div style="font-size:13px;color:var(--txt)" id="rm-rec-text">—</div>
             </div>
 
+            <div id="rm-anchor-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm)">
+              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⚓ Anchor pool kalibrasi</div>
+              <div style="font-size:13px;color:var(--txt)" id="rm-anchor-text">—</div>
+            </div>
+
             <div class="rm-alert rm-alert-red hidden" id="rm-players-error"></div>
 
             <div class="rm-search-wrap">
@@ -1288,7 +1293,9 @@ async function rmLoadPlayers() {
       .map(p => ({
         ...p,
         elo: eloMap[p.name]?.elo || RM.startElo,
-        matchCount: (eloMap[p.name]?.w||0)+(eloMap[p.name]?.l||0),
+        // Career matches (server now returns .matches = Σ w+l across all rows);
+        // fall back to last-row w+l for older API responses.
+        matchCount: (eloMap[p.name]?.matches ?? ((eloMap[p.name]?.w||0)+(eloMap[p.name]?.l||0))),
       }));
     rmRenderPlayers();
   } catch(e) {
@@ -1360,6 +1367,33 @@ function rmTogglePlayer(name) {
   rmRenderPlayers();
   rmUpdateStartBtn();
   rmUpdateRec();
+  rmUpdateAnchorRec();
+}
+
+/* Anchor pool (Step 4): sesi kalibrasi jangan new-player-only — dorong admin
+   nyampur pemain established biar ELO pemain baru ke-anchor ke skala absolut.
+   Non-blocking (cuma saran), sesuai workflow venue yang manual. */
+const ANCHOR_MIN = 2;   // minimal anchor saat ada pemain kalibrasi (tunable)
+function rmIsAnchor(p){
+  const v = String(p.verified).toUpperCase()==='TRUE' || p.verified===true;
+  return v || (Number(p.matchCount)||0) >= 15;   // established: verified atau sudah ≥15 match
+}
+function rmUpdateAnchorRec(){
+  const banner=document.getElementById('rm-anchor-banner');
+  if(!banner) return;
+  const sel=RM.selectedPlayers;
+  const calibrating=sel.filter(p=>(Number(p.matchCount)||0)<15).length;
+  const anchors=sel.filter(rmIsAnchor).length;
+  const target=Math.max(ANCHOR_MIN, RM.courts||1);
+  if(calibrating>0 && anchors<target){
+    const need=target-anchors;
+    document.getElementById('rm-anchor-text').innerHTML=
+      `Sesi ini ada <strong>${calibrating} pemain baru/kalibrasi</strong> tapi baru <strong>${anchors} pemain established</strong>. `+
+      `Tambah minimal <strong>${need} lagi</strong> (terverifikasi atau sudah ≥15 match) biar rating pemain baru ke-anchor akurat. Kamu tetap bisa lanjut.`;
+    banner.style.display='block';
+  } else {
+    banner.style.display='none';
+  }
 }
 
 function rmRenderChips() {

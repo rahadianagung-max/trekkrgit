@@ -2207,12 +2207,16 @@ async function getLatestElo() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const rows = res.data.values || [];
-  const latest = {};
+  const latest = {}, career = {};
   rows.forEach((r) => {
     if (r[1]) {
       latest[r[1]] = { sessionId: r[0], elo: parseInt(r[2]) || 1350, delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0, l: parseInt(r[5]) || 0, timestamp: r[6] || "" };
+      // career matches = Σ(wins+losses) across ALL rows (the last-row w/l alone
+      // understates it). Used for calibration status + anchor-pool detection.
+      career[r[1]] = (career[r[1]] || 0) + (parseInt(r[4]) || 0) + (parseInt(r[5]) || 0);
     }
   });
+  Object.keys(latest).forEach((n) => { latest[n].matches = career[n] || 0; });
   return respond(200, { players: latest });
 }
 
