@@ -33,6 +33,8 @@ Jalankan berurutan di Supabase SQL Editor:
 6. `migrations/06_extra_tables.sql`
 7. `migrations/07_schema_fixes.sql`
 8. `migrations/08_enable_rls.sql` (keamanan; sebelum go-live)
+9. `migrations/09_player_accounts.sql`
+10. `migrations/10_playrank_seed.sql` (kolom `seed_estimate` — PlayRank Step 1)
 
 Data lama diimpor via CSV (Table Editor → Import data from CSV).
 

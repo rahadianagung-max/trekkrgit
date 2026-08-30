@@ -704,12 +704,28 @@ async function accountRegisterNew(body) {
   try { user = await supaSignupEmail(email, password, { player_name: name }, `${appBaseUrl()}/login`); }
   catch (e) { return respond(400, { error: /registered|already/i.test(e.message) ? "Email ini sudah dipakai. Silakan login." : ("Gagal membuat akun: " + e.message) }); }
   const gender = String(b.gender || "").trim().toUpperCase() === "F" ? "F" : "M";
+  // Seed placement estimate — SEED ONLY: dipakai buat kualitas matchmaking di
+  // sesi kalibrasi awal, BUKAN ELO/tier resmi. Whitelist ke nilai anchor yang
+  // dikenal (kosong = "nggak yakin"/tak diisi → biar host yang nge-seed).
+  const SEED_ALLOWED = ["900", "1000", "1500"];
+  const seedEstimate = SEED_ALLOWED.includes(String(b.seedEstimate || "").trim()) ? String(b.seedEstimate).trim() : "";
   const now = new Date().toISOString();
-  await supaRest("POST", "players", [{
+  const playerRow = {
     name, ig: String(b.ig || "").trim(), verified: "FALSE", display_name: name,
     gender, region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
     clubs: "", created_at: now, user_id: user.id,
-  }], "return=minimal");
+  };
+  if (seedEstimate) playerRow.seed_estimate = seedEstimate;
+  try {
+    await supaRest("POST", "players", [playerRow], "return=minimal");
+  } catch (e) {
+    // Fallback tahan-urutan: kalau migration 10 (kolom seed_estimate) belum
+    // jalan di DB, jangan gagalkan registrasi — ulangi tanpa field seed.
+    if (seedEstimate && /seed_estimate/i.test(String(e && e.message))) {
+      delete playerRow.seed_estimate;
+      await supaRest("POST", "players", [playerRow], "return=minimal");
+    } else throw e;
+  }
   return respond(200, { ok: true });
 }
 
