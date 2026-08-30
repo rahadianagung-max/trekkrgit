@@ -48,6 +48,8 @@
     getLeaderboard: function (params) { return request("elo/leaderboard" + qs(params)); },
     getTierBoundaries: function () { return request("tiers/boundaries"); },
     updateProfile: function (token, patch) { return request("account/profile", { method: "PUT", body: Object.assign({ token: token }, patch) }); },
+    getSchedule: function (params) { return request("schedule" + qs(params)); },
+    getTrackedEvents: function () { return request("tracked-events"); },
   };
 
   // Series Tier label from ELO + dynamic cutoffs (fallback to absolute).

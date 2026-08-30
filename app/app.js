@@ -14,6 +14,7 @@
     prev: null,
     rankFilter: "all",
     card: null,         // data for the shareable night card
+    playerView: "",     // name for the mini-profile view
   };
 
   /* ---------- helpers ---------- */
@@ -40,20 +41,25 @@
     setHTML('<div class="center"><div class="spinner"></div></div>');
     sb.auth.getSession().then(function (r) {
       S.session = r.data.session; S.token = S.session ? S.session.access_token : null;
+      S.view = S.session ? "passport" : "rankings";
       render();
     });
     sb.auth.onAuthStateChange(function (_e, session) {
+      var wasGuest = !S.session;
       S.session = session; S.token = session ? session.access_token : null;
       S.me = null; S.myName = ""; S.card = null;
+      if (session && (wasGuest || S.view === "login")) S.view = "passport";
+      if (!session) S.view = "rankings";
       render();
     });
   }
-  function render() { if (!S.session) return renderLogin(); renderShell(); }
+  function render() { if (S.view === "login") return renderLogin(); renderShell(); }
 
   /* ---------- LOGIN ---------- */
   function renderLogin() {
     setHTML(
       '<div class="login-wrap">' +
+        '<button class="link" id="lback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
         '<div class="brand">Trekk<b>r</b></div>' +
         '<p class="sub">Sign in to your player account.</p>' +
         '<div class="field"><label class="label">Email</label>' +
@@ -69,6 +75,7 @@
       '</div>'
     );
     maybeIosHint();
+    d.getElementById("lback").onclick = function () { S.view = "rankings"; render(); };
     var go = d.getElementById("go");
     async function submit() {
       var email = (d.getElementById("email").value || "").trim();
@@ -91,7 +98,9 @@
   function renderShell() { setHTML('<div id="view"></div>' + tabbarHTML()); bindTabs(); renderView(); }
   function tabbarHTML() {
     var tabs = [["passport", "🎾", "Passport"], ["rankings", "🏆", "Rankings"], ["main", "📅", "Play"], ["profil", "👤", "Profile"]];
-    var active = (S.view === "ranked-info") ? "profil" : S.view;
+    var active = S.view;
+    if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
+    if (S.view === "player") active = "rankings";
     return '<nav class="tabbar">' + tabs.map(function (t) {
       return '<button class="tab' + (t[0] === active ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>';
     }).join("") + '</nav>';
@@ -104,11 +113,19 @@
   function refreshTabbar() { var old = d.querySelector(".tabbar"); if (old) old.outerHTML = tabbarHTML(); bindTabs(); }
   function viewEl() { return d.getElementById("view"); }
   function renderView() {
-    if (S.view === "passport") return renderPassport();
+    if (S.view === "passport") return S.session ? renderPassport() : renderSignIn("your passport");
     if (S.view === "rankings") return renderRankings();
     if (S.view === "main") return renderMain();
-    if (S.view === "profil") return renderProfil();
+    if (S.view === "profil") return S.session ? renderProfil() : renderSignIn("your profile");
     if (S.view === "ranked-info") return renderRankedInfo();
+    if (S.view === "player") return renderPlayerProfile();
+  }
+  function renderSignIn(what) {
+    viewEl().innerHTML = '<div class="screen"><div class="emptybig"><div class="em">🎾</div>' +
+      '<h1 class="page" style="margin-top:14px">Sign in</h1>' +
+      '<p style="color:var(--mu);font-size:14px;line-height:1.6;max-width:32ch;margin:0 auto">Sign in to see ' + esc(what) + '. You can browse Rankings &amp; Play without an account.</p>' +
+      '<button class="btn" id="signin" style="max-width:240px;margin:18px auto 0">Sign in / Register</button></div></div>';
+    d.getElementById("signin").onclick = function () { S.view = "login"; render(); };
   }
 
   async function ensureMe() { if (!S.me) S.me = await API.accountMe(S.token); S.myName = (S.me && S.me.player && S.me.player.name) || ""; return S.me; }
@@ -300,11 +317,11 @@
       var rows = list.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
         var rank = list.indexOf(p) + 1;
         var mine = S.myName && norm(p.name) === norm(S.myName);
-        return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '">' +
+        return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
           '<span class="rk">' + rank + '</span>' +
           '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + '</span>' +
           '<span class="mt">' + esc(API.tierName(p.elo, cut)) + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
-          '<span class="el">' + p.elo + '</span></div>';
+          '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
       }).join("");
       viewEl().innerHTML = '<div class="screen">' +
         '<div class="rtitle">Rankings</div><div class="rsub">Calibrated players (15+ matches) · national</div>' +
@@ -312,16 +329,101 @@
         (rows || '<div class="emptybig"><div class="em">🏆</div><p>No players in this filter yet.</p></div>') +
         '</div>';
       Array.prototype.forEach.call(d.querySelectorAll(".chip"), function (c) { c.onclick = function () { S.rankFilter = c.getAttribute("data-f"); renderRankings(); }; });
+      Array.prototype.forEach.call(d.querySelectorAll(".rrow"), function (rw) {
+        rw.onclick = function () { S.playerView = rw.getAttribute("data-name"); S.view = "player"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
+      });
     } catch (e) { viewEl().innerHTML = errorBox("Couldn't load rankings.", renderRankings); }
   }
 
-  /* ---------- PLAY (placeholder) ---------- */
-  function renderMain() {
-    viewEl().innerHTML = '<div class="screen">' +
-      '<h1 class="page">Play</h1>' +
-      '<div class="emptybig"><div class="em">📅</div>' +
-      '<p style="max-width:34ch;margin:12px auto 0">PlayRank sessions &amp; events will show up here. The <b>Register</b> button opens the link set by the venue admin per event.</p>' +
-      '<p style="color:var(--faint);font-size:12.5px;margin-top:10px">Coming soon.</p></div></div>';
+  /* ---------- PLAYER mini-profile (read-only) ---------- */
+  async function renderPlayerProfile() {
+    var name = S.playerView;
+    viewEl().innerHTML = '<div class="screen"><button class="link" id="back" style="padding-left:0">‹ Back</button><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
+    d.getElementById("back").onclick = function () { S.view = "rankings"; refreshTabbar(); renderView(); };
+    try {
+      var r = await Promise.all([
+        API.getPlayer(name).catch(function () { return {}; }),
+        API.getEloHistory(name).catch(function () { return { history: [] }; }),
+        ensureCut(),
+      ]);
+      var det = r[0] || {}, hist = (r[1] && r[1].history) || [], cut = r[2];
+      var elo = det.currentElo != null ? det.currentElo : (det.elo != null ? det.elo : (hist.length ? hist[hist.length - 1].elo : null));
+      var unrated = !!det.unrated || elo == null;
+      var wins = det.wins != null ? det.wins : det.totalWins;
+      var losses = det.losses != null ? det.losses : det.totalLosses;
+      var matches = det.totalMatches != null ? det.totalMatches : (det.matches != null ? det.matches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0));
+      var recent = hist.slice(-6).reverse();
+      var display = det.displayName || name;
+      var photo = det.photoUrl || "";
+      var region = det.region || "";
+      var mine = S.myName && norm(name) === norm(S.myName);
+
+      viewEl().innerHTML = '<div class="screen">' +
+        '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
+        '<div class="p-top"><div><div class="p-hi">Player</div><div class="p-name">' + esc(display) + (mine ? " · you" : "") + '</div>' +
+          (region ? '<div class="p-meta">' + esc(region) + '</div>' : "") + '</div>' +
+          '<div class="ava">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</div></div>' +
+        '<div class="hero">' + (unrated
+          ? '<p class="lbl">ELO Rating</p><p class="num" style="font-size:34px">Unrated</p>'
+          : '<p class="lbl">ELO Rating</p><p class="num">' + elo + '</p><span class="tier">🏆 ' + esc(API.tierName(elo, cut)) + '</span>') + '</div>' +
+        '<div class="statrow"><div class="stat"><b>' + (wins != null ? wins : "–") + '</b><span>Wins</span></div>' +
+          '<div class="stat"><b>' + (losses != null ? losses : "–") + '</b><span>Losses</span></div>' +
+          '<div class="stat"><b>' + (matches != null ? matches : "–") + '</b><span>Matches</span></div></div>' +
+        (mine ? "" : '<button class="btn ghost soon" id="challenge" style="margin-top:14px">Challenge ' + esc(display.split(" ")[0]) + '</button>') +
+        (recent.length ? '<div class="sec">Recent ELO</div>' + recent.map(function (h) {
+          var up = (h.delta || 0) >= 0;
+          return '<div class="hitem"><span class="d">' + esc(fmtDate(h.timestamp)) + '</span><span class="e">' + h.elo + '</span><span class="' + (up ? "up" : "dn") + '">' + (up ? "▲ +" : "▼ ") + Math.abs(h.delta || 0) + '</span></div>';
+        }).join("") : "") +
+        '</div>';
+      d.getElementById("back").onclick = function () { S.view = "rankings"; refreshTabbar(); renderView(); };
+      var ch = d.getElementById("challenge"); if (ch) ch.onclick = function () { toast("Challenge players — coming soon 🔜"); };
+    } catch (e) {
+      viewEl().innerHTML = errorBox("Couldn't load this player.", function () { renderPlayerProfile(); });
+    }
+  }
+
+  /* ---------- PLAY (sessions + events) ---------- */
+  async function renderMain() {
+    viewEl().innerHTML = '<div class="screen"><h1 class="page">Play</h1><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
+    try {
+      var r = await Promise.all([
+        API.getSchedule({}).catch(function () { return { schedule: [] }; }),
+        API.getTrackedEvents().catch(function () { return { events: [] }; }),
+      ]);
+      var sched = (r[0] && r[0].schedule) || [];
+      var events = (r[1] && r[1].events) || [];
+
+      var sessHTML = sched.slice(0, 20).map(function (s) {
+        var when = [s.date, s.startTime].filter(Boolean).join(" · ");
+        var spots = (s.spotsLeft != null) ? (s.spotsLeft + " spots left") : "";
+        var price = s.pricePerPlayer ? ("Rp" + Number(s.pricePerPlayer).toLocaleString("id-ID")) : "";
+        var meta = [s.venue || s.area, when].filter(Boolean).join(" · ");
+        var sub = [spots, price].filter(Boolean).join(" · ");
+        var btn = s.whatsappUrl
+          ? '<a class="btn" style="text-decoration:none;text-align:center;margin-top:10px" href="' + esc(s.whatsappUrl) + '" target="_blank" rel="noopener">Register</a>'
+          : "";
+        return '<div class="plain"><h3>' + esc(s.type || "PlayRank") + (s.venue ? " · " + esc(s.venue) : "") + '</h3>' +
+          '<p>' + esc(meta) + (sub ? '<br>' + esc(sub) : "") + '</p>' + btn + '</div>';
+      }).join("");
+
+      var evHTML = events.slice(0, 20).map(function (e) {
+        var btn = e.url
+          ? '<a class="btn ghost" style="text-decoration:none;text-align:center;margin-top:10px" href="' + esc(e.url) + '" target="_blank" rel="noopener">View / Register</a>'
+          : "";
+        var logo = e.logoUrl ? '<img src="' + esc(e.logoUrl) + '" alt="" style="width:40px;height:40px;border-radius:9px;object-fit:cover;float:right;margin-left:10px"/>' : "";
+        return '<div class="plain">' + logo + '<h3>' + esc(e.name) + '</h3>' +
+          '<p>' + esc([e.location, e.monthYear].filter(Boolean).join(" · ")) + '</p>' + btn + '</div>';
+      }).join("");
+
+      var body = "";
+      if (sessHTML) body += '<div class="sec" style="margin-top:2px">PlayRank sessions</div>' + sessHTML;
+      if (evHTML) body += '<div class="sec">Events</div>' + evHTML;
+      if (!body) body = '<div class="emptybig"><div class="em">📅</div><p style="max-width:32ch;margin:12px auto 0">No upcoming sessions or events yet. Check back soon.</p></div>';
+
+      viewEl().innerHTML = '<div class="screen"><h1 class="page">Play</h1>' + body + '</div>';
+    } catch (e) {
+      viewEl().innerHTML = errorBox("Couldn't load Play.", renderMain);
+    }
   }
 
   /* ---------- PROFILE ---------- */
