@@ -120,6 +120,7 @@
     var active = S.view;
     if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
     if (S.view === "player") active = "rankings";
+    if (S.view === "edit") active = "profil";
     return '<nav class="tabbar">' + tabs.map(function (t) {
       return '<button class="tab' + (t[0] === active ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>';
     }).join("") + '</nav>';
@@ -138,6 +139,7 @@
     if (S.view === "profil") return S.session ? renderProfil() : renderSignIn("your profile");
     if (S.view === "ranked-info") return renderRankedInfo();
     if (S.view === "player") return renderPlayerProfile();
+    if (S.view === "edit") return S.session ? renderEditProfile() : renderSignIn("your profile");
   }
   function renderSignIn(what) {
     viewEl().innerHTML = '<div class="screen"><div class="emptybig"><div class="em">🎾</div>' +
@@ -472,14 +474,110 @@
       viewEl().innerHTML = '<div class="screen">' +
         '<h1 class="page">Profile</h1>' +
         '<div class="plain"><h3>' + esc(name) + '</h3><p>' + esc(me.email || "") + '</p></div>' +
+        '<button class="plain" id="edit" style="width:100%;text-align:left;border:1px solid var(--line)"><h3>✏️ Edit profile</h3><p>Display name, photo, IG, region &amp; password.</p></button>' +
         '<button class="plain" id="howto" style="width:100%;text-align:left;border:1px solid var(--line)"><h3>🧭 How to get ranked</h3><p>ELO, tiers &amp; how to climb.</p></button>' +
-        '<a class="plain" style="display:block;text-decoration:none" href="https://trekkr.online/player/' + slug((me.player && me.player.name) || "") + '" target="_blank" rel="noopener"><h3>✏️ Edit profile (web)</h3><p>Change display name, photo, IG, region.</p></a>' +
-        '<a class="plain" style="display:block;text-decoration:none" href="https://trekkr.online/reset" target="_blank" rel="noopener"><h3>🔑 Change password</h3><p>Via the password reset link.</p></a>' +
         '<button class="btn ghost" id="logout" style="margin-top:16px">Sign out</button>' +
         '</div>';
       d.getElementById("logout").onclick = function () { sb.auth.signOut(); };
+      d.getElementById("edit").onclick = function () { S.view = "edit"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
       d.getElementById("howto").onclick = function () { S.prev = "profil"; S.view = "ranked-info"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
     } catch (e) { viewEl().innerHTML = errorBox("Couldn't load your profile.", renderProfil); }
+  }
+
+  /* ---------- EDIT PROFILE ---------- */
+  function resizePhoto(file) {
+    return new Promise(function (res, rej) {
+      if (!/^image\//.test(file.type)) return rej(new Error("Not an image"));
+      var r = new FileReader();
+      r.onload = function () {
+        var im = new Image();
+        im.onload = function () {
+          var M = 512, s = Math.min(1, M / Math.max(im.width, im.height));
+          var w2 = Math.round(im.width * s), h2 = Math.round(im.height * s);
+          var cv = d.createElement("canvas"); cv.width = w2; cv.height = h2;
+          cv.getContext("2d").drawImage(im, 0, 0, w2, h2);
+          res(cv.toDataURL("image/jpeg", 0.85));
+        };
+        im.onerror = rej; im.src = r.result;
+      };
+      r.onerror = rej; r.readAsDataURL(file);
+    });
+  }
+  async function renderEditProfile() {
+    viewEl().innerHTML = '<div class="screen"><button class="link" id="back" style="padding-left:0">‹ Back</button><div class="center" style="min-height:30vh"><div class="spinner"></div></div></div>';
+    d.getElementById("back").onclick = function () { S.view = "profil"; refreshTabbar(); renderView(); };
+    var newPhoto = null;
+    try {
+      var me = await ensureMe();
+      var p = me.player || {};
+      if (!p.name) return renderProfil();
+      var curPhoto = p.photo_url || p.photoUrl || "";
+      var gM = (String(p.gender || "M").toUpperCase() === "F") ? "" : "selected";
+      var gF = (String(p.gender || "M").toUpperCase() === "F") ? "selected" : "";
+      viewEl().innerHTML = '<div class="screen">' +
+        '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
+        '<h1 class="page" style="margin-top:4px">Edit profile</h1>' +
+        '<div class="field"><label class="label">Photo</label><div style="display:flex;align-items:center;gap:14px">' +
+          '<div class="ava" id="pv" style="width:62px;height:62px;border-radius:14px">' + (curPhoto ? '<img src="' + esc(curPhoto) + '" alt=""/>' : esc(initials(p.displayName || p.name))) + '</div>' +
+          '<label class="btn ghost" style="width:auto;padding:10px 14px;margin:0">Upload<input type="file" id="photo" accept="image/*" style="display:none"></label></div></div>' +
+        '<div class="field"><label class="label">Display name</label><input class="input" id="dname" value="' + esc(p.displayName || p.name) + '"/></div>' +
+        '<div class="field"><label class="label">Instagram</label><input class="input" id="ig" placeholder="username" value="' + esc(String(p.ig || "").replace(/^@+/, "")) + '"/></div>' +
+        '<div class="field"><label class="label">Region / City</label><input class="input" id="region" placeholder="e.g. Jakarta" value="' + esc(p.region || "") + '"/></div>' +
+        '<div class="field"><label class="label">Gender</label><select class="input" id="gender"><option value="M" ' + gM + '>Male</option><option value="F" ' + gF + '>Female</option></select></div>' +
+        '<div class="msg err hidden" id="perr"></div>' +
+        '<button class="btn" id="save">Save changes</button>' +
+        '<div class="sec" style="margin-top:26px">Change password</div>' +
+        '<div class="field"><label class="label">New password</label><input class="input" id="np" type="password" placeholder="Min 6 characters" autocomplete="new-password"/></div>' +
+        '<div class="field"><label class="label">Confirm password</label><input class="input" id="np2" type="password" autocomplete="new-password"/></div>' +
+        '<div class="msg err hidden" id="pwerr"></div>' +
+        '<button class="btn ghost" id="savepw">Update password</button>' +
+        '</div>';
+      d.getElementById("back").onclick = function () { S.view = "profil"; refreshTabbar(); renderView(); };
+      d.getElementById("photo").addEventListener("change", async function (e) {
+        var f = e.target.files && e.target.files[0]; if (!f) return;
+        try { newPhoto = await resizePhoto(f); d.getElementById("pv").innerHTML = '<img src="' + newPhoto + '" alt=""/>'; }
+        catch (err) { toast("Please pick an image file"); }
+        e.target.value = "";
+      });
+      var saveBtn = d.getElementById("save");
+      saveBtn.onclick = async function () {
+        var err = d.getElementById("perr"); err.classList.add("hidden");
+        var updates = {
+          display_name: (d.getElementById("dname").value || "").trim(),
+          ig: (d.getElementById("ig").value || "").trim().replace(/^@+/, ""),
+          region: (d.getElementById("region").value || "").trim(),
+          gender: d.getElementById("gender").value || "M",
+        };
+        if (!updates.display_name) { err.textContent = "Display name can't be empty."; err.classList.remove("hidden"); return; }
+        if (newPhoto) updates.photo = newPhoto;
+        saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+        try {
+          await API.updateProfile(S.token, updates);
+          S.me = null; await ensureMe();
+          toast("Profile saved ✓");
+          S.view = "profil"; refreshTabbar(); renderView();
+        } catch (e2) {
+          err.textContent = e2.message || "Couldn't save."; err.classList.remove("hidden");
+          saveBtn.disabled = false; saveBtn.textContent = "Save changes";
+        }
+      };
+      var savePw = d.getElementById("savepw");
+      savePw.onclick = async function () {
+        var e1 = d.getElementById("pwerr"); e1.classList.add("hidden");
+        var np = d.getElementById("np").value || "", np2 = d.getElementById("np2").value || "";
+        if (np.length < 6) { e1.textContent = "Password must be at least 6 characters."; e1.classList.remove("hidden"); return; }
+        if (np !== np2) { e1.textContent = "Passwords don't match."; e1.classList.remove("hidden"); return; }
+        savePw.disabled = true; savePw.textContent = "Updating…";
+        try {
+          await API.changePassword(S.token, np);
+          d.getElementById("np").value = ""; d.getElementById("np2").value = "";
+          toast("Password updated ✓");
+        } catch (e2) { e1.textContent = e2.message || "Couldn't update password."; e1.classList.remove("hidden"); }
+        savePw.disabled = false; savePw.textContent = "Update password";
+      };
+    } catch (e) {
+      viewEl().innerHTML = errorBox("Couldn't load the editor.", function () { renderEditProfile(); });
+    }
   }
 
   /* ---------- HOW TO GET RANKED (education) ---------- */

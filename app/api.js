@@ -47,7 +47,10 @@
     getEloHistory: function (name) { return request("elo/history?player=" + encodeURIComponent(name)); },
     getLeaderboard: function (params) { return request("elo/leaderboard" + qs(params)); },
     getTierBoundaries: function () { return request("tiers/boundaries"); },
-    updateProfile: function (token, patch) { return request("account/profile", { method: "PUT", body: Object.assign({ token: token }, patch) }); },
+    // Edit own profile. `updates` may include display_name, ig, gender, region,
+    // clubs, and photo (base64 data URL → uploaded server-side).
+    updateProfile: function (token, updates) { return request("account/profile", { method: "PUT", body: { token: token, updates: updates } }); },
+    changePassword: function (token, newPassword) { return request("account/change-password", { method: "POST", body: { token: token, new_password: newPassword } }); },
     getSchedule: function (params) { return request("schedule" + qs(params)); },
     getTrackedEvents: function () { return request("tracked-events"); },
   };
