@@ -184,8 +184,12 @@
 (function(){
   var BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit'))) ? '/api' : 'https://trekkr.online/api';
   // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
-  var TIERS=[{v:'T1',label:'T1 · Open',min:2000,max:Infinity},{v:'T2',label:'T2 · Contender',min:1500,max:1999},{v:'T3',label:'T3 · Rising',min:0,max:1499}];
-  function tierName(elo){elo=Number(elo)||0;if(elo>=2000)return'T1 · Open';if(elo>=1500)return'T2 · Contender';return'T3 · Rising';}
+  // Series Tier cutoffs — percentile-based, fetched from /tiers/boundaries at load.
+  // Defaults below are the absolute fallback (used until that resolves / if it fails).
+  var T1CUT=2000, T2CUT=1500;
+  function buildTiers(){return [{v:'T1',label:'T1 · Open',min:T1CUT,max:Infinity},{v:'T2',label:'T2 · Contender',min:T2CUT,max:T1CUT-1},{v:'T3',label:'T3 · Rising',min:0,max:T2CUT-1}];}
+  var TIERS=buildTiers();
+  function tierName(elo){elo=Number(elo)||0;if(elo>=T1CUT)return'T1 · Open';if(elo>=T2CUT)return'T2 · Contender';return'T3 · Rising';}
   function tierBand(v){for(var i=0;i<TIERS.length;i++){if(TIERS[i].v===v)return TIERS[i];}return null;}
   // Tier eligibility: a player is only ranked once calibrated (>= MIN_TIER_MATCHES
   // matches). REPLAY_COMPLETE flips true after the season ELO replay.
@@ -316,7 +320,14 @@
   fi.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
   fi.addEventListener('input',function(){clearTimeout(ft);ft=setTimeout(search,300);});
 
-  loadAll();
+  // Fetch dynamic Series Tier cutoffs first, then load the boards so filtering &
+  // labels use the percentile boundaries (falls back to defaults if it fails).
+  function loadTiers(){
+    return fetch(BASE+'/tiers/boundaries').then(function(r){return r.json();}).then(function(d){
+      if(d&&Number(d.t1)&&Number(d.t2)){T1CUT=Number(d.t1);T2CUT=Number(d.t2);TIERS=buildTiers();}
+    }).catch(function(){}).then(loadAll);
+  }
+  loadTiers();
 })();
 </script>
 <script src="/ecosystem.js" data-site="trekkr"></script>

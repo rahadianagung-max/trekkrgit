@@ -431,6 +431,8 @@ const netlifyHandler = async (event) => {
 
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
+    if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
+    if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
@@ -2234,6 +2236,76 @@ function getTierName(elo) {
   if (elo >= 1200) return "Lower Bronze";
   if (elo >= 900) return "Upper Beginner";
   return "Beginner";
+}
+
+// ==============================================================
+// SERIES TIER BOUNDARIES (T1/T2/T3) — percentile-based, cached
+// ==============================================================
+// Cutoffs are derived from the ACTIVE player population (calibrated
+// >= CALIB_MATCHES, last match within TIER_ACTIVE_DAYS) rather than fixed ELO
+// numbers, then applied to everyone. Cached in the `tier_boundaries` table with
+// a lazy TTL; `tiers/recompute` forces a fresh compute. Falls back gracefully
+// for a small population (see the ladder in computeTierBoundaries).
+const TIER_ACTIVE_DAYS = 90;                    // "active" = last match within this window
+const TIER_MIN_POOL    = 20;                    // below this, step down the fallback ladder
+const TIER_TTL_MS      = 24 * 60 * 60 * 1000;   // recompute the cache after 24h
+const TIER_SPLIT       = { t1: 0.80, t2: 0.50 };// top 20% = T1, bottom 50% = T3
+const TIER_ABS         = { t1: 2000, t2: 1500 };// last-resort absolute cutoffs
+function supaOn() { return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY); }
+function quantileAsc(sortedAsc, q) {
+  if (!sortedAsc.length) return null;
+  const i = Math.min(sortedAsc.length - 1, Math.max(0, Math.round(q * (sortedAsc.length - 1))));
+  return sortedAsc[i];
+}
+async function computeTierBoundaries() {
+  const sheets = getSheets();
+  let rows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); rows = er.data.values || []; } catch (e) {}
+  // Per player: latest ELO (last row wins), career matches (Σ w+l), last match ts.
+  const st = {};
+  rows.forEach((r) => {
+    const nm = r[1]; if (!nm) return;
+    const k = normName(nm);
+    if (!st[k]) st[k] = { elo: 1350, matches: 0, lastTs: 0 };
+    const elo = Math.round(parseFloat(r[2])); if (!isNaN(elo)) st[k].elo = elo;
+    st[k].matches += (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0);
+    const t = Date.parse(r[6] || ""); if (!isNaN(t) && t > st[k].lastTs) st[k].lastTs = t;
+  });
+  const nowMs = Date.now();
+  const calibrated = Object.values(st).filter((p) => p.matches >= CALIB_MATCHES);
+  const active = calibrated.filter((p) => p.lastTs && (nowMs - p.lastTs) <= TIER_ACTIVE_DAYS * 86400000);
+  // Fallback ladder: active pool -> all calibrated -> absolute cutoffs.
+  let pool = null, method;
+  if (active.length >= TIER_MIN_POOL) { pool = active; method = "percentile-active"; }
+  else if (calibrated.length >= TIER_MIN_POOL) { pool = calibrated; method = "percentile-alltime"; }
+  else { method = "absolute-fallback"; }
+  let t1, t2, n = 0;
+  if (pool) {
+    const elos = pool.map((p) => p.elo).sort((a, b) => a - b);
+    n = elos.length;
+    t2 = quantileAsc(elos, TIER_SPLIT.t2);
+    t1 = quantileAsc(elos, TIER_SPLIT.t1);
+    if (t1 < t2) t1 = t2;
+  } else { t1 = TIER_ABS.t1; t2 = TIER_ABS.t2; }
+  return { t1, t2, n, method, computedAt: new Date().toISOString() };
+}
+async function tierBoundaries(force) {
+  if (!force && supaOn()) {
+    try {
+      const c = await supaRest("GET", "tier_boundaries?order=id.desc&limit=1");
+      if (c && c[0]) {
+        const age = Date.now() - Date.parse(c[0].computed_at || "");
+        if (age >= 0 && age < TIER_TTL_MS) {
+          return { t1: +c[0].t1, t2: +c[0].t2, n: +c[0].pool_n || 0, method: c[0].method || "", computedAt: c[0].computed_at, cached: true };
+        }
+      }
+    } catch (e) {}
+  }
+  const b = await computeTierBoundaries();
+  if (supaOn()) {
+    try { await supaRest("POST", "tier_boundaries", [{ t1: String(b.t1), t2: String(b.t2), pool_n: String(b.n), method: b.method }], "return=minimal"); } catch (e) {}
+  }
+  return b;
 }
 
 async function getNationalLeaderboard(params) {

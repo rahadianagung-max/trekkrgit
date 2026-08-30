@@ -35,6 +35,7 @@ Jalankan berurutan di Supabase SQL Editor:
 8. `migrations/08_enable_rls.sql` (keamanan; sebelum go-live)
 9. `migrations/09_player_accounts.sql`
 10. `migrations/10_playrank_seed.sql` (kolom `seed_estimate` — PlayRank Step 1)
+11. `migrations/11_tier_boundaries.sql` (cache cutoff Series Tier — PlayRank Step 3)
 
 Data lama diimpor via CSV (Table Editor → Import data from CSV).
 
