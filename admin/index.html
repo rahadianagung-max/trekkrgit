@@ -2041,17 +2041,26 @@ async function rmEndMatch(){
       if(allMatches.length) await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:allMatches})});
     } catch(e){console.warn('Final venue write warn:',e.message);}
     try {
-      await rmApi('sessions',{method:'POST',body:JSON.stringify({
+      // Kirim match mentah juga: server yang jadi wasit ELO (Option C) — angka
+      // kalibrasi (K agresif) dihitung server, elo_results cuma fallback/preview.
+      const resp=await rmApi('sessions',{method:'POST',body:JSON.stringify({
         sessionName:`Ranked Match Daily – ${RM.venue} – ${now}`,
         format:RM.format==='fixed'?'Ranked Match Fixed Partner':'Ranked Match Individual',
         courts:RM.courts, venue:RM.venue,
         players:RM.selectedPlayers.map(p=>p.name), rounds:[],
+        matches:allMatches,
         elo_results:standings.map(p=>({
           player:p.name, new_elo:p.elo,
           elo_change:p.elo-(RM.selectedPlayers.find(s=>s.name===p.name)?.elo||RM.startElo),
           w:p.wins, l:p.losses,
         })),
       })});
+      // Kalau server yang hitung, pakai angka server buat layar hasil (biar sama
+      // dengan yang tersimpan di rankings).
+      if(resp&&resp.source==='server'&&Array.isArray(resp.results)&&resp.results.length){
+        const byName={}; resp.results.forEach(r=>{byName[String(r.player).toLowerCase()]=r;});
+        standings.forEach(p=>{ const r=byName[p.name.toLowerCase()]; if(r&&r.new_elo!=null) p.elo=r.new_elo; });
+      }
     } catch(e){console.warn('Final session warn:',e.message);}
   }
   rmClearStorage();

@@ -1933,29 +1933,93 @@ async function getVenueWeeklyRanking(venueName, params) {
 }
 
 // ── SESSIONS ──
+
+// Normalize a raw match list (as sent by the PlayRank clients) to {names[4], s1, s2},
+// dropping anything without 4 named players and two numeric scores.
+function normMatchList(matches) {
+  if (!Array.isArray(matches)) return [];
+  return matches.map((m) => ({
+    names: [m.p1t1, m.p2t1, m.p1t2, m.p2t2].map((n) => String(n || "").trim()),
+    s1: parseInt(m.scoreT1, 10), s2: parseInt(m.scoreT2, 10),
+  })).filter((m) => m.names.every(Boolean) && !isNaN(m.s1) && !isNaN(m.s2));
+}
+
+// Option C (server-authoritative ELO). Given a session's raw ordered matches,
+// seed each player's current ELO (latest ELO_Log row) + career match count
+// (Σ wins+losses across ELO_Log), then REPLAY every match through the
+// calibration-aware engine so the STORED numbers are computed by the server,
+// not trusted from the client. A player counts as calibrating until CALIB_MATCHES
+// career matches; the flag is re-evaluated per match so it flips off mid-session
+// once the threshold is crossed. Returns one summary row per player who played,
+// same shape saveSession writes. Returns null when there are no usable matches
+// (so saveSession can fall back to the client's elo_results).
+async function computeSessionElo(sheets, matches) {
+  const list = normMatchList(matches);
+  if (!list.length) return null;
+  let eloRows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
+  const st = {};
+  const getP = (name) => {
+    const k = normName(name);
+    if (!st[k]) st[k] = { name, elo: 1350, matchCount: 0, w: 0, l: 0, startElo: undefined };
+    return st[k];
+  };
+  // Seed: latest row wins for ELO; career matches = Σ(w+l) across all rows.
+  eloRows.forEach((r) => {
+    const nm = r[1]; if (!nm) return;
+    const p = getP(nm);
+    const elo = parseInt(r[2], 10); if (!isNaN(elo)) p.elo = elo;
+    p.matchCount += (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0);
+  });
+  // Replay this session's matches in order.
+  for (const m of list) {
+    const P = m.names.map(getP);
+    P.forEach((p) => { if (p.startElo === undefined) p.startElo = p.elo; p.calibrating = p.matchCount < CALIB_MATCHES; });
+    const res = rmCalcElo(
+      { name: P[0].name, elo: P[0].elo, matchCount: P[0].matchCount, calibrating: P[0].calibrating },
+      { name: P[1].name, elo: P[1].elo, matchCount: P[1].matchCount, calibrating: P[1].calibrating },
+      { name: P[2].name, elo: P[2].elo, matchCount: P[2].matchCount, calibrating: P[2].calibrating },
+      { name: P[3].name, elo: P[3].elo, matchCount: P[3].matchCount, calibrating: P[3].calibrating },
+      m.s1, m.s2);
+    res.forEach((r, i) => { const p = P[i]; p.elo = r.newElo; p.matchCount += 1; p.w += r.w; p.l += r.l; });
+  }
+  return Object.values(st)
+    .filter((p) => (p.w + p.l) > 0)
+    .map((p) => ({ player: p.name, new_elo: p.elo, elo_change: p.elo - (p.startElo || 0), w: p.w, l: p.l, calibrating: p.matchCount < CALIB_MATCHES }));
+}
+
 async function saveSession(body) {
   const { sessionName, venue, sourceUrl, matchCount, playerCount, players, matches, elo_results } = body;
   const sheets = getSheets();
   const sessionId = `SES_${Date.now()}`;
   const now = new Date().toISOString();
-  
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[ sessionId, sessionName || "Manual Entry", sourceUrl || "", "Americano", "N/A", venue || "Unknown", playerCount || 0, matchCount || 0, now ]] },
   });
 
-  if (elo_results && elo_results.length > 0) {
-    const eloRows = elo_results.map(r => [
-        sessionId, r.player, r.new_elo || 1350, r.elo_change || 0, 
-        r.w || 0, r.l || 0, now
-    ]);
+  // Option C: recompute ELO on the server (calibration-aware) when raw matches
+  // are provided; otherwise fall back to the client's elo_results so older
+  // clients and Americano imports keep working unchanged.
+  let results = null, source = "client";
+  try {
+    const server = await computeSessionElo(sheets, matches);
+    if (server && server.length) { results = server; source = "server"; }
+  } catch (e) { console.error("computeSessionElo:", e); }
+  if (!results && elo_results && elo_results.length > 0) {
+    results = elo_results.map((r) => ({ player: r.player, new_elo: r.new_elo || 1350, elo_change: r.elo_change || 0, w: r.w || 0, l: r.l || 0 }));
+  }
+
+  if (results && results.length > 0) {
+    const eloRows = results.map((r) => [ sessionId, r.player, r.new_elo || 1350, r.elo_change || 0, r.w || 0, r.l || 0, now ]);
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
       requestBody: { values: eloRows },
     });
   }
 
-  return respond(200, { success: true, sessionId });
+  return respond(200, { success: true, sessionId, source, results: results || [] });
 }
 
 async function listSessions(params) {
@@ -3755,15 +3819,23 @@ async function tPublicEvent(eventId, opts) {
 // ==============================================================
 // TOURNAMENT HANDLERS (Phase 6: end-of-tournament ELO replay)
 // ==============================================================
-// --- Ranked Match ELO engine, copied VERBATIM from index.html (do not modify) ---
+// --- Ranked Match ELO engine (calibration-aware). Base curve mirrors the client
+// engines in admin/mexicano; margin-of-victory multiplier is unchanged. Adds an
+// OPT-IN aggressive K during a player's calibration window, applied only when a
+// caller sets p.calibrating=true (see computeSessionElo). Callers that don't set
+// it — tournament finalize, superadmin import, single venue submit — keep the
+// exact previous behavior, so this change is safe for those paths. ---
+const CALIB_MATCHES = 15;   // "calibrating" until this many career matches (tunable)
+const CALIB_K = 60;         // aggressive K during calibration (vs 40 normal early)
 function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmEffectiveK(p) { return p && p.calibrating ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
 function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
   const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
   const margin = 1 + Math.min(Math.abs(s1 - s2) * .04, .3);
   const exp1 = 1 / (1 + Math.pow(10, (t2a - t1a) / 400)), exp2 = 1 - exp1;
   const upd = (p, r, e) => {
-    const k = rmKFactor(p.matchCount || 0) * margin;
+    const k = rmEffectiveK(p) * margin;
     return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
   };
   return [upd(p1t1, t1r, exp1), upd(p2t1, t1r, exp1), upd(p1t2, t2r, exp2), upd(p2t2, t2r, exp2)];
