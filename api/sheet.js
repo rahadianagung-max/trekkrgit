@@ -433,6 +433,8 @@ const netlifyHandler = async (event) => {
     if (path === "settings" && method === "GET") return await getSettings();
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
+    if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
+    if (path === "flags/calibration/resolve" && method === "POST") return await resolveCalibrationFlag(body);
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
@@ -1963,20 +1965,27 @@ async function computeSessionElo(sheets, matches) {
   const st = {};
   const getP = (name) => {
     const k = normName(name);
-    if (!st[k]) st[k] = { name, elo: 1350, matchCount: 0, w: 0, l: 0, startElo: undefined };
+    if (!st[k]) st[k] = { name, elo: 1350, matchCount: 0, w: 0, l: 0, startElo: undefined, firstElo: undefined, cw: 0, cl: 0, seedMatches: undefined };
     return st[k];
   };
-  // Seed: latest row wins for ELO; career matches = Σ(w+l) across all rows.
+  // Seed: latest row wins for ELO; career matches = Σ(w+l) across all rows;
+  // firstElo = earliest recorded ELO (for trajectory); cw/cl = career W/L.
   eloRows.forEach((r) => {
     const nm = r[1]; if (!nm) return;
     const p = getP(nm);
-    const elo = parseInt(r[2], 10); if (!isNaN(elo)) p.elo = elo;
-    p.matchCount += (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0);
+    const elo = parseInt(r[2], 10); if (!isNaN(elo)) { if (p.firstElo === undefined) p.firstElo = elo; p.elo = elo; }
+    const w = parseInt(r[4], 10) || 0, l = parseInt(r[5], 10) || 0;
+    p.matchCount += w + l; p.cw += w; p.cl += l;
   });
   // Replay this session's matches in order.
   for (const m of list) {
     const P = m.names.map(getP);
-    P.forEach((p) => { if (p.startElo === undefined) p.startElo = p.elo; p.calibrating = p.matchCount < CALIB_MATCHES; });
+    P.forEach((p) => {
+      if (p.startElo === undefined) p.startElo = p.elo;
+      if (p.firstElo === undefined) p.firstElo = p.elo;   // brand-new player: baseline = seed
+      if (p.seedMatches === undefined) p.seedMatches = p.matchCount;  // career matches before this session
+      p.calibrating = p.matchCount < CALIB_MATCHES;
+    });
     const res = rmCalcElo(
       { name: P[0].name, elo: P[0].elo, matchCount: P[0].matchCount, calibrating: P[0].calibrating },
       { name: P[1].name, elo: P[1].elo, matchCount: P[1].matchCount, calibrating: P[1].calibrating },
@@ -1987,7 +1996,61 @@ async function computeSessionElo(sheets, matches) {
   }
   return Object.values(st)
     .filter((p) => (p.w + p.l) > 0)
-    .map((p) => ({ player: p.name, new_elo: p.elo, elo_change: p.elo - (p.startElo || 0), w: p.w, l: p.l, calibrating: p.matchCount < CALIB_MATCHES }));
+    .map((p) => {
+      const careerW = p.cw + p.w, careerL = p.cl + p.l, careerN = careerW + careerL;
+      return {
+        player: p.name, new_elo: p.elo, elo_change: p.elo - (p.startElo || 0), w: p.w, l: p.l,
+        calibrating: p.matchCount < CALIB_MATCHES,
+        // --- Step 5 flag inputs (dominant-calibration detection) ---
+        matchesAfter: p.matchCount,
+        gain: p.elo - (p.firstElo != null ? p.firstElo : (p.startElo || p.elo)),
+        winRate: careerN ? careerW / careerN : 0,
+        seedCalibrating: (p.seedMatches || 0) < CALIB_MATCHES,
+      };
+    });
+}
+
+// Step 5 — flag a calibrating player whose performance is dominant enough to
+// suggest a mis-seed / sandbagging, so an admin can review or re-seed EARLY
+// (from the 5th match) instead of waiting the full 3 sessions. Tunable.
+const FLAG_MIN_MATCHES = 5;    // evaluate from the 5th career match
+const FLAG_GAIN        = 200;  // ELO climbed >= this from first recorded ELO
+const FLAG_WINRATE     = 0.80; // career win rate >= this
+function detectCalibrationFlags(results) {
+  return (results || [])
+    .filter((r) => r.seedCalibrating && r.matchesAfter >= FLAG_MIN_MATCHES && r.gain >= FLAG_GAIN && r.winRate >= FLAG_WINRATE)
+    .map((r) => ({ player: r.player, reason: "dominant-calibration", gain: Math.round(r.gain), winRate: Math.round(r.winRate * 100), matches: r.matchesAfter, elo: r.new_elo }));
+}
+// Persist new flags (dedup: skip if an OPEN flag for that player already exists).
+async function raiseCalibrationFlags(flags) {
+  if (!flags || !flags.length || !supaOn()) return;
+  for (const f of flags) {
+    try {
+      const open = await supaRest("GET", `calibration_flags?player=eq.${encodeURIComponent(f.player)}&status=eq.open&select=id&limit=1`);
+      if (open && open.length) continue;
+      await supaRest("POST", "calibration_flags", [{ player: f.player, reason: f.reason, gain: String(f.gain), win_rate: String(f.winRate), matches: String(f.matches), elo: String(f.elo), status: "open" }], "return=minimal");
+    } catch (e) { /* best-effort */ }
+  }
+}
+// Open calibration flags — for admin review UIs (e.g. the Ranked Match player list).
+async function listCalibrationFlags() {
+  if (!supaOn()) return respond(200, { flags: [] });
+  try {
+    const rows = await supaRest("GET", "calibration_flags?status=eq.open&order=id.desc&select=id,player,reason,gain,win_rate,matches,elo,created_at");
+    return respond(200, { flags: rows || [] }, { "Cache-Control": "no-store" });
+  } catch (e) { return respond(200, { flags: [] }); }
+}
+// Admin marks a flag reviewed. Accepts { player } (resolves all open for that
+// player) or { id } (a single flag).
+async function resolveCalibrationFlag(body) {
+  const b = body || {};
+  if (!supaOn()) return respond(200, { ok: true });
+  try {
+    if (b.id != null) await supaRest("PATCH", `calibration_flags?id=eq.${encodeURIComponent(b.id)}`, { status: "resolved" });
+    else if (b.player) await supaRest("PATCH", `calibration_flags?player=eq.${encodeURIComponent(b.player)}&status=eq.open`, { status: "resolved" });
+    else return respond(400, { error: "player atau id wajib diisi" });
+    return respond(200, { ok: true });
+  } catch (e) { return respond(500, { error: "Gagal resolve flag" }); }
 }
 
 async function saveSession(body) {
@@ -2021,7 +2084,15 @@ async function saveSession(body) {
     });
   }
 
-  return respond(200, { success: true, sessionId, source, results: results || [] });
+  // Step 5: flag dominant-calibration performers (only on the server-authoritative
+  // path, which carries the trajectory inputs). Best-effort persist + return.
+  let flags = [];
+  if (source === "server") {
+    flags = detectCalibrationFlags(results);
+    await raiseCalibrationFlags(flags);
+  }
+
+  return respond(200, { success: true, sessionId, source, results: results || [], flags });
 }
 
 async function listSessions(params) {

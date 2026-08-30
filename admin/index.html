@@ -846,6 +846,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-done-title">Trekkr Ranked Match Selesai!</div>
               <div class="rm-done-sub" id="rm-done-sub"></div>
               <div style="font-size:12px;opacity:.6;margin-top:4px" id="rm-done-meta"></div>
+              <div id="rm-done-flags" style="display:none;margin:12px auto 0;max-width:420px;padding:11px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm);text-align:left"></div>
               <div class="rm-podium" id="rm-podium"></div>
             </div>
             <div class="rm-done-card">
@@ -1286,8 +1287,10 @@ async function rmLoadPlayers() {
   document.getElementById('rm-player-list').innerHTML =
     `<div class="rm-empty"><div class="rm-spinner rm-spinner-blue" style="margin:0 auto 12px"></div>Memuat database pemain...</div>`;
   try {
-    const [pRes, eRes] = await Promise.all([rmApi('players'), rmApi('elo/latest')]);
+    const [pRes, eRes, fRes] = await Promise.all([rmApi('players'), rmApi('elo/latest'), rmApi('flags/calibration').catch(()=>({flags:[]}))]);
     const eloMap = eRes.players || {};
+    // Step 5: pemain dengan flag kalibrasi terbuka → tampilkan badge saat dipilih.
+    RM.flagged = new Set((((fRes&&fRes.flags)||[])).map(f=>String(f.player||'').toLowerCase()));
     RM.allPlayers = (pRes.players || [])
       .filter(p => !/^[\d\s]+$/.test(p.name.trim()))
       .map(p => ({
@@ -1343,6 +1346,7 @@ function rmRenderPlayers() {
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
           <span class="rm-player-gender">${p.gender==='F'?'♀ F':'♂ M'}</span>
           <span class="rm-player-tier">${rmTier(p.elo)}</span>
+          ${(RM.flagged&&RM.flagged.has(p.name.toLowerCase()))?`<span title="Performa dominan saat kalibrasi — tinjau/re-seed" style="font-size:10.5px;font-weight:700;color:var(--gold);background:var(--gold-lt);border-radius:5px;padding:1px 5px">⚠ kalibrasi</span>`:''}
         </div>
       </div>
       <span class="rm-player-elo">${p.elo}</span>
@@ -2095,6 +2099,7 @@ async function rmEndMatch(){
         const byName={}; resp.results.forEach(r=>{byName[String(r.player).toLowerCase()]=r;});
         standings.forEach(p=>{ const r=byName[p.name.toLowerCase()]; if(r&&r.new_elo!=null) p.elo=r.new_elo; });
       }
+      RM.lastFlags=(resp&&resp.flags)||[];   // Step 5: dominant-calibration flags
     } catch(e){console.warn('Final session warn:',e.message);}
   }
   rmClearStorage();
@@ -2112,6 +2117,19 @@ function rmRenderDoneScreen(standings){
   const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('rm-done-sub').textContent=`${doneRounds} ronde · ${RM.selectedPlayers.length} pemain`;
   document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue}`;
+
+  // Step 5: peringatan performa dominan saat kalibrasi (mungkin salah-seed / sandbagging).
+  const fl=document.getElementById('rm-done-flags');
+  if(fl){
+    const flags=(RM.lastFlags||[]);
+    if(flags.length){
+      fl.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⚠ Tinjau kalibrasi</div>'
+        +'<div style="font-size:12.5px;color:var(--txt);line-height:1.5">'
+        +flags.map(f=>`<strong>${(f.player||'').split(' ')[0]}</strong> naik +${f.gain} ELO (${f.winRate}% menang, ${f.matches} match)`).join('; ')
+        +'. Performanya jauh di atas seed — pertimbangkan re-seed / tinjau lebih awal.</div>';
+      fl.style.display='block';
+    } else { fl.style.display='none'; }
+  }
 
   const p1=standings[0],p2=standings[1],p3=standings[2];
   document.getElementById('rm-podium').innerHTML=`
