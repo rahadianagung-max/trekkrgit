@@ -29,6 +29,25 @@
     requestAnimationFrame(function () { t.classList.add("show"); });
     setTimeout(function () { t.classList.remove("show"); setTimeout(function () { t.remove(); }, 250); }, 1900);
   }
+  // Best-performing partner from raw matches: pick the teammate with the best
+  // win record together (min 2 matches). meNames = [canonical, displayName].
+  function bestPartner(matches, meNames) {
+    var mine = (meNames || []).map(norm).filter(Boolean);
+    function isMe(n) { return mine.indexOf(norm(n)) !== -1; }
+    var tally = {};
+    (matches || []).forEach(function (m) {
+      var t1 = [m.p1t1, m.p2t1], t2 = [m.p1t2, m.p2t2];
+      var inT1 = t1.some(isMe), inT2 = t2.some(isMe);
+      var team = inT1 ? t1 : (inT2 ? t2 : null); if (!team) return;
+      var won = inT1 ? (m.scoreT1 > m.scoreT2) : (m.scoreT2 > m.scoreT1);
+      var partner = team.filter(function (n) { return n && !isMe(n); })[0]; if (!partner) return;
+      var k = norm(partner); if (!tally[k]) tally[k] = { name: partner, w: 0, l: 0 };
+      if (won) tally[k].w++; else tally[k].l++;
+    });
+    var arr = Object.keys(tally).map(function (k) { return tally[k]; }).filter(function (p) { return (p.w + p.l) >= 2; });
+    arr.sort(function (a, b) { return (b.w - b.l) - (a.w - a.l) || b.w - a.w; });
+    return arr[0] || null;
+  }
   function isIosSafari() {
     var ua = w.navigator.userAgent;
     var ios = /iPad|iPhone|iPod/.test(ua) && !w.MSStream;
@@ -142,8 +161,10 @@
         API.getPlayer(name).catch(function () { return {}; }),
         API.getEloHistory(name).catch(function () { return { history: [] }; }),
         ensureCut(),
+        API.getPlayerMatches(name).catch(function () { return { matches: [] }; }),
       ]);
       var det = r[0] || {}, hist = (r[1] && r[1].history) || [], cut = r[2];
+      var bp = bestPartner((r[3] && r[3].matches) || [], [name, det.displayName || me.player.displayName]);
       var elo = det.currentElo != null ? det.currentElo : (det.elo != null ? det.elo : (me.player.elo != null ? me.player.elo : (hist.length ? hist[hist.length - 1].elo : null)));
       var unrated = !!det.unrated || elo == null;
       var wins = det.wins != null ? det.wins : det.totalWins;
@@ -157,7 +178,7 @@
       var club = ((det.clubs || me.player.clubs || "").split(",")[0] || "").trim();
       var tier = unrated ? null : API.tierName(elo, cut);
 
-      S.card = { display: display, name: name, elo: elo, tier: tier, wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name) };
+      S.card = { display: display, name: name, elo: elo, tier: tier, wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name), partner: bp };
 
       var heroInner = unrated
         ? '<p class="lbl">ELO Rating</p><p class="num" style="font-size:34px">Unrated</p><p style="margin:6px 0 0;font-size:12.5px;opacity:.92">Your rating appears after your first PlayRank match</p>'
@@ -179,6 +200,7 @@
           '<div class="statrow"><div class="stat"><b>' + (wins != null ? wins : "–") + '</b><span>Wins</span></div>' +
             '<div class="stat"><b>' + (losses != null ? losses : "–") + '</b><span>Losses</span></div>' +
             '<div class="stat"><b>' + (matches != null ? matches : "–") + '</b><span>Matches</span></div></div>' +
+          (bp ? '<div class="sec">Best partner</div><div class="hitem"><span class="d"><b style="color:var(--ink)">' + esc(bp.name) + '</b></span><span class="up">' + bp.w + '–' + bp.l + '</span></div>' : "") +
           '<div class="actrow"><button class="btn" id="share">Share Card</button>' +
             '<button class="btn ghost soon" id="challenge" style="flex:0 0 auto;width:auto;padding:15px 16px">Challenge</button></div>' +
           (recent.length ? '<div class="sec">Recent ELO</div>' + recent.map(function (h) {
@@ -253,6 +275,21 @@
       ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
       ctx.fillText(st[0], x + bW / 2, bY + bH - 22);
     });
+    // best partner
+    if (data.partner) {
+      var pY = bY + bH + 56;
+      ctx.fillStyle = "#141414"; roundRect(ctx, 60, pY, W - 120, 150, 20); ctx.fill();
+      ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
+      ctx.fillText("BEST PARTNER", 96, pY + 46);
+      ctx.fillStyle = "#fff"; ctx.font = "800 52px 'Saira Condensed',sans-serif";
+      ctx.fillText(String(data.partner.name).toUpperCase(), 96, pY + 108, W - 320);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
+      ctx.fillText("TOGETHER", W - 96, pY + 46);
+      ctx.fillStyle = "#4ADE80"; ctx.font = "800 44px 'Saira Condensed',sans-serif";
+      ctx.fillText(data.partner.w + "–" + data.partner.l, W - 96, pY + 104);
+    }
     // footer
     ctx.fillStyle = "#fff"; ctx.font = "800 50px 'Saira Condensed',sans-serif"; ctx.textAlign = "left";
     ctx.fillText("TREKKR", 60, H - 56);
