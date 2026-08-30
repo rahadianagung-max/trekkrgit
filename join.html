@@ -34,6 +34,21 @@ input:focus,select:focus{outline:none;border-color:var(--or)}
 .banner{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.55;margin-bottom:16px}
 .banner.claim{background:rgba(255,106,0,.08);border:1px solid rgba(255,106,0,.35);color:#9a4d00}
 .banner.new{background:#eef7f1;border:1px solid #cfe9d9;color:#166534}
+/* Seed placement question (SEED ONLY — bukan tier resmi) */
+.seed{background:#FFF8F3;border:1px solid rgba(255,106,0,.28);border-radius:14px;padding:15px 14px 13px;margin-bottom:14px}
+.seed .q{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 2px}
+.seed .cap{font-size:11.5px;color:var(--mu);line-height:1.5;margin:0 0 11px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.optcard{display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border:1px solid var(--bd);border-radius:11px;background:#fff;cursor:pointer;transition:border-color .12s,background .12s}
+.optcard:hover{border-color:rgba(255,106,0,.28)}
+.optcard .dot{width:18px;height:18px;border-radius:50%;border:2px solid #CFCFD6;flex:0 0 auto;margin-top:1px;position:relative;transition:border-color .12s}
+.optcard .tt{font-size:13.5px;font-weight:700;line-height:1.3}
+.optcard .dd{font-size:11.5px;color:var(--mu);line-height:1.45;margin-top:2px}
+.optcard.sel{border-color:var(--or)}
+.optcard.sel .dot{border-color:var(--or)}
+.optcard.sel .dot:after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--or)}
+.seedfoot{font-size:11px;color:var(--mu);line-height:1.5;margin:11px 2px 0;display:flex;gap:6px}
+.seedfoot svg{flex:0 0 auto;margin-top:1px}
 .photo{display:flex;align-items:center;gap:14px}
 .photo .pv{width:62px;height:62px;border-radius:14px;object-fit:cover;background:#EFEFF1;display:flex;align-items:center;justify-content:center;color:#B7B2AD;font-size:22px;flex:0 0 auto}
 .note{font-size:11px;color:var(--mu);margin-top:5px}
@@ -70,10 +85,11 @@ async function apiSend(path,method,body){const r=await fetch(`${API}/${path}`,{m
 let _photoData="";           // base64 for new-player photo
 let _mode="";                // "new" | "claim"
 let _existingName="";        // canonical name when claiming
+let _seed="";                // seed placement estimate (SEED ONLY — bukan tier/ELO resmi)
 
 // ---------- ENTRY (name check) ----------
 function viewEntry(prefill){
-  _mode=""; _photoData=""; _existingName="";
+  _mode=""; _photoData=""; _existingName=""; _seed="";
   app().innerHTML=`
     <h1>Gabung ke Trekkr</h1>
     <p class="sub">Masukkan nama kamu. Kami cek dulu apakah kamu sudah ada di Trekkr — kalau sudah, kamu tinggal <b>klaim</b> profilnya; kalau belum, kamu bisa <b>daftar baru</b>.</p>
@@ -136,10 +152,24 @@ async function submitClaim(){
 function renderNew(){
   _mode="new";
   $("dyn").innerHTML=`
-    <div class="banner new">Nama belum terdaftar — buat profil baru. Kamu mulai <b>tanpa rating</b>; host akan menentukan level saat kamu bermain pertama kali di venue/komunitas mitra Trekkr.</div>
+    <div class="banner new">Nama belum terdaftar — buat profil baru. Rating resmimu terbentuk otomatis dari hasil main, bukan dari isian ini.</div>
     <div class="row2">
       <div class="field"><label>Gender</label><select id="nGender"><option value="M">Male</option><option value="F">Female</option></select></div>
       <div class="field"><label>Region / Kota <span class="opt">(opsional)</span></label><input id="nRegion" placeholder="cth. Jakarta" autocomplete="off"/></div>
+    </div>
+    <div class="seed">
+      <p class="q">Pengalaman padel kamu? <span class="opt">(opsional)</span></p>
+      <p class="cap">Cuma buat nyocokin lawan main di sesi-sesi pertama biar seru. Bukan penentu tier.</p>
+      <div class="opts" id="nSeed">
+        <div class="optcard" data-seed="900"><span class="dot"></span><div><div class="tt">Baru mulai / masih belajar</div><div class="dd">Belum lama kenal padel, masih cari feeling.</div></div></div>
+        <div class="optcard" data-seed="1000"><span class="dot"></span><div><div class="tt">Main santai, rutin</div><div class="dd">Sering main bareng teman, belum pernah turnamen.</div></div></div>
+        <div class="optcard" data-seed="1500"><span class="dot"></span><div><div class="tt">Kompetitif / pernah turnamen</div><div class="dd">Udah pernah ikut turnamen atau liga.</div></div></div>
+        <div class="optcard" data-seed=""><span class="dot"></span><div><div class="tt">Nggak yakin</div><div class="dd">Biar host yang nilai pas main pertama.</div></div></div>
+      </div>
+      <div class="seedfoot">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B6B72" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01" stroke-linecap="round"/></svg>
+        <span>Tier resmimu (T1/T2/T3) ditentukan dari hasil main setelah kalibrasi, bukan dari jawaban ini.</span>
+      </div>
     </div>
     <div class="field"><label>Instagram <span class="opt">(opsional)</span></label><input id="nIg" placeholder="username tanpa @" autocomplete="off"/></div>
     <div class="field"><label>Email</label><input id="nEmail" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
@@ -157,6 +187,11 @@ function renderNew(){
     <button class="btn" id="nGo">Daftar</button>
     <div class="msg" id="nMsg"></div>`;
   $("nPhoto").addEventListener("change",onPhoto);
+  $("nSeed").addEventListener("click",function(e){
+    const c=e.target.closest(".optcard"); if(!c) return;
+    this.querySelectorAll(".optcard").forEach(o=>o.classList.remove("sel"));
+    c.classList.add("sel"); _seed=c.getAttribute("data-seed")||"";
+  });
   $("nGo").onclick=submitNew;
 }
 function onPhoto(e){
@@ -187,6 +222,7 @@ async function submitNew(){
   if(pass.length<6){ m.className="msg err"; m.textContent="Password minimal 6 karakter."; return; }
   const body={name,email,password:pass,gender:($("nGender").value||"M"),region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
   if(_photoData) body.photo=_photoData;
+  if(_seed) body.seedEstimate=_seed;   // SEED ONLY — dipakai buat matchmaking awal, bukan tier/ELO resmi
   const b=$("nGo"); b.disabled=true; b.textContent="Mendaftar…"; m.className="msg";
   const {ok,d}=await apiSend("account/register-new","POST",body);
   if(ok){ viewDoneNew(email); }

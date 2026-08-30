@@ -431,6 +431,10 @@ const netlifyHandler = async (event) => {
 
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
+    if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
+    if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
+    if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
+    if (path === "flags/calibration/resolve" && method === "POST") return await resolveCalibrationFlag(body);
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
@@ -704,12 +708,28 @@ async function accountRegisterNew(body) {
   try { user = await supaSignupEmail(email, password, { player_name: name }, `${appBaseUrl()}/login`); }
   catch (e) { return respond(400, { error: /registered|already/i.test(e.message) ? "Email ini sudah dipakai. Silakan login." : ("Gagal membuat akun: " + e.message) }); }
   const gender = String(b.gender || "").trim().toUpperCase() === "F" ? "F" : "M";
+  // Seed placement estimate — SEED ONLY: dipakai buat kualitas matchmaking di
+  // sesi kalibrasi awal, BUKAN ELO/tier resmi. Whitelist ke nilai anchor yang
+  // dikenal (kosong = "nggak yakin"/tak diisi → biar host yang nge-seed).
+  const SEED_ALLOWED = ["900", "1000", "1500"];
+  const seedEstimate = SEED_ALLOWED.includes(String(b.seedEstimate || "").trim()) ? String(b.seedEstimate).trim() : "";
   const now = new Date().toISOString();
-  await supaRest("POST", "players", [{
+  const playerRow = {
     name, ig: String(b.ig || "").trim(), verified: "FALSE", display_name: name,
     gender, region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
     clubs: "", created_at: now, user_id: user.id,
-  }], "return=minimal");
+  };
+  if (seedEstimate) playerRow.seed_estimate = seedEstimate;
+  try {
+    await supaRest("POST", "players", [playerRow], "return=minimal");
+  } catch (e) {
+    // Fallback tahan-urutan: kalau migration 10 (kolom seed_estimate) belum
+    // jalan di DB, jangan gagalkan registrasi — ulangi tanpa field seed.
+    if (seedEstimate && /seed_estimate/i.test(String(e && e.message))) {
+      delete playerRow.seed_estimate;
+      await supaRest("POST", "players", [playerRow], "return=minimal");
+    } else throw e;
+  }
   return respond(200, { ok: true });
 }
 
@@ -1917,29 +1937,162 @@ async function getVenueWeeklyRanking(venueName, params) {
 }
 
 // ── SESSIONS ──
+
+// Normalize a raw match list (as sent by the PlayRank clients) to {names[4], s1, s2},
+// dropping anything without 4 named players and two numeric scores.
+function normMatchList(matches) {
+  if (!Array.isArray(matches)) return [];
+  return matches.map((m) => ({
+    names: [m.p1t1, m.p2t1, m.p1t2, m.p2t2].map((n) => String(n || "").trim()),
+    s1: parseInt(m.scoreT1, 10), s2: parseInt(m.scoreT2, 10),
+  })).filter((m) => m.names.every(Boolean) && !isNaN(m.s1) && !isNaN(m.s2));
+}
+
+// Option C (server-authoritative ELO). Given a session's raw ordered matches,
+// seed each player's current ELO (latest ELO_Log row) + career match count
+// (Σ wins+losses across ELO_Log), then REPLAY every match through the
+// calibration-aware engine so the STORED numbers are computed by the server,
+// not trusted from the client. A player counts as calibrating until CALIB_MATCHES
+// career matches; the flag is re-evaluated per match so it flips off mid-session
+// once the threshold is crossed. Returns one summary row per player who played,
+// same shape saveSession writes. Returns null when there are no usable matches
+// (so saveSession can fall back to the client's elo_results).
+async function computeSessionElo(sheets, matches) {
+  const list = normMatchList(matches);
+  if (!list.length) return null;
+  let eloRows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
+  const st = {};
+  const getP = (name) => {
+    const k = normName(name);
+    if (!st[k]) st[k] = { name, elo: 1350, matchCount: 0, w: 0, l: 0, startElo: undefined, firstElo: undefined, cw: 0, cl: 0, seedMatches: undefined };
+    return st[k];
+  };
+  // Seed: latest row wins for ELO; career matches = Σ(w+l) across all rows;
+  // firstElo = earliest recorded ELO (for trajectory); cw/cl = career W/L.
+  eloRows.forEach((r) => {
+    const nm = r[1]; if (!nm) return;
+    const p = getP(nm);
+    const elo = parseInt(r[2], 10); if (!isNaN(elo)) { if (p.firstElo === undefined) p.firstElo = elo; p.elo = elo; }
+    const w = parseInt(r[4], 10) || 0, l = parseInt(r[5], 10) || 0;
+    p.matchCount += w + l; p.cw += w; p.cl += l;
+  });
+  // Replay this session's matches in order.
+  for (const m of list) {
+    const P = m.names.map(getP);
+    P.forEach((p) => {
+      if (p.startElo === undefined) p.startElo = p.elo;
+      if (p.firstElo === undefined) p.firstElo = p.elo;   // brand-new player: baseline = seed
+      if (p.seedMatches === undefined) p.seedMatches = p.matchCount;  // career matches before this session
+      p.calibrating = p.matchCount < CALIB_MATCHES;
+    });
+    const res = rmCalcElo(
+      { name: P[0].name, elo: P[0].elo, matchCount: P[0].matchCount, calibrating: P[0].calibrating },
+      { name: P[1].name, elo: P[1].elo, matchCount: P[1].matchCount, calibrating: P[1].calibrating },
+      { name: P[2].name, elo: P[2].elo, matchCount: P[2].matchCount, calibrating: P[2].calibrating },
+      { name: P[3].name, elo: P[3].elo, matchCount: P[3].matchCount, calibrating: P[3].calibrating },
+      m.s1, m.s2);
+    res.forEach((r, i) => { const p = P[i]; p.elo = r.newElo; p.matchCount += 1; p.w += r.w; p.l += r.l; });
+  }
+  return Object.values(st)
+    .filter((p) => (p.w + p.l) > 0)
+    .map((p) => {
+      const careerW = p.cw + p.w, careerL = p.cl + p.l, careerN = careerW + careerL;
+      return {
+        player: p.name, new_elo: p.elo, elo_change: p.elo - (p.startElo || 0), w: p.w, l: p.l,
+        calibrating: p.matchCount < CALIB_MATCHES,
+        // --- Step 5 flag inputs (dominant-calibration detection) ---
+        matchesAfter: p.matchCount,
+        gain: p.elo - (p.firstElo != null ? p.firstElo : (p.startElo || p.elo)),
+        winRate: careerN ? careerW / careerN : 0,
+        seedCalibrating: (p.seedMatches || 0) < CALIB_MATCHES,
+      };
+    });
+}
+
+// Step 5 — flag a calibrating player whose performance is dominant enough to
+// suggest a mis-seed / sandbagging, so an admin can review or re-seed EARLY
+// (from the 5th match) instead of waiting the full 3 sessions. Tunable.
+const FLAG_MIN_MATCHES = 5;    // evaluate from the 5th career match
+const FLAG_GAIN        = 200;  // ELO climbed >= this from first recorded ELO
+const FLAG_WINRATE     = 0.80; // career win rate >= this
+function detectCalibrationFlags(results) {
+  return (results || [])
+    .filter((r) => r.seedCalibrating && r.matchesAfter >= FLAG_MIN_MATCHES && r.gain >= FLAG_GAIN && r.winRate >= FLAG_WINRATE)
+    .map((r) => ({ player: r.player, reason: "dominant-calibration", gain: Math.round(r.gain), winRate: Math.round(r.winRate * 100), matches: r.matchesAfter, elo: r.new_elo }));
+}
+// Persist new flags (dedup: skip if an OPEN flag for that player already exists).
+async function raiseCalibrationFlags(flags) {
+  if (!flags || !flags.length || !supaOn()) return;
+  for (const f of flags) {
+    try {
+      const open = await supaRest("GET", `calibration_flags?player=eq.${encodeURIComponent(f.player)}&status=eq.open&select=id&limit=1`);
+      if (open && open.length) continue;
+      await supaRest("POST", "calibration_flags", [{ player: f.player, reason: f.reason, gain: String(f.gain), win_rate: String(f.winRate), matches: String(f.matches), elo: String(f.elo), status: "open" }], "return=minimal");
+    } catch (e) { /* best-effort */ }
+  }
+}
+// Open calibration flags — for admin review UIs (e.g. the Ranked Match player list).
+async function listCalibrationFlags() {
+  if (!supaOn()) return respond(200, { flags: [] });
+  try {
+    const rows = await supaRest("GET", "calibration_flags?status=eq.open&order=id.desc&select=id,player,reason,gain,win_rate,matches,elo,created_at");
+    return respond(200, { flags: rows || [] }, { "Cache-Control": "no-store" });
+  } catch (e) { return respond(200, { flags: [] }); }
+}
+// Admin marks a flag reviewed. Accepts { player } (resolves all open for that
+// player) or { id } (a single flag).
+async function resolveCalibrationFlag(body) {
+  const b = body || {};
+  if (!supaOn()) return respond(200, { ok: true });
+  try {
+    if (b.id != null) await supaRest("PATCH", `calibration_flags?id=eq.${encodeURIComponent(b.id)}`, { status: "resolved" });
+    else if (b.player) await supaRest("PATCH", `calibration_flags?player=eq.${encodeURIComponent(b.player)}&status=eq.open`, { status: "resolved" });
+    else return respond(400, { error: "player atau id wajib diisi" });
+    return respond(200, { ok: true });
+  } catch (e) { return respond(500, { error: "Gagal resolve flag" }); }
+}
+
 async function saveSession(body) {
   const { sessionName, venue, sourceUrl, matchCount, playerCount, players, matches, elo_results } = body;
   const sheets = getSheets();
   const sessionId = `SES_${Date.now()}`;
   const now = new Date().toISOString();
-  
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[ sessionId, sessionName || "Manual Entry", sourceUrl || "", "Americano", "N/A", venue || "Unknown", playerCount || 0, matchCount || 0, now ]] },
   });
 
-  if (elo_results && elo_results.length > 0) {
-    const eloRows = elo_results.map(r => [
-        sessionId, r.player, r.new_elo || 1350, r.elo_change || 0, 
-        r.w || 0, r.l || 0, now
-    ]);
+  // Option C: recompute ELO on the server (calibration-aware) when raw matches
+  // are provided; otherwise fall back to the client's elo_results so older
+  // clients and Americano imports keep working unchanged.
+  let results = null, source = "client";
+  try {
+    const server = await computeSessionElo(sheets, matches);
+    if (server && server.length) { results = server; source = "server"; }
+  } catch (e) { console.error("computeSessionElo:", e); }
+  if (!results && elo_results && elo_results.length > 0) {
+    results = elo_results.map((r) => ({ player: r.player, new_elo: r.new_elo || 1350, elo_change: r.elo_change || 0, w: r.w || 0, l: r.l || 0 }));
+  }
+
+  if (results && results.length > 0) {
+    const eloRows = results.map((r) => [ sessionId, r.player, r.new_elo || 1350, r.elo_change || 0, r.w || 0, r.l || 0, now ]);
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
       requestBody: { values: eloRows },
     });
   }
 
-  return respond(200, { success: true, sessionId });
+  // Step 5: flag dominant-calibration performers (only on the server-authoritative
+  // path, which carries the trajectory inputs). Best-effort persist + return.
+  let flags = [];
+  if (source === "server") {
+    flags = detectCalibrationFlags(results);
+    await raiseCalibrationFlags(flags);
+  }
+
+  return respond(200, { success: true, sessionId, source, results: results || [], flags });
 }
 
 async function listSessions(params) {
@@ -2125,12 +2278,16 @@ async function getLatestElo() {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const rows = res.data.values || [];
-  const latest = {};
+  const latest = {}, career = {};
   rows.forEach((r) => {
     if (r[1]) {
       latest[r[1]] = { sessionId: r[0], elo: parseInt(r[2]) || 1350, delta: parseInt(r[3]) || 0, w: parseInt(r[4]) || 0, l: parseInt(r[5]) || 0, timestamp: r[6] || "" };
+      // career matches = Σ(wins+losses) across ALL rows (the last-row w/l alone
+      // understates it). Used for calibration status + anchor-pool detection.
+      career[r[1]] = (career[r[1]] || 0) + (parseInt(r[4]) || 0) + (parseInt(r[5]) || 0);
     }
   });
+  Object.keys(latest).forEach((n) => { latest[n].matches = career[n] || 0; });
   return respond(200, { players: latest });
 }
 
@@ -2154,6 +2311,76 @@ function getTierName(elo) {
   if (elo >= 1200) return "Lower Bronze";
   if (elo >= 900) return "Upper Beginner";
   return "Beginner";
+}
+
+// ==============================================================
+// SERIES TIER BOUNDARIES (T1/T2/T3) — percentile-based, cached
+// ==============================================================
+// Cutoffs are derived from the ACTIVE player population (calibrated
+// >= CALIB_MATCHES, last match within TIER_ACTIVE_DAYS) rather than fixed ELO
+// numbers, then applied to everyone. Cached in the `tier_boundaries` table with
+// a lazy TTL; `tiers/recompute` forces a fresh compute. Falls back gracefully
+// for a small population (see the ladder in computeTierBoundaries).
+const TIER_ACTIVE_DAYS = 90;                    // "active" = last match within this window
+const TIER_MIN_POOL    = 20;                    // below this, step down the fallback ladder
+const TIER_TTL_MS      = 24 * 60 * 60 * 1000;   // recompute the cache after 24h
+const TIER_SPLIT       = { t1: 0.80, t2: 0.50 };// top 20% = T1, bottom 50% = T3
+const TIER_ABS         = { t1: 2000, t2: 1500 };// last-resort absolute cutoffs
+function supaOn() { return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY); }
+function quantileAsc(sortedAsc, q) {
+  if (!sortedAsc.length) return null;
+  const i = Math.min(sortedAsc.length - 1, Math.max(0, Math.round(q * (sortedAsc.length - 1))));
+  return sortedAsc[i];
+}
+async function computeTierBoundaries() {
+  const sheets = getSheets();
+  let rows = [];
+  try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); rows = er.data.values || []; } catch (e) {}
+  // Per player: latest ELO (last row wins), career matches (Σ w+l), last match ts.
+  const st = {};
+  rows.forEach((r) => {
+    const nm = r[1]; if (!nm) return;
+    const k = normName(nm);
+    if (!st[k]) st[k] = { elo: 1350, matches: 0, lastTs: 0 };
+    const elo = Math.round(parseFloat(r[2])); if (!isNaN(elo)) st[k].elo = elo;
+    st[k].matches += (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0);
+    const t = Date.parse(r[6] || ""); if (!isNaN(t) && t > st[k].lastTs) st[k].lastTs = t;
+  });
+  const nowMs = Date.now();
+  const calibrated = Object.values(st).filter((p) => p.matches >= CALIB_MATCHES);
+  const active = calibrated.filter((p) => p.lastTs && (nowMs - p.lastTs) <= TIER_ACTIVE_DAYS * 86400000);
+  // Fallback ladder: active pool -> all calibrated -> absolute cutoffs.
+  let pool = null, method;
+  if (active.length >= TIER_MIN_POOL) { pool = active; method = "percentile-active"; }
+  else if (calibrated.length >= TIER_MIN_POOL) { pool = calibrated; method = "percentile-alltime"; }
+  else { method = "absolute-fallback"; }
+  let t1, t2, n = 0;
+  if (pool) {
+    const elos = pool.map((p) => p.elo).sort((a, b) => a - b);
+    n = elos.length;
+    t2 = quantileAsc(elos, TIER_SPLIT.t2);
+    t1 = quantileAsc(elos, TIER_SPLIT.t1);
+    if (t1 < t2) t1 = t2;
+  } else { t1 = TIER_ABS.t1; t2 = TIER_ABS.t2; }
+  return { t1, t2, n, method, computedAt: new Date().toISOString() };
+}
+async function tierBoundaries(force) {
+  if (!force && supaOn()) {
+    try {
+      const c = await supaRest("GET", "tier_boundaries?order=id.desc&limit=1");
+      if (c && c[0]) {
+        const age = Date.now() - Date.parse(c[0].computed_at || "");
+        if (age >= 0 && age < TIER_TTL_MS) {
+          return { t1: +c[0].t1, t2: +c[0].t2, n: +c[0].pool_n || 0, method: c[0].method || "", computedAt: c[0].computed_at, cached: true };
+        }
+      }
+    } catch (e) {}
+  }
+  const b = await computeTierBoundaries();
+  if (supaOn()) {
+    try { await supaRest("POST", "tier_boundaries", [{ t1: String(b.t1), t2: String(b.t2), pool_n: String(b.n), method: b.method }], "return=minimal"); } catch (e) {}
+  }
+  return b;
 }
 
 async function getNationalLeaderboard(params) {
@@ -3739,15 +3966,23 @@ async function tPublicEvent(eventId, opts) {
 // ==============================================================
 // TOURNAMENT HANDLERS (Phase 6: end-of-tournament ELO replay)
 // ==============================================================
-// --- Ranked Match ELO engine, copied VERBATIM from index.html (do not modify) ---
+// --- Ranked Match ELO engine (calibration-aware). Base curve mirrors the client
+// engines in admin/mexicano; margin-of-victory multiplier is unchanged. Adds an
+// OPT-IN aggressive K during a player's calibration window, applied only when a
+// caller sets p.calibrating=true (see computeSessionElo). Callers that don't set
+// it — tournament finalize, superadmin import, single venue submit — keep the
+// exact previous behavior, so this change is safe for those paths. ---
+const CALIB_MATCHES = 15;   // "calibrating" until this many career matches (tunable)
+const CALIB_K = 60;         // aggressive K during calibration (vs 40 normal early)
 function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmEffectiveK(p) { return p && p.calibrating ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
 function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
   const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
   const margin = 1 + Math.min(Math.abs(s1 - s2) * .04, .3);
   const exp1 = 1 / (1 + Math.pow(10, (t2a - t1a) / 400)), exp2 = 1 - exp1;
   const upd = (p, r, e) => {
-    const k = rmKFactor(p.matchCount || 0) * margin;
+    const k = rmEffectiveK(p) * margin;
     return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
   };
   return [upd(p1t1, t1r, exp1), upd(p2t1, t1r, exp1), upd(p1t2, t2r, exp2), upd(p2t2, t2r, exp2)];

@@ -476,6 +476,7 @@
         <div class="screen-title">Match Selesai!</div>
         <div class="screen-sub" id="done-sub"></div>
         <div style="font-size:12px;color:var(--text3);margin-top:4px" id="done-venue"></div>
+        <div id="mx-done-flags" style="display:none;margin:12px auto 0;max-width:420px;padding:11px 14px;background:rgba(245,158,11,0.12);border:1.5px solid #F59E0B;border-radius:10px;text-align:left;font-size:12.5px;line-height:1.5;color:#eab308"></div>
       </div>
 
       <!-- Podium top 3 -->
@@ -1800,7 +1801,8 @@ async function submitRound() {
         format: state.format === "fixed" ? "Mexicano Fixed Partner" : "Mexicano Individual",
         courts: state.courts, venue: state.venue,
         players: roundPlayers, rounds: [],
-        elo_results: eloResults,
+        matches: apiMatches,   // server jadi wasit ELO (Option C) — calibration + flag
+        elo_results: eloResults,   // fallback/preview
       };
 
       const allNamesValid = apiMatches.every(m => m.p1t1 && m.p2t1 && m.p1t2 && m.p2t2);
@@ -1813,7 +1815,20 @@ async function submitRound() {
         localStorage.setItem(pendingKey, JSON.stringify({ apiMatches, sessionPayload, roundNum: round.roundNum }));
 
         setSubmitStatus("sending", `Step 1/2: Menyimpan match data... (Ronde ${round.roundNum})`);
-        await submitWithRetry(pendingKey, apiMatches, sessionPayload, round.roundNum);
+        const resp = await submitWithRetry(pendingKey, apiMatches, sessionPayload, round.roundNum);
+        // Server jadi wasit: sinkronkan ELO lokal ke angka server biar leaderboard
+        // live sama dengan yang tersimpan (dan ronde berikutnya lanjut dari sana).
+        if (resp && resp.source === "server" && Array.isArray(resp.results)) {
+          const byName = {}; resp.results.forEach(r => { byName[String(r.player).toLowerCase()] = r; });
+          roundPlayers.forEach(name => {
+            const r = byName[name.toLowerCase()];
+            if (r && r.new_elo != null && state.playerStats[name]) state.playerStats[name].elo = r.new_elo;
+          });
+          if (Array.isArray(resp.flags) && resp.flags.length) {
+            const seen = new Set((state.lastFlags || []).map(f => String(f.player).toLowerCase()));
+            state.lastFlags = (state.lastFlags || []).concat(resp.flags.filter(f => !seen.has(String(f.player).toLowerCase())));
+          }
+        }
       }
     }
 
@@ -1907,12 +1922,12 @@ async function endMatch() {
   try {
     const standings = getLeaderboard();
 
-    // ELO sudah dikirim per ronde via submitRound → /api/sessions
-    // endMatch hanya simpan summary final match
+    // ELO sudah dihitung & disimpan server per ronde (server-authoritative).
+    // Summary final HANYA baris Sessions (tanpa elo_results) supaya TIDAK
+    // double-write ke ELO_Log — kalau dikirim lagi, career match Σ(w+l) jadi
+    // dobel dan merusak status kalibrasi/anchor/flag/tier.
     if (state.venue) {
       const now = new Date().toLocaleDateString("id-ID");
-      const submittedRounds = state.rounds.filter(r => r.submitted).length;
-      // Kirim summary dengan ELO final (cumulative dari semua ronde)
       await apiRequest("sessions", {
         method:"POST",
         body: JSON.stringify({
@@ -1921,14 +1936,8 @@ async function endMatch() {
           courts: state.courts,
           venue: state.venue,
           players: state.selectedPlayers.map(p => p.name),
-          rounds: [],  // Sudah dikirim per ronde, tidak perlu ulang
-          elo_results: standings.map(p => ({
-            player:     p.name,
-            new_elo:    p.elo,
-            elo_change: p.elo - (state.selectedPlayers.find(s => s.name === p.name)?.elo || 1350),
-            w: p.wins,
-            l: p.losses,
-          })),
+          rounds: [],
+          // sengaja TANPA matches & elo_results → server cuma catat baris Sessions
         })
       }).catch(e => console.warn("Final session warn:", e.message));
     }
@@ -1957,6 +1966,18 @@ function renderDoneScreen(standings) {
     `${doneRounds} ronde · ${state.selectedPlayers.length} pemain`;
   document.getElementById("done-date").textContent = dateStr;
   document.getElementById("done-venue").textContent = state.venue || "Trekkr";
+
+  // Step 5: peringatan performa dominan saat kalibrasi (mungkin salah-seed / sandbagging).
+  const fl = document.getElementById("mx-done-flags");
+  if (fl) {
+    const flags = state.lastFlags || [];
+    if (flags.length) {
+      fl.innerHTML = "<strong>⚠ Tinjau kalibrasi:</strong> "
+        + flags.map(f => `${String(f.player||"").split(" ")[0]} (+${f.gain} ELO, ${f.winRate}% menang)`).join("; ")
+        + " — performa jauh di atas seed, pertimbangkan re-seed / tinjau.";
+      fl.style.display = "block";
+    } else { fl.style.display = "none"; }
+  }
 
   // ── PODIUM (dark style) ────────────────────────────────────────────────
   const p1 = standings[0], p2 = standings[1], p3 = standings[2];
@@ -2235,7 +2256,7 @@ async function apiWithRetry(fn, label, maxAttempts = 3) {
 
 // ── MAIN SUBMIT FUNCTION WITH SEPARATE ERROR HANDLING ────────────────────
 async function submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum) {
-  let venueOk = false, sessionOk = false;
+  let venueOk = false, sessionOk = false, sessResp = null;
 
   // STEP 1: Venue match (independent try — failure doesn't block ELO update)
   try {
@@ -2260,7 +2281,7 @@ async function submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum)
   // STEP 2: Session / ELO_Log (independent try)
   try {
     setSubmitStatus("sending", "Step 2/2: Menyimpan ELO...");
-    await apiWithRetry(
+    sessResp = await apiWithRetry(
       () => apiRequest("sessions", {
         method: "POST",
         body: JSON.stringify(sessionPayload),
@@ -2302,6 +2323,7 @@ async function submitWithRetry(pendingKey, apiMatches, sessionPayload, roundNum)
     // Even partial — if ELO ok, remove from queue
     if (sessionOk) localStorage.removeItem(pendingKey);
   }
+  return sessResp;
 }
 
 // ── RETRY PENDING SUBMISSION ─────────────────────────────────────────────

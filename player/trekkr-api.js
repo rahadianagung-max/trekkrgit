@@ -30,7 +30,22 @@ const TrekkrAPI = (() => {
     }
   }
 
+  // Series Tier cutoffs (T1/T2/T3) — percentile-based, fetched from the API.
+  // Defaults are the absolute fallback used until loadTierBoundaries() resolves
+  // (and if the fetch ever fails).
+  let _tierCut = { t1: 2000, t2: 1500 };
+  async function loadTierBoundaries() {
+    try {
+      const d = await request("tiers/boundaries");
+      if (d && Number(d.t1) && Number(d.t2)) _tierCut = { t1: Number(d.t1), t2: Number(d.t2) };
+    } catch (e) { /* keep defaults */ }
+    return { ..._tierCut };
+  }
+  loadTierBoundaries();
+
   return {
+    loadTierBoundaries,
+    getTierCutoffs() { return { ..._tierCut }; },
     async login(username, password) {
       const data = await request("auth/login", {
         method: "POST",
@@ -163,20 +178,21 @@ const TrekkrAPI = (() => {
     },
 
     getTierName(elo) {
-      // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
-      if (elo >= 2000) return "T1 · Open";
-      if (elo >= 1500) return "T2 · Contender";
+      // Championship tiers (Series). Cutoffs percentile-based via loadTierBoundaries();
+      // defaults are the absolute fallback (T2 1500 / T1 2000).
+      if (elo >= _tierCut.t1) return "T1 · Open";
+      if (elo >= _tierCut.t2) return "T2 · Contender";
       return "T3 · Rising";
     },
     getTierClass(elo) {
-      if (elo >= 2000) return "tier-t1";
-      if (elo >= 1500) return "tier-t2";
+      if (elo >= _tierCut.t1) return "tier-t1";
+      if (elo >= _tierCut.t2) return "tier-t2";
       return "tier-t3";
     },
     getNextTier(elo) {
       const tiers = [
-        { name: "T2 · Contender", min: 1500 },
-        { name: "T1 · Open", min: 2000 },
+        { name: "T2 · Contender", min: _tierCut.t2 },
+        { name: "T1 · Open", min: _tierCut.t1 },
       ];
       for (const t of tiers) {
         if (elo < t.min) return { name: t.name, ptsAway: t.min - elo };
