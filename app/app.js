@@ -781,47 +781,69 @@
   /* ---------- RANKINGS ---------- */
   async function renderRankings() {
     viewEl().innerHTML = '<div class="screen"><div class="center" style="min-height:40vh"><div class="spinner"></div></div></div>';
+    S.rankGender = S.rankGender || "M";
+    S.rankMode = S.rankMode || "rated";       // rated | calib
+    S.rankFilter = S.rankFilter || "all";
     try {
       var r = await Promise.all([API.getLeaderboard({ limit: 100000 }), ensureCut(), ensureMe().catch(function () { return null; })]);
       var raw = (r[0] && r[0].leaderboard) || [], cut = r[1];
-      var list = raw.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
+      function tierOf(elo) { return elo >= ((cut && cut.t1) || 2000) ? "T1" : elo >= ((cut && cut.t2) || 1500) ? "T2" : "T3"; }
+      var g = S.rankGender, mode = S.rankMode, f = S.rankFilter;
+
+      // Gender pool, then split calibrated (15+) vs calibrating (1–14).
+      var pool = raw.filter(function (p) { return (String(p.gender || "M").toUpperCase() === "F" ? "F" : "M") === g; });
+      var rated = pool.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
         .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region }; })
         .sort(function (a, b) { return b.elo - a.elo; });
-      // Players still in calibration (1–14 matches): shown separately, marked provisional.
-      var calib = raw.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
+      var calib = pool.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
         .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, m: Number(p.totalMatches) || 0 }; })
         .sort(function (a, b) { return b.elo - a.elo; });
-      function tierOf(elo) { return elo >= ((cut && cut.t1) || 2000) ? "T1" : elo >= ((cut && cut.t2) || 1500) ? "T2" : "T3"; }
-      var f = S.rankFilter;
+
+      var genderSeg = '<div class="seg" id="genderSeg">' +
+        '<button data-g="M"' + (g === "M" ? ' class="on"' : "") + '>Men</button>' +
+        '<button data-g="F"' + (g === "F" ? ' class="on"' : "") + '>Women</button></div>';
+      var poolSeg = '<div class="seg" id="poolSeg" style="margin-top:8px">' +
+        '<button data-m="rated"' + (mode === "rated" ? ' class="on"' : "") + '>Calibrated <span class="segn">' + rated.length + '</span></button>' +
+        '<button data-m="calib"' + (mode === "calib" ? ' class="on"' : "") + '>Calibrating <span class="segn">' + calib.length + '</span></button></div>';
       var chips = [["all", "All"], ["T1", "T1"], ["T2", "T2"], ["T3", "T3"]].map(function (c) {
         return '<button class="chip' + (f === c[0] ? " on" : "") + '" data-f="' + c[0] + '">' + c[1] + '</button>';
       }).join("");
-      var rows = list.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
-        var rank = list.indexOf(p) + 1;
-        var mine = S.myName && norm(p.name) === norm(S.myName);
-        return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
-          '<span class="rk">' + rank + '</span>' +
-          '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + '</span>' +
-          '<span class="mt">' + esc(API.tierName(p.elo, cut)) + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
-          '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
-      }).join("");
-      // Calibrating section — only under the "All" filter (tier isn't settled yet).
-      var calibHTML = (f === "all" && calib.length) ? '<div class="sec" style="margin-top:22px">Still calibrating</div>' +
-        '<div class="rsub" style="margin:-4px 4px 8px">Rating firms up after 15 matches — shown provisional for now.</div>' +
-        calib.map(function (p) {
+
+      var body;
+      if (mode === "rated") {
+        var rows = rated.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
+          var rank = rated.indexOf(p) + 1;
+          var mine = S.myName && norm(p.name) === norm(S.myName);
+          return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
+            '<span class="rk">' + rank + '</span>' +
+            '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + '</span>' +
+            '<span class="mt">' + esc(API.tierName(p.elo, cut)) + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
+            '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
+        }).join("");
+        body = rows || '<div class="emptybig"><div class="em">🏆</div><p>No calibrated players in this filter yet.</p></div>';
+      } else {
+        var crows = calib.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
             '<span class="rk">·</span>' +
             '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + ' <span class="prov">Provisional</span></span>' +
             '<span class="mt">' + p.m + '/15 matches' + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
             '<span class="el prov-el">' + p.elo + '</span><span class="rchev">›</span></div>';
-        }).join("") : "";
+        }).join("");
+        body = crows
+          ? '<div class="rsub" style="margin:2px 4px 10px">Rating firms up after 15 matches — provisional for now.</div>' + crows
+          : '<div class="emptybig"><div class="em">⏳</div><p>No players calibrating in this filter.</p></div>';
+      }
+
       viewEl().innerHTML = '<div class="screen">' +
-        '<div class="rtitle">Rankings</div><div class="rsub">Calibrated players (15+ matches) · national</div>' +
-        '<div class="chips">' + chips + '</div>' +
-        (rows || '<div class="emptybig"><div class="em">🏆</div><p>No players in this filter yet.</p></div>') +
-        calibHTML +
+        '<div class="rtitle">Rankings</div><div class="rsub">' + (g === "F" ? "Women" : "Men") + ' · national</div>' +
+        genderSeg + poolSeg +
+        '<div class="chips" style="margin-top:12px">' + chips + '</div>' +
+        body +
         '</div>';
+
+      Array.prototype.forEach.call(d.querySelectorAll("#genderSeg button"), function (b) { b.onclick = function () { S.rankGender = b.getAttribute("data-g"); renderRankings(); }; });
+      Array.prototype.forEach.call(d.querySelectorAll("#poolSeg button"), function (b) { b.onclick = function () { S.rankMode = b.getAttribute("data-m"); renderRankings(); }; });
       Array.prototype.forEach.call(d.querySelectorAll(".chip"), function (c) { c.onclick = function () { S.rankFilter = c.getAttribute("data-f"); renderRankings(); }; });
       Array.prototype.forEach.call(d.querySelectorAll(".rrow"), function (rw) {
         rw.onclick = function () { S.playerView = rw.getAttribute("data-name"); S.view = "player"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };

@@ -155,6 +155,11 @@ button{font-family:inherit;cursor:pointer}
 /* rankings */
 .rtitle{font-family:var(--display);text-transform:uppercase;font-size:27px;font-weight:800;letter-spacing:-.5px;margin:6px 4px 2px}
 .rsub{font-size:12.5px;color:var(--mu);margin:0 4px 12px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:none;background:transparent;color:var(--mu);font-family:inherit;font-weight:800;font-size:13.5px;padding:9px 8px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button.on{background:var(--grad);color:#fff;box-shadow:0 6px 14px -8px rgba(255,80,0,.6)}
+.seg .segn{font-size:11px;font-weight:800;opacity:.7;background:rgba(0,0,0,.08);border-radius:999px;padding:1px 7px}
+.seg button.on .segn{background:rgba(255,255,255,.24);opacity:1}
 .chips{display:flex;gap:7px;margin:0 0 12px;overflow-x:auto;padding-bottom:2px}
 .chip{font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:999px;border:1px solid var(--line);color:var(--mu);background:var(--card);white-space:nowrap}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
