@@ -102,6 +102,73 @@
       '<path d="' + area + '" fill="url(#sg)"/>' +
       '<path d="' + line + '" fill="none" stroke="var(--or)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   }
+  /* ---------- achievement badges (ported from the web passport) ---------- */
+  var BADGE_DEFS = [
+    { id: "giant_slayer", cat: "Combat", emoji: "⚔️", name: "Giant Slayer", rarity: "uncommon", criteria: "Beat a team averaging 200+ ELO above yours.", compute: function (d) { return d.matchesRaw.some(function (m) { return m._myWin && ((m._oppElo1 + m._oppElo2) / 2 - (m._myElo1 + m._myElo2) / 2) >= 200; }); } },
+    { id: "dragon_slayer", cat: "Combat", emoji: "🐉", name: "Dragon Slayer", rarity: "rare", criteria: "Beat a team averaging 400+ ELO above yours.", compute: function (d) { return d.matchesRaw.some(function (m) { return m._myWin && ((m._oppElo1 + m._oppElo2) / 2 - (m._myElo1 + m._myElo2) / 2) >= 400; }); } },
+    { id: "flawless", cat: "Combat", emoji: "🎯", name: "Flawless", rarity: "uncommon", criteria: "Win a match with the opponent on 0.", compute: function (d) { return d.matchesRaw.some(function (m) { return m._myWin && m._oppScore === 0; }); } },
+    { id: "unstoppable", cat: "Combat", emoji: "🔥", name: "Unstoppable", rarity: "rare", criteria: "Win 5 matches in a row.", progress: function (d) { return { val: d.bestStreak, max: 5 }; }, compute: function (d) { return d.bestStreak >= 5; } },
+    { id: "iron_wall", cat: "Combat", emoji: "🛡️", name: "Iron Wall", rarity: "uncommon", criteria: "Win holding opponents to 2 or fewer.", compute: function (d) { return d.matchesRaw.some(function (m) { return m._myWin && m._oppScore <= 2; }); } },
+    { id: "summit", cat: "Journey", emoji: "🏔️", name: "Summit", rarity: "common", criteria: "Reach a new personal-best ELO.", compute: function (d) { return d.history.length && d.stats.currentElo === Math.max.apply(null, d.history.map(function (h) { return h.elo || 0; }).concat([d.stats.currentElo])); } },
+    { id: "on_the_rise", cat: "Journey", emoji: "📈", name: "On The Rise", rarity: "uncommon", criteria: "Gain 150+ ELO in the last 30 days.", progress: function (d) { return { val: Math.max(0, d.eloGain30d), max: 150 }; }, compute: function (d) { return d.eloGain30d >= 150; } },
+    { id: "fast_track", cat: "Journey", emoji: "⚡", name: "Fast Track", rarity: "rare", criteria: "Gain 200+ ELO in your first 20 matches.", compute: function (d) { if (d.stats.totalMatches < 20) return false; var f = d.history.slice(0, 20); return f.length >= 2 && (f[f.length - 1].elo - f[0].elo) >= 200; } },
+    { id: "veteran", cat: "Consistency", emoji: "🎖️", name: "Veteran", rarity: "uncommon", criteria: "Play 100 recorded matches.", progress: function (d) { return { val: d.stats.totalMatches, max: 100 }; }, compute: function (d) { return d.stats.totalMatches >= 100; } },
+    { id: "legend", cat: "Consistency", emoji: "🏛️", name: "Legend", rarity: "epic", criteria: "Play 500 recorded matches.", progress: function (d) { return { val: d.stats.totalMatches, max: 500 }; }, compute: function (d) { return d.stats.totalMatches >= 500; } },
+    { id: "nomad", cat: "Consistency", emoji: "🌍", name: "Nomad", rarity: "uncommon", criteria: "Play at 3+ different venues.", progress: function (d) { return { val: d.venueCount, max: 3 }; }, compute: function (d) { return d.venueCount >= 3; } },
+    { id: "all_rounder", cat: "Consistency", emoji: "🎭", name: "All-Rounder", rarity: "uncommon", criteria: "Play with 10+ different partners.", progress: function (d) { return { val: Object.keys(d.partnerStats).length, max: 10 }; }, compute: function (d) { return Object.keys(d.partnerStats).length >= 10; } },
+    { id: "dynamic_duo", cat: "Partnership", emoji: "🤜", name: "Dynamic Duo", rarity: "uncommon", criteria: "80%+ win rate with a partner (10+ together).", compute: function (d) { return Object.keys(d.partnerStats).some(function (k) { var p = d.partnerStats[k]; return p.total >= 10 && p.w / p.total >= 0.8; }); } },
+    { id: "team_player", cat: "Partnership", emoji: "🧩", name: "Team Player", rarity: "rare", criteria: "60%+ win rate with 5 partners (5+ each).", compute: function (d) { return Object.keys(d.partnerStats).filter(function (k) { var p = d.partnerStats[k]; return p.total >= 5 && p.w / p.total >= 0.6; }).length >= 5; } },
+    { id: "versatile", cat: "Partnership", emoji: "🎪", name: "Versatile", rarity: "uncommon", criteria: "Win with 5 different partners.", progress: function (d) { return { val: Object.keys(d.partnerStats).filter(function (k) { return d.partnerStats[k].w >= 1; }).length, max: 5 }; }, compute: function (d) { return Object.keys(d.partnerStats).filter(function (k) { return d.partnerStats[k].w >= 1; }).length >= 5; } },
+    { id: "king_killer", cat: "Special", emoji: "👑", name: "King Killer", rarity: "epic", criteria: "Beat a Silver+ (2100+) opponent team.", compute: function (d) { return d.matchesRaw.some(function (m) { return m._myWin && (m._oppElo1 + m._oppElo2) / 2 >= 2100; }); } },
+  ];
+  function computeBadges(playerD, matches, eloMap) {
+    var s = playerD.stats, history = playerD.history || [];
+    var mine = [playerD.player.name, playerD.player.displayName].map(function (x) { return String(x || "").toLowerCase().trim(); }).filter(Boolean);
+    function isMe(n) { return mine.indexOf(String(n || "").toLowerCase().trim()) !== -1; }
+    function getElo(n) { return (eloMap && eloMap[String(n || "").toLowerCase().trim()]) || 1350; }
+    var matchesRaw = (matches || []).map(function (m) {
+      var myT1 = isMe(m.p1t1) || isMe(m.p2t1);
+      var myScore = myT1 ? (m.scoreT1 || 0) : (m.scoreT2 || 0), oppScore = myT1 ? (m.scoreT2 || 0) : (m.scoreT1 || 0);
+      return { p1t1: m.p1t1, p2t1: m.p2t1, p1t2: m.p1t2, p2t2: m.p2t2, venue: m.venue, _myWin: myScore > oppScore, _oppScore: oppScore,
+        _myElo1: getElo(myT1 ? m.p1t1 : m.p1t2), _myElo2: getElo(myT1 ? m.p2t1 : m.p2t2), _oppElo1: getElo(myT1 ? m.p1t2 : m.p1t1), _oppElo2: getElo(myT1 ? m.p2t2 : m.p2t1) };
+    });
+    var partnerStats = {};
+    matchesRaw.forEach(function (m) {
+      var myT1 = isMe(m.p1t1) || isMe(m.p2t1);
+      var partner = myT1 ? (isMe(m.p1t1) ? m.p2t1 : m.p1t1) : (isMe(m.p1t2) ? m.p2t2 : m.p1t2);
+      if (!partner || isMe(partner)) return;
+      var pk = partner.toLowerCase().trim();
+      if (!partnerStats[pk]) partnerStats[pk] = { name: partner, w: 0, l: 0, total: 0 };
+      partnerStats[pk].total++; if (m._myWin) partnerStats[pk].w++; else partnerStats[pk].l++;
+    });
+    var bestStreak = 0, cur = 0;
+    matchesRaw.forEach(function (m) { if (m._myWin) { cur++; bestStreak = Math.max(bestStreak, cur); } else cur = 0; });
+    var venueCount = (new Set(matchesRaw.map(function (m) { return m.venue || "default"; }))).size;
+    var now = Date.now(), recent = history.filter(function (h) { return h.date && (now - Date.parse(h.date)) <= 2592000000; });
+    var eloGain30d = recent.length >= 2 ? recent[recent.length - 1].elo - recent[0].elo : (history.length >= 2 ? history[history.length - 1].elo - history[0].elo : 0);
+    var ctx = { stats: s, history: history, matchesRaw: matchesRaw, partnerStats: partnerStats, bestStreak: bestStreak, venueCount: venueCount, eloGain30d: eloGain30d };
+    var calibrating = (s.totalMatches || 0) < 15;
+    return BADGE_DEFS.map(function (def) {
+      var earned = false; if (!calibrating) { try { earned = !!def.compute(ctx); } catch (e) {} }
+      var prog = null; if (!earned && def.progress) { try { prog = def.progress(ctx); } catch (e) {} }
+      return { def: def, earned: earned, progress: prog };
+    });
+  }
+  function showBadge(b) {
+    var def = b.def;
+    var st = b.earned ? "Earned" : (b.progress ? b.progress.val + " / " + b.progress.max : "Locked");
+    var old = d.querySelector(".bsheet-wrap"); if (old) old.remove();
+    var el = d.createElement("div"); el.className = "bsheet-wrap";
+    el.innerHTML = '<div class="bsheet"><button class="x" aria-label="Close">×</button>' +
+      '<div class="bs-emoji' + (b.earned ? "" : " lock") + '">' + def.emoji + '</div>' +
+      '<div class="bs-name">' + esc(def.name) + '</div>' +
+      '<div class="bs-status ' + (b.earned ? "ok" : "") + '">' + esc(st) + '</div>' +
+      '<p class="bs-crit">' + esc(def.criteria) + '</p></div>';
+    d.body.appendChild(el);
+    function close() { el.remove(); }
+    el.onclick = function (e) { if (e.target === el) close(); };
+    el.querySelector(".x").onclick = close;
+  }
   function isIosSafari() {
     var ua = w.navigator.userAgent;
     var ios = /iPad|iPhone|iPod/.test(ua) && !w.MSStream;
@@ -181,9 +248,9 @@
           '<p class="wc-tag">Your padel passport — every match builds your journey.</p>' +
         '</div>' +
         '<ul class="wc-list">' +
-          '<li><span class="wc-ic">📈</span><div><b>Live ELO &amp; tier</b><span>Watch your rating move after every match.</span></div></li>' +
-          '<li><span class="wc-ic">🏆</span><div><b>National rankings</b><span>See where you stand across Indonesia.</span></div></li>' +
-          '<li><span class="wc-ic">🎾</span><div><b>Play &amp; events</b><span>Find PlayRank sessions and tournaments near you.</span></div></li>' +
+          '<li><b>Live ELO &amp; tier</b><span>Watch your rating move after every match.</span></li>' +
+          '<li><b>National rankings</b><span>See where you stand across Indonesia.</span></li>' +
+          '<li><b>Ranked play &amp; league</b><span>Join ranked sessions, then the monthly league.</span></li>' +
         '</ul>' +
         '<div class="wc-cta">' +
           '<button class="btn" id="wc-start">Play Now</button>' +
@@ -261,7 +328,7 @@
     profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.4-3.6 3.4-6 7.2-6s6.8 2.4 7.2 6"/></svg>',
   };
   function tabbarHTML() {
-    var tabs = [["passport", "Passport"], ["rankings", "Rankings"], ["main", "Play"], ["profil", "Profile"]];
+    var tabs = [["passport", "Passport"], ["rankings", "Rankings"], ["main", "PlayRank"], ["profil", "Profile"]];
     var active = S.view;
     if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
     if (S.view === "player") active = "rankings";
@@ -313,6 +380,7 @@
         API.getPlayer(name).catch(function () { return {}; }),
         ensureCut(),
         API.getPlayerMatches(name).catch(function () { return { matches: [] }; }),
+        API.getLeaderboard({ limit: 5000 }).catch(function () { return { leaderboard: [] }; }),
       ]);
       var det = r[0] || {}, cut = r[1];
       var st = det.stats || {};                 // {currentElo,unrated,totalMatches,totalW,totalL,winRate,streak}
@@ -336,6 +404,14 @@
       var tier = unrated ? null : API.tierName(elo, cut);
       var bp = bestPartner(matchesArr, [name, display]);
       var results = matchResults(matchesArr, [name, display]).slice(0, 6);
+
+      // Achievement badges (earned ones surfaced first).
+      var eloMap = {};
+      ((r[3] && r[3].leaderboard) || []).forEach(function (p) { if (p && p.name) eloMap[String(p.name).toLowerCase().trim()] = Number(p.elo) || 0; });
+      var histForBadges = hist.map(function (h) { return { elo: h.elo, date: h.timestamp }; });
+      var badges = computeBadges({ player: { name: name, displayName: display }, stats: { currentElo: elo, totalMatches: matches, winRate: winRate }, history: histForBadges }, matchesArr, eloMap);
+      badges.sort(function (a, b) { return (b.earned ? 1 : 0) - (a.earned ? 1 : 0); });
+      var earnedCount = badges.filter(function (b) { return b.earned; }).length;
 
       S.card = { display: display, name: name, elo: elo, tier: tier, wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name), partner: bp };
 
@@ -383,6 +459,11 @@
 
       var spark = (!unrated && hist.length > 1) ? '<div class="sec">ELO progress</div><div class="sparkcard">' + sparkline(hist) + '</div>' : "";
 
+      var badgesHTML = '<div class="sec">Badges <span class="badgecount">' + earnedCount + '/' + badges.length + '</span></div>' +
+        '<div class="badgegrid">' + badges.map(function (b, i) {
+          return '<button class="badge' + (b.earned ? " earned" : "") + '" data-bi="' + i + '"><span class="be">' + b.def.emoji + '</span><span class="bn">' + esc(b.def.name) + '</span></button>';
+        }).join("") + '</div>';
+
       viewEl().innerHTML =
         '<div class="screen">' +
           '<div class="p-top"><div><div class="p-hi">Passport</div><div class="p-name">' + esc(display) + '</div>' +
@@ -393,6 +474,7 @@
           '<div class="hero">' + heroInner + '</div>' +
           calib + tp + statGrid +
           (bp ? '<div class="sec">Best partner</div><div class="hitem"><span class="d"><b style="color:var(--ink)">' + esc(bp.name) + '</b></span><span class="up">' + bp.w + '–' + bp.l + '</span></div>' : "") +
+          badgesHTML +
           spark +
           '<div class="actrow"><button class="btn" id="share">Share Card</button>' +
             '<button class="btn ghost soon" id="challenge" style="flex:0 0 auto;width:auto;padding:15px 16px">Challenge</button></div>' +
@@ -401,6 +483,7 @@
         '</div>';
 
       wireThemeBtn("pp-theme");
+      Array.prototype.forEach.call(d.querySelectorAll(".badge"), function (b) { b.onclick = function () { showBadge(badges[+b.getAttribute("data-bi")]); }; });
       d.getElementById("pp-av").onclick = function () { S.view = "edit"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
       d.getElementById("challenge").onclick = function () { toast("Challenge players — coming soon 🔜"); };
       d.getElementById("share").onclick = shareCard;
@@ -611,46 +694,105 @@
   }
 
   /* ---------- PLAY (sessions + events) ---------- */
-  async function renderMain() {
-    viewEl().innerHTML = '<div class="screen"><h1 class="page">Play</h1><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
-    try {
-      var r = await Promise.all([
-        API.getSchedule({}).catch(function () { return { schedule: [] }; }),
-        API.getTrackedEvents().catch(function () { return { events: [] }; }),
-      ]);
-      var sched = (r[0] && r[0].schedule) || [];
-      var events = (r[1] && r[1].events) || [];
+  // Trekkr Championship / Series figures — mirrors /wave1/config.js (single source
+  // of truth). Loaded live when available; this is the offline fallback.
+  var LIGA_FALLBACK = {
+    championship: { date: "2026-12-13", city: "Jakarta", prizePool: 30000000,
+      prizes: [{ tier: "T1", label: "Open", amount: 15000000 }, { tier: "T2", label: "Contender", amount: 10000000 }, { tier: "T3", label: "Rising", amount: 5000000 }] },
+    series: { prizePool: 9000000, minEntered: 2, dates: [
+      { iso: "2026-09-14", label: "14 Sep", name: "Series #1", venue: "The Field" },
+      { iso: "2026-10-12", label: "12 Oct", name: "Series #2", venue: "The Field" },
+      { iso: "2026-11-09", label: "9 Nov", name: "Series #3", venue: "The Field" }] },
+    qualifying: { close: "2026-11-30", topN: 16 },
+  };
+  var _liga = null;
+  function ligaConfig() {
+    if (_liga) return Promise.resolve(_liga);
+    if (w.TREKKR) { _liga = w.TREKKR; return Promise.resolve(_liga); }
+    return new Promise(function (res) {
+      var s = d.createElement("script"); s.src = "/wave1/config.js";
+      s.onload = function () { _liga = w.TREKKR || LIGA_FALLBACK; res(_liga); };
+      s.onerror = function () { _liga = LIGA_FALLBACK; res(_liga); };
+      d.head.appendChild(s);
+    });
+  }
+  function rp(n) { return "Rp" + Number(n || 0).toLocaleString("id-ID"); }
+  function daysTo(iso) { var t = Date.parse(iso); if (isNaN(t)) return null; return Math.max(0, Math.ceil((t - Date.now()) / 86400000)); }
 
-      var sessHTML = sched.slice(0, 20).map(function (s) {
-        var when = [s.date, s.startTime].filter(Boolean).join(" · ");
+  async function renderMain() {
+    viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
+    try {
+      var todayISO = new Date().toISOString().slice(0, 10);
+      var r = await Promise.all([
+        API.getSchedule({ type: "RANKPLAY", from: todayISO }).catch(function () { return { schedule: [] }; }),
+        API.getSchedule({ type: "SERIES" }).catch(function () { return { schedule: [] }; }),
+        ligaConfig(),
+      ]);
+      var ranked = (r[0] && r[0].schedule) || [];
+      var series = (r[1] && r[1].schedule) || [];
+      var C = r[2] || LIGA_FALLBACK;
+
+      // Fallback: if the schedule has no RANKPLAY rows, show any untyped sessions.
+      if (!ranked.length) {
+        try { var any = await API.getSchedule({ from: todayISO }); ranked = (any && any.schedule) || []; } catch (e) {}
+      }
+
+      function sessionCard(s, ghost) {
+        var when = [s.date ? fmtDate(Date.parse(s.date) || s.date) : "", s.startTime].filter(Boolean).join(" · ");
         var spots = (s.spotsLeft != null) ? (s.spotsLeft + " spots left") : "";
-        var price = s.pricePerPlayer ? ("Rp" + Number(s.pricePerPlayer).toLocaleString("id-ID")) : "";
+        var price = s.pricePerPlayer ? rp(s.pricePerPlayer) : "";
         var meta = [s.venue || s.area, when].filter(Boolean).join(" · ");
         var sub = [spots, price].filter(Boolean).join(" · ");
-        var btn = s.whatsappUrl
-          ? '<a class="btn" style="text-decoration:none;text-align:center;margin-top:10px" href="' + esc(s.whatsappUrl) + '" target="_blank" rel="noopener">Register</a>'
-          : "";
-        return '<div class="plain"><h3>' + esc(s.type || "PlayRank") + (s.venue ? " · " + esc(s.venue) : "") + '</h3>' +
-          '<p>' + esc(meta) + (sub ? '<br>' + esc(sub) : "") + '</p>' + btn + '</div>';
+        var href = s.whatsappUrl || (C.waFallback || "");
+        var btn = href ? '<a class="btn' + (ghost ? " ghost" : "") + '" style="display:block;text-decoration:none;text-align:center;margin-top:10px" href="' + esc(href) + '" target="_blank" rel="noopener">Register</a>' : "";
+        return '<div class="plain"><h3>' + esc(s.venue || s.type || "Ranked session") + '</h3>' +
+          '<p>' + esc(meta || "Schedule coming soon") + (sub ? '<br>' + esc(sub) : "") + '</p>' + btn + '</div>';
+      }
+
+      var champ = C.championship || LIGA_FALLBACK.championship;
+      var days = daysTo(champ.date);
+      var champPrizes = (champ.prizes || []).map(function (p) {
+        return '<div class="cp-row"><span>' + esc(p.tier) + ' · ' + esc(p.label) + '</span><b>' + rp(p.amount) + '</b></div>';
       }).join("");
 
-      var evHTML = events.slice(0, 20).map(function (e) {
-        var btn = e.url
-          ? '<a class="btn ghost" style="text-decoration:none;text-align:center;margin-top:10px" href="' + esc(e.url) + '" target="_blank" rel="noopener">View / Register</a>'
-          : "";
-        var logo = e.logoUrl ? '<img src="' + esc(e.logoUrl) + '" alt="" style="width:40px;height:40px;border-radius:9px;object-fit:cover;float:right;margin-left:10px"/>' : "";
-        return '<div class="plain">' + logo + '<h3>' + esc(e.name) + '</h3>' +
-          '<p>' + esc([e.location, e.monthYear].filter(Boolean).join(" · ")) + '</p>' + btn + '</div>';
-      }).join("");
+      // Journey: the player-facing order — ranked session → monthly league → championship.
+      var journey =
+        '<div class="journey">' +
+          '<div class="jstep on"><div class="jnum">1</div><div class="jb"><b>Find a ranked session</b>' +
+            '<span>Play ranked sessions at partner venues to earn your ELO &amp; Series Tier (15 matches to calibrate).</span></div></div>' +
+          '<div class="jstep"><div class="jnum">2</div><div class="jb"><b>Join the monthly league</b>' +
+            '<span>Enter Trekkr Series events — ' + rp((C.series || {}).prizePool || 9000000) + ' pool each, and every result adds season points.</span></div></div>' +
+          '<div class="jstep"><div class="jnum">3</div><div class="jb"><b>Reach the Championship</b>' +
+            '<span>Finish top ' + (((C.qualifying || {}).topN) || 16) + ' in your tier on season points to play for the title.</span></div></div>' +
+        '</div>';
 
-      var body = "";
-      if (sessHTML) body += '<div class="sec" style="margin-top:2px">PlayRank sessions</div>' + sessHTML;
-      if (evHTML) body += '<div class="sec">Events</div>' + evHTML;
-      if (!body) body = '<div class="emptybig"><div class="em">📅</div><p style="max-width:32ch;margin:12px auto 0">No upcoming sessions or events yet. Check back soon.</p></div>';
+      var champCard =
+        '<div class="champcard">' +
+          '<div class="cc-eyebrow">Trekkr Championship</div>' +
+          '<div class="cc-pool">' + rp(champ.prizePool) + '</div>' +
+          '<div class="cc-sub">One champion per tier · ' + esc(champ.city || "") + (days != null ? ' · in ' + days + ' days' : '') + '</div>' +
+          '<div class="cp-rows">' + champPrizes + '</div>' +
+        '</div>';
 
-      viewEl().innerHTML = '<div class="screen"><h1 class="page">Play</h1>' + body + '</div>';
+      var rankedHTML = ranked.length
+        ? ranked.slice(0, 10).map(function (s) { return sessionCard(s, false); }).join("")
+        : '<div class="plain"><h3>No ranked sessions listed yet</h3><p>New ranked sessions open regularly — check back soon, or explore the rankings meanwhile.</p></div>';
+
+      var seriesList = series.length
+        ? series.slice(0, 6).map(function (s) { return sessionCard(s, true); }).join("")
+        : ((C.series && C.series.dates) || []).slice(0, 3).map(function (s) {
+            return '<div class="plain"><h3>' + esc(s.name || "Trekkr Series") + '</h3><p>' + esc([s.label, s.venue].filter(Boolean).join(" · ")) + '</p></div>';
+          }).join("");
+
+      viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1>' +
+        '<p class="lede">Your road to the Trekkr Championship — in three steps.</p>' +
+        journey +
+        '<div class="sec">Step 1 · Next ranked sessions</div>' + rankedHTML +
+        '<div class="sec">Step 2 · Monthly league — Trekkr Series</div>' + seriesList +
+        '<div class="sec">Step 3 · Championship</div>' + champCard +
+        '</div>';
     } catch (e) {
-      viewEl().innerHTML = errorBox("Couldn't load Play.", renderMain);
+      viewEl().innerHTML = errorBox("Couldn't load PlayRank.", renderMain);
     }
   }
 
