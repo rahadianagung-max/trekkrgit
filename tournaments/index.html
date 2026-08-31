@@ -92,32 +92,7 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="/tournaments" class="active">Tournaments</a>
-      <a href="/events">Events</a>
-    </nav>
-    <div class="header-actions">
-      <a href="/rankings#find" class="btn btn--outline"><i class="ti ti-search" aria-hidden="true"></i>Find me</a>
-      <a href="https://admin.trekkr.online" class="btn btn--primary">Venue login</a>
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="/tournaments">Tournaments</a>
-      <a href="/events">Events</a>
-      <a href="/rankings#find">Find me</a>
-      <a href="https://admin.trekkr.online">Venue login</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 
 <main class="container">
 
@@ -243,21 +218,7 @@
   </div>
 </footer>
 
-<script>
-(function(){
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
-  var subject='Tournament demo request';
-  var body=[
-    'Hi Trekkr team,','',
-    "I'd like to run a tournament on Trekkr. Details:",'',
-    'Event name:','Date:','Venue:','Format:','Expected players/teams:','',
-    'Thanks!'
-  ].join('\r\n');
-  var mailto='mailto:sportsactvd@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  ['demoTop','demoBottom'].forEach(function(id){var a=document.getElementById(id);if(a)a.href=mailto;});
-})();
-</script>
+<script src="/trekkr-nav.js" defer></script>
 </body>
 </html>

@@ -60,16 +60,7 @@
 </head>
 <body class="home">
 
-<header class="w1-appbar">
-  <a class="w1-logo" href="/">TREK<span>KR</span></a>
-  <nav class="w1-nav" aria-label="Primary">
-    <a href="/liga-trekkr" aria-current="page">Liga Trekkr</a>
-    <a href="/season">Season</a>
-    <a href="/sessions">Sessions</a>
-    <a href="/rankings">Rankings</a>
-    <a href="/claim">Find profile</a>
-  </nav>
-</header>
+<div id="tk-nav"></div>
 
 <main class="w1-shell">
 
@@ -266,5 +257,6 @@
   }).catch(function () { /* Build Spec §5.5: hide the block, never render — or Loading… */ });
 })();
 </script>
+<script src="/trekkr-nav.js" defer></script>
 </body>
 </html>

@@ -66,7 +66,8 @@
   function css() {
     return '<style id="tk-nav-css">' +
       '.tk-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft,#EDEDF0)}' +
-      '.tk-in{display:flex;align-items:center;gap:16px;min-height:66px}' +
+      '.tk-in{display:flex;align-items:center;gap:16px;min-height:66px;width:min(1180px,calc(100% - 40px));margin:0 auto}' +
+      '.tk-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}' +
       '.tk-brand{display:inline-block;font-family:var(--display),sans-serif;font-style:italic;font-weight:800;font-size:25px;text-transform:uppercase;background:var(--grad,linear-gradient(90deg,#FF3830,#FFB000));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .3em .04em .02em;text-decoration:none;flex:0 0 auto}' +
       '.tk-nav{display:flex;align-items:center;gap:2px;flex:1}' +
       '.tk-drop{position:relative}' +
@@ -99,7 +100,7 @@
     var el = d.getElementById("tk-nav");
     if (!el) return;
     el.innerHTML = css() +
-      '<header class="tk-header"><div class="container tk-in">' +
+      '<header class="tk-header"><div class="tk-in">' +
         '<a class="tk-brand" href="/">Trekkr</a>' +
         desktopNav() +
         '<div class="tk-act">' +
@@ -107,7 +108,7 @@
           '<a class="tk-login" href="' + ADMIN + '" target="_blank" rel="noopener">Login</a>' +
           '<button class="tk-burger" id="tkBurger" aria-label="Menu" aria-expanded="false">&#9776;</button>' +
         "</div>" +
-      "</div><div class='container'>" + mobileNav() + "</div></header>";
+      '</div><div class="tk-wrap">' + mobileNav() + "</div></header>";
 
     var burger = d.getElementById("tkBurger"), sheet = d.getElementById("tkMsheet");
     if (burger && sheet) burger.onclick = function () { var o = sheet.classList.toggle("open"); burger.setAttribute("aria-expanded", o ? "true" : "false"); };
