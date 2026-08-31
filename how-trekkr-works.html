@@ -97,9 +97,17 @@
   </div></section>
 
   <section class="sec container">
-    <div class="secname">The Tier System</div>
-    <p class="p mt8" style="max-width:600px">Your rating maps to a tier so you always know where you stand. Climb the ladder as your rating grows.</p>
+    <div class="secname">Two ways Trekkr shows your level</div>
+    <p class="p mt8" style="max-width:620px">Your ELO maps to two things: an absolute <b>skill ladder</b> (Beginner → Platinum), and the <b>competitive divisions</b> (T1 / T2 / T3) used for Trekkr Series &amp; League.</p>
+
+    <div class="secsub mt24" style="font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:19px">Skill ladder — ELO Tier</div>
+    <p class="p mt8" style="max-width:600px">An absolute rating ladder. Where you sit is fixed by your ELO number — climb it as your rating grows.</p>
     <div class="mt16" style="max-width:560px"><div class="trow"><span class="tierpill" style="background:#F4F4F6;color:#71717A">Beginner</span><span class="trange">0 – 899</span></div><div class="trow"><span class="tierpill" style="background:#EDEDF0;color:#52525B">Upper Beginner</span><span class="trange">900 – 1199</span></div><div class="trow"><span class="tierpill" style="background:#FBEDE6;color:#B45309">Lower Bronze</span><span class="trange">1200 – 1499</span></div><div class="trow"><span class="tierpill" style="background:#F5E0D3;color:#9A3412">Bronze</span><span class="trange">1500 – 1799</span></div><div class="trow"><span class="tierpill" style="background:#EFD3C2;color:#7C2D12">Upper Bronze</span><span class="trange">1800 – 2099</span></div><div class="trow"><span class="tierpill" style="background:#ECECEF;color:#3F3F46">Silver</span><span class="trange">2100 – 2499</span></div><div class="trow"><span class="tierpill" style="background:#FFF4DA;color:#854F0B">Gold</span><span class="trange">2500 – 2999</span></div><div class="trow"><span class="tierpill" style="background:#EEF0FF;color:#534AB7">Platinum</span><span class="trange">3000 – 4000</span></div></div>
+
+    <div class="secsub mt24" style="font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:19px">Competitive divisions — T1 / T2 / T3</div>
+    <p class="p mt8" style="max-width:620px">Used for Trekkr Series &amp; League. Set by your position among active players (percentile), so the cutoffs shift and are recomputed periodically. <b>T1 is Open.</b></p>
+    <div class="mt16" style="max-width:560px"><div class="trow"><span class="tierpill" style="background:#FFECDD;color:#C2410C;font-weight:800">T1 · Open</span><span class="trange">ELO ≥ <span id="t1cut">2000</span> · Bronze+</span></div><div class="trow"><span class="tierpill" style="background:#F2EDE7;color:#7C2D12;font-weight:800">T2 · Contender</span><span class="trange"><span id="t2cutA">1500</span> – <span id="t1cutB">1999</span> · Lower Bronze</span></div><div class="trow"><span class="tierpill" style="background:#ECECEF;color:#3F3F46;font-weight:800">T3 · Rising</span><span class="trange">&lt; <span id="t2cutB">1500</span> · Beginner–L.Bronze</span></div></div>
+    <p class="p mt8" style="max-width:600px;font-size:12.5px;color:var(--subtle)">The Bronze mapping is just an easy reference — not the rule; it shifts as the player population changes.</p>
   </section>
 
   <section class="band band--warm"><div class="container">
@@ -133,6 +141,17 @@
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 
+<script>
+/* Fill the T1/T2/T3 cutoffs from the live tier boundaries (same source as the app). */
+(function(){
+  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+  fetch(BASE+'/tiers/boundaries').then(function(r){return r.json();}).then(function(d){
+    var t1=(d&&d.t1)||2000, t2=(d&&d.t2)||1500;
+    function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+    set('t1cut',t1); set('t1cutB',t1-1); set('t2cutA',t2); set('t2cutB',t2);
+  }).catch(function(){});
+})();
+</script>
 <script src="/trekkr-nav.js" defer></script>
 <script src="/ecosystem.js" data-site="trekkr"></script>
 <script src="/nav-account.js" defer></script>
