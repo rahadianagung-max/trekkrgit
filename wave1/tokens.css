@@ -14,12 +14,12 @@
  * ===================================================================== */
 
 :root {
-  --field:#E7EDF1;        /* brand court grey (page ground) */
+  --field:#F5F5F7;        /* page ground — neutral, matches the main site */
   --card:#FFFFFF;
-  --ink:#0D1A24;
-  --mute:#5C7080;
-  --dim:#93A8B4;
-  --line:#D3DFE7;
+  --ink:#0D0D0D;
+  --mute:#52525B;
+  --dim:#9A9AA2;
+  --line:#E4E4E7;
   --flare:#FF6A00;        /* THE accent */
   --flare-soft:#FFF0E5;
   --flare-deep:#B84A00;

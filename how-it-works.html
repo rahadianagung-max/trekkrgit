@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>How our engine works — Trekkr</title>
+<title>How we track your play — Trekkr</title>
 <meta name="description" content="TREKKR Rating System — how the Elo-based engine turns every padel match into a meaningful, measurable rating."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -82,120 +82,54 @@ tbody td:last-child{color:var(--muted);text-align:right;font-family:var(--displa
   <div class="wrap">
 
     <section class="rs-hero">
-      <span class="eyebrow">TREKKR Rating System</span>
-      <h1 class="display">Every match<br>counts</h1>
-      <p class="lead">TREKKR is a performance rating platform for padel players that uses the globally recognized <strong>Elo Rating System</strong>. Unlike traditional skill levels that rely on subjective assessments, TREKKR calculates ratings from <strong>actual match results</strong> — making every match measurable and meaningful.</p>
+      <span class="eyebrow">For Players</span>
+      <h1 class="display">How we track<br>your play</h1>
+      <p class="lead">Trekkr turns the matches you <strong>actually play</strong> into one national rating. No self-assessment, no manual grading — here's exactly how your data gets in and becomes your rating.</p>
+      <div class="cta-row" style="justify-content:flex-start"><a class="btn btn--primary" href="/app">Get the Player App</a></div>
     </section>
 
     <div class="rule"></div>
 
     <section class="blk">
-      <h2>How TREKKR works</h2>
-      <h3>Elo-based rating engine</h3>
-      <p>TREKKR uses the same rating methodology originally developed for chess and now widely used across competitive sports. Your rating changes after every recorded match based on:</p>
+      <h2>Where your data comes from</h2>
+      <p>Only matches you actually play at a <strong>Trekkr partner venue or community</strong> count. You register or claim your profile once in the player app; from then on, the venue host records your results — you never enter your own scores.</p>
       <ul class="factors">
-        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Your current rating</li>
-        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Your opponents' ratings</li>
-        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Match outcome (win or loss)</li>
-        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Margin of victory</li>
+        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Ranked Play sessions at partner venues</li>
+        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Tournaments &amp; leagues in the network</li>
+        <li><i class="ti ti-point-filled" aria-hidden="true"></i>Trekkr Series &amp; the Championship</li>
       </ul>
-      <p>The system continuously updates your rating to reflect your current playing strength.</p>
     </section>
 
     <div class="rule"></div>
 
     <section class="blk">
-      <h2>Rating levels</h2>
-      <p>To make ratings easy to understand within the Indonesian padel community, TREKKR translates Elo Ratings (ER) into familiar skill categories.</p>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Level</th><th style="text-align:right">Elo Rating (ER)</th></tr></thead>
-          <tbody>
-            <tr class="lvl"><td>Beginner</td><td>0 – 899</td></tr>
-            <tr class="lvl"><td>Upper Beginner</td><td>900 – 1199</td></tr>
-            <tr class="lvl"><td>Lower Bronze</td><td>1200 – 1499</td></tr>
-            <tr class="lvl"><td>Bronze</td><td>1500 – 1799</td></tr>
-            <tr class="lvl"><td>Upper Bronze</td><td>1800 – 2099</td></tr>
-            <tr class="lvl"><td>Silver</td><td>2100 – 2499</td></tr>
-            <tr class="lvl"><td>Gold</td><td>2500 – 2999</td></tr>
-            <tr class="lvl"><td>Platinum</td><td>3000 – 4000</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <div class="rule"></div>
-
-    <section class="blk">
-      <h2>Dynamic team-based calculation</h2>
-      <p>Padel is played in pairs. TREKKR calculates the average rating of each team and compares it against the opposing team. The system then:</p>
+      <h2>From match to rating — 4 steps</h2>
       <ol class="steps">
-        <li>Estimates each team's probability of winning.</li>
-        <li>Evaluates the actual result.</li>
-        <li>Adjusts ratings accordingly.</li>
+        <li><strong>You play</strong> a match at a partner venue or community.</li>
+        <li><strong>The host records the score</strong> — captured live through the TurnamenPadel scoring tools, or submitted as final results.</li>
+        <li><strong>Trekkr computes your ELO</strong> from the result, your opponents' ratings and the margin.</li>
+        <li><strong>Your passport &amp; the national board update automatically</strong> — see it in the app.</li>
       </ol>
-      <p>This creates a fair and accurate reflection of player performance over time.</p>
     </section>
 
     <div class="rule"></div>
 
     <section class="blk">
-      <h2>Calibration period</h2>
-      <p>New players need match data before receiving a reliable rating.</p>
+      <h2>What Trekkr stores</h2>
+      <p>Just what's needed to compute your rating and rankings:</p>
       <ul class="factors">
-        <li><i class="ti ti-check" aria-hidden="true"></i>Minimum 15 recorded matches</li>
-        <li><i class="ti ti-check" aria-hidden="true"></i>Continuous participation improves accuracy</li>
-        <li><i class="ti ti-check" aria-hidden="true"></i>More matches = more reliable rating</li>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Your name / display name and profile (photo, region, IG — optional)</li>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Matches you played: partners, opponents, scores, venue &amp; date</li>
+        <li><i class="ti ti-check" aria-hidden="true"></i>Your rating history and tier</li>
       </ul>
-      <p>As additional results are recorded, the system becomes increasingly precise in measuring player ability.</p>
     </section>
 
     <div class="rule"></div>
 
     <section class="blk">
-      <h2>Margin of victory matters</h2>
-      <p>Winning is important — but <strong>how</strong> you win also matters. A dominant victory demonstrates stronger performance and may generate additional rating benefits compared to a narrow win.</p>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Result</th><th style="text-align:right">Rating impact</th></tr></thead>
-          <tbody>
-            <tr><td>5–0 Win</td><td>Higher rating gain</td></tr>
-            <tr><td>5–4 Win</td><td>Smaller rating gain</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <div class="rule"></div>
-
-    <section class="blk">
-      <h2>Expected match outcome</h2>
-      <p>Before each match, TREKKR calculates the probability of both teams winning.</p>
-      <div class="matchup">
-        <div class="team"><div class="nm">Team A</div><div class="er">1400</div></div>
-        <div class="vs">VS</div>
-        <div class="team" style="text-align:right"><div class="nm">Team B</div><div class="er">2000</div></div>
-        <div class="exp">The system expects <b>Team B</b> to win.</div>
-      </div>
-      <div class="ex">
-        <div class="card"><div class="cap">If Team B wins</div><div class="big">As expected</div><ul><li>Small rating adjustment</li><li>Result matches expectation</li></ul></div>
-        <div class="card win"><div class="cap">If Team A wins</div><div class="big">Upset rewarded</div><ul><li>Significant rating increase</li><li>Upset victory rewarded</li><li>Team B receives a rating deduction</li></ul></div>
-      </div>
-      <p>This ensures players are rewarded for outperforming expectations.</p>
-    </section>
-
-    <div class="rule"></div>
-
-    <section class="blk">
-      <h2>Why TREKKR?</h2>
-      <ul class="benefits">
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>Objective performance measurement</li>
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>Dynamic rating updates after every match</li>
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>Fair comparison across players and communities</li>
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>Data-driven player development</li>
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>Meaningful rankings for leagues, academies, and tournaments</li>
-        <li><i class="ti ti-circle-check-filled" aria-hidden="true"></i>A common language for player skill assessment</li>
-      </ul>
+      <h2>Want the rating math?</h2>
+      <p>Curious how each match moves your number, how calibration works, and how the tiers are set? That's all on the ELO page.</p>
+      <div class="cta-row" style="justify-content:flex-start"><a class="btn btn--ghost" href="/how-trekkr-works">ELO &amp; tiers explained &rarr;</a></div>
     </section>
 
     <div class="rule"></div>
@@ -210,17 +144,20 @@ tbody td:last-child{color:var(--muted);text-align:right;font-family:var(--displa
 
     <div class="tagline">TREKKR — Every <span class="o">match</span> counts.</div>
     <div class="cta-row">
-      <a class="btn btn--primary" href="/rankings">Explore rankings</a>
-      <a class="btn btn--ghost" href="/">Back to home</a>
+      <a class="btn btn--primary" href="/app">Get the Player App</a>
+      <a class="btn btn--ghost" href="/rankings">Explore rankings</a>
     </div>
 
   </div>
 </main>
 
 <div data-eco-footer>
-  <a href="https://admin.trekkr.online">Admin (Venue login)</a>
-  <a href="https://trekkr.online/market">Market Intelligence</a>
-  <a href="https://trekkr.online/about">About</a>
+  <a href="/app">Get the App</a>
+  <a href="/rankings">Rankings</a>
+  <a href="/venues">Venues</a>
+  <a href="/liga-trekkr">Liga Trekkr</a>
+  <a href="/how-trekkr-works">ELO &amp; tiers</a>
+  <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 
 
