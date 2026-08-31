@@ -811,8 +811,8 @@
 
       var body;
       if (mode === "rated") {
-        var rows = rated.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
-          var rank = rated.indexOf(p) + 1;
+        var rows = rated.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p, i) {
+          var rank = i + 1;   // rank within the active tier (All = national)
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
             '<span class="rk">' + rank + '</span>' +
