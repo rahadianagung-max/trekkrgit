@@ -169,6 +169,14 @@
     el.onclick = function (e) { if (e.target === el) close(); };
     el.querySelector(".x").onclick = close;
   }
+  // Calibrated status check: blue = calibrated, grey = still calibrating.
+  function checkBadge(on) {
+    var c = on ? "#1D9BF0" : "var(--faint)";
+    return '<svg class="chk" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="' + c + '"/><path d="M7.5 12.4l3 3 6-6.4" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function rowAvatar(photo, nm) {
+    return '<span class="rav">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(nm))) + '</span>';
+  }
   function isIosSafari() {
     var ua = w.navigator.userAgent;
     var ios = /iPad|iPhone|iPod/.test(ua) && !w.MSStream;
@@ -793,10 +801,10 @@
       // Gender pool, then split calibrated (15+) vs calibrating (1–14).
       var pool = raw.filter(function (p) { return (String(p.gender || "M").toUpperCase() === "F" ? "F" : "M") === g; });
       var rated = pool.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
-        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region }; })
+        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl }; })
         .sort(function (a, b) { return b.elo - a.elo; });
       var calib = pool.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
-        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, m: Number(p.totalMatches) || 0 }; })
+        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl, m: Number(p.totalMatches) || 0 }; })
         .sort(function (a, b) { return b.elo - a.elo; });
 
       var genderSeg = '<div class="seg" id="genderSeg">' +
@@ -815,9 +823,9 @@
           var rank = i + 1;   // rank within the active tier (All = national)
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
-            '<span class="rk">' + rank + '</span>' +
-            '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + '</span>' +
-            '<span class="mt">' + esc(API.tierName(p.elo, cut)) + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
+            '<span class="rk">' + rank + '</span>' + rowAvatar(p.photo, p.name) +
+            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(true) + '</span>' +
+            (p.region ? '<span class="mt">' + esc(p.region) + '</span>' : "") + '</span>' +
             '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
         }).join("");
         body = rows || '<div class="emptybig"><div class="em">🏆</div><p>No calibrated players in this filter yet.</p></div>';
@@ -825,13 +833,13 @@
         var crows = calib.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
-            '<span class="rk">·</span>' +
-            '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + ' <span class="prov">Provisional</span></span>' +
-            '<span class="mt">' + p.m + '/15 matches' + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
+            '<span class="rk">·</span>' + rowAvatar(p.photo, p.name) +
+            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(false) + '</span>' +
+            '<span class="mt">' + (p.region ? esc(p.region) + " · " : "") + p.m + '/15 matches</span></span>' +
             '<span class="el prov-el">' + p.elo + '</span><span class="rchev">›</span></div>';
         }).join("");
         body = crows
-          ? '<div class="rsub" style="margin:2px 4px 10px">Rating firms up after 15 matches — provisional for now.</div>' + crows
+          ? '<div class="rsub" style="margin:2px 4px 10px">Rating firms up after 15 matches — grey check until then.</div>' + crows
           : '<div class="emptybig"><div class="em">⏳</div><p>No players calibrating in this filter.</p></div>';
       }
 
@@ -859,33 +867,43 @@
     try {
       var r = await Promise.all([
         API.getPlayer(name).catch(function () { return {}; }),
-        API.getEloHistory(name).catch(function () { return { history: [] }; }),
         ensureCut(),
       ]);
-      var det = r[0] || {}, hist = (r[1] && r[1].history) || [], cut = r[2];
-      var elo = det.currentElo != null ? det.currentElo : (det.elo != null ? det.elo : (hist.length ? hist[hist.length - 1].elo : null));
-      var unrated = !!det.unrated || elo == null;
-      var wins = det.wins != null ? det.wins : det.totalWins;
-      var losses = det.losses != null ? det.losses : det.totalLosses;
-      var matches = det.totalMatches != null ? det.totalMatches : (det.matches != null ? det.matches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0));
+      var det = r[0] || {}, cut = r[1];
+      var st = det.stats || {}, pd = det.player || {}, hist = det.history || [];
+      var elo = st.currentElo != null ? st.currentElo : (hist.length ? hist[hist.length - 1].elo : null);
+      var unrated = (st.unrated != null ? !!st.unrated : (hist.length === 0)) || elo == null;
+      var wins = st.totalW, losses = st.totalL;
+      var matches = st.totalMatches != null ? st.totalMatches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0);
       var recent = hist.slice(-6).reverse();
-      var display = det.displayName || name;
-      var photo = det.photoUrl || "";
-      var region = det.region || "";
+      var display = pd.displayName || name;
+      var photo = pd.photoUrl || "";
+      var region = pd.region || "";
+      var gender = String(pd.gender || "").toUpperCase() === "F" ? "Female" : (pd.gender ? "Male" : "");
+      var ig = String(pd.ig || "").replace(/^@+/, "");
+      var calibrated = !unrated && matches >= 15;
       var mine = S.myName && norm(name) === norm(S.myName);
+
+      function infoRow(label, val) { return '<div class="inforow"><span class="il">' + label + '</span><span class="iv">' + val + '</span></div>'; }
+      var info = "";
+      if (region) info += infoRow("Region", esc(region));
+      if (gender) info += infoRow("Gender", esc(gender));
+      if (ig) info += infoRow("Instagram", '<a href="https://instagram.com/' + esc(ig) + '" target="_blank" rel="noopener" style="color:var(--or);font-weight:700;text-decoration:none">@' + esc(ig) + '</a>');
 
       viewEl().innerHTML = '<div class="screen">' +
         '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
-        '<div class="p-top"><div><div class="p-hi">Player</div><div class="p-name">' + esc(display) + (mine ? " · you" : "") + '</div>' +
+        '<div class="p-top"><div><div class="p-hi">Player</div>' +
+          '<div class="p-name" style="display:flex;align-items:center;gap:7px">' + esc(display) + (mine ? " · you" : "") + (unrated ? "" : checkBadge(calibrated)) + '</div>' +
           (region ? '<div class="p-meta">' + esc(region) + '</div>' : "") + '</div>' +
-          '<div class="ava">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</div></div>' +
+          '<div class="ava" style="width:52px;height:52px;font-size:19px">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</div></div>' +
         '<div class="hero">' + (unrated
           ? '<p class="lbl">ELO Rating</p><p class="num" style="font-size:34px">Unrated</p>'
           : '<p class="lbl">ELO Rating</p><p class="num">' + elo + '</p><span class="tier">🏆 ' + esc(API.tierName(elo, cut)) + '</span>') + '</div>' +
         '<div class="statrow"><div class="stat"><b>' + (wins != null ? wins : "–") + '</b><span>Wins</span></div>' +
           '<div class="stat"><b>' + (losses != null ? losses : "–") + '</b><span>Losses</span></div>' +
           '<div class="stat"><b>' + (matches != null ? matches : "–") + '</b><span>Matches</span></div></div>' +
-        (mine ? "" : '<button class="btn ghost soon" id="challenge" style="margin-top:14px">Challenge ' + esc(display.split(" ")[0]) + '</button>') +
+        (info ? '<div class="sec">About</div><div class="plain" style="padding:6px 14px">' + info + '</div>' : "") +
+        (mine ? "" : '<button class="btn ghost soon" id="challenge" style="margin-top:6px">Challenge ' + esc(display.split(" ")[0]) + '</button>') +
         (recent.length ? '<div class="sec">Recent ELO</div>' + recent.map(function (h) {
           var up = (h.delta || 0) >= 0;
           return '<div class="hitem"><span class="d">' + esc(fmtDate(h.timestamp)) + '</span><span class="e">' + h.elo + '</span><span class="' + (up ? "up" : "dn") + '">' + (up ? "▲ +" : "▼ ") + Math.abs(h.delta || 0) + '</span></div>';
