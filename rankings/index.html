@@ -197,6 +197,8 @@
   // matches). REPLAY_COMPLETE flips true after the season ELO replay.
   var MIN_TIER_MATCHES=15, REPLAY_COMPLETE=false;
   function isEligible(p){return (Number(p.totalMatches)||0)>=MIN_TIER_MATCHES;}
+  // Placeholder names used for walkovers / byes — never real players.
+  function isWalkout(n){var s=String(n||'').toLowerCase().replace(/[^a-z]/g,'');return s==='walkout'||s==='walkover'||s==='wo'||s==='bye';}
 
   /* Mobile menu */
   var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
@@ -273,7 +275,7 @@
     box.innerHTML='<div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div>';
     var qs=new URLSearchParams(Object.assign({gender:g},params())).toString();
     return fetch(BASE+'/elo/leaderboard?'+qs).then(function(r){return r.json();}).then(function(d){
-      var all=(d&&d.leaderboard)||[];
+      var all=((d&&d.leaderboard)||[]).filter(function(p){return !isWalkout(p.name)&&!isWalkout(p.displayName);});
       var rated=all.filter(isEligible);
       var band=tierBand(document.getElementById('levelSel').value);
       if(band){rated=rated.filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}

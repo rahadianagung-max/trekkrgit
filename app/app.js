@@ -44,6 +44,8 @@
   function fmtDate(ts) { var x = new Date(ts); return isNaN(x) ? "—" : x.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
   function slug(n) { return String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
   function norm(n) { return String(n || "").trim().toLowerCase(); }
+  // Placeholder names used for walkovers / byes — never real players.
+  function isWalkout(n) { var s = String(n || "").toLowerCase().replace(/[^a-z]/g, ""); return s === "walkout" || s === "walkover" || s === "wo" || s === "bye"; }
   function setHTML(html) { app.innerHTML = html; }
   function toast(msg) {
     var t = d.createElement("div"); t.className = "toast"; t.textContent = msg; d.body.appendChild(t);
@@ -794,7 +796,8 @@
     S.rankFilter = S.rankFilter || "all";
     try {
       var r = await Promise.all([API.getLeaderboard({ limit: 100000 }), ensureCut(), ensureMe().catch(function () { return null; })]);
-      var raw = (r[0] && r[0].leaderboard) || [], cut = r[1];
+      var raw = ((r[0] && r[0].leaderboard) || []).filter(function (p) { return !isWalkout(p.name) && !isWalkout(p.displayName); });
+      var cut = r[1];
       function tierOf(elo) { return elo >= ((cut && cut.t1) || 2000) ? "T1" : elo >= ((cut && cut.t2) || 1500) ? "T2" : "T3"; }
       var g = S.rankGender, mode = S.rankMode, f = S.rankFilter;
 
