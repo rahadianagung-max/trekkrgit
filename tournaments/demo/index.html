@@ -140,6 +140,137 @@
 </footer>
 
 
+<script>
+(function(){
+
+  var NAMES=['Andi','Budi','Citra','Dewi','Eka','Fajar','Gita','Hadi','Indra','Joko','Kira','Lina','Maya','Nanda','Oka','Putri','Rama','Sari','Tari','Umar','Vino','Wira','Yoga','Zaki','Bayu','Cinta','Doni','Esa','Fika','Galih','Hana','Iqbal','Jihan','Kemal','Laras','Miko','Nadia','Owen','Pita','Rizki'];
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function ri(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function segVal(id){var b=document.querySelector('#'+id+' button.active');return b?+b.dataset.v:null;}
+  function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#'+id+' button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');if(cb)cb();});});}
+
+  function groupPlan(n){var G=(n===8)?2:4;return {G:G,size:n/G,qual:2*G};}
+  function updateHint(){
+    var n=segVal('segTeams'),p=groupPlan(n);
+    var ko=(p.qual===4)?'semi-finals → final':'quarter-finals → semi-finals → final';
+    document.getElementById('hint').textContent=n+' teams → '+p.G+' groups of '+p.size+' · round-robin · top 2 advance → '+ko+'.';
+  }
+  segWire('segTeams',updateHint);
+  updateHint();
+
+  var S=null;
+  var actBtn=document.getElementById('actBtn'), autoBtn=document.getElementById('autoBtn'), stage=document.getElementById('stage');
+
+  function buildTeams(n){
+    var plan=groupPlan(n), pool=shuffle(NAMES.slice()), teams=[];
+    for(var i=0;i<n;i++)teams.push({id:i,name:(pool[(2*i)%pool.length])+'/'+(pool[(2*i+1)%pool.length]),P:0,W:0,gf:0,ga:0,group:0});
+    var groups=[];
+    for(var g=0;g<plan.G;g++)groups.push({letter:String.fromCharCode(65+g),teams:[]});
+    teams.forEach(function(t,i){var gi=i%plan.G;t.group=gi;groups[gi].teams.push(t);});
+    S.plan=plan;S.teams=teams;S.groups=groups;S.bracket=null;S.koIdx=0;
+  }
+  function groupRank(g){return g.teams.slice().sort(function(a,b){return b.W-a.W||(b.gf-b.ga)-(a.gf-a.ga)||a.id-b.id;});}
+  function playGroups(){
+    S.groups.forEach(function(g){
+      for(var i=0;i<g.teams.length;i++)for(var j=i+1;j<g.teams.length;j++){
+        var a=g.teams[i],b=g.teams[j],w=6,l=ri(0,5),s=Math.random()<0.5?[w,l]:[l,w];
+        a.gf+=s[0];a.ga+=s[1];b.gf+=s[1];b.ga+=s[0];a.P++;b.P++;
+        if(s[0]>s[1])a.W++;else b.W++;
+      }
+    });
+  }
+  function renderGroups(){
+    stage.innerHTML='<div class="sec-label">Group stage · round-robin</div><div class="groups-grid">'+S.groups.map(function(g){
+      var ord=groupRank(g),played=g.teams[0].P>0;
+      var rows=ord.map(function(t,idx){
+        var q=played&&idx<2,diff=t.gf-t.ga;
+        return '<div class="gc-row'+(q?' q':'')+'"><span class="num rk">'+(idx+1)+'</span><span class="t">'+esc(t.name)+'</span><span class="num">'+t.P+'</span><span class="num">'+t.W+'</span><span class="pts">'+(diff>=0?'+':'')+diff+'</span></div>';
+      }).join('');
+      return '<div class="group-card"><div class="gc-h">Group '+g.letter+'</div><div class="gc-row head"><span class="num">#</span><span>Team</span><span class="num">P</span><span class="num">W</span><span class="num">+/-</span></div>'+rows+'</div>';
+    }).join('')+'</div>';
+  }
+  function seedBracket(){
+    var q=S.groups.map(function(g){var r=groupRank(g);return [r[0],r[1]];});
+    var order=(S.plan.G===2)
+      ? [q[0][0],q[1][1],q[1][0],q[0][1]]
+      : [q[0][0],q[1][1],q[2][0],q[3][1],q[1][0],q[0][1],q[3][0],q[2][1]];
+    var first=[];for(var i=0;i<order.length;i+=2)first.push({a:order[i],b:order[i+1],sa:null,sb:null,w:null});
+    var rounds=[first],size=first.length;
+    while(size>1){var nx=[];for(var k=0;k<size/2;k++)nx.push({a:null,b:null,sa:null,sb:null,w:null});rounds.push(nx);size/=2;}
+    S.bracket=rounds;S.koIdx=0;
+  }
+  function playKo(idx){
+    S.bracket[idx].forEach(function(m,mi){
+      if(!m.a||!m.b)return;
+      var sa=2,sb=ri(0,1);if(Math.random()<0.5){var t=sa;sa=sb;sb=t;}
+      m.sa=sa;m.sb=sb;m.w=(sa>sb)?m.a:m.b;
+      if(idx+1<S.bracket.length){var nm=S.bracket[idx+1][Math.floor(mi/2)];if(mi%2===0)nm.a=m.w;else nm.b=m.w;}
+    });
+  }
+  function roundNames(){return (S.bracket.length===2)?['Semi-finals','Final']:['Quarter-finals','Semi-finals','Final'];}
+  function renderBracket(){
+    var names=roundNames();
+    var cols=S.bracket.map(function(rnd,ci){
+      var matches=rnd.map(function(m){
+        function row(team,score,isWin){
+          if(!team)return '<div class="bteam tbd"><span class="bn">—</span><span class="bs"></span></div>';
+          return '<div class="bteam'+(isWin?' win':'')+'"><span class="bn">'+esc(team.name)+'</span><span class="bs">'+(score==null?'':score)+'</span></div>';
+        }
+        return '<div class="bmatch">'+row(m.a,m.sa,m.w&&m.a&&m.w.id===m.a.id)+row(m.b,m.sb,m.w&&m.b&&m.w.id===m.b.id)+'</div>';
+      }).join('');
+      return '<div class="bcol"><div class="bcol-h">'+names[ci]+'</div>'+matches+'</div>';
+    }).join('');
+    stage.innerHTML='<div class="sec-label">Playoff bracket · crossing seeding</div><div class="bracket-wrap"><div class="bracket">'+cols+'</div></div>';
+  }
+
+  function setAct(label,disabled){actBtn.innerHTML=label;actBtn.disabled=!!disabled;}
+  function setPhase(t){document.getElementById('phaseLabel').innerHTML=t;}
+
+  function start(){
+    S={busy:false,done:false,mode:'playgroups'};
+    buildTeams(segVal('segTeams'));
+    renderGroups();
+    document.getElementById('setup').style.display='none';
+    document.getElementById('sim').style.display='block';
+    document.getElementById('championWrap').innerHTML='';
+    setPhase('Group stage');
+    setAct('<i class="ti ti-dice-5"></i>Play group stage');
+    autoBtn.disabled=false;
+  }
+
+  function champion(name,sub){
+    document.getElementById('championWrap').innerHTML='<div class="champion"><i class="ti ti-trophy cup"></i><div class="who"><div class="lbl">CHAMPION</div><div class="nm">'+esc(name)+'</div><div class="sub">'+esc(sub)+'</div></div></div>';
+    S.done=true;setAct('<i class="ti ti-flag-check"></i>Done',true);autoBtn.disabled=true;
+  }
+
+  function step(){
+    if(S.mode==='playgroups'){
+      playGroups();renderGroups();S.mode='toko';setAct('<i class="ti ti-arrow-right"></i>To playoffs');return false;
+    } else if(S.mode==='toko'){
+      seedBracket();renderBracket();S.mode='playko';S.koIdx=0;
+      setPhase(roundNames()[0]);setAct('<i class="ti ti-dice-5"></i>Play '+roundNames()[0].toLowerCase());return false;
+    } else { // playko
+      playKo(S.koIdx);renderBracket();
+      var names=roundNames();
+      if(S.koIdx>=S.bracket.length-1){var w=S.bracket[S.bracket.length-1][0].w;champion(w.name,'Champion · '+segVal('segTeams')+'-team bracket');return true;}
+      S.koIdx++;setPhase(names[S.koIdx]);setAct('<i class="ti ti-dice-5"></i>Play '+names[S.koIdx].toLowerCase());return false;
+    }
+  }
+
+  actBtn.addEventListener('click',function(){if(!S||S.busy||S.done)return;step();});
+  autoBtn.addEventListener('click',function(){
+    if(!S||S.busy||S.done)return;
+    S.busy=true;actBtn.disabled=true;autoBtn.disabled=true;
+    (function loop(){var done=step();if(done){S.busy=false;return;}setTimeout(loop,560);})();
+  });
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    S=null;document.getElementById('sim').style.display='none';document.getElementById('setup').style.display='block';
+    actBtn.disabled=false;autoBtn.disabled=false;
+  });
+  document.getElementById('startBtn').addEventListener('click',start);
+})();
+</script>
 <script src="/trekkr-nav.js" defer></script>
 </body>
 </html>
