@@ -65,6 +65,11 @@ button{font-family:inherit;cursor:pointer}
 .wc-cta .btn{margin-top:0}
 .wc-cta .link{display:block;width:100%;margin-top:10px;text-align:center}
 
+/* seed experience picker (join) */
+.seedopts{display:flex;flex-direction:column;gap:8px}
+.seedopt{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;color:var(--ink);font-family:inherit}
+.seedopt.on{border-color:var(--or);background:var(--or-soft);color:var(--or)}
+
 /* login */
 .login-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:26px 22px calc(26px + var(--safe-b))}
 .sub{color:var(--mu);font-size:15px;margin:6px 0 0}

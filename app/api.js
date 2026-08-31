@@ -53,6 +53,21 @@
     changePassword: function (token, newPassword) { return request("account/change-password", { method: "POST", body: { token: token, new_password: newPassword } }); },
     getSchedule: function (params) { return request("schedule" + qs(params)); },
     getTrackedEvents: function () { return request("tracked-events"); },
+    // Registration / claim (in-app, mirrors the web /join flow).
+    checkName: function (name) { return request("players/check-name?name=" + encodeURIComponent(name)); },
+    // Raw POST that resolves { ok, status, data } (never throws) so callers can
+    // read fields like `claim` on a 409 race.
+    send: function (path, body, method) {
+      return fetch(API_BASE + "/" + path, {
+        method: method || "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body != null ? JSON.stringify(body) : undefined,
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, data: d || {} }; });
+      });
+    },
+    registerNew: function (body) { return this.send("account/register-new", body); },
+    claimProfile: function (body) { return this.send("account/claim", body); },
   };
 
   // Series Tier label from ELO + dynamic cutoffs (fallback to absolute).

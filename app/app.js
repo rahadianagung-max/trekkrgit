@@ -234,6 +234,8 @@
   function render() {
     if (S.view === "welcome") return renderWelcome();
     if (S.view === "login") return renderLogin();
+    if (S.view === "join") return renderJoin();
+    if (S.view === "forgot") return renderForgot();
     renderShell();
   }
 
@@ -279,13 +281,15 @@
         '<div class="msg err hidden" id="err"></div>' +
         '<button class="btn" id="go">Sign in</button>' +
         '<div style="text-align:center;margin-top:16px">' +
-          '<a class="link" href="https://trekkr.online/join" target="_blank" rel="noopener">No account yet? Register / claim</a><br>' +
-          '<a class="link" href="https://trekkr.online/reset" target="_blank" rel="noopener" style="color:var(--faint)">Forgot password?</a>' +
+          '<button class="link" id="ljoin">No account yet? Register / claim</button><br>' +
+          '<button class="link" id="lforgot" style="color:var(--faint)">Forgot password?</button>' +
         '</div>' +
       '</div>'
     );
     maybeIosHint();
     d.getElementById("lback").onclick = function () { S.view = "rankings"; render(); };
+    d.getElementById("ljoin").onclick = function () { S.view = "join"; render(); };
+    d.getElementById("lforgot").onclick = function () { S.view = "forgot"; render(); };
     var go = d.getElementById("go");
     async function submit() {
       var email = (d.getElementById("email").value || "").trim();
@@ -302,6 +306,160 @@
     }
     go.onclick = submit;
     d.getElementById("pass").addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+  }
+
+  function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "")); }
+
+  /* ---------- JOIN (register new / claim existing) ---------- */
+  function renderJoin() {
+    var jPhoto = "", jSeed = "", jMode = "", jExisting = "", chkTimer = null, lastQ = "";
+    setHTML(
+      '<div class="login-wrap" style="justify-content:flex-start;padding-top:calc(var(--safe-t) + 20px)">' +
+        '<button class="link" id="jback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
+        '<div class="brand">Trekk<b>r</b></div>' +
+        '<p class="sub">Enter your name — we\'ll check if you\'re already on Trekkr. If so you can <b>claim</b> your profile; if not, <b>register</b> as a new player.</p>' +
+        '<div class="field"><label class="label">Full name</label>' +
+          '<input class="input" id="jname" placeholder="e.g. Budi Santoso" autocomplete="name"/>' +
+          '<div class="msg" id="jhint" style="min-height:16px"></div></div>' +
+        '<div id="jdyn"></div>' +
+        '<div style="text-align:center;margin-top:18px"><button class="link" id="jsignin">Already have an account? Sign in</button></div>' +
+      '</div>'
+    );
+    maybeIosHint();
+    d.getElementById("jback").onclick = function () { S.view = "login"; render(); };
+    d.getElementById("jsignin").onclick = function () { S.view = "login"; render(); };
+    var nameEl = d.getElementById("jname"), hintEl = d.getElementById("jhint"), dyn = d.getElementById("jdyn");
+    function setHint(t, k) { hintEl.textContent = t || ""; hintEl.className = "msg" + (k ? " " + k : ""); hintEl.style.color = k === "ok" ? "var(--grn)" : (k === "err" ? "var(--red)" : "var(--mu)"); }
+
+    nameEl.addEventListener("input", function () {
+      clearTimeout(chkTimer); dyn.innerHTML = ""; jMode = "";
+      var n = (nameEl.value || "").trim();
+      if (n.length < 2) { setHint("", ""); return; }
+      setHint("Checking name…", "");
+      chkTimer = setTimeout(function () { doCheck(n); }, 450);
+    });
+    function doCheck(n) {
+      lastQ = n;
+      API.checkName(n).then(function (r) {
+        if ((nameEl.value || "").trim() !== lastQ) return;
+        if (r && r.exists) { setHint("", ""); renderClaimForm(r.name || n); }
+        else { setHint("✓ New name — register as a new player.", "ok"); renderNewForm(); }
+      }).catch(function () { setHint("Couldn't check name, try again.", "err"); });
+    }
+
+    function renderClaimForm(name) {
+      jMode = "claim"; jExisting = name;
+      dyn.innerHTML =
+        '<div class="calib" style="margin-top:6px"><b>"' + esc(name) + '"</b> already exists on Trekkr. Claim it to manage your profile — your match history &amp; ELO stay. Claims are reviewed by an admin.</div>' +
+        '<div class="field"><label class="label">Email</label><input class="input" id="cEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>' +
+        '<div class="field"><label class="label">Create password</label><input class="input" id="cPass" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>' +
+        '<div class="msg err hidden" id="cMsg"></div>' +
+        '<button class="btn" id="cGo">Submit claim</button>';
+      d.getElementById("cGo").onclick = submitClaim;
+    }
+    async function submitClaim() {
+      var email = (d.getElementById("cEmail").value || "").trim(), pass = d.getElementById("cPass").value || "", m = d.getElementById("cMsg");
+      m.classList.add("hidden");
+      if (!validEmail(email)) { m.textContent = "Enter a valid email."; m.classList.remove("hidden"); return; }
+      if (pass.length < 6) { m.textContent = "Password must be at least 6 characters."; m.classList.remove("hidden"); return; }
+      var b = d.getElementById("cGo"); b.disabled = true; b.textContent = "Submitting…";
+      var res = await API.claimProfile({ player_name: jExisting, email: email, password: pass });
+      if (res.ok) { joinDone("claim", jExisting); }
+      else { m.textContent = (res.data && res.data.error) || "Couldn't submit claim."; m.classList.remove("hidden"); b.disabled = false; b.textContent = "Submit claim"; }
+    }
+
+    function renderNewForm() {
+      jMode = "new";
+      dyn.innerHTML =
+        '<div class="row2" style="display:flex;gap:10px">' +
+          '<div class="field" style="flex:1"><label class="label">Gender</label><select class="input" id="nGender"><option value="M">Male</option><option value="F">Female</option></select></div>' +
+          '<div class="field" style="flex:1"><label class="label">Region <span style="font-weight:500;color:var(--faint)">(optional)</span></label><input class="input" id="nRegion" placeholder="e.g. Jakarta"/></div>' +
+        '</div>' +
+        '<div class="field"><label class="label">Padel experience <span style="font-weight:500;color:var(--faint)">(optional — seeds early matchmaking, not your tier)</span></label>' +
+          '<div class="seedopts" id="nSeed">' +
+            '<button type="button" class="seedopt" data-seed="900">Just starting / learning</button>' +
+            '<button type="button" class="seedopt" data-seed="1000">Casual, plays regularly</button>' +
+            '<button type="button" class="seedopt" data-seed="1500">Competitive / tournaments</button>' +
+            '<button type="button" class="seedopt" data-seed="">Not sure</button>' +
+          '</div></div>' +
+        '<div class="field"><label class="label">Instagram <span style="font-weight:500;color:var(--faint)">(optional)</span></label><input class="input" id="nIg" placeholder="username"/></div>' +
+        '<div class="field"><label class="label">Email</label><input class="input" id="nEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>' +
+        '<div class="field"><label class="label">Create password</label><input class="input" id="nPass" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>' +
+        '<div class="field"><label class="label">Photo <span style="font-weight:500;color:var(--faint)">(optional)</span></label><div style="display:flex;align-items:center;gap:14px">' +
+          '<div class="ava" id="nPv" style="width:56px;height:56px;border-radius:14px">👤</div>' +
+          '<label class="btn ghost" style="width:auto;padding:10px 14px;margin:0">Upload<input type="file" id="nPhoto" accept="image/*" style="display:none"></label></div></div>' +
+        '<div class="msg err hidden" id="nMsg"></div>' +
+        '<button class="btn" id="nGo">Register</button>';
+      d.getElementById("nSeed").addEventListener("click", function (e) {
+        var c = e.target.closest(".seedopt"); if (!c) return;
+        this.querySelectorAll(".seedopt").forEach(function (o) { o.classList.remove("on"); });
+        c.classList.add("on"); jSeed = c.getAttribute("data-seed") || "";
+      });
+      d.getElementById("nPhoto").addEventListener("change", async function (e) {
+        var f = e.target.files && e.target.files[0]; if (!f) return;
+        try { jPhoto = await resizePhoto(f); d.getElementById("nPv").innerHTML = '<img src="' + jPhoto + '" alt=""/>'; }
+        catch (err) { toast("Please pick an image file"); }
+        e.target.value = "";
+      });
+      d.getElementById("nGo").onclick = submitNew;
+    }
+    async function submitNew() {
+      var name = (nameEl.value || "").trim();
+      var email = (d.getElementById("nEmail").value || "").trim(), pass = d.getElementById("nPass").value || "", m = d.getElementById("nMsg");
+      m.classList.add("hidden");
+      if (name.length < 2) { m.textContent = "Enter your full name."; m.classList.remove("hidden"); return; }
+      if (!validEmail(email)) { m.textContent = "Enter a valid email."; m.classList.remove("hidden"); return; }
+      if (pass.length < 6) { m.textContent = "Password must be at least 6 characters."; m.classList.remove("hidden"); return; }
+      var body = { name: name, email: email, password: pass, gender: d.getElementById("nGender").value || "M", region: (d.getElementById("nRegion").value || "").trim(), ig: (d.getElementById("nIg").value || "").trim().replace(/^@+/, "") };
+      if (jPhoto) body.photo = jPhoto;
+      if (jSeed) body.seedEstimate = jSeed;
+      var b = d.getElementById("nGo"); b.disabled = true; b.textContent = "Registering…";
+      var res = await API.registerNew(body);
+      if (res.ok) { joinDone("new", email); }
+      else if (res.data && res.data.claim) { setHint("", ""); renderClaimForm(name); }
+      else { m.textContent = (res.data && res.data.error) || "Couldn't register."; m.classList.remove("hidden"); b.disabled = false; b.textContent = "Register"; }
+    }
+    if ((nameEl.value || "").trim().length >= 2) nameEl.dispatchEvent(new Event("input"));
+  }
+  function joinDone(kind, detail) {
+    var isNew = kind === "new";
+    setHTML('<div class="login-wrap"><div class="emptybig" style="padding-top:0">' +
+      '<div class="em">' + (isNew ? "📧" : "⏳") + '</div>' +
+      '<h1 class="page" style="margin-top:12px">' + (isNew ? "Check your email" : "Claim submitted") + '</h1>' +
+      '<p style="color:var(--mu);font-size:14px;line-height:1.6;max-width:34ch;margin:0 auto">' +
+        (isNew
+          ? 'We sent a confirmation link to <b>' + esc(detail) + '</b>. Tap it to activate your account, then sign in. Then play at a Trekkr partner venue so your matches count and your rating starts.'
+          : 'Your claim for <b>' + esc(detail) + '</b> is pending admin review. Once approved you can sign in with the email &amp; password you just created.') +
+      '</p>' +
+      '<button class="btn" id="jdone" style="max-width:240px;margin:20px auto 0">Back to sign in</button>' +
+      '</div></div>');
+    d.getElementById("jdone").onclick = function () { S.view = "login"; render(); };
+  }
+
+  /* ---------- FORGOT PASSWORD ---------- */
+  function renderForgot() {
+    setHTML(
+      '<div class="login-wrap">' +
+        '<button class="link" id="fback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
+        '<div class="brand">Reset password</div>' +
+        '<p class="sub">Enter your account email and we\'ll send a reset link.</p>' +
+        '<div class="field"><label class="label">Email</label><input class="input" id="fEmail" type="email" autocomplete="email" placeholder="you@example.com"/></div>' +
+        '<div class="msg hidden" id="fMsg"></div>' +
+        '<button class="btn" id="fGo">Send reset link</button>' +
+      '</div>'
+    );
+    d.getElementById("fback").onclick = function () { S.view = "login"; render(); };
+    var go = d.getElementById("fGo");
+    go.onclick = async function () {
+      var email = (d.getElementById("fEmail").value || "").trim(), m = d.getElementById("fMsg");
+      m.classList.add("hidden");
+      if (!validEmail(email)) { m.textContent = "Enter a valid email."; m.className = "msg err"; return; }
+      go.disabled = true; go.textContent = "Sending…";
+      try { await sb.auth.resetPasswordForEmail(email, { redirectTo: "https://trekkr.online/reset" }); } catch (e) {}
+      m.textContent = "If that email is registered, a reset link is on its way. Check your inbox (and spam).";
+      m.className = "msg"; m.style.color = "var(--grn)"; m.classList.remove("hidden");
+      go.disabled = false; go.textContent = "Send reset link";
+    };
   }
 
   /* ---------- SHELL ---------- */
@@ -493,10 +651,19 @@
     }
   }
   function passportNoPlayer(me) {
+    var claim = me && me.claim;
+    if (claim && String(claim.status || "").toLowerCase() === "pending") {
+      viewEl().innerHTML = '<div class="screen"><div class="emptybig"><div class="em">⏳</div>' +
+        '<h1 class="page" style="margin-top:14px">Claim pending</h1>' +
+        '<p style="color:var(--mu);font-size:14px;line-height:1.6;max-width:34ch;margin:0 auto">Your claim for <b>' + esc(claim.player_name || "") + '</b> is being reviewed by an admin. You\'ll be linked to your passport once it\'s approved.</p>' +
+        '</div></div>';
+      return;
+    }
     viewEl().innerHTML = '<div class="screen"><div class="emptybig"><div class="em">🔗</div>' +
       '<h1 class="page" style="margin-top:14px">Not linked yet</h1>' +
-      '<p style="color:var(--mu);font-size:14px;line-height:1.6">This account (' + esc(me.email || "") + ') isn\'t linked to a player profile yet. Claim your profile on the web, then wait for admin approval.</p>' +
-      '<a class="btn" style="display:block;margin-top:18px;text-decoration:none;text-align:center" href="https://trekkr.online/join" target="_blank" rel="noopener">Claim on the web</a></div></div>';
+      '<p style="color:var(--mu);font-size:14px;line-height:1.6;max-width:34ch;margin:0 auto">This account (' + esc(me.email || "") + ') isn\'t linked to a player profile yet. Register or claim your profile — it only takes a minute.</p>' +
+      '<button class="btn" id="pnp-join" style="max-width:240px;margin:18px auto 0">Register / claim profile</button></div></div>';
+    var j = d.getElementById("pnp-join"); if (j) j.onclick = function () { S.view = "join"; render(); };
   }
 
   /* ---------- SHARE — night card (1080×1920) ---------- */
