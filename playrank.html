@@ -52,32 +52,7 @@
 </style>
 </head>
 <body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank" class="active">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank" class="active">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 <main>
   <section class="hero container">
     <h1 class="display">PlayRank</h1>
@@ -115,12 +90,7 @@
   <a href="https://trekkr.online/market">Market Intelligence</a>
   <a href="https://trekkr.online/about">About</a>
 </div>
-<script>
-(function(){
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
-})();
-</script>
+
 <script>
 (function(){
   var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
@@ -165,6 +135,7 @@
   });
 })();
 </script>
+<script src="/trekkr-nav.js" defer></script>
 <script src="/ecosystem.js" data-site="trekkr"></script>
 <script src="/nav-account.js" defer></script>
 </body>

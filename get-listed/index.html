@@ -52,32 +52,7 @@
 </style>
 </head>
 <body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 <main>
   <section class="hero container">
     <div class="eyebrow">Get Listed</div>
@@ -198,112 +173,7 @@
     <span class="footer-copy">&copy; 2026 Trekkr. All rights reserved.</span>
   </div>
 </footer>
-<script>
-(function(){
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
 
-  // Always call the API on the main domain so previews/subdomains still submit.
-  var API = ((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))) ? '/api' : 'https://trekkr.online/api';
-  var form=document.getElementById('leadForm');
-  var btn=document.getElementById('submitBtn');
-  var msg=document.getElementById('formMsg');
-  var successState=document.getElementById('successState');
-
-  function showMsg(kind,text){ msg.className='msg '+kind; msg.textContent=text; }
-  function clearMsg(){ msg.className='msg'; msg.textContent=''; }
-  function val(id){ return document.getElementById(id).value.trim(); }
-
-  var emailRe=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-  form.addEventListener('submit', async function(e){
-    e.preventDefault();
-    clearMsg();
-    var payload={
-      picName: val('picName'),
-      venueName: val('venueName'),
-      region: val('region'),
-      whatsapp: val('whatsapp'),
-      email: val('email'),
-    };
-    if(!payload.picName||!payload.venueName||!payload.region||!payload.whatsapp||!payload.email){
-      showMsg('err','Please fill in all fields.'); return;
-    }
-    if(!emailRe.test(payload.email)){ showMsg('err','Please enter a valid email address.'); return; }
-    if(payload.whatsapp.replace(/[^0-9]/g,'').length<6){ showMsg('err','Please enter a valid WhatsApp number.'); return; }
-
-    btn.disabled=true; btn.textContent='Submitting…';
-    try{
-      var res=await fetch(API+'/get-listed',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload),
-      });
-      var data=await res.json().catch(function(){return {};});
-      if(!res.ok||!data.success){ throw new Error(data.error||('Request failed ('+res.status+')')); }
-      form.style.display='none';
-      successState.classList.add('show');
-      successState.scrollIntoView({behavior:'smooth',block:'center'});
-    }catch(err){
-      showMsg('err', (err&&err.message) ? err.message : 'Something went wrong. Please try again.');
-      btn.disabled=false; btn.textContent='Submit registration';
-    }
-  });
-
-  // ── Tab switching (PlayRank ↔ Tournament / League) ──
-  var tabs=document.getElementById('glTabs');
-  if(tabs){
-    tabs.addEventListener('click',function(e){
-      var b=e.target.closest('button[data-tab]'); if(!b)return;
-      tabs.querySelectorAll('button').forEach(function(x){
-        var on=x===b; x.classList.toggle('active',on); x.setAttribute('aria-selected',on?'true':'false');
-      });
-      document.querySelectorAll('[data-pane]').forEach(function(p){p.classList.toggle('show',p.dataset.pane===b.dataset.tab);});
-    });
-  }
-
-  // ── Tournament / League form ──
-  var tForm=document.getElementById('tourneyForm');
-  var tBtn=document.getElementById('tSubmitBtn');
-  var tMsg=document.getElementById('tFormMsg');
-  var tSuccess=document.getElementById('tSuccessState');
-  function tShow(kind,text){ tMsg.className='msg '+kind; tMsg.textContent=text; }
-  function tClear(){ tMsg.className='msg'; tMsg.textContent=''; }
-  tForm && tForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    tClear();
-    var payload={
-      name: val('tName'),
-      location: val('tLocation'),
-      picName: val('tPic'),
-      phone: val('tPhone'),
-      email: val('tEmail'),
-      message: val('tMessage'),
-    };
-    if(!payload.name||!payload.location||!payload.picName||!payload.phone||!payload.email){
-      tShow('err','Please fill in all required fields.'); return;
-    }
-    if(!emailRe.test(payload.email)){ tShow('err','Please enter a valid email address.'); return; }
-    if(payload.phone.replace(/[^0-9]/g,'').length<6){ tShow('err','Please enter a valid phone number.'); return; }
-
-    tBtn.disabled=true; tBtn.textContent='Submitting…';
-    try{
-      var res=await fetch(API+'/tournament-lead',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload),
-      });
-      var data=await res.json().catch(function(){return {};});
-      if(!res.ok||!data.success){ throw new Error(data.error||('Request failed ('+res.status+')')); }
-      tForm.style.display='none';
-      tSuccess.classList.add('show');
-      tSuccess.scrollIntoView({behavior:'smooth',block:'center'});
-    }catch(err){
-      tShow('err', (err&&err.message) ? err.message : 'Something went wrong. Please try again.');
-      tBtn.disabled=false; tBtn.textContent='Submit';
-    }
-  });
-})();
-</script>
+<script src="/trekkr-nav.js" defer></script>
 </body>
 </html>

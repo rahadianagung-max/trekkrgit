@@ -76,30 +76,7 @@ tbody td:last-child{color:var(--muted);text-align:right;font-family:var(--displa
 </head>
 <body>
 
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://venue.trekkr.online">Venues</a>
-      <a href="https://trekkr.online/tournaments">Tournaments</a>
-      <a href="https://trekkr.online/events">Events</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 
 <main>
   <div class="wrap">
@@ -246,12 +223,8 @@ tbody td:last-child{color:var(--muted);text-align:right;font-family:var(--displa
   <a href="https://trekkr.online/about">About</a>
 </div>
 
-<script>
-(function(){
-  var mt=document.getElementById('menuToggle'), mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
-})();
-</script>
+
+<script src="/trekkr-nav.js" defer></script>
 <script src="/ecosystem.js" data-site="trekkr"></script>
 <script src="/nav-account.js" defer></script>
 </body>
