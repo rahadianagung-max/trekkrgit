@@ -221,6 +221,14 @@ async function sendBrevoEmail(to, subject, htmlContent) {
   return true;
 }
 
+// Internal alert to the site owner. Best-effort: never breaks the request flow.
+function ownerEmail() { return String(process.env.NOTIFY_EMAIL || "rahadianagung@gmail.com").trim(); }
+function escHtml(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+async function notifyOwner(subject, html) {
+  try { await sendBrevoEmail(ownerEmail(), subject, html); }
+  catch (e) { console.error("notifyOwner failed:", e && e.message); }
+}
+
 // Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
 async function findAuthByEmail(sheets, email) {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
@@ -779,6 +787,13 @@ async function accountClaim(body) {
   try { user = await supaAdmin("POST", "users", { email, password, email_confirm: false }); }
   catch (e) { return respond(400, { error: /registered|already|exist/i.test(e.message) ? "Email ini sudah dipakai. Kalau itu akunmu, login lalu ajukan klaim." : ("Gagal membuat akun: " + e.message) }); }
   await supaRest("POST", "profile_claims", [{ user_id: user.id, email, player_name: pl[0].name, status: "pending" }], "return=minimal");
+  await notifyOwner(
+    `🙋 New profile claim: ${pl[0].name}`,
+    `<h2>A player wants to claim a profile</h2>` +
+    `<p><b>Player:</b> ${escHtml(pl[0].name)}<br>` +
+    `<b>Claim email:</b> ${escHtml(email)}</p>` +
+    `<p>Review &amp; approve in the superadmin console.</p>`
+  );
   return respond(200, { ok: true });
 }
 
@@ -798,6 +813,17 @@ async function accountProfile(body) {
   if (patch.photo_url) patch.photo_url = ibbHostFix(patch.photo_url);
   if (!Object.keys(patch).length) return respond(400, { error: "Tidak ada perubahan" });
   await supaRest("PATCH", `players?user_id=eq.${user.id}`, patch);
+  var changed = Object.keys(patch).map(function (k) {
+    // Don't dump the full photo URL in the alert — just note that a photo changed.
+    return k === "photo_url" ? "photo" : (k + ": " + escHtml(patch[k]).slice(0, 80));
+  }).join("<br>");
+  await notifyOwner(
+    `✏️ Player updated profile: ${rows[0].name}`,
+    `<h2>A player edited their profile</h2>` +
+    `<p><b>Player:</b> ${escHtml(rows[0].name)}<br>` +
+    `<b>Account:</b> ${escHtml(user.email || "")}</p>` +
+    `<p><b>Changed:</b><br>${changed}</p>`
+  );
   return respond(200, { ok: true });
 }
 
@@ -4210,6 +4236,16 @@ async function submitVenueLead(body) {
     spreadsheetId: SHEET_ID, range: `${TABS.venue_leads}!A:H`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [[leadId, now, picName, venueName, region, whatsapp, email, "NEW"]] },
   });
+  await notifyOwner(
+    `🏟️ New venue lead: ${venueName}`,
+    `<h2>New venue / community wants to get listed</h2>` +
+    `<p><b>Venue:</b> ${escHtml(venueName)}<br>` +
+    `<b>PIC:</b> ${escHtml(picName)}<br>` +
+    `<b>Region:</b> ${escHtml(region)}<br>` +
+    `<b>WhatsApp:</b> ${escHtml(whatsapp)}<br>` +
+    `<b>Email:</b> ${escHtml(email)}</p>` +
+    `<p style="color:#888;font-size:12px">Lead ID: ${escHtml(leadId)} · ${escHtml(now)}</p>`
+  );
   return respond(200, { success: true, leadId });
 }
 
