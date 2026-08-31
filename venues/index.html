@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Venues &amp; Communities — Trekkr</title>
+<meta name="description" content="Padel venues and communities running Trekkr Ranked Play across Indonesia. Find one near you, or get your venue listed."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
+<style>
+.page-head{padding:34px 0 6px}
+.page-h{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(30px,6vw,48px);line-height:1;letter-spacing:-.02em}
+.page-sub{color:var(--muted);font-size:14px;line-height:1.6;margin:10px 0 0;max-width:56ch}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 6px}
+.tools input{flex:1;min-width:180px;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font:inherit;font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 18px}
+.chip{font-size:12px;font-weight:700;padding:6px 13px;border-radius:999px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);font-family:inherit}
+.chip.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-bottom:20px}
+.vcard{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--surface);transition:border-color .18s,box-shadow .18s}
+.vcard:hover{border-color:rgba(255,106,0,.5);box-shadow:0 12px 30px -18px rgba(255,106,0,.3)}
+.vtop{display:flex;align-items:center;gap:12px}
+.vlogo{width:46px;height:46px;border-radius:12px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:15px;flex-shrink:0;overflow:hidden}
+.vlogo img{width:100%;height:100%;object-fit:cover}
+.vname{font-weight:700;font-size:15px;line-height:1.2}
+.vloc{font-size:12px;color:var(--muted);margin-top:2px}
+.vmeta{font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.6}
+.vbtn{margin-top:14px;text-align:center;background:var(--orange);color:#fff;font-weight:800;font-size:13px;border-radius:10px;padding:10px;text-decoration:none}
+.vbtn.ghost{background:transparent;color:var(--orange);border:1px solid var(--border)}
+.empty{border:1px dashed var(--border);border-radius:12px;padding:32px;text-align:center;color:var(--muted);font-size:14px}
+.listcta{border:1px solid rgba(255,106,0,.4);border-radius:16px;padding:18px;margin:8px 0 26px;background:linear-gradient(135deg,rgba(255,106,0,.07),rgba(255,106,0,.02));display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.listcta__h{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:17px}
+.listcta__t{font-size:12.5px;color:var(--muted);margin-top:3px}
+.listcta a{flex:0 0 auto;background:var(--orange);color:#fff;font-weight:800;font-size:13.5px;border-radius:12px;padding:12px 18px;text-decoration:none}
+@media(max-width:860px){.vgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.vgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="tk-nav"></div>
+<main class="container">
+  <div class="page-head">
+    <h1 class="page-h">Venues &amp; Communities</h1>
+    <p class="page-sub">Padel venues and communities running Trekkr Ranked Play across Indonesia. Find one near you — or get yours listed.</p>
+  </div>
+
+  <div class="listcta">
+    <div>
+      <div class="listcta__h">Run a venue or community?</div>
+      <div class="listcta__t">List it on Trekkr, host Ranked Play, and put your players on the national board.</div>
+    </div>
+    <a href="/get-listed">Get listed</a>
+  </div>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Search venue or community&hellip;" autocomplete="off" aria-label="Search venues"/>
+  </div>
+  <div class="chips" id="regionChips"></div>
+
+  <div class="vgrid" id="grid"><div class="empty" style="grid-column:1/-1">Loading&hellip;</div></div>
+</main>
+
+<div data-eco-footer>
+  <a href="/get-listed">Get listed</a>
+  <a href="https://admin.trekkr.online">Venue login</a>
+  <a href="/about">About</a>
+</div>
+
+<script src="/trekkr-nav.js" defer></script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+<script>
+(function(){
+  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  var grid=document.getElementById('grid'), qEl=document.getElementById('q'), chipsEl=document.getElementById('regionChips');
+  var all=[], region='all', term='';
+
+  function card(v){
+    var logo=v.logoUrl?'<img src="'+esc(v.logoUrl)+'" alt="" onerror="this.parentNode.textContent=\''+esc(initials(v.name))+'\'"/>':esc(initials(v.name));
+    var loc=[v.location,v.region].filter(Boolean).join(' · ');
+    var meta=[];
+    if(v.schedule)meta.push(esc(v.schedule));
+    if(v.prizePool)meta.push('Prize pool: '+esc(v.prizePool));
+    var reg=v.registerUrl?'<a class="vbtn" href="'+esc(v.registerUrl)+'" target="_blank" rel="noopener">Register / info</a>'
+      : (v.contact?'<a class="vbtn ghost" href="'+esc(/^https?:|^wa|^\+|\d{6}/.test(v.contact)?v.contact:('https://wa.me/'+String(v.contact).replace(/[^0-9]/g,'')))+'" target="_blank" rel="noopener">Contact</a>':'');
+    return '<div class="vcard"><div class="vtop"><div class="vlogo">'+logo+'</div>'+
+      '<div><div class="vname">'+esc(v.name)+'</div>'+(loc?'<div class="vloc">'+esc(loc)+'</div>':'')+'</div></div>'+
+      (meta.length?'<div class="vmeta">'+meta.join('<br>')+'</div>':'')+reg+'</div>';
+  }
+  function render(){
+    var list=all.filter(function(v){
+      if(region!=='all' && (v.region||'')!==region) return false;
+      if(term && (v.name+' '+(v.location||'')+' '+(v.region||'')).toLowerCase().indexOf(term)===-1) return false;
+      return true;
+    });
+    grid.innerHTML = list.length ? list.map(card).join('')
+      : '<div class="empty" style="grid-column:1/-1">No venues match. Try another search.</div>';
+  }
+  function buildChips(){
+    var regions={}; all.forEach(function(v){var r=(v.region||'').trim(); if(r)regions[r]=1;});
+    var keys=Object.keys(regions).sort();
+    chipsEl.innerHTML='<button class="chip on" data-r="all">All regions</button>'+
+      keys.map(function(r){return '<button class="chip" data-r="'+esc(r)+'">'+esc(r)+'</button>';}).join('');
+    Array.prototype.forEach.call(chipsEl.querySelectorAll('.chip'),function(c){
+      c.onclick=function(){region=c.getAttribute('data-r');
+        Array.prototype.forEach.call(chipsEl.querySelectorAll('.chip'),function(x){x.classList.remove('on');});
+        c.classList.add('on'); render();};
+    });
+  }
+  qEl.addEventListener('input',function(){term=(qEl.value||'').trim().toLowerCase();render();});
+
+  fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
+    all=((d&&d.venues)||[]).filter(function(v){return v.name;});
+    all.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    if(!all.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">No venues listed yet. Be the first — <a href="/get-listed" style="color:var(--orange);font-weight:700">get listed</a>.</div>';return;}
+    buildChips(); render();
+  }).catch(function(){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Couldn\'t load venues. Please try again.</div>';});
+})();
+</script>
+</body>
+</html>

@@ -22,6 +22,16 @@
 .lnk{color:var(--orange);font-weight:700;font-size:13px}
 .empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
 
+/* audience cards */
+.aud-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.aud-card{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--border);border-radius:18px;padding:22px 20px;text-decoration:none;color:inherit;background:var(--surface);transition:border-color .18s,box-shadow .18s,transform .18s}
+.aud-card:hover{border-color:rgba(255,106,0,.6);box-shadow:0 14px 34px -18px rgba(255,106,0,.35);transform:translateY(-2px)}
+.aud-ic{font-size:30px;line-height:1;margin-bottom:12px}
+.aud-h{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:20px;letter-spacing:-.01em}
+.aud-t{font-size:13px;color:var(--muted);line-height:1.6;margin:8px 0 14px}
+.aud-lnk{margin-top:auto;color:var(--orange);font-weight:800;font-size:13px}
+@media(max-width:760px){.aud-grid{grid-template-columns:1fr}}
+
 /* hero */
 .hero{padding:54px 0 30px;text-align:center}
 .hero-wm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(54px,12vw,104px);line-height:.92;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.02em .12em;display:inline-block}
@@ -96,32 +106,7 @@
 </style>
 </head>
 <body>
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/" class="active">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a><a href="https://trekkr.online/liga-trekkr">Liga Trekkr</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#9776;</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/" class="active">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a><a href="https://trekkr.online/liga-trekkr">Liga Trekkr</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 <main>
 
   <section class="hero container">
@@ -131,6 +116,29 @@
     <div class="app-cta-wrap">
       <a href="/app" id="getAppBtn" class="app-cta"><i class="ti ti-device-mobile"></i> Get the Player App</a>
       <div class="app-cta-sub">Free on Android &amp; iPhone — no App Store needed</div>
+    </div>
+  </section>
+
+  <section class="container" style="padding-top:6px">
+    <div class="aud-grid">
+      <a class="aud-card" href="/how-trekkr-works">
+        <div class="aud-ic">🎾</div>
+        <div class="aud-h">For Players</div>
+        <div class="aud-t">What Trekkr is, how we track your matches, and how ELO &amp; tiers work. See your full progress in the app.</div>
+        <span class="aud-lnk">How it works &rarr;</span>
+      </a>
+      <a class="aud-card" href="/get-listed">
+        <div class="aud-ic">🏟️</div>
+        <div class="aud-h">Venues &amp; Community</div>
+        <div class="aud-t">Host Ranked Play, get your venue or community listed, and manage everything from the admin console.</div>
+        <span class="aud-lnk">Join / Get listed &rarr;</span>
+      </a>
+      <a class="aud-card" href="/liga-trekkr">
+        <div class="aud-ic">🏆</div>
+        <div class="aud-h">Liga Trekkr</div>
+        <div class="aud-t">One champion per tier, a real prize pool, and a season you actually qualify for. See how the league works.</div>
+        <span class="aud-lnk">The league &rarr;</span>
+      </a>
     </div>
   </section>
 
@@ -151,12 +159,12 @@
   </section>
 
   <section class="sec container">
-    <a href="https://trekkr.online/join" class="join-cta">
+    <a href="/app" class="join-cta">
       <div class="join-cta__txt">
         <div class="join-cta__h">New to Trekkr?</div>
-        <div class="join-cta__t">Create your player profile to start building your rating — every match you play at a partner venue counts.</div>
+        <div class="join-cta__t">Get the player app to register, claim your profile, and track your rating — every match at a partner venue counts.</div>
       </div>
-      <span class="join-cta__btn">Register as a New Player</span>
+      <span class="join-cta__btn">Get the Player App</span>
     </a>
   </section>
 
@@ -191,12 +199,7 @@
   <a href="https://trekkr.online/market">Market Intelligence</a>
   <a href="https://trekkr.online/about">About</a>
 </div>
-<script>
-(function(){
-  var mt=document.getElementById('menuToggle'),mn=document.getElementById('mobileNav');
-  mt&&mt.addEventListener('click',function(){var o=mn.classList.toggle('open');mt.setAttribute('aria-expanded',o?'true':'false');});
-})();
-</script>
+<script src="/trekkr-nav.js" defer></script>
 <script>
 (function(){
   var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
