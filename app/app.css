@@ -10,12 +10,20 @@
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
 }
-@media (prefers-color-scheme:dark){:root{
+/* Dark tokens: apply on system-dark (unless the user forced light), and always
+   when the user explicitly picks dark via the in-app toggle. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --or:#FF7E22; --or-soft:#2A1B10; --or-line:rgba(255,126,34,.34);
   --ink:#F3EEE9; --mu:#ADA49B; --faint:#7C746C;
   --bg:#141110; --card:#1E1A18; --line:#302A26; --line-soft:#241F1C;
   --grn:#4ADE80; --red:#F97316;
 }}
+:root[data-theme="dark"]{
+  --or:#FF7E22; --or-soft:#2A1B10; --or-line:rgba(255,126,34,.34);
+  --ink:#F3EEE9; --mu:#ADA49B; --faint:#7C746C;
+  --bg:#141110; --card:#1E1A18; --line:#302A26; --line-soft:#241F1C;
+  --grn:#4ADE80; --red:#F97316;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
@@ -42,7 +50,8 @@ button{font-family:inherit;cursor:pointer}
 .brand b{color:var(--or)}
 
 /* welcome / intro */
-.welcome{min-height:100dvh;display:flex;flex-direction:column;padding:calc(var(--safe-t) + 22px) 26px calc(26px + var(--safe-b))}
+.welcome{min-height:100dvh;display:flex;flex-direction:column;padding:calc(var(--safe-t) + 22px) 26px calc(26px + var(--safe-b));position:relative}
+.wc-theme{position:absolute;top:calc(var(--safe-t) + 16px);right:22px}
 .wc-top{text-align:center;margin-top:7vh}
 .wc-logo{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:58px;letter-spacing:-.5px;line-height:1}
 .wc-logo b{color:var(--or)}
@@ -74,7 +83,8 @@ button{font-family:inherit;cursor:pointer}
 .hero .tier{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:800}
 .hero .delta{position:absolute;right:18px;bottom:18px;font-size:13px;font-weight:800;background:rgba(0,0,0,.18);padding:5px 10px;border-radius:10px}
 .calib{background:var(--or-soft);border:1px solid var(--or-line);color:#9a4d00;border-radius:12px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:12px}
-@media (prefers-color-scheme:dark){.calib{color:#f0b078}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .calib{color:#f0b078}}
+:root[data-theme="dark"] .calib{color:#f0b078}
 .statrow{display:flex;gap:10px;margin-bottom:14px}
 .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:13px 6px;text-align:center}
 .stat b{display:block;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -89,6 +99,35 @@ button{font-family:inherit;cursor:pointer}
 .hitem .e{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;margin-right:10px}
 .up{color:var(--grn);font-weight:800;font-size:13px}
 .dn{color:var(--red);font-weight:800;font-size:13px}
+
+/* theme toggle */
+.themebtn{background:transparent;border:1px solid var(--line);color:var(--ink);width:38px;height:38px;
+  border-radius:11px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.p-actions{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+
+/* passport: 4-up stat grid, tier progress, sparkline, recent matches */
+.statrow4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.statrow4 .stat{padding:12px 4px}
+.statrow4 .stat.hl{background:var(--or-soft);border-color:var(--or-line)}
+.statrow4 .stat b{font-size:18px}
+.statrow4 .stat.hl b{color:var(--or)}
+.tierprog{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px}
+.tierprog .tp-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.tierprog .tp-cur{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:19px;letter-spacing:-.3px}
+.tierprog .tp-away{font-size:11.5px;color:var(--mu);font-weight:600}
+.tp-bar{height:9px;border-radius:5px;background:var(--line);margin-top:11px;overflow:hidden}
+.tp-fill{height:100%;border-radius:5px;background:var(--grad)}
+.sparkcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 8px;margin-bottom:4px}
+.spark{width:100%;height:66px;display:block}
+.mrow{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin-bottom:8px}
+.mres{flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.mres.W{background:rgba(14,138,79,.14);color:var(--grn)}
+.mres.L{background:rgba(194,65,12,.14);color:var(--red)}
+.mres.D{background:var(--line-soft);color:var(--mu)}
+.mrow .mmid{flex:1;min-width:0}
+.mrow .mmid b{display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .mmid span{display:block;font-size:11.5px;color:var(--faint)}
+.mrow .msc{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
 
 /* rankings */
 .rtitle{font-family:var(--display);text-transform:uppercase;font-size:27px;font-weight:800;letter-spacing:-.5px;margin:6px 4px 2px}
@@ -128,11 +167,13 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .ah-brand{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:22px;letter-spacing:-.5px;color:var(--ink)}
 .ah-brand b{color:var(--or)}
 .ah-signin{border:none;background:var(--or);color:#fff;font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:10px}
+.ah-right{display:flex;align-items:center;gap:9px}
 
 /* bottom tab bar */
 .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 8px calc(10px + var(--safe-b));z-index:30}
 .tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--faint);padding:4px}
-.tab .ic{font-size:21px;line-height:1}
+.tab .ic{font-size:21px;line-height:1;height:23px;display:flex;align-items:center;justify-content:center}
+.tab .ic svg{width:23px;height:23px;display:block}
 .tab.on{color:var(--or)}
 
 /* iOS install hint */

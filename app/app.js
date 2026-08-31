@@ -3,6 +3,27 @@
   "use strict";
   var API = w.TrekkrAPI, sb = API.sb;
   var app = d.getElementById("app");
+  var docEl = d.documentElement;
+
+  /* ---------- theme (dark / light toggle, persisted) ---------- */
+  try { var _th = localStorage.getItem("trekkr_theme"); if (_th === "light" || _th === "dark") docEl.setAttribute("data-theme", _th); } catch (e) {}
+  function effectiveTheme() {
+    var t = docEl.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return (w.matchMedia && w.matchMedia("(prefers-color-scheme:dark)").matches) ? "dark" : "light";
+  }
+  function applyTheme(t) {
+    if (t === "light" || t === "dark") { docEl.setAttribute("data-theme", t); try { localStorage.setItem("trekkr_theme", t); } catch (e) {} }
+    else { docEl.removeAttribute("data-theme"); try { localStorage.removeItem("trekkr_theme"); } catch (e) {} }
+  }
+  // Live-restyle via CSS vars — no re-render needed; just refresh the toggle glyphs.
+  function toggleTheme() {
+    applyTheme(effectiveTheme() === "dark" ? "light" : "dark");
+    var g = effectiveTheme() === "dark" ? "☀️" : "🌙";
+    Array.prototype.forEach.call(d.querySelectorAll(".themebtn"), function (b) { b.textContent = g; });
+  }
+  function themeBtnHTML(id) { return '<button class="themebtn" id="' + id + '" aria-label="Toggle dark / light mode">' + (effectiveTheme() === "dark" ? "☀️" : "🌙") + '</button>'; }
+  function wireThemeBtn(id) { var b = d.getElementById(id); if (b) b.onclick = toggleTheme; }
 
   var S = {
     session: null,
@@ -48,6 +69,39 @@
     arr.sort(function (a, b) { return (b.w - b.l) - (a.w - a.l) || b.w - a.w; });
     return arr[0] || null;
   }
+  // Per-match results (newest first) from raw venue matches. meNames = [canonical, display].
+  function matchResults(matches, meNames) {
+    var mine = (meNames || []).map(norm).filter(Boolean);
+    function isMe(n) { return mine.indexOf(norm(n)) !== -1; }
+    var out = [];
+    (matches || []).forEach(function (m) {
+      var t1 = [m.p1t1, m.p2t1], t2 = [m.p1t2, m.p2t2];
+      var inT1 = t1.some(isMe), inT2 = t2.some(isMe); if (!inT1 && !inT2) return;
+      var team = inT1 ? t1 : t2, opp = inT1 ? t2 : t1;
+      var sf = inT1 ? m.scoreT1 : m.scoreT2, sa = inT1 ? m.scoreT2 : m.scoreT1;
+      var res = (sf === sa) ? "D" : (sf > sa ? "W" : "L");
+      var partner = team.filter(function (n) { return n && !isMe(n); })[0] || "";
+      var opps = opp.filter(Boolean).join(" & ");
+      var ts = Date.parse(m.date); if (isNaN(ts)) ts = 0;
+      out.push({ res: res, sf: sf, sa: sa, partner: partner, opps: opps, date: m.date || "", ts: ts });
+    });
+    out.sort(function (a, b) { return b.ts - a.ts; });
+    return out;
+  }
+  // Minimal ELO sparkline (last N points) as inline SVG, orange line + fade.
+  function sparkline(hist) {
+    var pts = (hist || []).slice(-24).map(function (h) { return h.elo; }).filter(function (v) { return v != null; });
+    if (pts.length < 2) return "";
+    var W = 320, H = 66, pad = 6, min = Math.min.apply(null, pts), max = Math.max.apply(null, pts), rng = (max - min) || 1;
+    var step = (W - pad * 2) / (pts.length - 1);
+    var co = pts.map(function (v, i) { return [pad + i * step, pad + (H - pad * 2) * (1 - (v - min) / rng)]; });
+    var line = co.map(function (c, i) { return (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1); }).join(" ");
+    var area = line + " L" + co[co.length - 1][0].toFixed(1) + " " + (H - pad) + " L" + co[0][0].toFixed(1) + " " + (H - pad) + " Z";
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--or)" stop-opacity=".35"/><stop offset="1" stop-color="var(--or)" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + area + '" fill="url(#sg)"/>' +
+      '<path d="' + line + '" fill="none" stroke="var(--or)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  }
   function isIosSafari() {
     var ua = w.navigator.userAgent;
     var ios = /iPad|iPhone|iPod/.test(ua) && !w.MSStream;
@@ -84,9 +138,7 @@
     };
   }
 
-  /* ---------- welcome / splash ---------- */
-  function welcomed() { try { return localStorage.getItem("trekkr_welcomed") === "1"; } catch (e) { return false; } }
-  function setWelcomed() { try { localStorage.setItem("trekkr_welcomed", "1"); } catch (e) {} }
+  /* ---------- splash ---------- */
   function hideSplash() {
     var s = d.getElementById("splash"); if (!s) return;
     s.classList.add("hide");
@@ -95,20 +147,20 @@
 
   /* ---------- boot ---------- */
   function boot() {
-    var t0 = Date.now();
     setHTML('<div class="center"><div class="spinner"></div></div>');
     sb.auth.getSession().then(function (r) {
       S.session = r.data.session; S.token = S.session ? S.session.access_token : null;
-      S.view = S.session ? "passport" : (welcomed() ? "rankings" : "welcome");
+      // The splash stays as an interactive welcome screen; the user taps Play Now.
+      S.view = "welcome";
       render();
-      setTimeout(hideSplash, Math.max(0, 900 - (Date.now() - t0)));
+      hideSplash();
     });
     sb.auth.onAuthStateChange(function (_e, session) {
       var wasGuest = !S.session;
       S.session = session; S.token = session ? session.access_token : null;
       S.me = null; S.myName = ""; S.card = null;
       if (session && (wasGuest || S.view === "login")) S.view = "passport";
-      if (!session) S.view = "rankings";
+      if (!session) S.view = "welcome";
       render();
     });
   }
@@ -120,8 +172,10 @@
 
   /* ---------- WELCOME ---------- */
   function renderWelcome() {
+    var signedIn = !!S.session;
     setHTML(
       '<div class="welcome">' +
+        '<div class="wc-theme">' + themeBtnHTML("wc-theme-btn") + '</div>' +
         '<div class="wc-top">' +
           '<div class="wc-logo">Trekk<b>r</b></div>' +
           '<p class="wc-tag">Your padel passport — every match builds your journey.</p>' +
@@ -132,14 +186,16 @@
           '<li><span class="wc-ic">🎾</span><div><b>Play &amp; events</b><span>Find PlayRank sessions and tournaments near you.</span></div></li>' +
         '</ul>' +
         '<div class="wc-cta">' +
-          '<button class="btn" id="wc-start">Get Started</button>' +
-          '<button class="link" id="wc-guest">Continue as guest</button>' +
+          '<button class="btn" id="wc-start">Play Now</button>' +
+          (signedIn ? '' : '<button class="link" id="wc-guest">Browse as guest</button>') +
         '</div>' +
       '</div>'
     );
     maybeIosHint();
-    d.getElementById("wc-start").onclick = function () { setWelcomed(); S.view = "login"; render(); };
-    d.getElementById("wc-guest").onclick = function () { setWelcomed(); S.view = "rankings"; render(); };
+    wireThemeBtn("wc-theme-btn");
+    d.getElementById("wc-start").onclick = function () { S.view = S.session ? "passport" : "login"; render(); };
+    var g = d.getElementById("wc-guest");
+    if (g) g.onclick = function () { S.view = "rankings"; render(); };
   }
 
   /* ---------- LOGIN ---------- */
@@ -185,21 +241,33 @@
   function renderShell() {
     var header = S.session ? "" :
       '<div class="appheader"><span class="ah-brand">Trekk<b>r</b></span>' +
-      '<button class="ah-signin" id="ah-signin">Sign in</button></div>';
+      '<div class="ah-right">' + themeBtnHTML("ah-theme") +
+      '<button class="ah-signin" id="ah-signin">Sign in</button></div></div>';
     setHTML(header + '<div id="view"></div>' + tabbarHTML());
     var si = d.getElementById("ah-signin");
     if (si) si.onclick = function () { S.view = "login"; render(); };
+    wireThemeBtn("ah-theme");
     bindTabs();
     renderView();
   }
+  var TAB_ICONS = {
+    // Passport → ID card
+    passport: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8" cy="10.8" r="2"/><path d="M5.4 16c.5-1.4 1.5-2.1 2.6-2.1s2.1.7 2.6 2.1"/><line x1="14" y1="10" x2="19" y2="10"/><line x1="14" y1="13.5" x2="18" y2="13.5"/></svg>',
+    // Rankings → trophy
+    rankings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4.5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.6a2.4 2.4 0 0 0 3 2.6"/><path d="M17 6h2.4a2.4 2.4 0 0 1-3 2.6"/><path d="M9.5 16.5h5l.6 3.5h-6.2z"/><line x1="12" y1="13.4" x2="12" y2="16.5"/></svg>',
+    // Play → racket
+    main: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10.2" cy="8.8" rx="6" ry="6.6"/><path d="M6.5 13.4 3.7 20.3"/><path d="M8.7 18.7 5.9 21"/><path d="M6.6 8.7 13.8 6M6.9 11.4l6.6-2.6M9.6 5.2l3.8 6.4" stroke-width="1"/></svg>',
+    // Profile → person
+    profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.4-3.6 3.4-6 7.2-6s6.8 2.4 7.2 6"/></svg>',
+  };
   function tabbarHTML() {
-    var tabs = [["passport", "🎾", "Passport"], ["rankings", "🏆", "Rankings"], ["main", "📅", "Play"], ["profil", "👤", "Profile"]];
+    var tabs = [["passport", "Passport"], ["rankings", "Rankings"], ["main", "Play"], ["profil", "Profile"]];
     var active = S.view;
     if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
     if (S.view === "player") active = "rankings";
     if (S.view === "edit") active = "profil";
     return '<nav class="tabbar">' + tabs.map(function (t) {
-      return '<button class="tab' + (t[0] === active ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>';
+      return '<button class="tab' + (t[0] === active ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ic">' + TAB_ICONS[t[0]] + '</span>' + t[1] + '</button>';
     }).join("") + '</nav>';
   }
   function bindTabs() {
@@ -243,26 +311,46 @@
       var name = me.player.name;
       var r = await Promise.all([
         API.getPlayer(name).catch(function () { return {}; }),
-        API.getEloHistory(name).catch(function () { return { history: [] }; }),
         ensureCut(),
         API.getPlayerMatches(name).catch(function () { return { matches: [] }; }),
       ]);
-      var det = r[0] || {}, hist = (r[1] && r[1].history) || [], cut = r[2];
-      var bp = bestPartner((r[3] && r[3].matches) || [], [name, det.displayName || me.player.displayName]);
-      var elo = det.currentElo != null ? det.currentElo : (det.elo != null ? det.elo : (me.player.elo != null ? me.player.elo : (hist.length ? hist[hist.length - 1].elo : null)));
-      var unrated = !!det.unrated || elo == null;
-      var wins = det.wins != null ? det.wins : det.totalWins;
-      var losses = det.losses != null ? det.losses : det.totalLosses;
-      var matches = det.totalMatches != null ? det.totalMatches : (det.matches != null ? det.matches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0));
+      var det = r[0] || {}, cut = r[1];
+      var st = det.stats || {};                 // {currentElo,unrated,totalMatches,totalW,totalL,winRate,streak}
+      var pd = det.player || {};                // profile fields
+      var hist = det.history || [];             // [{elo,delta,w,l,timestamp}]
+      var matchesArr = (r[2] && r[2].matches) || [];
+
+      var display = pd.displayName || me.player.displayName || name;
+      var photo = pd.photoUrl || me.player.photo_url || me.player.photoUrl || "";
+      var region = pd.region || me.player.region || "";
+      var club = ((pd.clubs || me.player.clubs || "").split(",")[0] || "").trim();
+
+      var elo = st.currentElo != null ? st.currentElo : (hist.length ? hist[hist.length - 1].elo : (me.player.elo != null ? me.player.elo : null));
+      var unrated = (st.unrated != null ? !!st.unrated : (hist.length === 0)) || elo == null;
+      var wins = st.totalW != null ? st.totalW : null;
+      var losses = st.totalL != null ? st.totalL : null;
+      var matches = st.totalMatches != null ? st.totalMatches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0);
+      var winRate = st.winRate != null ? st.winRate : (matches ? Math.round((wins || 0) / matches * 100) : 0);
+      var streak = st.streak && st.streak !== "0" ? st.streak : "—";
       var last = hist.length ? hist[hist.length - 1] : null;
-      var recent = hist.slice(-8).reverse();
-      var display = det.displayName || me.player.displayName || name;
-      var photo = det.photoUrl || me.player.photo_url || me.player.photoUrl || "";
-      var region = det.region || me.player.region || "";
-      var club = ((det.clubs || me.player.clubs || "").split(",")[0] || "").trim();
       var tier = unrated ? null : API.tierName(elo, cut);
+      var bp = bestPartner(matchesArr, [name, display]);
+      var results = matchResults(matchesArr, [name, display]).slice(0, 6);
 
       S.card = { display: display, name: name, elo: elo, tier: tier, wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name), partner: bp };
+
+      // Tier progress toward the next Series Tier (dynamic cutoffs).
+      var t1 = (cut && cut.t1) || 2000, t2 = (cut && cut.t2) || 1500, tp = "";
+      if (!unrated) {
+        var prog = 100, away = 0, nx = "";
+        if (elo >= t1) { prog = 100; }
+        else if (elo >= t2) { prog = Math.round((elo - t2) / (t1 - t2) * 100); away = t1 - elo; nx = "T1 · Open"; }
+        else { prog = Math.round(elo / t2 * 100); away = t2 - elo; nx = "T2 · Contender"; }
+        prog = Math.max(4, Math.min(100, prog));
+        tp = '<div class="tierprog"><div class="tp-top"><span class="tp-cur">' + esc(tier) + '</span>' +
+          (nx ? '<span class="tp-away">' + away + ' pts to ' + esc(nx) + '</span>' : '<span class="tp-away">Top tier 🔥</span>') +
+          '</div><div class="tp-bar"><div class="tp-fill" style="width:' + prog + '%"></div></div></div>';
+      }
 
       var heroInner = unrated
         ? '<p class="lbl">ELO Rating</p><p class="num" style="font-size:34px">Unrated</p><p style="margin:6px 0 0;font-size:12.5px;opacity:.92">Your rating appears after your first PlayRank match</p>'
@@ -274,27 +362,46 @@
         ? '<div class="calib"><b>Calibrating:</b> ' + Math.max(0, 15 - matches) + ' more matches until your tier is set. Your ELO moves faster during this window.</div>'
         : "";
 
+      var statGrid = '<div class="statrow4">' +
+        '<div class="stat"><b>' + (matches != null ? matches : "–") + '</b><span>Matches</span></div>' +
+        '<div class="stat hl"><b>' + (matches ? winRate + "%" : "–") + '</b><span>Win Rate</span></div>' +
+        '<div class="stat"><b>' + (wins != null ? wins : "–") + "/" + (losses != null ? losses : "–") + '</b><span>W / L</span></div>' +
+        '<div class="stat"><b>' + esc(streak) + '</b><span>Streak</span></div></div>';
+
+      var recentHTML = results.length
+        ? '<div class="sec">Recent matches</div>' + results.map(function (x) {
+            return '<div class="mrow"><span class="mres ' + x.res + '">' + x.res + '</span>' +
+              '<div class="mmid"><b>' + (x.partner ? "with " + esc(x.partner) : "vs " + esc(x.opps || "—")) + '</b>' +
+              '<span>' + esc(x.date ? fmtDate(x.ts || x.date) : "—") + (x.opps && x.partner ? " · vs " + esc(x.opps) : "") + '</span></div>' +
+              '<span class="msc">' + x.sf + '–' + x.sa + '</span></div>';
+          }).join("")
+        : (hist.length ? '<div class="sec">Recent ELO</div>' + hist.slice(-6).reverse().map(function (h) {
+            var up = (h.delta || 0) >= 0;
+            return '<div class="hitem"><span class="d">' + esc(fmtDate(h.timestamp)) + '</span><span class="e">' + h.elo + '</span>' +
+              '<span class="' + (up ? "up" : "dn") + '">' + (up ? "▲ +" : "▼ ") + Math.abs(h.delta || 0) + '</span></div>';
+          }).join("") : "");
+
+      var spark = (!unrated && hist.length > 1) ? '<div class="sec">ELO progress</div><div class="sparkcard">' + sparkline(hist) + '</div>' : "";
+
       viewEl().innerHTML =
         '<div class="screen">' +
           '<div class="p-top"><div><div class="p-hi">Passport</div><div class="p-name">' + esc(display) + '</div>' +
             (region || club ? '<div class="p-meta">' + esc([region, club].filter(Boolean).join(" · ")) + '</div>' : "") + '</div>' +
-            '<div class="ava">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</div></div>' +
+            '<div class="p-actions">' + themeBtnHTML("pp-theme") +
+              '<button class="ava" id="pp-av" aria-label="Edit profile" style="padding:0;border:none">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</button>' +
+            '</div></div>' +
           '<div class="hero">' + heroInner + '</div>' +
-          calib +
-          '<div class="statrow"><div class="stat"><b>' + (wins != null ? wins : "–") + '</b><span>Wins</span></div>' +
-            '<div class="stat"><b>' + (losses != null ? losses : "–") + '</b><span>Losses</span></div>' +
-            '<div class="stat"><b>' + (matches != null ? matches : "–") + '</b><span>Matches</span></div></div>' +
+          calib + tp + statGrid +
           (bp ? '<div class="sec">Best partner</div><div class="hitem"><span class="d"><b style="color:var(--ink)">' + esc(bp.name) + '</b></span><span class="up">' + bp.w + '–' + bp.l + '</span></div>' : "") +
+          spark +
           '<div class="actrow"><button class="btn" id="share">Share Card</button>' +
             '<button class="btn ghost soon" id="challenge" style="flex:0 0 auto;width:auto;padding:15px 16px">Challenge</button></div>' +
-          (recent.length ? '<div class="sec">Recent ELO</div>' + recent.map(function (h) {
-            var up = (h.delta || 0) >= 0;
-            return '<div class="hitem"><span class="d">' + esc(fmtDate(h.timestamp)) + '</span><span class="e">' + h.elo + '</span>' +
-              '<span class="' + (up ? "up" : "dn") + '">' + (up ? "▲ +" : "▼ ") + Math.abs(h.delta || 0) + '</span></div>';
-          }).join("") : "") +
+          recentHTML +
           '<button class="link" id="howto" style="display:block;margin:18px auto 0">How to get ranked ›</button>' +
         '</div>';
 
+      wireThemeBtn("pp-theme");
+      d.getElementById("pp-av").onclick = function () { S.view = "edit"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
       d.getElementById("challenge").onclick = function () { toast("Challenge players — coming soon 🔜"); };
       d.getElementById("share").onclick = shareCard;
       d.getElementById("howto").onclick = function () { S.prev = "passport"; S.view = "ranked-info"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
@@ -558,8 +665,10 @@
         '<div class="plain"><h3>' + esc(name) + '</h3><p>' + esc(me.email || "") + '</p></div>' +
         '<button class="plain" id="edit" style="width:100%;text-align:left;border:1px solid var(--line)"><h3>✏️ Edit profile</h3><p>Display name, photo, IG, region &amp; password.</p></button>' +
         '<button class="plain" id="howto" style="width:100%;text-align:left;border:1px solid var(--line)"><h3>🧭 How to get ranked</h3><p>ELO, tiers &amp; how to climb.</p></button>' +
+        '<div class="plain" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><h3>Appearance</h3><p>Toggle dark / light mode.</p></div>' + themeBtnHTML("pf-theme") + '</div>' +
         '<button class="btn ghost" id="logout" style="margin-top:16px">Sign out</button>' +
         '</div>';
+      wireThemeBtn("pf-theme");
       d.getElementById("logout").onclick = function () { sb.auth.signOut(); };
       d.getElementById("edit").onclick = function () { S.view = "edit"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
       d.getElementById("howto").onclick = function () { S.prev = "profil"; S.view = "ranked-info"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
