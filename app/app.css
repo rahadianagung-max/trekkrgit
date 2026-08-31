@@ -41,6 +41,21 @@ button{font-family:inherit;cursor:pointer}
 .brand{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:40px;letter-spacing:-.5px}
 .brand b{color:var(--or)}
 
+/* welcome / intro */
+.welcome{min-height:100dvh;display:flex;flex-direction:column;padding:calc(var(--safe-t) + 22px) 26px calc(26px + var(--safe-b))}
+.wc-top{text-align:center;margin-top:7vh}
+.wc-logo{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:58px;letter-spacing:-.5px;line-height:1}
+.wc-logo b{color:var(--or)}
+.wc-tag{color:var(--mu);font-size:15px;line-height:1.55;margin:12px auto 0;max-width:26ch}
+.wc-list{list-style:none;padding:0;margin:auto 0 0;display:flex;flex-direction:column;gap:16px}
+.wc-list li{display:flex;align-items:flex-start;gap:14px}
+.wc-ic{font-size:22px;line-height:1;flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;background:var(--or-soft);border:1px solid var(--or-line);border-radius:14px}
+.wc-list b{display:block;font-size:15px;font-weight:800}
+.wc-list span{display:block;font-size:13px;color:var(--mu);margin-top:2px;line-height:1.45}
+.wc-cta{margin-top:auto;padding-top:26px}
+.wc-cta .btn{margin-top:0}
+.wc-cta .link{display:block;width:100%;margin-top:10px;text-align:center}
+
 /* login */
 .login-wrap{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:26px 22px calc(26px + var(--safe-b))}
 .sub{color:var(--mu);font-size:15px;margin:6px 0 0}

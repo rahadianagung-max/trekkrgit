@@ -17,8 +17,31 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/app/app.css"/>
+<style>
+  /* Launch splash — painted instantly, removed by app.js once auth resolves. */
+  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:4px;text-align:center;
+    background:linear-gradient(160deg,#FF3830,#FFB000);color:#fff;
+    font-family:'Saira Condensed',system-ui,sans-serif;
+    padding:env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+    transition:opacity .45s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .sp-mark{font-weight:800;font-size:72px;letter-spacing:2px;line-height:1;
+    text-shadow:0 6px 20px rgba(0,0,0,.18);animation:sp-pop .6s cubic-bezier(.2,.9,.3,1.3) both}
+  #splash .sp-name{font-weight:700;font-size:15px;text-transform:uppercase;
+    letter-spacing:.34em;opacity:.92;margin-top:10px;padding-left:.34em}
+  #splash .sp-tag{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:500;
+    font-size:13px;opacity:.9;margin-top:8px;animation:sp-fade .8s .25s both}
+  @keyframes sp-pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes sp-fade{from{opacity:0}to{opacity:.9}}
+</style>
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <div class="sp-mark">TRKR</div>
+    <div class="sp-name">Trekkr Player</div>
+    <div class="sp-tag">Every match builds your journey</div>
+  </div>
   <div id="app" aria-live="polite"></div>
 
   <!-- Supabase JS (UMD → window.supabase) -->

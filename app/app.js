@@ -84,13 +84,24 @@
     };
   }
 
+  /* ---------- welcome / splash ---------- */
+  function welcomed() { try { return localStorage.getItem("trekkr_welcomed") === "1"; } catch (e) { return false; } }
+  function setWelcomed() { try { localStorage.setItem("trekkr_welcomed", "1"); } catch (e) {} }
+  function hideSplash() {
+    var s = d.getElementById("splash"); if (!s) return;
+    s.classList.add("hide");
+    setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 500);
+  }
+
   /* ---------- boot ---------- */
   function boot() {
+    var t0 = Date.now();
     setHTML('<div class="center"><div class="spinner"></div></div>');
     sb.auth.getSession().then(function (r) {
       S.session = r.data.session; S.token = S.session ? S.session.access_token : null;
-      S.view = S.session ? "passport" : "rankings";
+      S.view = S.session ? "passport" : (welcomed() ? "rankings" : "welcome");
       render();
+      setTimeout(hideSplash, Math.max(0, 900 - (Date.now() - t0)));
     });
     sb.auth.onAuthStateChange(function (_e, session) {
       var wasGuest = !S.session;
@@ -101,7 +112,35 @@
       render();
     });
   }
-  function render() { if (S.view === "login") return renderLogin(); renderShell(); }
+  function render() {
+    if (S.view === "welcome") return renderWelcome();
+    if (S.view === "login") return renderLogin();
+    renderShell();
+  }
+
+  /* ---------- WELCOME ---------- */
+  function renderWelcome() {
+    setHTML(
+      '<div class="welcome">' +
+        '<div class="wc-top">' +
+          '<div class="wc-logo">Trekk<b>r</b></div>' +
+          '<p class="wc-tag">Your padel passport — every match builds your journey.</p>' +
+        '</div>' +
+        '<ul class="wc-list">' +
+          '<li><span class="wc-ic">📈</span><div><b>Live ELO &amp; tier</b><span>Watch your rating move after every match.</span></div></li>' +
+          '<li><span class="wc-ic">🏆</span><div><b>National rankings</b><span>See where you stand across Indonesia.</span></div></li>' +
+          '<li><span class="wc-ic">🎾</span><div><b>Play &amp; events</b><span>Find PlayRank sessions and tournaments near you.</span></div></li>' +
+        '</ul>' +
+        '<div class="wc-cta">' +
+          '<button class="btn" id="wc-start">Get Started</button>' +
+          '<button class="link" id="wc-guest">Continue as guest</button>' +
+        '</div>' +
+      '</div>'
+    );
+    maybeIosHint();
+    d.getElementById("wc-start").onclick = function () { setWelcomed(); S.view = "login"; render(); };
+    d.getElementById("wc-guest").onclick = function () { setWelcomed(); S.view = "rankings"; render(); };
+  }
 
   /* ---------- LOGIN ---------- */
   function renderLogin() {
