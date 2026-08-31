@@ -782,7 +782,7 @@
   async function renderRankings() {
     viewEl().innerHTML = '<div class="screen"><div class="center" style="min-height:40vh"><div class="spinner"></div></div></div>';
     try {
-      var r = await Promise.all([API.getLeaderboard({ limit: 200 }), ensureCut(), ensureMe().catch(function () { return null; })]);
+      var r = await Promise.all([API.getLeaderboard({ limit: 100000 }), ensureCut(), ensureMe().catch(function () { return null; })]);
       var list = (r[0] && r[0].leaderboard) || [], cut = r[1];
       list = list.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
         .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region }; })
