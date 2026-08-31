@@ -250,6 +250,21 @@
   }
 
   /* ---------- WELCOME ---------- */
+  // Real registered-player count (social proof on the welcome screen). Cached.
+  var _playerCount = null;
+  function showCount(n) {
+    var box = d.getElementById("wc-count"), num = d.getElementById("wc-num");
+    if (!box || !num || !n) return;
+    num.textContent = Number(n).toLocaleString("en-US") + "+";
+    box.hidden = false;
+  }
+  function fillPlayerCount() {
+    if (_playerCount != null) { showCount(_playerCount); return; }
+    API.getLeaderboard({ limit: 1 }).then(function (r) {
+      _playerCount = (r && r.total) || 0;
+      showCount(_playerCount);
+    }).catch(function () {});
+  }
   function renderWelcome() {
     var signedIn = !!S.session;
     setHTML(
@@ -264,6 +279,7 @@
           '<li><b>National rankings</b><span>See where you stand across Indonesia.</span></li>' +
           '<li><b>Ranked play &amp; league</b><span>Join ranked sessions, then the monthly league.</span></li>' +
         '</ul>' +
+        '<div class="wc-count" id="wc-count" hidden><b id="wc-num">—</b><span>players already on Trekkr</span></div>' +
         '<div class="wc-cta">' +
           '<button class="btn" id="wc-start">Play Now</button>' +
           (signedIn ? '' : '<button class="link" id="wc-guest">Browse as guest</button>') +
@@ -272,6 +288,7 @@
     );
     maybeIosHint();
     wireThemeBtn("wc-theme-btn");
+    fillPlayerCount();
     d.getElementById("wc-start").onclick = function () { S.view = S.session ? "passport" : "login"; render(); };
     var g = d.getElementById("wc-guest");
     if (g) g.onclick = function () { S.view = "rankings"; render(); };
