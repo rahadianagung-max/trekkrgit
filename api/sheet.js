@@ -254,6 +254,131 @@ async function notifyOwner(subject, html) {
   }
 }
 
+// ==============================================================
+// TRANSACTIONAL EMAIL DESIGN SYSTEM
+// One branded, table-based, inline-styled HTML shell so every player-facing
+// email (welcome/onboarding, set password, password reset, claim approved)
+// looks consistent and professional across Gmail / Outlook / Apple Mail.
+// The same look is mirrored in docs/email-templates/*.html for the Supabase
+// (GoTrue) dashboard templates the app's signup/reset actually use.
+// ==============================================================
+const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+// Bulletproof-ish CTA button.
+function emailButton(label, url) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px">`
+    + `<tr><td align="center" bgcolor="#FF6A00" style="border-radius:10px;background:#FF6A00">`
+    + `<a href="${url}" target="_blank" style="display:inline-block;padding:14px 30px;font-family:${EMAIL_FONT};font-size:15px;font-weight:700;line-height:1;color:#FFFFFF;text-decoration:none;border-radius:10px">${label}</a>`
+    + `</td></tr></table>`;
+}
+
+// Wrap body content in the branded shell. `preheader` is the inbox preview line.
+function emailShell(contentHtml, preheader) {
+  const pre = escHtml(preheader || "");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>`
+    + `<body style="margin:0;padding:0;background:#F5F5F7">`
+    + `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F5F5F7">${pre}</div>`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F5F7">`
+    + `<tr><td align="center" style="padding:28px 14px">`
+    + `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E4E4E7">`
+    // header
+    + `<tr><td style="background-color:#FF6A00;background-image:linear-gradient(135deg,#FF6A00,#FF9A3D);padding:22px 32px">`
+    + `<span style="font-family:${EMAIL_FONT};font-size:22px;font-weight:800;letter-spacing:1px;color:#FFFFFF;vertical-align:middle">TREKKR</span>`
+    + `<span style="font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:rgba(255,255,255,.9);vertical-align:middle">&nbsp;&nbsp;Padel Rankings · Indonesia</span>`
+    + `</td></tr>`
+    // body
+    + `<tr><td style="padding:32px 32px 28px">${contentHtml}</td></tr>`
+    // footer
+    + `<tr><td style="padding:20px 32px;border-top:1px solid #E4E4E7;background:#FAFAFA">`
+    + `<p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:700;color:#0D0D0D">Trekkr — ELO rankings for padel in Indonesia</p>`
+    + `<p style="margin:0;font-family:${EMAIL_FONT};font-size:12px;color:#9A9AA2">`
+    + `<a href="https://trekkr.online" target="_blank" style="color:#9A9AA2;text-decoration:none">trekkr.online</a> &nbsp;·&nbsp; `
+    + `<a href="https://trekkr.online/rankings" target="_blank" style="color:#9A9AA2;text-decoration:none">Rankings</a> &nbsp;·&nbsp; `
+    + `<a href="https://trekkr.online/how-trekkr-works" target="_blank" style="color:#9A9AA2;text-decoration:none">How it works</a></p>`
+    + `<p style="margin:10px 0 0;font-family:${EMAIL_FONT};font-size:11px;color:#C4C4CC">You're receiving this because this email was used to register on Trekkr. If that wasn't you, you can safely ignore this message.</p>`
+    + `</td></tr>`
+    + `</table></td></tr></table></body></html>`;
+}
+
+// Small helpers for consistent body typography.
+function emH(text) { return `<h1 style="margin:0 0 14px;font-family:${EMAIL_FONT};font-size:22px;line-height:1.25;font-weight:800;color:#0D0D0D">${text}</h1>`; }
+function emP(html, mute) { return `<p style="margin:0 0 14px;font-family:${EMAIL_FONT};font-size:15px;line-height:1.6;color:${mute ? "#52525B" : "#27272A"}">${html}</p>`; }
+function emSmall(html) { return `<p style="margin:16px 0 0;font-family:${EMAIL_FONT};font-size:12px;line-height:1.55;color:#9A9AA2">${html}</p>`; }
+function emLinkFallback(url) {
+  return `<p style="margin:14px 0 0;font-family:${EMAIL_FONT};font-size:12px;line-height:1.5;color:#9A9AA2">Button not working? Copy &amp; paste this link:<br><a href="${url}" target="_blank" style="color:#FF6A00;word-break:break-all">${url}</a></p>`;
+}
+// Info card explaining ELO — reused by the onboarding email.
+function emEloCard() {
+  const row = (label, val) => `<tr>`
+    + `<td style="padding:6px 0;font-family:${EMAIL_FONT};font-size:13px;color:#52525B">${label}</td>`
+    + `<td align="right" style="padding:6px 0;font-family:${EMAIL_FONT};font-size:13px;font-weight:700;color:#0D0D0D">${val}</td></tr>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px;background:#F5F5F7;border:1px solid #E4E4E7;border-radius:12px">`
+    + `<tr><td style="padding:16px 18px">`
+    + `<p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:14px;font-weight:800;color:#0D0D0D">What is ELO?</p>`
+    + `<p style="margin:0 0 12px;font-family:${EMAIL_FONT};font-size:13px;line-height:1.55;color:#52525B">ELO is a single number that represents your real padel skill. Everyone starts around <b>1350</b>. Win and it goes up; lose and it dips — and the size of the change depends on who you played. Beating stronger opponents earns you more.</p>`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px dashed #D4D4D8;padding-top:6px">`
+    + row("Beat a stronger pair", "ELO rises faster ▲")
+    + row("Lose to a weaker pair", "ELO drops more ▼")
+    + row("Your first ~5 sessions", "Calibration (Provisional)")
+    + `</table>`
+    + `</td></tr></table>`;
+}
+// Tier ladder chips — reused by the onboarding email.
+function emTierLadder() {
+  const tiers = [
+    ["Beginner", "#9A9AA2"], ["Upper Beginner", "#9A9AA2"], ["Lower Bronze", "#B87333"],
+    ["Bronze", "#B87333"], ["Upper Bronze", "#B87333"], ["Silver", "#8E8E93"],
+    ["Gold", "#D4A017"], ["Platinum", "#5B7FA6"],
+  ];
+  const chips = tiers.map(([t, c]) =>
+    `<span style="display:inline-block;margin:0 6px 8px 0;padding:5px 11px;border-radius:999px;background:#F5F5F7;border:1px solid #E4E4E7;font-family:${EMAIL_FONT};font-size:12px;font-weight:700;color:${c}">${t}</span>`
+  ).join("");
+  return `<p style="margin:0 0 8px;font-family:${EMAIL_FONT};font-size:14px;font-weight:800;color:#0D0D0D">Your tier grows with your ELO</p>`
+    + `<div style="margin:0 0 18px">${chips}</div>`;
+}
+
+// ── Email templates (return full HTML for sendBrevoEmail) ──
+
+// Onboarding / welcome + set-password (legacy Google-Sheet flow).
+function tplWelcomeSetPassword(playerName, link) {
+  const name = escHtml(playerName);
+  const c = emH(`Welcome to Trekkr, ${name} 🎾`)
+    + emP(`Trekkr is Indonesia's padel <b>ELO rating &amp; rankings</b> platform. Play ranked sessions at partner venues, and every result updates your rating and national ranking automatically — so your progress is real, tracked, and comparable across the country.`)
+    + emP(`First, set a password to activate your player passport:`)
+    + emButtonBlock("Set my password", link)
+    + emEloCard()
+    + emTierLadder()
+    + emP(`<b>How to raise your ELO:</b> play more ranked sessions, partner up, and win — especially against pairs rated above you. Consistency matters more than any single match.`, true)
+    + emSmall(`This link is valid for 24 hours. If you didn't sign up for Trekkr, you can ignore this email.`)
+    + emLinkFallback(link);
+  return emailShell(c, `Set your password and activate your Trekkr passport — plus how ELO works.`);
+}
+
+// Password reset (Brevo-driven fallback / non-Supabase flows).
+function tplPasswordReset(playerName, link) {
+  const name = escHtml(playerName || "there");
+  const c = emH(`Reset your password`)
+    + emP(`Hi ${name}, we received a request to reset the password for your Trekkr account. Tap the button below to choose a new one:`)
+    + emButtonBlock("Reset password", link)
+    + emSmall(`This link is valid for 60 minutes and can be used once. If you didn't request a reset, you can safely ignore this email — your password won't change.`)
+    + emLinkFallback(link);
+  return emailShell(c, `Reset your Trekkr password.`);
+}
+
+// Claim approved.
+function tplClaimApproved(playerName, passportUrl, loginUrl) {
+  const name = escHtml(playerName);
+  const c = emH(`Your profile is verified ✅`)
+    + emP(`Good news — your claim for the profile <b>${name}</b> on Trekkr has been <b>approved</b>. You can now log in to manage your passport, update your details, and track your ELO.`)
+    + emButtonBlock("Open my passport", passportUrl)
+    + emP(`Log in anytime at <a href="${loginUrl}" target="_blank" style="color:#FF6A00;text-decoration:none">${loginUrl}</a> with the email &amp; password you registered.`, true)
+    + emSmall(`Keep playing ranked sessions to climb the rankings — winning against stronger pairs raises your ELO the most.`);
+  return emailShell(c, `Your Trekkr profile claim was approved — log in to manage it.`);
+}
+
+// Button wrapper that also leaves breathing room below.
+function emButtonBlock(label, url) { return `<div style="margin:4px 0 20px">${emailButton(label, url)}</div>`; }
+
 // Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
 async function findAuthByEmail(sheets, email) {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
@@ -875,10 +1000,8 @@ async function accountClaimsResolve(body) {
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "approved", resolved_at: now, resolved_by: admin });
     try {
       const url = passportUrl(claim.player_name);
-      await sendBrevoEmail(claim.email, "Klaim profil Trekkr disetujui ✅",
-        `<p>Halo,</p><p>Klaim profil <b>${claim.player_name}</b> di Trekkr sudah <b>disetujui</b>. Kamu sekarang bisa login untuk mengelola profilmu.</p>`
-        + `<p><a href="${url}" style="background:#FF6A00;color:#fff;padding:11px 20px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:700">Buka profil saya</a></p>`
-        + `<p style="color:#666;font-size:13px">Atau login di <a href="${appBaseUrl()}/login">${appBaseUrl()}/login</a> dengan email &amp; password yang kamu daftarkan.</p>`);
+      await sendBrevoEmail(claim.email, "Your Trekkr profile is verified ✅",
+        tplClaimApproved(claim.player_name, url, `${appBaseUrl()}/login`));
     } catch (e) { console.error("claim approved email:", e.message); }
   } else {
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
@@ -1401,15 +1524,9 @@ async function registerPlayer(body) {
   }
 
   const link = `${appBaseUrl()}/set-password?e=${encodeURIComponent(email)}&token=${rawToken}`;
-  const html = `<div style="font-family:sans-serif;max-width:480px">
-    <h2>Selamat datang di Trekkr</h2>
-    <p>Halo <b>${playerName.replace(/</g, "&lt;")}</b>, buat kata sandi untuk akun passport-mu:</p>
-    <p><a href="${link}" style="display:inline-block;background:#FF6A00;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:700">Buat kata sandi</a></p>
-    <p style="font-size:12px;color:#666">Atau salin link ini: <br>${link}</p>
-    <p style="font-size:12px;color:#666">Link berlaku 24 jam. Abaikan email ini jika kamu tidak mendaftar.</p>
-  </div>`;
+  const html = tplWelcomeSetPassword(playerName, link);
   try {
-    await sendBrevoEmail(email, "Buat kata sandi akun Trekkr-mu", html);
+    await sendBrevoEmail(email, "Welcome to Trekkr — set your password 🎾", html);
   } catch (e) {
     console.error("register email:", e.message);
     return respond(502, { error: "Gagal mengirim email. Coba lagi nanti." });
