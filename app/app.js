@@ -783,9 +783,13 @@
     viewEl().innerHTML = '<div class="screen"><div class="center" style="min-height:40vh"><div class="spinner"></div></div></div>';
     try {
       var r = await Promise.all([API.getLeaderboard({ limit: 100000 }), ensureCut(), ensureMe().catch(function () { return null; })]);
-      var list = (r[0] && r[0].leaderboard) || [], cut = r[1];
-      list = list.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
+      var raw = (r[0] && r[0].leaderboard) || [], cut = r[1];
+      var list = raw.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
         .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region }; })
+        .sort(function (a, b) { return b.elo - a.elo; });
+      // Players still in calibration (1–14 matches): shown separately, marked provisional.
+      var calib = raw.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
+        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, m: Number(p.totalMatches) || 0 }; })
         .sort(function (a, b) { return b.elo - a.elo; });
       function tierOf(elo) { return elo >= ((cut && cut.t1) || 2000) ? "T1" : elo >= ((cut && cut.t2) || 1500) ? "T2" : "T3"; }
       var f = S.rankFilter;
@@ -801,10 +805,22 @@
           '<span class="mt">' + esc(API.tierName(p.elo, cut)) + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
           '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
       }).join("");
+      // Calibrating section — only under the "All" filter (tier isn't settled yet).
+      var calibHTML = (f === "all" && calib.length) ? '<div class="sec" style="margin-top:22px">Still calibrating</div>' +
+        '<div class="rsub" style="margin:-4px 4px 8px">Rating firms up after 15 matches — shown provisional for now.</div>' +
+        calib.map(function (p) {
+          var mine = S.myName && norm(p.name) === norm(S.myName);
+          return '<div class="rrow' + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
+            '<span class="rk">·</span>' +
+            '<span class="who"><span class="nm">' + esc(p.name) + (mine ? " · you" : "") + ' <span class="prov">Provisional</span></span>' +
+            '<span class="mt">' + p.m + '/15 matches' + (p.region ? " · " + esc(p.region) : "") + '</span></span>' +
+            '<span class="el prov-el">' + p.elo + '</span><span class="rchev">›</span></div>';
+        }).join("") : "";
       viewEl().innerHTML = '<div class="screen">' +
         '<div class="rtitle">Rankings</div><div class="rsub">Calibrated players (15+ matches) · national</div>' +
         '<div class="chips">' + chips + '</div>' +
         (rows || '<div class="emptybig"><div class="em">🏆</div><p>No players in this filter yet.</p></div>') +
+        calibHTML +
         '</div>';
       Array.prototype.forEach.call(d.querySelectorAll(".chip"), function (c) { c.onclick = function () { S.rankFilter = c.getAttribute("data-f"); renderRankings(); }; });
       Array.prototype.forEach.call(d.querySelectorAll(".rrow"), function (rw) {

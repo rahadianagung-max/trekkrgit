@@ -168,6 +168,8 @@ button{font-family:inherit;cursor:pointer}
 .rrow.me{background:var(--or-soft);border-radius:12px;border-bottom-color:transparent;margin:2px -6px;padding-left:12px;padding-right:12px}
 .rrow{cursor:pointer}
 .rrow .rchev{color:var(--faint);font-size:18px;font-weight:700;margin-left:4px}
+.prov{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--or);background:var(--or-soft);border:1px solid var(--or-line);border-radius:6px;padding:1px 5px;vertical-align:middle;margin-left:4px}
+.rrow .el.prov-el{color:var(--faint)}
 
 /* PlayRank journey */
 .lede{color:var(--mu);font-size:14px;line-height:1.55;margin:0 4px 4px}

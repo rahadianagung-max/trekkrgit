@@ -74,6 +74,8 @@
 
 .see-full{margin-top:8px;background:transparent;border:0;font-size:11px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:5px;padding:2px}
 .state{font-size:13px;color:var(--subtle);padding:18px 4px}
+.calib-head{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin:16px 2px 7px}
+.prov-pill{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a5d00;background:rgba(255,176,0,.14);border:1px solid rgba(255,176,0,.42);border-radius:5px;padding:1px 5px;vertical-align:middle;margin-left:4px}
 .skeleton{height:52px;border-radius:10px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
 @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
@@ -223,19 +225,36 @@
       +'<span class="who"><span class="name">'+esc(p.name)+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
       +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
   }
+  // Provisional row — a player still in calibration (1–14 matches). No firm rank.
+  function provRowHTML(p){
+    var fc=firstClub(p.clubs);
+    return '<a class="rrow" href="'+passportUrl(p)+'">'
+      +'<span class="rank" style="color:var(--muted)">·</span>'+avatar(p)
+      +'<span class="who"><span class="name">'+esc(p.name)+' <span class="prov-pill">Provisional</span></span>'
+      +'<span class="meta">'+(Number(p.totalMatches)||0)+'/15 matches'+(fc?' · '+esc(fc):'')+'</span></span>'
+      +'<span class="elo" style="color:var(--muted)">'+p.elo+'</span></a>';
+  }
 
-  var data={M:[],F:[]}, expanded={M:false,F:false};
+  var data={M:{rated:[],calib:[]},F:{rated:[],calib:[]}}, expanded={M:false,F:false};
 
   function render(g){
     var box=document.getElementById(g==='M'?'colM':'colF');
     var moreBtn=document.getElementById(g==='M'?'moreM':'moreF');
-    var list=data[g]||[];
-    if(!list.length){box.innerHTML='<div class="state">No players found for this filter.</div>';moreBtn.hidden=true;return;}
-    var show=expanded[g]?list:list.slice(0,5);
-    var html=championHTML(show[0]);
-    if(show.length>1){html+='<div class="col-list" style="margin-top:6px">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
+    var rated=(data[g]&&data[g].rated)||[], calib=(data[g]&&data[g].calib)||[];
+    var showCalib=calib.length && !document.getElementById('levelSel').value;
+    if(!rated.length && !showCalib){box.innerHTML='<div class="state">No players found for this filter.</div>';moreBtn.hidden=true;return;}
+    var html='';
+    if(rated.length){
+      var show=expanded[g]?rated:rated.slice(0,5);
+      html+=championHTML(show[0]);
+      if(show.length>1){html+='<div class="col-list" style="margin-top:6px">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
+    }
+    if(showCalib){
+      html+='<div class="calib-head">Still calibrating</div>';
+      html+='<div class="col-list">'+calib.map(provRowHTML).join('')+'</div>';
+    }
     box.innerHTML=html;
-    if(list.length>5){
+    if(rated.length>5){
       moreBtn.hidden=false;
       moreBtn.innerHTML=(expanded[g]?'Show top 5':'See full '+(g==='M'?"men's":"women's")+' ranking')+' <i class="ti ti-arrow-right" aria-hidden="true"></i>';
     } else { moreBtn.hidden=true; }
@@ -254,12 +273,14 @@
     box.innerHTML='<div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div>';
     var qs=new URLSearchParams(Object.assign({gender:g},params())).toString();
     return fetch(BASE+'/elo/leaderboard?'+qs).then(function(r){return r.json();}).then(function(d){
-      data[g]=(d&&d.leaderboard)||[];
-      // Only rank players whose tier is settled (calibrated).
-      data[g]=data[g].filter(isEligible);
+      var all=(d&&d.leaderboard)||[];
+      var rated=all.filter(isEligible);
       var band=tierBand(document.getElementById('levelSel').value);
-      if(band){data[g]=data[g].filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
-      document.getElementById(g==='M'?'countM':'countF').textContent=data[g].length+' players';
+      if(band){rated=rated.filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
+      var calib=all.filter(function(p){var m=Number(p.totalMatches)||0;return m>=1&&m<MIN_TIER_MATCHES;})
+                   .sort(function(a,b){return (Number(b.elo)||0)-(Number(a.elo)||0);});
+      data[g]={rated:rated,calib:calib};
+      document.getElementById(g==='M'?'countM':'countF').textContent=rated.length+' players'+(calib.length?(' · '+calib.length+' calibrating'):'');
       expanded[g]=false; render(g);
     }).catch(function(){box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
   }
@@ -272,8 +293,8 @@
   (function(){var n=document.getElementById('tierNote');if(!n)return;
     n.innerHTML='<div style="margin:0 0 14px;padding:11px 14px;border:1px solid rgba(255,176,0,0.42);'
       +'background:rgba(255,176,0,0.12);border-radius:12px;font-size:12.5px;line-height:1.5;color:#8a5d00">'
-      +'Showing calibrated players only (15+ matches).'
-      +(REPLAY_COMPLETE?'':' Tiers are <strong>provisional</strong> until the season ELO replay is complete.')
+      +'Ranked players are calibrated (15+ matches); those still calibrating are listed below each column as <strong>provisional</strong>.'
+      +(REPLAY_COMPLETE?'':' Tiers firm up after the season ELO replay is complete.')
       +'</div>';})();
 
   /* Filters */
