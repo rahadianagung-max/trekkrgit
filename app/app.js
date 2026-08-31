@@ -55,6 +55,35 @@
     return ios && !standalone;
   }
 
+  /* ---------- install prompt (Android / desktop Chrome) ---------- */
+  var deferredInstall = null;
+  w.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault(); deferredInstall = e; showInstallBar();
+  });
+  w.addEventListener("appinstalled", function () {
+    deferredInstall = null;
+    var b = d.querySelector(".installbar"); if (b) b.remove();
+  });
+  function showInstallBar() {
+    if (!deferredInstall || d.querySelector(".installbar")) return;
+    try { if (localStorage.getItem("trekkr_installbar") === "off") return; } catch (e) {}
+    var el = d.createElement("div");
+    el.className = "ioshint installbar";
+    el.innerHTML = '<button class="x" aria-label="Close">×</button>' +
+      '<h5>Install the Trekkr app</h5>' +
+      '<p>Add Trekkr to your home screen for instant access. Free, no Play Store.</p>' +
+      '<button class="installgo">Install</button>';
+    d.body.appendChild(el);
+    el.querySelector(".x").onclick = function () {
+      el.remove(); try { localStorage.setItem("trekkr_installbar", "off"); } catch (e) {}
+    };
+    el.querySelector(".installgo").onclick = function () {
+      if (!deferredInstall) { el.remove(); return; }
+      deferredInstall.prompt();
+      deferredInstall.userChoice.then(function () { deferredInstall = null; el.remove(); });
+    };
+  }
+
   /* ---------- boot ---------- */
   function boot() {
     setHTML('<div class="center"><div class="spinner"></div></div>');

@@ -125,6 +125,7 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .ioshint h5{margin:0 0 3px;font-size:13.5px;font-weight:800}
 .ioshint p{margin:0;font-size:12px;line-height:1.5;opacity:.85}
 .ioshint .x{position:absolute;top:8px;right:11px;background:none;border:none;color:inherit;opacity:.6;font-size:18px;font-weight:800}
+.ioshint .installgo{margin-top:11px;background:var(--or);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13.5px;padding:10px 20px;font-family:inherit}
 
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:13px;font-weight:600;padding:10px 16px;border-radius:11px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88%}
