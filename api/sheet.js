@@ -4533,8 +4533,23 @@ const LIGA_DEFAULT = {
     ],
   },
 };
+// Stored as a single JSON string in cell A1 of its own dedicated tab — no shared
+// Settings-tab row bookkeeping (writes there were not reading back).
+const LIGA_TAB = "Liga_Config";
+async function ensureLigaTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
+  if (!(meta.data.sheets || []).some((s) => s.properties.title === LIGA_TAB)) {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: LIGA_TAB } } }] } });
+  }
+}
 async function getLigaConfig() {
-  const raw = await readSettingKey(getSheets(), "liga_config");
+  const sheets = getSheets();
+  await ensureLigaTab(sheets);
+  let raw = "";
+  try {
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${LIGA_TAB}!A1` });
+    raw = (r.data.values && r.data.values[0] && r.data.values[0][0]) || "";
+  } catch (e) {}
   let cfg = null;
   if (raw) { try { cfg = JSON.parse(raw); } catch (e) { console.error("[liga] parse fail:", e.message); } }
   console.log(`[liga] get source=${cfg ? "custom" : "default"} rawLen=${String(raw || "").length}`);
@@ -4543,7 +4558,11 @@ async function getLigaConfig() {
 async function saveLigaConfig(body) {
   const cfg = body && body.config;
   if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) return respond(400, { error: "config object required" });
-  await setSettingKey(getSheets(), "liga_config", JSON.stringify(cfg));
+  const sheets = getSheets();
+  await ensureLigaTab(sheets);
+  const json = JSON.stringify(cfg);
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${LIGA_TAB}!A1`, valueInputOption: "RAW", requestBody: { values: [[json]] } });
+  console.log(`[liga] saved len=${json.length}`);
   return respond(200, { success: true });
 }
 
