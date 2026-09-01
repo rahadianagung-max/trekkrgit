@@ -5206,23 +5206,27 @@ async function ddApply(body) {
 async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
   const hit = (v) => aliasSetLower.has(String(v || "").trim().toLowerCase());
   let elo = 0, regs = 0, venues = 0;
-  // ELO_Log col B (ratings history / chart)
+  const t0 = Date.now(); const ms = () => (Date.now() - t0) + "ms";
+  // ELO_Log col B (ratings history / chart). Write ONLY the changed cells
+  // (batchUpdate with per-row ranges) instead of the entire column — a
+  // full-column rewrite of a large ELO_Log was timing the merge out (504).
   try {
-    const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+    const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:B` });
     const eRows = eRes.data.values || [];
-    if (eRows.length) {
-      const colB = eRows.map((r) => { if (hit(r[1])) { elo++; return [canonical]; } return [r[1] || ""]; });
-      if (elo) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!B2:B${colB.length + 1}`, valueInputOption: "RAW", requestBody: { values: colB } });
-    }
+    console.log(`[merge] elo read ${eRows.length} rows @${ms()}`);
+    const data = [];
+    eRows.forEach((r, i) => { if (hit(r[1])) { elo++; data.push({ range: `${TABS.elo_log}!B${i + 2}`, values: [[canonical]] }); } });
+    if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
+    console.log(`[merge] elo rebound ${elo} cells @${ms()}`);
   } catch (e) { console.error("rebind elo:", e.message); }
-  // Registrations col D
+  // Registrations col D — same targeted approach.
   try {
-    const rRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` });
+    const rRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:D` });
     const rRows = rRes.data.values || [];
-    if (rRows.length) {
-      const colD = rRows.map((r) => { if (hit(r[3])) { regs++; return [canonical]; } return [r[3] || ""]; });
-      if (regs) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!D2:D${colD.length + 1}`, valueInputOption: "RAW", requestBody: { values: colD } });
-    }
+    const data = [];
+    rRows.forEach((r, i) => { if (hit(r[3])) { regs++; data.push({ range: `${TABS.registrations}!D${i + 2}`, values: [[canonical]] }); } });
+    if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
+    console.log(`[merge] reg rebound ${regs} cells @${ms()}`);
   } catch (e) { console.error("rebind reg:", e.message); }
   // Every Venue_ tab: player-name columns are C,D,E,F (indices 2..5). This is the
   // Playing History source that the merge/rename previously left behind.
@@ -5232,25 +5236,27 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
     const venueTabs = (meta.data.sheets || []).map((s) => s.properties.title).filter((t) => t.startsWith("Venue_"));
+    console.log(`[merge] ${venueTabs.length} venue tabs @${ms()}`);
     if (venueTabs.length) {
-      const bg = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: venueTabs.map((t) => `${t}!A2:M`) });
+      const bg = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: venueTabs.map((t) => `${t}!C2:F`) });
       const valueRanges = (bg.data && bg.data.valueRanges) || [];
+      console.log(`[merge] venue batchGet done @${ms()}`);
+      // Only the individual cells that change (targeted ranges), not whole columns.
       const data = [];
       valueRanges.forEach((vr, idx) => {
         const tab = venueTabs[idx];
         const rows = vr.values || [];
-        if (!rows.length) return;
-        let changed = false;
-        const cf = rows.map((r) => {
-          const out = [r[2] || "", r[3] || "", r[4] || "", r[5] || ""];
-          for (let k = 0; k < 4; k++) { if (hit(out[k])) { out[k] = canonical; changed = true; venues++; } }
-          return out;
+        rows.forEach((r, ri) => {
+          for (let k = 0; k < 4; k++) {
+            if (hit(r[k])) { venues++; const col = String.fromCharCode(67 + k); data.push({ range: `${tab}!${col}${ri + 2}`, values: [[canonical]] }); }
+          }
         });
-        if (changed) data.push({ range: `${tab}!C2:F${rows.length + 1}`, values: cf });
       });
       if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
+      console.log(`[merge] venue rebound ${venues} cells @${ms()}`);
     }
   } catch (e) { console.error("rebind venues:", e.message); }
+  console.log(`[merge] rebind total @${ms()}`);
   return { elo, regs, venues };
 }
 
@@ -5260,6 +5266,7 @@ async function ddMerge(body) {
   const alset = new Set(aliases.filter((a) => a && a.toLowerCase() !== canonical.toLowerCase()).map((a) => a.toLowerCase()));
   if (!alset.size) return respond(400, { error: "tidak ada alias valid" });
   const sheets = getSheets();
+  const tStart = Date.now();
   // 1+2) rebind ELO_Log (ratings), Registrations AND every Venue_ tab (Playing
   // History) from alias -> canonical.
   const { elo: rebind } = await rebindPlayerNames(sheets, alset, canonical);
@@ -5280,6 +5287,7 @@ async function ddMerge(body) {
       removed = delRows.length;
     }
   } catch (e) { console.error("merge players:", e.message); }
+  console.log(`[merge] DONE total ${Date.now() - tStart}ms removed=${removed}`);
   return respond(200, { success: true, canonical, merged: [...alset], eloRebind: rebind, playersRemoved: removed });
 }
 
