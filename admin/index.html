@@ -183,7 +183,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-seg-btn{flex:1;padding:10px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;border:none;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--txt2);background:transparent}
 .rm-seg-btn.active{background:white;color:var(--pr);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .rm-hint{font-size:12px;color:var(--txt3);margin-top:8px}
-.rm-gender-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rm-gender-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .rm-gender-card{border:2px solid var(--bdr);border-radius:var(--r-rm);padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--sur-0)}
 .rm-gender-card:hover{border-color:var(--blue-mid)}
 .rm-gender-card.active{border-color:var(--blue);background:var(--blue-lt)}
@@ -471,7 +471,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
           <ul class="htu-checks">
             <li>Semua pemain harus berada di level yang sama.</li>
             <li>Gunakan scoring tenis.</li>
-            <li>Pilih kategori Men, Women, atau Mixed Doubles — gender tiap pemain dicatat secara individual.</li>
+            <li>Pilih kategori Men atau Women — satu sesi satu gender (ranking &amp; kualifikasi T1/T2/T3 per gender).</li>
             <li>Semua pemain harus memainkan jumlah pertandingan yang sama.</li>
             <li>Ranking ditentukan berdasarkan jumlah kemenangan.</li>
             <li>Jika jumlah kemenangan sama, penentuan ranking menggunakan selisih poin.</li>
@@ -625,10 +625,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                         <div class="rm-blist">
               <div class="rm-bitem"><span class="ck">✓</span><span><b>One level per game</b> — e.g. Upper Beginner only, Upper Bronze only.</span></div>
               <div class="rm-bitem"><span class="ck">✓</span><span><b>New players start at the level you set.</b> Anyone already in the Trekkr engine keeps their existing ELO and level.</span></div>
-              <div class="rm-bitem"><span class="ck">✓</span><span><b>Men's, Women's, or Mixed Doubles</b> — each player's gender is tracked individually.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Men's or Women's only</b> — one session is a single gender (clean per-gender ranking &amp; T1/T2/T3).</span></div>
               <div class="rm-bitem"><span class="ck">✓</span><span><b>Tennis scoring is required.</b></span></div>
-              <div class="rm-bitem"><span class="ck">✓</span><span><b>Individual (rotating) or fixed partners</b> — your choice.</span></div>
-              <div class="rm-bitem"><span class="ck">✓</span><span><b>Mexicano pairing</b> separates stronger and weaker players for a sharper ranking.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>Individual (rotating partners)</b> — the engine rotates partners every round.</span></div>
+              <div class="rm-bitem"><span class="ck">✓</span><span><b>1 court → Americano</b> (everyone partners everyone) · <b>2+ courts → Mexicano</b> (courts split by ranking for a sharper rating).</span></div>
               <div class="rm-bitem"><span class="ck">✓</span><span><b>Everyone plays an equal number of matches</b> — the engine tells you when that's reached.</span></div>
               <div class="rm-bitem"><span class="ck">✓</span><span><b>Ranked by wins.</b> Ties are broken by point difference.</span></div>
             </div>
@@ -650,6 +650,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <button class="rm-counter-btn" onclick="rmChangeCourts(1)">+</button>
               </div>
               <p class="rm-hint" id="rm-courts-hint">Minimal 8 pemain diperlukan</p>
+              <p class="rm-hint" id="rm-courts-system" style="color:var(--blue);font-weight:600">Sistem: Mexicano (2+ court)</p>
             </div>
 
             <div class="rm-card">
@@ -663,21 +664,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                   <div class="rm-gender-card-icon">♀</div>
                   <div class="rm-gender-card-label">Putri</div>
                 </div>
-                <div class="rm-gender-card" id="rm-gender-MIXED" onclick="rmSetGender('MIXED')">
-                  <div class="rm-gender-card-icon">⚥</div>
-                  <div class="rm-gender-card-label">Mixed</div>
-                </div>
               </div>
-              <p class="rm-hint" id="rm-gender-hint">Putra, Putri, atau Mixed Doubles (putra & putri dalam satu sesi). Gender tiap pemain direkam per pemain.</p>
-            </div>
-
-            <div class="rm-card">
-              <div class="rm-card-label">Format Match</div>
-              <div class="rm-segment" style="margin-bottom:10px">
-                <button class="rm-seg-btn active" id="rm-fmt-individual" onclick="rmSetFormat('individual')">🔀 Individual</button>
-                <button class="rm-seg-btn" id="rm-fmt-fixed" onclick="rmSetFormat('fixed')">👥 Fixed Partner</button>
-              </div>
-              <p class="rm-hint" id="rm-fmt-hint">Partner berubah setiap ronde berdasarkan ranking</p>
+              <p class="rm-hint" id="rm-gender-hint">Putra atau Putri. Satu sesi = satu gender (untuk ranking &amp; kualifikasi T1/T2/T3 yang bersih).</p>
             </div>
 
             <div class="rm-card">
@@ -1218,12 +1206,17 @@ function rmChangeCourts(d) {
   document.getElementById('rm-courts-val').textContent = RM.courts;
   document.getElementById('rm-courts-hint').textContent = `Minimal ${RM.courts*4} pemain diperlukan`;
   document.getElementById('rm-sel-min').textContent = ` / min ${RM.courts*4}`;
+  var sysEl = document.getElementById('rm-courts-system');
+  if (sysEl) sysEl.textContent = RM.courts === 1
+    ? 'Sistem: Americano (1 court) — semua bergiliran jadi partner'
+    : 'Sistem: Mexicano (2+ court) — court dibagi per ranking';
   rmUpdateStartBtn();
   rmUpdateRec();
 }
 function rmSetGender(g) {
+  if (g === 'MIXED') g = 'M'; // Mixed removed — sessions are single-gender.
   RM.gender = g;
-  ['M','F','MIXED'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
+  ['M','F'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
   if (document.getElementById('rm-player-list')) rmRenderPlayers();
 }
 // Per-match gender tag from the actual 4 players: all-male=M, all-female=F, else MIXED.
@@ -1233,12 +1226,13 @@ function rmMatchGender(players){
   if (gs.every(x=>x==='F')) return 'F';
   return 'MIXED';
 }
+// Fixed Partner removed — every ranked session is Individual (rotating). The
+// court count decides the system: 1 court = Americano, 2+ = Mexicano. Kept as a
+// null-safe no-op so any legacy call / state restore can't crash.
 function rmSetFormat(f) {
-  RM.format = f;
-  ['individual','fixed'].forEach(x => document.getElementById('rm-fmt-'+x).classList.toggle('active', x===f));
-  document.getElementById('rm-fmt-hint').textContent = f==='individual'
-    ? 'Mexicano: partner & lawan ditentukan ranking tiap ronde (1+4 vs 2+3)'
-    : 'Tim tetap (dipasangkan manual). Mexicano antar-tim: tim selevel saling bertemu';
+  RM.format = 'individual';
+  ['individual','fixed'].forEach(x => { const el = document.getElementById('rm-fmt-'+x); if (el) el.classList.toggle('active', x==='individual'); });
+  var h = document.getElementById('rm-fmt-hint'); if (h) h.textContent = '';
 }
 function rmSetScoreFormat(sf) {
   RM.scoreFormat = sf;
@@ -1500,9 +1494,52 @@ function rmBuildHistory() {
   return {partnerCount:pCount,opponentCount:oCount,byeCount};
 }
 
+// AMERICANO (1 court): rotate so everyone plays an equal number of games and
+// partners as many different people as possible — NOT by standings. Pick the 4
+// least-played (bye-fair), then the 2v2 split that least repeats past partners/
+// opponents. For exactly 4 players this cycles the 3 partnerships (classic
+// Americano); with 5–8 it rotates with fair byes.
+function rmGenerateAmericanoRound(isFirst=false) {
+  const players=[...RM.selectedPlayers]
+    .map(p=>({...p,...(RM.playerStats[p.name]||{})}))
+    .filter(p=> RM.playerStats[p.name] ? RM.playerStats[p.name].active!==false : true);
+  const {byeCount,partnerCount,opponentCount}=rmBuildHistory();
+  const played={}; players.forEach(p=>played[p.name]=0);
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>[...m.team1,...m.team2].forEach(p=>{ if(played[p.name]!==undefined) played[p.name]++; }));
+  });
+  // Who plays: fewest games first, then whoever has sat out most, then by ELO for a
+  // stable first-round order.
+  const order=[...players].sort((a,b)=>
+    (played[a.name]-played[b.name])
+    || ((byeCount[b.name]||0)-(byeCount[a.name]||0))
+    || ((b.elo||0)-(a.elo||0)));
+  const four=order.slice(0,4);
+  const byePlayers=order.slice(4).map(p=>p.name);
+  if(four.length<4) return {matches:[], byePlayers: players.map(p=>p.name)};
+  const partnered=(a,b)=>((partnerCount[a]&&partnerCount[a][b])||0);
+  const opposed=(a,b)=>((opponentCount[a]&&opponentCount[a][b])||0);
+  const nm=x=>x.name;
+  const splitCost=(t1,t2)=>{
+    let cost=3*(partnered(nm(t1[0]),nm(t1[1]))+partnered(nm(t2[0]),nm(t2[1])));
+    cost+=opposed(nm(t1[0]),nm(t2[0]))+opposed(nm(t1[0]),nm(t2[1]))+opposed(nm(t1[1]),nm(t2[0]))+opposed(nm(t1[1]),nm(t2[1]));
+    return cost;
+  };
+  const g=four;
+  const opts=[
+    {t1:[g[0],g[1]],t2:[g[2],g[3]]},
+    {t1:[g[0],g[2]],t2:[g[1],g[3]]},
+    {t1:[g[0],g[3]],t2:[g[1],g[2]]},
+  ].map(o=>({...o,cost:splitCost(o.t1,o.t2)}));
+  opts.sort((a,b)=>a.cost-b.cost);
+  return {matches:[{court:1,team1:opts[0].t1,team2:opts[0].t2,score1:null,score2:null}], byePlayers};
+}
+
+// Court count decides the system: 1 court = Americano (social rotation, everyone
+// partners everyone, bye-fair), 2+ courts = Mexicano (rank-based courts).
 function rmGenerateRound(isFirst=false) {
-  if (RM.format === 'fixed') return rmGenerateTeamRound(isFirst);
-  // INDIVIDUAL — canonical Mexicano: sort by standings, group per court by rank, pair 1+4 vs 2+3.
+  if (RM.courts === 1) return rmGenerateAmericanoRound(isFirst);
+  // MEXICANO (2+ courts): sort by standings, group per court by rank, pair 1+4 vs 2+3.
   const courts=RM.courts, maxPlay=courts*4;
   const players=[...RM.selectedPlayers]
     .map(p=>({...p,...(RM.playerStats[p.name]||{})}))
@@ -2083,7 +2120,7 @@ async function rmEndMatch(){
       // kalibrasi (K agresif) dihitung server, elo_results cuma fallback/preview.
       const resp=await rmApi('sessions',{method:'POST',body:JSON.stringify({
         sessionName:`Ranked Match Daily – ${RM.venue} – ${now}`,
-        format:RM.format==='fixed'?'Ranked Match Fixed Partner':'Ranked Match Individual',
+        format:RM.courts===1?'Ranked Match Americano':'Ranked Match Mexicano',
         courts:RM.courts, venue:RM.venue,
         players:RM.selectedPlayers.map(p=>p.name), rounds:[],
         matches:allMatches,
