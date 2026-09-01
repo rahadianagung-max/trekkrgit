@@ -323,36 +323,61 @@ async function loadLeads(){
 }
 
 // ── DUPLICATES (dedup scan + merge) ──
+// Groups the user marks "not duplicates" are remembered locally so a rescan
+// doesn't keep re-surfacing the same false positive.
+function ddSig(g){return (g.members||[]).map(function(m){return String(m.name||'').toLowerCase().trim();}).sort().join('|');}
+function ddIgnored(){try{return JSON.parse(localStorage.getItem('dd_ignored')||'[]');}catch(e){return [];}}
+function ddSetIgnored(a){try{localStorage.setItem('dd_ignored',JSON.stringify(a));}catch(e){}}
 async function loadDupes(){
   var box=document.getElementById('dd-list');box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memindai…</p>';
   try{const r=await fetch(crApi()+'/dedup/players-scan');const d=await r.json();const cl=(d&&d.clusters)||[];
-    if(!cl.length){box.innerHTML='<p style="color:var(--muted2);font-size:13px">Tidak ada nama mirip. ('+((d&&d.totalPlayers)||0)+' pemain dipindai.)</p>';return;}
-    box.innerHTML='<p style="font-size:12px;color:var(--muted2);margin-bottom:12px">'+cl.length+' grup nama mirip ditemukan.</p>'+cl.map(renderDupGroup).join('');
+    var ig=ddIgnored();
+    var shown=cl.filter(function(g){return ig.indexOf(ddSig(g))<0;});
+    var hidden=cl.length-shown.length;
+    var resetLink=hidden?(' · <a href="#" onclick="ddResetIgnored();return false" style="color:var(--lime)">tampilkan lagi '+hidden+' yang dilewati</a>'):'';
+    if(!shown.length){box.innerHTML='<p style="color:var(--muted2);font-size:13px">Tidak ada nama mirip yang perlu ditinjau. ('+((d&&d.totalPlayers)||0)+' pemain dipindai'+(hidden?(', '+hidden+' ditandai bukan duplikat'):'')+'.)'+resetLink+'</p>';return;}
+    box.innerHTML='<p style="font-size:12px;color:var(--muted2);margin-bottom:12px">'+shown.length+' grup nama mirip untuk ditinjau.'+resetLink+'</p>'+shown.map(renderDupGroup).join('');
   }catch(e){box.innerHTML='<p style="color:#e03b30;font-size:12px">Gagal memindai.</p>';}
 }
+function ddResetIgnored(){ddSetIgnored([]);loadDupes();}
 function renderDupGroup(g,gi){
   var rows=g.members.map(function(m,i){var nm=erEsc(m.name);var enc=encodeURIComponent(m.name);
-    return '<label class="imp-sim" style="cursor:pointer"><div class="imp-sim-n"><input type="radio" name="dd-canon-'+gi+'" value="'+enc+'"'+(i===0?' checked':'')+' style="margin-right:8px">'
-      +'<span class="nn">'+nm+'</span> <span class="ss">ELO '+(m.elo||'?')+' · '+(m.matches||0)+' match'+(m.verified?' · ✓':'')+'</span></div>'
-      +'<label style="font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:5px"><input type="checkbox" class="dd-alias-'+gi+'" value="'+enc+'"'+(i===0?'':' checked')+'> alias</label></label>';
+    return '<div class="dd-mem" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+      +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis"><span class="nn" style="font-weight:700">'+nm+'</span> <span class="ss" style="color:var(--muted2);font-size:11px">ELO '+(m.elo||'?')+' · '+(m.matches||0)+' match'+(m.verified?' · ✓':'')+'</span></div>'
+      +'<div style="display:flex;gap:14px;white-space:nowrap">'
+        +'<label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="dd-canon-'+gi+'" value="'+enc+'" data-idx="'+i+'" onchange="ddOnCanon('+gi+','+i+')"'+(i===0?' checked':'')+'> utama</label>'
+        +'<label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted2)"><input type="checkbox" class="dd-alias-'+gi+'" value="'+enc+'" data-idx="'+i+'"'+(i===0?'':' checked')+'> gabung</label>'
+      +'</div></div>';
   }).join('');
-  return '<div class="imp-card"><div class="imp-sec">Grup — pilih pemain utama &amp; centang alias</div>'+rows
-    +'<div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="er-app" onclick="doMerge('+gi+')">Merge alias → utama</button><span class="dd-msg" id="dd-msg-'+gi+'" style="font-size:12px"></span></div></div>';
+  return '<div class="imp-card" id="dd-card-'+gi+'" data-sig="'+erEsc(ddSig(g))+'"><div class="imp-sec">Grup nama mirip — pilih <b>utama</b>, centang <b>gabung</b> untuk yang mau digabung</div>'+rows
+    +'<div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      +'<button class="er-app" onclick="doMerge('+gi+')">Merge → utama</button>'
+      +'<button class="er-rej" onclick="ddIgnore('+gi+')">Bukan duplikat — lewati</button>'
+      +'<span class="dd-msg" id="dd-msg-'+gi+'" style="font-size:12px"></span></div></div>';
+}
+// A player can't be merged into itself: choosing a row as canonical unchecks its own "gabung".
+function ddOnCanon(gi,i){var box=document.querySelector('.dd-alias-'+gi+'[data-idx="'+i+'"]');if(box)box.checked=false;}
+function ddIgnore(gi){
+  var card=document.getElementById('dd-card-'+gi);if(!card)return;
+  var sig=card.getAttribute('data-sig');var ig=ddIgnored();if(sig&&ig.indexOf(sig)<0){ig.push(sig);ddSetIgnored(ig);}
+  card.remove();
 }
 async function doMerge(gi){
   var canonEl=document.querySelector('input[name="dd-canon-'+gi+'"]:checked');
-  if(!canonEl){alert('Pilih pemain utama.');return;}
-  var canonical=decodeURIComponent(canonEl.value);
-  var aliases=Array.prototype.slice.call(document.querySelectorAll('.dd-alias-'+gi+':checked'))
-    .map(function(c){return decodeURIComponent(c.value);}).filter(function(a){return a.toLowerCase()!==canonical.toLowerCase();});
   var msg=document.getElementById('dd-msg-'+gi);
-  if(!aliases.length){msg.style.color='#e03b30';msg.textContent='Centang minimal 1 alias (bukan pemain utama).';return;}
-  if(!confirm('Gabungkan '+aliases.length+' alias ke "'+canonical+'"?\n\nRiwayat & ELO alias dipindah ke pemain utama, baris alias dihapus. Tidak bisa di-undo.'))return;
+  if(!canonEl){if(msg){msg.style.color='#e03b30';msg.textContent='Pilih pemain utama dulu.';}return;}
+  var canonical=decodeURIComponent(canonEl.value);
+  var seen={};
+  var aliases=Array.prototype.slice.call(document.querySelectorAll('.dd-alias-'+gi+':checked'))
+    .map(function(c){return decodeURIComponent(c.value);})
+    .filter(function(a){return a && a.toLowerCase()!==canonical.toLowerCase() && !seen[a.toLowerCase()] && (seen[a.toLowerCase()]=1);});
+  if(!aliases.length){msg.style.color='#e03b30';msg.textContent='Centang minimal 1 pemain "gabung" selain yang jadi utama.';return;}
+  if(!confirm('Gabungkan '+aliases.length+' pemain ke "'+canonical+'"?\n\n'+aliases.join(', ')+'\n\nRiwayat & ELO mereka dipindah ke "'+canonical+'", baris mereka dihapus. Tidak bisa di-undo.'))return;
   msg.style.color='var(--muted2)';msg.textContent='Menggabungkan… (bisa beberapa detik)';
   try{const r=await fetch(crApi()+'/dedup/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({canonical,aliases})});
     const d=await r.json().catch(function(){return {};});
     if(!r.ok||!d.success)throw new Error(d.error||('Gagal (HTTP '+r.status+')'));
-    msg.style.color='#22A052';msg.textContent='✓ '+(d.playersRemoved||aliases.length)+' alias digabung.';
+    msg.style.color='#22A052';msg.textContent='✓ '+(d.playersRemoved||aliases.length)+' pemain digabung.';
     await loadPlayers();setTimeout(loadDupes,700);
   }catch(e){msg.style.color='#e03b30';msg.textContent=e.message||'Gagal.';}
 }
