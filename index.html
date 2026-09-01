@@ -143,11 +143,14 @@
   </section>
 
   <section class="sec container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span class="secname">PlayRank, Tourney &amp; League</span>
-    </div>
-    <div id="prVenues"><div class="empty">Loading&hellip;</div></div>
-    <button class="show-more-btn" id="prShowMore" style="display:none">Show more</button>
+    <span class="secname">PlayRank</span>
+    <a href="https://admin.trekkr.online" class="join-cta" style="margin-top:10px">
+      <div class="join-cta__txt">
+        <div class="join-cta__h">Run PlayRank at your venue</div>
+        <div class="join-cta__t">PlayRank is Trekkr's ranked session engine for venues &amp; communities. Run Americano (1 court) or Mexicano (2+ courts) — every result updates each player's ELO and their T1/T2/T3 tier.</div>
+      </div>
+      <span class="join-cta__btn">Open Admin &rarr;</span>
+    </a>
   </section>
 
   <section class="sec container">
@@ -218,89 +221,12 @@
   function fmt(n){return(n||0).toLocaleString('en-US');}
 
   Promise.all([
-    fetch(BASE+'/public/feed').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return{};}),
     fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/tracked-events').then(function(r){return r.json();}).catch(function(){return{};})
+    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};})
   ]).then(function(results){
-    var feedData=results[0],venuesData=results[1],lbData=results[2],playersData=results[3],trackedData=results[4];
-    var activePlayrank=(feedData&&feedData.activePlayrank)||[];
-    var venues=(venuesData&&venuesData.venues)||[];
+    var lbData=results[0],playersData=results[1];
     var leaderboard=(lbData&&lbData.leaderboard)||[];
     var players=(playersData&&playersData.players)||[];
-    var trackedEvents=(trackedData&&trackedData.events)||[];
-
-    function inits(name){return String(name).trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()||'?';}
-    function sessionTags(sessions){
-      var levels=[],genders=[];
-      sessions.forEach(function(s){
-        if(s.level&&levels.indexOf(s.level)===-1)levels.push(s.level);
-        var g=s.gender==='M'||s.gender==='Putra'?'Putra':s.gender==='F'||s.gender==='Putri'?'Putri':s.gender;
-        if(g&&genders.indexOf(g)===-1)genders.push(g);
-      });
-      var parts=[];
-      if(levels.length)parts.push(levels.join(' · '));
-      if(genders.length)parts.push(genders.join(' · '));
-      return parts.join(' · ');
-    }
-
-    // --- Combined list: active PlayRank venues + tracked Tourney/League ---
-    var venueRegionMap={},venueLogoMap={};
-    venues.forEach(function(v){if(v.name){venueRegionMap[normName(v.name)]=v.region||'';venueLogoMap[normName(v.name)]=v.logoUrl||'';}});
-
-    var venueMap={};
-    activePlayrank.forEach(function(p){
-      var vn=(p.venue||'').trim();
-      if(!vn)return;
-      if(!venueMap[vn])venueMap[vn]={name:vn,sessions:[],region:venueRegionMap[normName(vn)]||'',logo:venueLogoMap[normName(vn)]||''};
-      venueMap[vn].sessions.push(p);
-    });
-    var items=Object.keys(venueMap).map(function(k){
-      var v=venueMap[k];
-      return {type:'PlayRank',pill:'tp-play',name:v.name,meta:sessionTags(v.sessions),region:v.region,logo:v.logo,href:'https://venue.trekkr.online/'+slug(v.name)};
-    });
-    trackedEvents.forEach(function(e){
-      if(!e.name)return;
-      var url=e.url||'';
-      // Prefer the type encoded in the linked URL (/league/ vs /tournament/),
-      // then fall back to the name.
-      var isLeague=/\/league\//i.test(url)||(!/\/tournament\//i.test(url)&&/league|liga/i.test(e.name));
-      items.push({type:isLeague?'League':'Tournament',pill:isLeague?'tp-league':'tp-tourney',name:e.name,meta:e.monthYear||'',region:e.location||'',logo:e.logoUrl||'',href:url||'https://trekkr.online/tournament'});
-    });
-
-    var listEl=document.getElementById('prVenues');
-    var moreBtn=document.getElementById('prShowMore');
-    var showCount=4;
-
-    function renderList(){
-      if(!items.length){
-        listEl.innerHTML='<div class="empty">Belum ada PlayRank, turnamen, atau liga aktif saat ini. <a class="lnk" href="https://trekkr.online/playrank">View PlayRank &rarr;</a></div>';
-        moreBtn.style.display='none';
-        return;
-      }
-      var shown=items.slice(0,showCount);
-      var html='<div class="venue-list">';
-      shown.forEach(function(v){
-        html+='<a class="venue-row" href="'+esc(v.href)+'">';
-        html+='<div class="venue-av">'+esc(inits(v.name))+(v.logo?'<img src="'+esc(v.logo)+'" alt="" onerror="this.remove()"/>':'')+'</div>';
-        html+='<div class="venue-info"><div class="venue-nameline"><span class="venue-name">'+esc(v.name)+'</span><span class="typepill '+v.pill+'">'+esc(v.type)+'</span></div>';
-        if(v.meta)html+='<div class="venue-tags">'+esc(v.meta)+'</div>';
-        html+='</div>';
-        if(v.region)html+='<span class="venue-region-badge">'+esc(v.region)+'</span>';
-        html+='<i class="ti ti-chevron-right" style="color:var(--muted);flex-shrink:0" aria-hidden="true"></i>';
-        html+='</a>';
-      });
-      html+='</div>';
-      listEl.innerHTML=html;
-      if(items.length>showCount){
-        moreBtn.style.display='block';
-        moreBtn.onclick=function(){showCount+=4;renderList();};
-      }else{
-        moreBtn.style.display='none';
-      }
-    }
-    renderList();
 
     // --- Most Active Players ---
     var activeEl=document.getElementById('activePlayersEl');
@@ -344,10 +270,7 @@
     if(sm)sm.textContent=fmt(total);
     if(sa)sa.textContent=leaderboard.length?Math.round(total/leaderboard.length):0;
 
-  }).catch(function(){
-    var listEl=document.getElementById('prVenues');
-    if(listEl)listEl.innerHTML='<div class="empty">Gagal memuat data.</div>';
-  });
+  }).catch(function(){ /* data load failed — sections keep their Loading… state */ });
 })();
 </script>
 <script>
