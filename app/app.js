@@ -964,8 +964,10 @@
     qualifying: { close: "2026-11-30", topN: 16 },
   };
   var _liga = null;
-  function ligaConfig() {
-    if (_liga) return Promise.resolve(_liga);
+  // Prefer the server-managed Liga config (superadmin → Liga), so prize pools,
+  // dates & venues match the web. Fall back to the static wave1 config.js, then
+  // the inlined LIGA_FALLBACK, if the API is unavailable.
+  function ligaStaticFallback() {
     if (w.TREKKR) { _liga = w.TREKKR; return Promise.resolve(_liga); }
     return new Promise(function (res) {
       var s = d.createElement("script"); s.src = "/wave1/config.js";
@@ -973,6 +975,14 @@
       s.onerror = function () { _liga = LIGA_FALLBACK; res(_liga); };
       d.head.appendChild(s);
     });
+  }
+  function ligaConfig() {
+    if (_liga) return Promise.resolve(_liga);
+    return fetch(API.base + "/liga/config").then(function (r) { return r.json(); }).then(function (dd) {
+      if (!dd || !dd.config) throw 0;
+      _liga = Object.assign({}, (w.TREKKR || LIGA_FALLBACK), dd.config);
+      return _liga;
+    }).catch(function () { return ligaStaticFallback(); });
   }
   function rp(n) { return "Rp" + Number(n || 0).toLocaleString("id-ID"); }
   function daysTo(iso) { var t = Date.parse(iso); if (isNaN(t)) return null; return Math.max(0, Math.ceil((t - Date.now()) / 86400000)); }

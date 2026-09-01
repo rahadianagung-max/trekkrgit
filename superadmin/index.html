@@ -130,6 +130,9 @@ footer span{color:var(--lime)}
       <button class="a-tab" onclick="switchTab('import')">Import Tournament</button>
       <button class="a-tab" onclick="switchTab('dupes');loadDupes()">Duplicates</button>
       <button class="a-tab" onclick="switchTab('venues')">Venues</button>
+      <button class="a-tab" onclick="switchTab('homeevents');loadTrackedEvents()">Home Events</button>
+      <button class="a-tab" onclick="switchTab('liga');loadLiga()">Liga</button>
+      <button class="a-tab" onclick="switchTab('schedule');loadScheduleAdmin()">Schedule</button>
       <button class="a-tab" onclick="switchTab('admins')">Admins</button>
       <button class="a-tab" onclick="switchTab('tiers');loadTiers()">Tiers &amp; Calibration</button>
     </div>
@@ -198,8 +201,68 @@ footer span{color:var(--lime)}
         <button class="btn btn-primary" onclick="addVenue()">Add Venue →</button>
         <div class="status-msg" id="addVenueStatus"></div>
       </div>
-      <div class="section"><div class="section-title">ALL VENUES</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Name</th><th>Location</th><th>Region</th><th>Prize Pool</th><th>Register URL</th><th>Actions</th></tr></thead><tbody id="venuesTbody"></tbody></table></div></div>
+      <div class="section"><div class="section-title">ALL VENUES</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5">Ini yang tampil di <b>trekkr.online/venues</b>. <b>Featured</b> tampil di atas, <b>Order</b> atur urutan (kecil dulu), <b>Hidden</b> sembunyikan tanpa menghapus.</p>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Name</th><th>Region</th><th>Featured</th><th>Order</th><th>Hidden</th><th>Actions</th></tr></thead><tbody id="venuesTbody"></tbody></table></div>
+        <div class="status-msg" id="venueDisplayStatus"></div>
+      </div>
     </div>
+
+    <!-- HOME EVENTS (Tracked tournaments / leagues shown on the home PlayRank section) -->
+    <div class="tab-pane" id="tab-homeevents">
+      <div class="section">
+        <div class="section-title">ADD TOURNAMENT / LEAGUE</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Muncul di bagian <b>“PlayRank, Tourney &amp; League”</b> di home trekkr.online. URL yang mengandung <code>/league/</code> atau kata liga → dilabeli League; selain itu Tournament.</p>
+        <div class="field-row"><div class="field"><label class="field-label">Name *</label><input class="field-input" id="te-name" placeholder="Jakarta Open 2026"></div><div class="field"><label class="field-label">Month / Year</label><input class="field-input" id="te-month" placeholder="Sep 2026"></div></div>
+        <div class="field-row"><div class="field"><label class="field-label">Location</label><input class="field-input" id="te-loc" placeholder="Jakarta"></div><div class="field"><label class="field-label">Logo URL</label><input class="field-input" id="te-logo" placeholder="https://…"></div></div>
+        <div class="field"><label class="field-label">Link URL</label><input class="field-input" id="te-url" placeholder="https://trekkr.online/tournament/…"></div>
+        <button class="btn btn-primary" onclick="addTrackedEvent()">Add →</button>
+        <div class="status-msg" id="te-status"></div>
+      </div>
+      <div class="section"><div class="section-title">TRACKED EVENTS</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Name</th><th>When</th><th>Location</th><th>URL</th><th>Actions</th></tr></thead><tbody id="teTbody"><tr><td colspan="5" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div></div>
+    </div>
+
+    <!-- LIGA (championship + series config; read by web Liga page AND the app) -->
+    <div class="tab-pane" id="tab-liga">
+      <div class="section">
+        <div class="section-title">CHAMPIONSHIP</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Dipakai di <b>/liga-trekkr</b> dan di <b>mobile app</b> (tab PlayRank → Liga). Angka rupiah tanpa titik (mis. 30000000).</p>
+        <div class="field-row"><div class="field"><label class="field-label">Championship date (YYYY-MM-DD)</label><input class="field-input" id="lg-date" placeholder="2026-12-13"></div><div class="field"><label class="field-label">City</label><input class="field-input" id="lg-city" placeholder="Jakarta"></div></div>
+        <div class="field"><label class="field-label">Total prize pool (Rp)</label><input class="field-input" id="lg-pool" type="number" placeholder="30000000"></div>
+        <div class="field-label" style="color:var(--lime);margin-top:6px">Prize per tier</div>
+        <div id="lg-prizes"></div>
+      </div>
+      <div class="section">
+        <div class="section-title">TREKKR SERIES (QUALIFIERS)</div>
+        <div class="field-row"><div class="field"><label class="field-label">Prize pool per Series (Rp)</label><input class="field-input" id="lg-spool" type="number" placeholder="9000000"></div><div class="field"><label class="field-label">Min Series entered to qualify</label><input class="field-input" id="lg-smin" type="number" placeholder="2"></div></div>
+        <div class="field-label" style="color:var(--lime);margin-top:6px">Series dates</div>
+        <div id="lg-sdates"></div>
+        <button class="btn btn-ghost btn-sm" onclick="ligaAddSeries()" style="margin-top:8px">+ Add Series date</button>
+      </div>
+      <button class="btn btn-primary" onclick="saveLiga()">Save Liga config →</button>
+      <div class="status-msg" id="lg-status"></div>
+    </div>
+
+    <!-- SCHEDULE (RankPlay + Series sessions; drives Liga schedule on web + app) -->
+    <div class="tab-pane" id="tab-schedule">
+      <div class="section">
+        <div class="section-title" id="sc-formtitle">ADD SESSION</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Sesi <b>RANKPLAY</b> (ranked session) &amp; <b>SERIES</b> (qualifier) yang tampil di /liga-trekkr, /playrank, dan app.</p>
+        <div class="field-row"><div class="field"><label class="field-label">Type</label><select class="field-select" id="sc-type"><option value="RANKPLAY">RANKPLAY</option><option value="SERIES">SERIES</option></select></div><div class="field"><label class="field-label">Status</label><select class="field-select" id="sc-status"><option value="OPEN">OPEN</option><option value="FULL">FULL</option><option value="DONE">DONE</option><option value="CANCELLED">CANCELLED</option></select></div></div>
+        <div class="field-row"><div class="field"><label class="field-label">Venue *</label><input class="field-input" id="sc-venue" placeholder="The Field"></div><div class="field"><label class="field-label">Area</label><input class="field-input" id="sc-area" placeholder="Jakarta Selatan"></div></div>
+        <div class="field-row"><div class="field"><label class="field-label">Date (YYYY-MM-DD) *</label><input class="field-input" id="sc-date" placeholder="2026-09-14"></div><div class="field"><label class="field-label">Price / player (Rp)</label><input class="field-input" id="sc-price" type="number" placeholder="172000"></div></div>
+        <div class="field-row"><div class="field"><label class="field-label">Start time</label><input class="field-input" id="sc-start" placeholder="18:45"></div><div class="field"><label class="field-label">End time</label><input class="field-input" id="sc-end" placeholder="22:00"></div></div>
+        <div class="field-row"><div class="field"><label class="field-label">Capacity</label><input class="field-input" id="sc-cap" type="number" placeholder="16"></div><div class="field"><label class="field-label">Booked</label><input class="field-input" id="sc-booked" type="number" placeholder="0"></div></div>
+        <div class="field"><label class="field-label">WhatsApp URL</label><input class="field-input" id="sc-wa" placeholder="https://wa.me/…"></div>
+        <div class="field"><label class="field-label">Note</label><input class="field-input" id="sc-note" placeholder="optional"></div>
+        <input type="hidden" id="sc-id">
+        <button class="btn btn-primary" onclick="saveSchedule()">Save session →</button>
+        <button class="btn btn-ghost btn-sm" onclick="scReset()" style="margin-left:8px">Clear</button>
+        <div class="status-msg" id="sc-status2"></div>
+      </div>
+      <div class="section"><div class="section-title">ALL SESSIONS</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Type</th><th>Date</th><th>Venue</th><th>Area</th><th>Cap/Book</th><th>Status</th><th>Actions</th></tr></thead><tbody id="scTbody"><tr><td colspan="7" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div></div>
+    </div>
+
     <!-- ADMINS -->
     <div class="tab-pane" id="tab-admins">
       <div class="section">
@@ -268,10 +331,21 @@ function editPlayer(name){
 
 async function loadVenues(){
   try{const d=await TrekkrAPI.getVenues();
-    document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>{const nm=v.name.replace(/'/g,"\\'");return `<tr><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editVenue('${nm}')">Edit</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deleteVenueUI('${nm}')">Delete</button></td></tr>`;}).join('');
+    var vs=(d.venues||[]).slice().sort(function(a,b){return (b.featured?1:0)-(a.featured?1:0) || ((a.sortOrder==null?9999:a.sortOrder)-(b.sortOrder==null?9999:b.sortOrder)) || String(a.name).localeCompare(String(b.name));});
+    document.getElementById('venuesTbody').innerHTML=vs.map(v=>{const nm=v.name.replace(/'/g,"\\'");
+      return `<tr${v.hidden?' style="opacity:.5"':''}><td><strong>${v.name}</strong>${v.featured?' <span class="badge badge-lime">★</span>':''}</td><td>${v.region||'—'}</td>`
+        +`<td><button class="btn btn-ghost btn-sm" onclick="venueDisplay('${nm}',{featured:${v.featured?'false':'true'}})">${v.featured?'★ Yes':'☆ No'}</button></td>`
+        +`<td><input class="field-input" style="width:64px;padding:5px 8px" type="number" value="${v.sortOrder==null?'':v.sortOrder}" onchange="venueDisplay('${nm}',{sortOrder:this.value===''?0:Number(this.value)})"></td>`
+        +`<td><button class="btn btn-ghost btn-sm" onclick="venueDisplay('${nm}',{hidden:${v.hidden?'false':'true'}})">${v.hidden?'Hidden':'Visible'}</button></td>`
+        +`<td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editVenue('${nm}')">Edit</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deleteVenueUI('${nm}')">Delete</button></td></tr>`;}).join('');
     const s=document.getElementById('aa-venue');while(s.options.length>1)s.remove(1);
     d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});allVenues=d.venues;
   }catch(e){console.warn(e)}
+}
+async function venueDisplay(name,patch){
+  var st=document.getElementById('venueDisplayStatus');
+  try{const r=await fetch(crApi()+'/venues/display',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({name:name},patch))});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" diperbarui.';await loadVenues();}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal.'}
 }
 async function deleteVenueUI(name){
   const st=document.getElementById('addVenueStatus');
@@ -320,6 +394,113 @@ async function loadLeads(){
   try{const r=await fetch(crApi()+'/tournament-leads');const d=await r.json();const L=(d&&d.leads)||[];
     tb.innerHTML=L.length?L.map(x=>`<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.name)}</strong></td><td>${erEsc(x.location)||'—'}</td><td>${erEsc(x.picName)}</td><td><a href="https://wa.me/${String(x.phone).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.phone)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td><td style="font-size:11px;max-width:220px">${erEsc(x.message)||'—'}</td></tr>`).join(''):'<tr><td colspan="7" style="color:var(--muted2)">Belum ada lead.</td></tr>';
   }catch(e){tb.innerHTML='<tr><td colspan="7" style="color:#e03b30">Gagal memuat.</td></tr>';}
+}
+
+// ── HOME EVENTS (tracked tournaments/leagues shown on the home section) ──
+async function loadTrackedEvents(){
+  var tb=document.getElementById('teTbody');
+  try{const r=await fetch(crApi()+'/tracked-events');const d=await r.json();var ev=(d&&d.events)||[];window._te=ev;
+    tb.innerHTML=ev.length?ev.map(function(e){var enc=encodeURIComponent(e.name);
+      return '<tr><td><strong>'+erEsc(e.name)+'</strong></td><td>'+erEsc(e.monthYear)+'</td><td>'+erEsc(e.location)+'</td>'
+        +'<td style="font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis">'+erEsc(e.url)+'</td>'
+        +"<td style=\"white-space:nowrap\"><button class=\"btn btn-ghost btn-sm\" onclick=\"editTrackedEvent('"+enc+"')\">Edit</button> "
+        +"<button class=\"btn btn-ghost btn-sm\" style=\"border-color:rgba(255,56,48,.4);color:#e03b30\" onclick=\"delTrackedEvent('"+enc+"')\">Delete</button></td></tr>";
+    }).join(''):'<tr><td colspan="5" style="color:var(--muted2)">Belum ada event.</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="5" style="color:#e03b30">Gagal memuat.</td></tr>';}
+}
+async function addTrackedEvent(){
+  var st=document.getElementById('te-status');var name=document.getElementById('te-name').value.trim();
+  if(!name){st.className='status-msg error';st.textContent='Name wajib.';return;}
+  var body={name:name,monthYear:document.getElementById('te-month').value.trim(),location:document.getElementById('te-loc').value.trim(),logoUrl:document.getElementById('te-logo').value.trim(),url:document.getElementById('te-url').value.trim()};
+  try{const r=await fetch(crApi()+'/tracked-events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');
+    st.className='status-msg success';st.textContent='✓ "'+name+'" ditambahkan.';['te-name','te-month','te-loc','te-logo','te-url'].forEach(function(id){document.getElementById(id).value='';});loadTrackedEvents();
+  }catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal.'}
+}
+function editTrackedEvent(enc){
+  var name=decodeURIComponent(enc);var e=(window._te||[]).find(function(x){return x.name===name;})||{name:name};
+  var nn=prompt('Name:',e.name||'');if(nn===null)return;
+  var mm=prompt('Month/Year:',e.monthYear||'');if(mm===null)return;
+  var loc=prompt('Location:',e.location||'');if(loc===null)return;
+  var logo=prompt('Logo URL:',e.logoUrl||'');if(logo===null)return;
+  var url=prompt('Link URL:',e.url||'');if(url===null)return;
+  fetch(crApi()+'/tracked-events/update',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,updates:{name:nn,monthYear:mm,location:loc,logoUrl:logo,url:url}})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadTrackedEvents();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
+}
+function delTrackedEvent(enc){
+  var name=decodeURIComponent(enc);if(!confirm('Hapus "'+name+'" dari home?'))return;
+  fetch(crApi()+'/tracked-events/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadTrackedEvents();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
+}
+
+// ── LIGA CONFIG (championship + series; drives web /liga-trekkr AND the app) ──
+var _liga=null;
+function isoLabel(iso){try{var d=new Date(iso+'T00:00:00');var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];return d.getDate()+' '+m;}catch(e){return iso;}}
+async function loadLiga(){
+  try{const r=await fetch(crApi()+'/liga/config');const d=await r.json();_liga=(d&&d.config)||{};}catch(e){_liga={};}
+  var c=_liga.championship||{},s=_liga.series||{};
+  document.getElementById('lg-date').value=c.date||'';
+  document.getElementById('lg-city').value=c.city||'';
+  document.getElementById('lg-pool').value=c.prizePool||'';
+  var prizes=(c.prizes&&c.prizes.length)?c.prizes:[{tier:'T1',label:'Open',amount:0,highlight:true},{tier:'T2',label:'Contender',amount:0},{tier:'T3',label:'Rising',amount:0}];
+  document.getElementById('lg-prizes').innerHTML=prizes.map(function(p){
+    return '<div class="field-row lg-prow" style="align-items:end"><div class="field"><label class="field-label">Tier</label><input class="field-input lg-pt" value="'+erEsc(p.tier||'')+'"></div>'
+      +'<div class="field"><label class="field-label">Label</label><input class="field-input lg-pl" value="'+erEsc(p.label||'')+'"></div>'
+      +'<div class="field"><label class="field-label">Amount (Rp)</label><input class="field-input lg-pa" type="number" value="'+(p.amount||0)+'"></div>'
+      +'<div class="field" style="max-width:100px"><label class="field-label">Highlight</label><select class="field-select lg-ph"><option value="0">No</option><option value="1"'+(p.highlight?' selected':'')+'>Yes</option></select></div></div>';
+  }).join('');
+  document.getElementById('lg-spool').value=s.prizePool||'';
+  document.getElementById('lg-smin').value=s.minEntered||'';
+  document.getElementById('lg-sdates').innerHTML=(s.dates||[]).map(seriesRowHTML).join('');
+}
+function seriesRowHTML(s){s=s||{};
+  return '<div class="field-row lg-srow" style="align-items:end"><div class="field"><label class="field-label">Date (YYYY-MM-DD)</label><input class="field-input lg-sd" value="'+erEsc(s.iso||'')+'"></div>'
+    +'<div class="field"><label class="field-label">Name</label><input class="field-input lg-sn" value="'+erEsc(s.name||'')+'"></div>'
+    +'<div class="field"><label class="field-label">Venue</label><input class="field-input lg-sv" value="'+erEsc(s.venue||'')+'"></div>'
+    +'<div class="field" style="max-width:52px"><label class="field-label">&nbsp;</label><button class="btn btn-ghost btn-sm" onclick="this.closest(\'.lg-srow\').remove()">✕</button></div></div>';
+}
+function ligaAddSeries(){document.getElementById('lg-sdates').insertAdjacentHTML('beforeend',seriesRowHTML({}));}
+async function saveLiga(){
+  var st=document.getElementById('lg-status');
+  var prizes=Array.prototype.slice.call(document.querySelectorAll('#lg-prizes .lg-prow')).map(function(row){
+    return {tier:row.querySelector('.lg-pt').value.trim(),label:row.querySelector('.lg-pl').value.trim(),amount:Number(row.querySelector('.lg-pa').value)||0,highlight:row.querySelector('.lg-ph').value==='1'};
+  }).filter(function(p){return p.tier;});
+  var dates=Array.prototype.slice.call(document.querySelectorAll('#lg-sdates .lg-srow')).map(function(row){
+    var iso=row.querySelector('.lg-sd').value.trim();
+    return {iso:iso,label:isoLabel(iso),name:row.querySelector('.lg-sn').value.trim(),venue:row.querySelector('.lg-sv').value.trim()};
+  }).filter(function(x){return x.iso;});
+  var cfg={championship:{date:document.getElementById('lg-date').value.trim(),city:document.getElementById('lg-city').value.trim(),prizePool:Number(document.getElementById('lg-pool').value)||0,prizes:prizes},
+    series:{prizePool:Number(document.getElementById('lg-spool').value)||0,minEntered:Number(document.getElementById('lg-smin').value)||0,dates:dates}};
+  st.className='status-msg';st.style.display='block';st.style.color='';st.textContent='Menyimpan…';
+  try{const r=await fetch(crApi()+'/liga/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ Liga config tersimpan (web + app).';}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal.'}
+}
+
+// ── SCHEDULE (RankPlay + Series sessions) ──
+function scSet(id,v){var el=document.getElementById(id);if(el)el.value=(v==null?'':v);}
+function scReset(){['sc-id','sc-venue','sc-area','sc-date','sc-price','sc-start','sc-end','sc-cap','sc-booked','sc-wa','sc-note'].forEach(function(id){scSet(id,'');});document.getElementById('sc-type').value='RANKPLAY';document.getElementById('sc-status').value='OPEN';document.getElementById('sc-formtitle').textContent='ADD SESSION';var st=document.getElementById('sc-status2');if(st){st.className='status-msg';st.textContent='';}}
+async function loadScheduleAdmin(){
+  var tb=document.getElementById('scTbody');
+  try{const r=await fetch(crApi()+'/schedule/all');const d=await r.json();var rows=(d&&d.schedule)||[];window._sc=rows;
+    tb.innerHTML=rows.length?rows.map(function(s){var enc=encodeURIComponent(s.id);
+      return '<tr><td>'+erEsc(s.type)+'</td><td>'+erEsc(s.date)+'</td><td><strong>'+erEsc(s.venue)+'</strong></td><td>'+erEsc(s.area)+'</td><td>'+erEsc(s.booked||'0')+'/'+erEsc(s.capacity||'—')+'</td><td>'+erEsc(s.status||'')+'</td>'
+        +"<td style=\"white-space:nowrap\"><button class=\"btn btn-ghost btn-sm\" onclick=\"editSchedule('"+enc+"')\">Edit</button> <button class=\"btn btn-ghost btn-sm\" style=\"border-color:rgba(255,56,48,.4);color:#e03b30\" onclick=\"delSchedule('"+enc+"')\">Delete</button></td></tr>";
+    }).join(''):'<tr><td colspan="7" style="color:var(--muted2)">Belum ada sesi.</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="7" style="color:#e03b30">Gagal memuat.</td></tr>';}
+}
+function editSchedule(enc){
+  var id=decodeURIComponent(enc);var s=(window._sc||[]).find(function(x){return String(x.id)===id;});if(!s)return;
+  scSet('sc-id',s.id);document.getElementById('sc-type').value=(s.type||'RANKPLAY').toUpperCase();document.getElementById('sc-status').value=(s.status||'OPEN').toUpperCase();
+  scSet('sc-venue',s.venue);scSet('sc-area',s.area);scSet('sc-date',s.date);scSet('sc-price',s.pricePerPlayer);scSet('sc-start',s.startTime);scSet('sc-end',s.endTime);scSet('sc-cap',s.capacity);scSet('sc-booked',s.booked);scSet('sc-wa',s.whatsappUrl);scSet('sc-note',s.note);
+  document.getElementById('sc-formtitle').textContent='EDIT SESSION';window.scrollTo(0,0);
+}
+async function saveSchedule(){
+  var st=document.getElementById('sc-status2');
+  var body={id:document.getElementById('sc-id').value.trim(),type:document.getElementById('sc-type').value,status:document.getElementById('sc-status').value,venue:document.getElementById('sc-venue').value.trim(),area:document.getElementById('sc-area').value.trim(),date:document.getElementById('sc-date').value.trim(),pricePerPlayer:document.getElementById('sc-price').value.trim(),startTime:document.getElementById('sc-start').value.trim(),endTime:document.getElementById('sc-end').value.trim(),capacity:document.getElementById('sc-cap').value.trim(),booked:document.getElementById('sc-booked').value.trim(),whatsappUrl:document.getElementById('sc-wa').value.trim(),note:document.getElementById('sc-note').value.trim()};
+  if(!body.venue||!body.date){st.className='status-msg error';st.textContent='Venue & Date wajib.';return;}
+  try{const r=await fetch(crApi()+'/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ Sesi tersimpan.';scReset();loadScheduleAdmin();}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal.'}
+}
+function delSchedule(enc){
+  var id=decodeURIComponent(enc);if(!confirm('Hapus sesi ini?'))return;
+  fetch(crApi()+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadScheduleAdmin();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
 }
 
 // ── DUPLICATES (dedup scan + merge) ──

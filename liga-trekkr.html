@@ -162,6 +162,7 @@
   var W = window.TrekkrW1, C = window.TREKKR;
   var $ = function (id) { return document.getElementById(id); };
 
+  function __render() {
   // --- Block 1: hero eyebrow, countdown, prize rows ---
   var champ = C.championship;
   $("champ-eyebrow").textContent =
@@ -255,6 +256,17 @@
     $("c-venues").textContent = venues.size.toLocaleString("en-US");
     $("counters").hidden = false;
   }).catch(function () { /* Build Spec §5.5: hide the block, never render — or Loading… */ });
+  } // __render
+
+  // Server-managed Liga config (championship + series prize pools/dates) edited
+  // in superadmin overrides the static wave1 config; falls back to it on failure.
+  var __base = (location.hostname === "trekkr.online" || (location.hostname.endsWith(".vercel.app") && location.hostname.startsWith("trekkrgit"))) ? "/api" : "https://trekkr.online/api";
+  fetch(__base + "/liga/config").then(function (r) { return r.json(); }).then(function (d) {
+    if (d && d.config) {
+      if (d.config.championship) C.championship = Object.assign({}, C.championship, d.config.championship);
+      if (d.config.series) C.series = Object.assign({}, C.series, d.config.series);
+    }
+  }).catch(function () {}).then(__render);
 })();
 </script>
 <script src="/trekkr-nav.js" defer></script>

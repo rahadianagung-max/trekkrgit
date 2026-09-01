@@ -589,6 +589,10 @@ const netlifyHandler = async (event) => {
 
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
+    // Liga config (championship + series prize pools/dates) — read by the web
+    // Liga page AND the mobile app; edited from superadmin.
+    if (path === "liga/config" && method === "GET") return await getLigaConfig();
+    if (path === "liga/config" && method === "PUT") return await saveLigaConfig(body);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
@@ -596,6 +600,9 @@ const netlifyHandler = async (event) => {
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
+    if (path === "tracked-events" && method === "POST") return await addTrackedEvent(body);
+    if (path === "tracked-events/update" && method === "PUT") return await updateTrackedEvent(body);
+    if (path === "tracked-events/delete" && method === "POST") return await deleteTrackedEvent(body);
     if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
     if (path === "competitions" && method === "GET") return await listCompetitions();
     if (path.startsWith("competition/") && method === "GET") return await getCompetition(decodeURIComponent(path.slice("competition/".length)));
@@ -641,6 +648,7 @@ const netlifyHandler = async (event) => {
     if (path === "venues" && method === "POST") return await addVenue(body);
     if (path === "venues/update" && method === "PUT") return await updateVenue(body);
     if (path === "venues/delete" && method === "POST") return await deleteVenue(body);
+    if (path === "venues/display" && method === "POST") return await setVenueDisplay(body);
     if (path.startsWith("venues/") && path.endsWith("/matches") && method === "GET") {
       const v = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
       return await getVenueMatches(v, params);
@@ -661,6 +669,9 @@ const netlifyHandler = async (event) => {
     // Profile claim reuses the existing moderated flow (players/edit-request,
     // players/register), so approvals surface in the admin "Edit Requests" screen.
     if (path === "schedule" && method === "GET") return await getSchedule(params);
+    if (path === "schedule/all" && method === "GET") return await getScheduleAll();
+    if (path === "schedule" && method === "POST") return await saveScheduleRow(body);
+    if (path === "schedule/delete" && method === "POST") return await deleteScheduleRow(body);
 
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
@@ -1738,11 +1749,14 @@ function buildVenueRow({ week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, g
 
 async function getVenues() {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:I` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:L` });
   const rows = res.data.values || [];
   const venues = rows.map((r) => ({
     name: r[0] || "", location: r[1] || "", region: r[2] || "", schedule: r[3] || "",
     prizePool: r[4] || "", contact: r[5] || "", logoUrl: r[6] || "", createdAt: r[7] || "", registerUrl: r[8] || "",
+    featured: String(r[9] || "").toUpperCase() === "TRUE",
+    sortOrder: r[10] != null && String(r[10]).trim() !== "" ? Number(r[10]) : null,
+    hidden: String(r[11] || "").toUpperCase() === "TRUE",
   }));
   return respond(200, { venues });
 }
@@ -4428,6 +4442,160 @@ async function getTrackedEvents() {
       url: (r[4] || "").toString().trim(),
     }));
   return respond(200, { events });
+}
+
+// ── Tracked events CRUD (superadmin) — curate the home Tourney/League section ──
+async function addTrackedEvent(body) {
+  const b = body || {};
+  const name = String(b.name || "").trim();
+  if (!name) return respond(400, { error: "name required" });
+  const sheets = getSheets();
+  await ensureTrackedEventsTab(sheets);
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID, range: `${TABS.tracked_events}!A:E`, valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[b.monthYear || "", name, b.location || "", b.logoUrl || "", b.url || ""]] },
+  });
+  return respond(200, { success: true });
+}
+async function updateTrackedEvent(body) {
+  const b = body || {};
+  const orig = String(b.name || "").trim();
+  const u = b.updates || {};
+  if (!orig) return respond(400, { error: "name required" });
+  const sheets = getSheets();
+  await ensureTrackedEventsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.tracked_events}!A2:E` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((r) => String(r[1] || "").trim().toLowerCase() === orig.toLowerCase());
+  if (ri < 0) return respond(404, { error: "Event not found" });
+  const c = rows[ri];
+  const pick = (nv, ov) => (nv === undefined || nv === null ? (ov || "") : String(nv));
+  const updated = [pick(u.monthYear, c[0]), pick(u.name, c[1]).trim() || c[1] || "", pick(u.location, c[2]), pick(u.logoUrl, c[3]), pick(u.url, c[4])];
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.tracked_events}!A${ri + 2}:E${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [updated] } });
+  return respond(200, { success: true });
+}
+async function deleteTrackedEvent(body) {
+  const name = String((body && body.name) || "").trim();
+  if (!name) return respond(400, { error: "name required" });
+  const removed = await deleteRowsByKey(getSheets(), TABS.tracked_events, 1, new Set([name.toLowerCase()])); // col B = Name
+  if (!removed) return respond(404, { error: "Event not found" });
+  return respond(200, { success: true, removed });
+}
+
+// ── Settings tab single-key upsert (also used to store the Liga config JSON) ──
+async function setSettingKey(sheets, key, value) {
+  let rows = null;
+  try {
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Settings!A2:B" });
+    rows = r.data.values || [];
+  } catch (e) {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: "Settings" } } }] } }).catch(() => {});
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: "Settings!A1:B1", valueInputOption: "RAW", requestBody: { values: [["key", "value"]] } }).catch(() => {});
+    rows = [];
+  }
+  const i = rows.findIndex((r) => String(r[0] || "") === key);
+  if (i === -1) {
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: "Settings!A:B", valueInputOption: "RAW", requestBody: { values: [[key, value]] } });
+  } else {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `Settings!B${i + 2}`, valueInputOption: "RAW", requestBody: { values: [[value]] } });
+  }
+}
+async function readSettingKey(sheets, key) {
+  try {
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Settings!A2:B" });
+    const hit = (r.data.values || []).find((x) => String(x[0] || "") === key);
+    return hit ? (hit[1] || "") : "";
+  } catch (e) { return ""; }
+}
+
+// ── Liga config (single source of truth, mirrors /wave1/config.js defaults) ──
+const LIGA_DEFAULT = {
+  championship: {
+    date: "2026-12-13", city: "Jakarta", prizePool: 30000000,
+    prizes: [
+      { tier: "T1", label: "Open", amount: 15000000, highlight: true },
+      { tier: "T2", label: "Contender", amount: 10000000, highlight: false },
+      { tier: "T3", label: "Rising", amount: 5000000, highlight: false },
+    ],
+  },
+  series: {
+    prizePool: 9000000, minEntered: 2,
+    dates: [
+      { iso: "2026-09-14", label: "14 Sep", name: "Series #1", venue: "The Field" },
+      { iso: "2026-10-12", label: "12 Oct", name: "Series #2", venue: "The Field" },
+      { iso: "2026-11-09", label: "9 Nov", name: "Series #3", venue: "The Field" },
+    ],
+  },
+};
+async function getLigaConfig() {
+  const raw = await readSettingKey(getSheets(), "liga_config");
+  let cfg = null;
+  if (raw) { try { cfg = JSON.parse(raw); } catch (e) {} }
+  return respond(200, { config: cfg || LIGA_DEFAULT, source: cfg ? "custom" : "default" }, { "Cache-Control": "no-store" });
+}
+async function saveLigaConfig(body) {
+  const cfg = body && body.config;
+  if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) return respond(400, { error: "config object required" });
+  await setSettingKey(getSheets(), "liga_config", JSON.stringify(cfg));
+  return respond(200, { success: true });
+}
+
+// ── Schedule admin: list-all / upsert / delete ──
+async function getScheduleAll() {
+  const sheets = getSheets();
+  await ensureScheduleTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` }).catch(() => ({ data: { values: [] } }));
+  const schedule = (res.data.values || []).filter((r) => (r[0] || "").trim()).map((r) => {
+    const o = {}; SCHEDULE_HEADER.forEach((h, i) => { o[h] = r[i] || ""; }); return o;
+  });
+  return respond(200, { schedule }, { "Cache-Control": "no-store" });
+}
+async function saveScheduleRow(body) {
+  const b = body || {};
+  const sheets = getSheets();
+  await ensureScheduleTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const id = String(b.id || "").trim();
+  const rowVals = [
+    id || ("SCH_" + Date.now()), String(b.type || "RANKPLAY").toUpperCase(), b.venue || "", b.area || "", b.date || "",
+    b.startTime || "", b.endTime || "", b.courts || "", b.capacity || "", b.booked || "", b.pricePerPlayer || "",
+    (b.status || "OPEN").toUpperCase(), b.whatsappUrl || "", b.note || "",
+  ];
+  if (id) {
+    const ri = rows.findIndex((r) => String(r[0] || "").trim() === id);
+    if (ri >= 0) {
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${ri + 2}:N${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+      return respond(200, { success: true, id });
+    }
+  }
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:N`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  return respond(200, { success: true, id: rowVals[0] });
+}
+async function deleteScheduleRow(body) {
+  const id = String((body && body.id) || "").trim();
+  if (!id) return respond(400, { error: "id required" });
+  const removed = await deleteRowsByKey(getSheets(), TABS.schedule, 0, new Set([id.toLowerCase()]));
+  if (!removed) return respond(404, { error: "Schedule row not found" });
+  return respond(200, { success: true, removed });
+}
+
+// ── Venue display flags (featured / order / hidden) for the /venues directory ──
+async function setVenueDisplay(body) {
+  const b = body || {};
+  const name = String(b.name || "").trim();
+  if (!name) return respond(400, { error: "name required" });
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:L` });
+  const rows = res.data.values || [];
+  const ri = rows.findIndex((r) => String(r[0] || "").toLowerCase() === name.toLowerCase());
+  if (ri < 0) return respond(404, { error: "Venue not found" });
+  const c = rows[ri], sr = ri + 2;
+  const featured = b.featured != null ? (b.featured ? "TRUE" : "FALSE") : (c[9] || "");
+  const order = b.sortOrder != null ? String(b.sortOrder) : (c[10] || "");
+  const hidden = b.hidden != null ? (b.hidden ? "TRUE" : "FALSE") : (c[11] || "");
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!J${sr}:L${sr}`, valueInputOption: "RAW", requestBody: { values: [[featured, order, hidden]] } });
+  return respond(200, { success: true });
 }
 
 // ── "TOURNEY & LEAGUE" GET LISTED — organizer lead capture (public form) ──

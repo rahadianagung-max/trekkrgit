@@ -114,8 +114,11 @@
   qEl.addEventListener('input',function(){term=(qEl.value||'').trim().toLowerCase();render();});
 
   fetch(BASE+'/venues').then(function(r){return r.json();}).then(function(d){
-    all=((d&&d.venues)||[]).filter(function(v){return v.name;});
-    all.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    all=((d&&d.venues)||[]).filter(function(v){return v.name && !v.hidden;});
+    // Featured first, then explicit sortOrder (smaller first), then name.
+    all.sort(function(a,b){return (b.featured?1:0)-(a.featured?1:0)
+      || ((a.sortOrder==null?9999:a.sortOrder)-(b.sortOrder==null?9999:b.sortOrder))
+      || String(a.name).localeCompare(String(b.name));});
     if(!all.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">No venues listed yet. Be the first — <a href="/get-listed" style="color:var(--orange);font-weight:700">get listed</a>.</div>';return;}
     buildChips(); render();
   }).catch(function(){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Couldn\'t load venues. Please try again.</div>';});
