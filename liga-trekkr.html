@@ -185,7 +185,9 @@
   // /api/schedule?type=SERIES when available.
   function renderSeriesCards(list) {
     $("series-cards").innerHTML = list.slice(0, 3).map(function (s, i) {
-      return "<div><b>" + W.esc(s.label) + "</b><span>" + W.esc(s.name || ("Series #" + (i + 1))) + "</span></div>";
+      // Show the venue (managed in superadmin → Liga); fall back to the Series name.
+      var line = s.venue || s.name || ("Series #" + (i + 1));
+      return "<div><b>" + W.esc(s.label) + "</b><span>" + W.esc(line) + "</span></div>";
     }).join("");
   }
   renderSeriesCards(C.series.dates);
@@ -193,7 +195,7 @@
     var rows = (r && r.schedule) || [];
     if (rows.length) {
       renderSeriesCards(rows.map(function (s) {
-        return { label: W.dayNum(s.date) + " " + W.monShort(s.date), name: s.venue || "Trekkr Series" };
+        return { label: W.dayNum(s.date) + " " + W.monShort(s.date), venue: s.venue || "Trekkr Series" };
       }));
     }
   }).catch(function () { /* keep config cards */ });
