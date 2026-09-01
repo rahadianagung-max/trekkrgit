@@ -348,9 +348,10 @@ async function doMerge(gi){
   var msg=document.getElementById('dd-msg-'+gi);
   if(!aliases.length){msg.style.color='#e03b30';msg.textContent='Centang minimal 1 alias (bukan pemain utama).';return;}
   if(!confirm('Gabungkan '+aliases.length+' alias ke "'+canonical+'"?\n\nRiwayat & ELO alias dipindah ke pemain utama, baris alias dihapus. Tidak bisa di-undo.'))return;
-  msg.style.color='var(--muted2)';msg.textContent='Menggabungkan…';
-  try{const r=await fetch(crApi()+'/dedup/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({canonical,aliases})});const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'Gagal');
+  msg.style.color='var(--muted2)';msg.textContent='Menggabungkan… (bisa beberapa detik)';
+  try{const r=await fetch(crApi()+'/dedup/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({canonical,aliases})});
+    const d=await r.json().catch(function(){return {};});
+    if(!r.ok||!d.success)throw new Error(d.error||('Gagal (HTTP '+r.status+')'));
     msg.style.color='#22A052';msg.textContent='✓ '+(d.playersRemoved||aliases.length)+' alias digabung.';
     await loadPlayers();setTimeout(loadDupes,700);
   }catch(e){msg.style.color='#e03b30';msg.textContent=e.message||'Gagal.';}

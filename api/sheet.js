@@ -5226,20 +5226,29 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
   } catch (e) { console.error("rebind reg:", e.message); }
   // Every Venue_ tab: player-name columns are C,D,E,F (indices 2..5). This is the
   // Playing History source that the merge/rename previously left behind.
+  // Batched: ONE values.batchGet for all venue tabs and ONE values.batchUpdate
+  // for the changed ranges — the old per-tab get+update loop timed out (504)
+  // once there were many venue tabs.
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
     const venueTabs = (meta.data.sheets || []).map((s) => s.properties.title).filter((t) => t.startsWith("Venue_"));
-    for (const tab of venueTabs) {
-      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!A2:M` });
-      const rows = res.data.values || [];
-      if (!rows.length) continue;
-      let changed = false;
-      const cf = rows.map((r) => {
-        const out = [r[2] || "", r[3] || "", r[4] || "", r[5] || ""];
-        for (let k = 0; k < 4; k++) { if (hit(out[k])) { out[k] = canonical; changed = true; venues++; } }
-        return out;
+    if (venueTabs.length) {
+      const bg = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: venueTabs.map((t) => `${t}!A2:M`) });
+      const valueRanges = (bg.data && bg.data.valueRanges) || [];
+      const data = [];
+      valueRanges.forEach((vr, idx) => {
+        const tab = venueTabs[idx];
+        const rows = vr.values || [];
+        if (!rows.length) return;
+        let changed = false;
+        const cf = rows.map((r) => {
+          const out = [r[2] || "", r[3] || "", r[4] || "", r[5] || ""];
+          for (let k = 0; k < 4; k++) { if (hit(out[k])) { out[k] = canonical; changed = true; venues++; } }
+          return out;
+        });
+        if (changed) data.push({ range: `${tab}!C2:F${rows.length + 1}`, values: cf });
       });
-      if (changed) await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${tab}!C2:F${rows.length + 1}`, valueInputOption: "RAW", requestBody: { values: cf } });
+      if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
     }
   } catch (e) { console.error("rebind venues:", e.message); }
   return { elo, regs, venues };
