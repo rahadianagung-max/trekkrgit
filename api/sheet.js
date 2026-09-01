@@ -4483,22 +4483,28 @@ async function deleteTrackedEvent(body) {
 }
 
 // ── Settings tab single-key upsert (also used to store the Liga config JSON) ──
-async function setSettingKey(sheets, key, value) {
-  let rows = null;
-  try {
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Settings!A2:B" });
-    rows = r.data.values || [];
-  } catch (e) {
+// Guarantee a "Settings" tab with a header at row 1, so row-2-onward key/value
+// reads and writes always line up (an empty tab would otherwise put the first
+// appended row at row 1, where the A2:B reader can never see it).
+async function ensureSettingsTab(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
+  const has = (meta.data.sheets || []).some((s) => s.properties.title === "Settings");
+  if (!has) {
     await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests: [{ addSheet: { properties: { title: "Settings" } } }] } }).catch(() => {});
-    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: "Settings!A1:B1", valueInputOption: "RAW", requestBody: { values: [["key", "value"]] } }).catch(() => {});
-    rows = [];
   }
-  const i = rows.findIndex((r) => String(r[0] || "") === key);
-  if (i === -1) {
-    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: "Settings!A:B", valueInputOption: "RAW", requestBody: { values: [[key, value]] } });
-  } else {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `Settings!B${i + 2}`, valueInputOption: "RAW", requestBody: { values: [[value]] } });
+  const hr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Settings!A1:B1" }).catch(() => ({ data: {} }));
+  if (!(hr.data && hr.data.values && hr.data.values.length)) {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: "Settings!A1:B1", valueInputOption: "RAW", requestBody: { values: [["key", "value"]] } });
   }
+}
+async function setSettingKey(sheets, key, value) {
+  await ensureSettingsTab(sheets);
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: "Settings!A2:B" }).catch(() => ({ data: { values: [] } }));
+  const rows = r.data.values || [];
+  const i = rows.findIndex((x) => String(x[0] || "") === key);
+  const sr = (i === -1) ? (rows.length + 2) : (i + 2); // explicit row — no append() table guessing
+  await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `Settings!A${sr}:B${sr}`, valueInputOption: "RAW", requestBody: { values: [[key, value]] } });
+  console.log(`[settings] wrote key=${key} row=${sr} len=${String(value).length}`);
 }
 async function readSettingKey(sheets, key) {
   try {
@@ -4530,7 +4536,8 @@ const LIGA_DEFAULT = {
 async function getLigaConfig() {
   const raw = await readSettingKey(getSheets(), "liga_config");
   let cfg = null;
-  if (raw) { try { cfg = JSON.parse(raw); } catch (e) {} }
+  if (raw) { try { cfg = JSON.parse(raw); } catch (e) { console.error("[liga] parse fail:", e.message); } }
+  console.log(`[liga] get source=${cfg ? "custom" : "default"} rawLen=${String(raw || "").length}`);
   return respond(200, { config: cfg || LIGA_DEFAULT, source: cfg ? "custom" : "default" }, { "Cache-Control": "no-store" });
 }
 async function saveLigaConfig(body) {
