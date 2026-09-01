@@ -291,7 +291,7 @@ footer span{color:var(--lime)}
       </div>
     </div>
   </div>
-  <footer>TREKKR · <span>SUPERADMIN</span> · © 2026 · <span id="buildTag">build 2026-09-01c</span></footer>
+  <footer>TREKKR · <span>SUPERADMIN</span> · © 2026 · <span id="buildTag">build 2026-09-01d</span></footer>
 </div>
 <script src="trekkr-api.js"></script>
 <script>
@@ -552,10 +552,14 @@ async function doMerge(gi){
   var msg=document.getElementById('dd-msg-'+gi);
   if(!canonEl){if(msg){msg.style.color='#e03b30';msg.textContent='Pilih pemain utama dulu.';}return;}
   var canonical=decodeURIComponent(canonEl.value);
+  var canonIdx=String(canonEl.getAttribute('data-idx'));
+  // Exclude the canonical by its ROW (data-idx), not by name — a case/space-only
+  // variant ("andi" vs "Andi") is a different row and a valid alias to merge.
   var seen={};
   var aliases=Array.prototype.slice.call(document.querySelectorAll('.dd-alias-'+gi+':checked'))
+    .filter(function(c){return String(c.getAttribute('data-idx'))!==canonIdx;})
     .map(function(c){return decodeURIComponent(c.value);})
-    .filter(function(a){return a && a.toLowerCase()!==canonical.toLowerCase() && !seen[a.toLowerCase()] && (seen[a.toLowerCase()]=1);});
+    .filter(function(a){return a && !seen[a] && (seen[a]=1);});
   if(!aliases.length){msg.style.color='#e03b30';msg.textContent='Centang minimal 1 pemain "gabung" selain yang jadi utama.';return;}
   if(!confirm('Gabungkan '+aliases.length+' pemain ke "'+canonical+'"?\n\n'+aliases.join(', ')+'\n\nRiwayat & ELO mereka dipindah ke "'+canonical+'", baris mereka dihapus. Tidak bisa di-undo.'))return;
   msg.style.color='var(--muted2)';msg.textContent='Menggabungkan… (bisa beberapa detik)';

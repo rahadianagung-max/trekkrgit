@@ -5429,16 +5429,25 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
 }
 
 async function ddMerge(body) {
-  const { canonical, aliases } = body;
-  if (!canonical || !Array.isArray(aliases) || !aliases.length) return respond(400, { error: "canonical & aliases wajib" });
-  const alset = new Set(aliases.filter((a) => a && a.toLowerCase() !== canonical.toLowerCase()).map((a) => a.toLowerCase()));
-  if (!alset.size) return respond(400, { error: "tidak ada alias valid" });
+  const canonical = String((body && body.canonical) || "").trim();
+  const aliasesIn = Array.isArray(body && body.aliases) ? body.aliases : [];
+  if (!canonical || !aliasesIn.length) return respond(400, { error: "canonical & aliases wajib" });
+  // Distinct trimmed alias strings that are not byte-for-byte the canonical.
+  // (A case/space-only variant like "andi" vs "Andi" IS a valid alias — the old
+  // lowercase filter wrongly dropped those, which blocked the merge.)
+  const canonLower = canonical.toLowerCase();
+  const aliasExact = [...new Set(aliasesIn.map((a) => String(a || "").trim()).filter((a) => a && a !== canonical))];
+  // Match set for rebind + dedupe: every casing of the aliases AND the canonical
+  // itself, so all spellings collapse to the canonical spelling.
+  const unionLower = new Set([canonLower, ...aliasExact.map((a) => a.toLowerCase())]);
   const sheets = getSheets();
   const tStart = Date.now();
   // 1+2) rebind ELO_Log (ratings), Registrations AND every Venue_ tab (Playing
-  // History) from alias -> canonical.
-  const { elo: rebind } = await rebindPlayerNames(sheets, alset, canonical);
-  // 3) hapus baris alias di Players (perlu sheetId, hapus dari bawah)
+  // History) from any matched spelling -> the canonical spelling.
+  const { elo: rebind } = await rebindPlayerNames(sheets, unionLower, canonical);
+  // 3) In Players, keep exactly ONE row (the canonical) among all matched rows and
+  // delete the rest — this removes alias rows, case-variants, and exact dupes,
+  // never the canonical. (Delete from the bottom; needs the numeric sheetId.)
   let removed = 0;
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(sheetId,title))" });
@@ -5446,17 +5455,28 @@ async function ddMerge(body) {
     const sheetId = sh ? sh.properties.sheetId : null;
     const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` });
     const names = (pRes.data.values || []).map((r) => r[0] || "");
-    const delRows = [];
-    names.forEach((nm, i) => { if (alset.has(nm.toLowerCase())) delRows.push(i + 1); }); // i=0 -> sheet row 2 -> api index 1
+    const matching = [];
+    names.forEach((nm, i) => { if (unionLower.has(String(nm || "").trim().toLowerCase())) matching.push(i); });
+    // Row to keep: an exact-canonical match if present, else the first matched row.
+    let keep = matching.find((i) => String(names[i] || "").trim() === canonical);
+    if (keep === undefined) keep = matching.length ? matching[0] : undefined;
+    const delRows = matching.filter((i) => i !== keep).map((i) => i + 1); // i=0 -> sheet row 2 -> api index 1
     if (sheetId != null && delRows.length) {
       delRows.sort((a, b) => b - a);
       const requests = delRows.map((idx) => ({ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: idx, endIndex: idx + 1 } } }));
       await sheets.spreadsheets.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { requests } });
       removed = delRows.length;
     }
+    // Normalize the kept row's Name to the canonical spelling if it differs.
+    if (keep !== undefined && String(names[keep] || "").trim() !== canonical) {
+      // Its api index shifts after deletions of earlier rows; recompute against deletes below it.
+      const belowDeleted = delRows.filter((r) => r < keep + 1).length;
+      const keepSheetRow = (keep + 2) - belowDeleted;
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${keepSheetRow}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[canonical]] } }).catch((e) => console.error("merge normalize:", e.message));
+    }
   } catch (e) { console.error("merge players:", e.message); }
   console.log(`[merge] DONE total ${Date.now() - tStart}ms removed=${removed}`);
-  return respond(200, { success: true, canonical, merged: [...alset], eloRebind: rebind, playersRemoved: removed });
+  return respond(200, { success: true, canonical, merged: aliasExact, eloRebind: rebind, playersRemoved: removed });
 }
 
 // ==============================================================
