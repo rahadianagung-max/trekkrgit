@@ -286,6 +286,17 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-rank-meta{font-size:11px;color:var(--txt3)}
 .rm-rank-wl{font-size:13px;font-weight:700;color:var(--on);text-align:right}
 .rm-rank-diff{font-size:11px;font-weight:600;text-align:right}
+.rm-live-bar{background:linear-gradient(135deg,rgba(255,106,0,.1),rgba(15,166,180,.08));border:1.5px solid rgba(255,106,0,.25);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:14px}
+.rm-live-bar-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rm-live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.12em;color:#E14338;flex-shrink:0}
+.rm-live-dot{width:7px;height:7px;border-radius:50%;background:#E14338;animation:rmLivePulse 1.6s infinite}
+@keyframes rmLivePulse{0%{box-shadow:0 0 0 0 rgba(225,67,56,.4)}70%{box-shadow:0 0 0 6px rgba(225,67,56,0)}100%{box-shadow:0 0 0 0 rgba(225,67,56,0)}}
+.rm-live-txt{font-size:11.5px;color:var(--txt2);font-weight:600;line-height:1.3}
+.rm-live-linkrow{background:var(--sur-lo);border:1px solid var(--sur-hi);border-radius:var(--r-md);padding:8px 10px;margin-bottom:8px;overflow:hidden}
+.rm-live-link{font-family:'Space Mono',monospace;font-size:12px;color:var(--pr);word-break:break-all;font-weight:700}
+.rm-live-actions{display:flex;gap:8px}
+.rm-live-btn{flex:1;padding:9px;border-radius:var(--r-md);border:1.5px solid var(--sur-hi);background:var(--sur-0);color:var(--on);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer}
+.rm-live-btn.primary{background:var(--pr);color:#fff;border-color:var(--pr)}
 .rm-share-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:var(--r-xl);background:var(--pr);color:white;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:background .15s;margin-bottom:10px}
 .rm-share-btn:hover{background:var(--pr2)}
 .rm-new-match-btn{width:100%;padding:14px;border-radius:var(--r-xl);background:var(--sur-ct);color:var(--pr);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
@@ -789,6 +800,19 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                   <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Kelola Pemain</button>
                   <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+                </div>
+              </div>
+              <div class="rm-live-bar" id="rm-live-bar" style="display:none">
+                <div class="rm-live-bar-top">
+                  <span class="rm-live-badge"><span class="rm-live-dot"></span> LIVE</span>
+                  <span class="rm-live-txt">Halaman live untuk pemain — standings & prediksi real-time</span>
+                </div>
+                <div class="rm-live-linkrow">
+                  <span class="rm-live-link" id="rm-live-link"></span>
+                </div>
+                <div class="rm-live-actions">
+                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">🔗 Salin link</button>
+                  <button class="rm-live-btn primary" onclick="rmShareLive()">📣 Bagikan ke pemain</button>
                 </div>
               </div>
               <div class="rm-submit-status" id="rm-submit-status"></div>
@@ -1657,10 +1681,13 @@ function rmBeginSession() {
   const {matches,byePlayers}=rmGenerateRound(true);
   RM.rounds=[{roundNum:1,matches,byePlayers,submitted:false,startedAt:Date.now()}];
   RM.currentRound=0;
+  RM_LIVE={code:'',key:'',busy:false};
   rmSaveState('match');
   rmGo('match');
   rmSwitchTab('courts');
   rmRenderMatchScreen();
+  rmUpdateLiveBar();
+  rmLivePush(false);   // spin up the shareable live page for this session
 }
 
 /* ── TEAM SETUP (manual fixed-partner pairing) ── */
@@ -2026,6 +2053,7 @@ async function rmSubmitRound() {
   rmUpdateFairBar();
   window.scrollTo(0,0);
   btn.textContent='Submit Skor & Lanjut Ronde →'; btn.disabled=false;
+  rmLivePush(false);   // push new standings + next-round predictions to the live page
 }
 
 /* LEADERBOARD */
@@ -2139,10 +2167,12 @@ async function rmEndMatch(){
       RM.lastFlags=(resp&&resp.flags)||[];   // Step 5: dominant-calibration flags
     } catch(e){console.warn('Final session warn:',e.message);}
   }
+  await rmLivePush(true);   // finalize the live page (server writes the AI recap)
   rmClearStorage();
   rmCloseEnd();
   rmRenderDoneScreen(standings);
   rmGo('done');
+  rmUpdateLiveBar();
   btn.textContent='Ya, Akhiri'; btn.disabled=false;
 }
 
@@ -2207,8 +2237,11 @@ function rmRenderDoneScreen(standings){
 
 async function rmShare(){
   const venue=RM.venue||'';
-  const url=`https://venue.trekkr.online/${(venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`;
-  const text=`Cek hasil Trekkr Ranked Match di ${venue}!\n${url}`;
+  // Prefer the PlayRank Live page for this session; fall back to the venue board.
+  const url = RM_LIVE.code ? rmLiveUrl() : `https://venue.trekkr.online/${(venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`;
+  const text = RM_LIVE.code
+    ? `Live standings & hasil Trekkr PlayRank di ${venue} 🎾\n${url}`
+    : `Cek hasil Trekkr Ranked Match di ${venue}!\n${url}`;
   if(navigator.share){
     try{await navigator.share({title:`Trekkr – ${venue}`,text,url});return;}catch(e){}
   }
@@ -2217,9 +2250,99 @@ async function rmShare(){
   window.open(waUrl,'_blank');
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — PLAYRANK LIVE (shareable live page for players)
+   A session-scoped live page at /live/<code>: players watch standings + win
+   predictions in real time and can claim their profile. The host holds an
+   unguessable write_key; viewers only ever get the short code.
+   ══════════════════════════════════════════════════════════════════════ */
+var RM_LIVE = { code:'', key:'', busy:false };
+function rmLiveOrigin(){
+  // The live page lives on the main site; admin runs on its own subdomain.
+  return (location.hostname==='trekkr.online') ? '' : 'https://trekkr.online';
+}
+function rmLiveUrl(){ return RM_LIVE.code ? `${rmLiveOrigin()||'https://trekkr.online'}/live/${RM_LIVE.code}` : ''; }
+function rmLiveStreak(name){
+  let s=0;
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>{
+      const in1=m.team1.some(p=>p.name===name), in2=m.team2.some(p=>p.name===name);
+      if(!in1&&!in2) return;
+      const t1win=m.score1>m.score2;
+      s = ((in1&&t1win)||(in2&&!t1win)) ? s+1 : 0;
+    });
+  });
+  return s;
+}
+function rmLiveSnapshot(final){
+  const startOf=name=>{const s=RM.selectedPlayers.find(p=>p.name===name);return s?(s.elo||RM.startElo):RM.startElo;};
+  const players=Object.values(RM.playerStats)
+    .filter(p=>p.active!==false)
+    .map(p=>({
+      name:p.name, short:(p.name||'').split(' ')[0],
+      elo:p.elo, start:startOf(p.name),
+      w:p.wins||0, l:p.losses||0, pd:p.pointDiff||0,
+      streak:rmLiveStreak(p.name), gender:(p.gender||'M').toUpperCase(),
+    }));
+  const doneRounds=RM.rounds.filter(r=>r.submitted).length;
+  const cur=RM.rounds[RM.currentRound];
+  let now=[], bye=[];
+  if(!final && cur && !cur.submitted){
+    now=(cur.matches||[]).map(m=>({court:m.court, a:m.team1.map(p=>p.name), b:m.team2.map(p=>p.name)}));
+    bye=(cur.byePlayers||[]).slice();
+  }
+  return {
+    venue:RM.venue||'', gender:RM.gender, courts:RM.courts, scoreTarget:RM.scoreTarget,
+    round: final ? doneRounds : (RM.currentRound+1),
+    now, bye, players,
+  };
+}
+async function rmLivePush(final){
+  if(!RM.venue||!RM.token) return;         // only real, authed sessions get a live page
+  if(RM_LIVE.busy) return; RM_LIVE.busy=true;
+  try{
+    const snap=rmLiveSnapshot(final);
+    if(!RM_LIVE.code){
+      const res=await rmApi('live',{method:'POST',body:JSON.stringify({action:'create',session:snap})});
+      if(res&&res.code){ RM_LIVE.code=res.code; RM_LIVE.key=res.key; rmSaveState('match'); rmUpdateLiveBar(); }
+      if(final && RM_LIVE.code){ // created straight into a final state
+        await rmApi('live',{method:'POST',body:JSON.stringify({action:'finalize',code:RM_LIVE.code,key:RM_LIVE.key,session:snap})});
+      }
+    } else {
+      await rmApi('live',{method:'POST',body:JSON.stringify({action:final?'finalize':'update',code:RM_LIVE.code,key:RM_LIVE.key,session:snap})});
+    }
+  }catch(e){ console.warn('live push warn:',e.message); }
+  finally{ RM_LIVE.busy=false; }
+}
+function rmUpdateLiveBar(){
+  const bar=document.getElementById('rm-live-bar');
+  if(!bar) return;
+  if(RM_LIVE.code){
+    bar.style.display='block';
+    const link=document.getElementById('rm-live-link');
+    if(link) link.textContent=rmLiveUrl().replace(/^https?:\/\//,'');
+  } else {
+    bar.style.display='none';
+  }
+}
+function rmCopyLive(){
+  const url=rmLiveUrl(); if(!url) return;
+  const btn=document.getElementById('rm-live-copy');
+  const done=()=>{ if(btn){const o=btn.textContent;btn.textContent='Tersalin ✓';setTimeout(()=>btn.textContent=o,1600);} };
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(done).catch(()=>window.prompt('Salin link live:',url)); }
+  else window.prompt('Salin link live:',url);
+}
+async function rmShareLive(){
+  const url=rmLiveUrl(); if(!url) return;
+  const text=`Ikuti live standings Trekkr PlayRank 🎾\n${url}`;
+  if(navigator.share){ try{ await navigator.share({title:'Trekkr PlayRank Live',text,url}); return; }catch(e){} }
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+}
+
 function rmNewMatch(){
   rmClearStorage();
   RM.selectedPlayers=[]; RM.partners={}; RM.teams=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
+  RM_LIVE={code:'',key:'',busy:false};
   rmGo('intro');
 }
 
@@ -2237,6 +2360,7 @@ function rmSaveState(screen){
       scoreTarget:RM.scoreTarget,partners:RM.partners,teams:RM.teams,
       level:RM.level,startElo:RM.startElo,
       token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
+      liveCode:RM_LIVE.code,liveKey:RM_LIVE.key,
     }));
   }catch(e){console.warn('Save state warn:',e);}
 }
@@ -2274,7 +2398,9 @@ function rmDoRestore(){
     level:saved.level||'lower_bronze', startElo:saved.startElo||1350,
     gender:saved.gender||'M',
   });
+  RM_LIVE={code:saved.liveCode||'',key:saved.liveKey||'',busy:false};
   rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen();
+  rmUpdateLiveBar();
   RM._savedToRestore=null;
 }
 function rmDismissRestore(){

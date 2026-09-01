@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlayRank Live · Trekkr</title>
+<meta name="description" content="Live padel standings, win predictions and final results — powered by Trekkr.">
+<meta name="theme-color" content="#FF6A00">
+<meta property="og:title" content="PlayRank Live · Trekkr">
+<meta property="og:description" content="Live standings & win predictions for a Trekkr ranked session. Tap in to follow the action.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F4F2EC; --card:#FFFFFF; --card2:#FBFAF7; --line:#E7E3DA; --line2:#EFEBE2;
+  --ink:#17140F; --mute:#6B655A; --dim:#9C9689;
+  --orange:#FF6A00; --orange-ink:#B24700;
+  --cyan:#0FA6B4; --cyan-ink:#0A7A85;
+  --grn:#1B9E5A; --red:#E14338; --gold:#C79320;
+  --pill:#F1EDE4;
+  --shadow:0 1px 2px rgba(30,22,10,.05),0 8px 24px rgba(30,22,10,.06);
+  --bar-track:#ECE8DF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E0C0A; --card:#1A1712; --card2:#211D17; --line:#2C271F; --line2:#241F19;
+    --ink:#F4EFE6; --mute:#A79E8E; --dim:#786F60;
+    --orange:#FF7D24; --orange-ink:#FFB27A;
+    --cyan:#3AD0DD; --cyan-ink:#8FE7EF;
+    --grn:#3CCB7F; --red:#FF6A5E; --gold:#E0B84A;
+    --pill:#241F18;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    --bar-track:#2A251D;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E0C0A; --card:#1A1712; --card2:#211D17; --line:#2C271F; --line2:#241F19;
+  --ink:#F4EFE6; --mute:#A79E8E; --dim:#786F60;
+  --orange:#FF7D24; --orange-ink:#FFB27A;
+  --cyan:#3AD0DD; --cyan-ink:#8FE7EF;
+  --grn:#3CCB7F; --red:#FF6A5E; --gold:#E0B84A;
+  --pill:#241F18;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  --bar-track:#2A251D;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;line-height:1.5;
+  -webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top)}
+img{max-width:100%}
+.wrap{max-width:460px;margin:0 auto;padding:0 14px 60px}
+.mono{font-family:'Space Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.cond{font-family:'Saira Condensed','Plus Jakarta Sans',sans-serif}
+
+.themebtn{position:fixed;right:12px;top:calc(8px + env(safe-area-inset-top));z-index:40;border:1px solid var(--line);background:var(--card);
+  color:var(--ink);border-radius:999px;width:34px;height:34px;font-size:15px;cursor:pointer}
+
+/* header */
+header.hd{padding:18px 2px 6px}
+.live{display:inline-flex;align-items:center;gap:7px;font:800 11px/1 'Plus Jakarta Sans';letter-spacing:.16em;
+  text-transform:uppercase;color:var(--red)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(225,67,56,.5);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(225,67,56,.45)}70%{box-shadow:0 0 0 8px rgba(225,67,56,0)}100%{box-shadow:0 0 0 0 rgba(225,67,56,0)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.title{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;font-size:clamp(30px,9vw,40px);line-height:.96;margin:8px 0 2px}
+.title b{color:var(--orange);font-style:italic}
+.sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:13px;font-weight:600}
+.chip{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;
+  background:var(--pill);color:var(--mute);border:1px solid var(--line)}
+.chip.cy{background:color-mix(in srgb,var(--cyan) 15%,transparent);color:var(--cyan-ink);border-color:transparent}
+
+/* section label */
+.slab{display:flex;align-items:center;gap:9px;margin:24px 2px 11px}
+.slab h2{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  font-size:16px;margin:0}
+.slab .rule{flex:1;height:1px;background:var(--line)}
+.slab .n{font-size:11px;color:var(--dim);font-weight:700}
+
+/* now playing card */
+.court{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);
+  padding:15px 15px 13px;margin-bottom:12px}
+.court .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.court .ct{font:800 11px/1 'Plus Jakarta Sans';letter-spacing:.1em;text-transform:uppercase;color:var(--cyan-ink);
+  background:color-mix(in srgb,var(--cyan) 14%,transparent);padding:5px 9px;border-radius:7px}
+.court .fmt{font-size:11px;color:var(--dim);font-weight:700}
+.team{display:flex;align-items:center;gap:10px}
+.team .who{flex:1;min-width:0}
+.nm{font-weight:800;font-size:14.5px;letter-spacing:-.1px}
+.nm2{font-size:12px;color:var(--mute);font-weight:600;margin-top:1px}
+.elo{font-family:'Space Mono',monospace;font-size:12px;color:var(--dim);font-weight:700}
+.vs{display:flex;align-items:center;justify-content:center;gap:8px;margin:9px 0}
+.vs .l{flex:1;height:1px;background:var(--line)}
+.vs .v{font-family:'Saira Condensed';font-style:italic;font-weight:800;color:var(--dim);font-size:13px;letter-spacing:1px}
+.prob{margin-top:12px}
+.prob .lab{display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin-bottom:5px}
+.prob .a{color:var(--orange-ink)} .prob .b{color:var(--cyan-ink)}
+.track{height:9px;border-radius:999px;background:var(--bar-track);overflow:hidden;display:flex}
+.track .fa{background:linear-gradient(90deg,var(--orange),#FF9A4D)}
+.track .fb{background:linear-gradient(90deg,#2CC3D0,var(--cyan))}
+.take{margin-top:9px;font-size:12.5px;color:var(--mute);line-height:1.45;
+  border-left:2px solid var(--cyan);padding-left:9px}
+.take b{color:var(--ink)}
+.byecard{background:var(--card2);border:1px dashed var(--line);border-radius:14px;padding:11px 14px;margin-bottom:12px;
+  font-size:12.5px;color:var(--mute)}
+.byecard b{color:var(--ink)}
+
+/* standings */
+.board{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.row{display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;
+  padding:11px 13px;border-bottom:1px solid var(--line2);position:relative}
+.row:last-child{border-bottom:0}
+.row.me{background:color-mix(in srgb,var(--orange) 8%,transparent)}
+.rk{font-family:'Space Mono',monospace;font-weight:700;color:var(--dim);font-size:13px;text-align:center}
+.rk.p1{color:var(--gold)} .rk.p2{color:#9AA0A6} .rk.p3{color:#C08457}
+.pl{min-width:0}
+.pl .pn{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pl .pmeta{font-size:11.5px;color:var(--mute);font-weight:600;margin-top:1px}
+.wl{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;text-align:right}
+.wl .l{color:var(--dim)}
+.tier{font-size:9px;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:5px;text-transform:uppercase;white-space:nowrap}
+.t-beg{background:color-mix(in srgb,#8E8E93 18%,transparent);color:#79797f}
+.t-brz{background:color-mix(in srgb,#B87333 20%,transparent);color:#a5622a}
+.t-slv{background:color-mix(in srgb,#8E8E93 22%,transparent);color:#79797f}
+.t-gld{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
+.t-plt{background:color-mix(in srgb,var(--cyan) 22%,transparent);color:var(--cyan-ink)}
+.claim{font-size:11px;font-weight:800;color:var(--orange);cursor:pointer;white-space:nowrap;background:none;border:0;padding:0;text-decoration:none}
+.grid2{grid-template-columns:26px 1fr auto}
+/* per-player analysis (final table) */
+.pcard{border-bottom:1px solid var(--line2)}
+.pcard:last-child{border-bottom:0}
+.pcard .row{border-bottom:0}
+.anbtn{margin-top:4px;background:none;border:0;padding:0;color:var(--cyan-ink);
+  font:800 11px 'Plus Jakarta Sans',sans-serif;cursor:pointer;display:inline-flex;gap:4px;align-items:center;letter-spacing:.02em}
+.anbtn .cv{transition:transform .2s}
+.pa{max-height:0;overflow:hidden;transition:max-height .28s ease;
+  font-size:12.5px;color:var(--mute);line-height:1.5;padding:0 15px 0 62px}
+.pa.open{max-height:260px;padding-bottom:13px}
+.pa b{color:var(--ink)}
+.pa b.up{color:var(--grn)} .pa b.dn{color:var(--red)}
+@media (prefers-reduced-motion:reduce){.pa{transition:none}.anbtn .cv{transition:none}}
+
+.note{text-align:center;color:var(--dim);font-size:11.5px;margin:16px 0 4px}
+.refresh{display:inline-flex;gap:6px;align-items:center}
+.spin{width:11px;height:11px;border:2px solid var(--line);border-top-color:var(--cyan);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* FINAL */
+.recap{background:linear-gradient(135deg,color-mix(in srgb,var(--orange) 12%,var(--card)),var(--card));
+  border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 16px 15px;margin:4px 0 2px}
+.recap .rh{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;
+  letter-spacing:.5px;font-size:22px;line-height:1;color:var(--orange-ink);margin-bottom:7px}
+.recap .rl{font-size:13.5px;color:var(--ink);line-height:1.5}
+.recap .tag{margin-top:9px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin:10px 0 4px}
+.pod{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+  padding:14px 8px 12px;text-align:center}
+.pod.first{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 40%,transparent),var(--shadow)}
+.medal{font-size:22px;line-height:1}
+.pod .pn{font-weight:800;font-size:13.5px;margin-top:6px;letter-spacing:-.2px}
+.pod .rec{font-family:'Space Mono',monospace;font-size:12px;color:var(--mute);margin-top:2px}
+.pod .dl{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;margin-top:4px}
+.up{color:var(--grn)} .dn{color:var(--red)}
+.acards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ac{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:13px;box-shadow:var(--shadow)}
+.ac .k{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-ink);
+  display:flex;align-items:center;gap:6px}
+.ac .nm{font-weight:800;font-size:15px;margin-top:7px;letter-spacing:-.2px}
+.ac .ds{font-size:12px;color:var(--mute);margin-top:3px;line-height:1.4}
+.ac .big{font-family:'Space Mono',monospace;font-weight:700;color:var(--orange-ink)}
+.cta{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+.btn{flex:1;min-width:130px;display:flex;align-items:center;justify-content:center;gap:7px;padding:14px;border-radius:13px;
+  font:800 13.5px/1 'Plus Jakarta Sans';cursor:pointer;border:1px solid transparent;text-decoration:none}
+.btn.pri{background:var(--orange);color:#fff}
+.btn.sec{background:var(--card);color:var(--ink);border-color:var(--line)}
+.footer{text-align:center;margin-top:26px;color:var(--dim);font-size:11px;letter-spacing:.04em}
+.footer b{color:var(--orange)}
+
+/* state screens */
+.state{max-width:460px;margin:0 auto;padding:80px 24px;text-align:center}
+.state .big{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;
+  font-size:26px;color:var(--ink);margin:14px 0 6px}
+.state p{color:var(--mute);font-size:13.5px;line-height:1.55}
+.state .spin{width:26px;height:26px;border-width:3px;margin:0 auto}
+.state a{color:var(--orange);font-weight:700;text-decoration:none}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<button class="themebtn" id="themeBtn" aria-label="Toggle theme">◐</button>
+
+<!-- loading / error states -->
+<div class="state" id="stateLoading">
+  <div class="spin"></div>
+  <div class="big">Loading</div>
+  <p>Tuning into the live feed…</p>
+</div>
+<div class="state" id="stateError" hidden>
+  <div style="font-size:34px">📡</div>
+  <div class="big" id="errTitle">Can't find that session</div>
+  <p id="errMsg">This live link may have expired or the code is wrong. Ask the host for a fresh link.</p>
+  <p style="margin-top:14px"><a href="https://trekkr.online">Go to Trekkr →</a></p>
+</div>
+
+<div class="wrap" id="app" hidden>
+
+  <!-- ============ LIVE ============ -->
+  <div id="view-live" hidden>
+    <header class="hd">
+      <span class="live"><span class="dot"></span> Live now</span>
+      <div class="title">Play<b>Rank</b> Center</div>
+      <div class="sub" id="liveSub"></div>
+    </header>
+
+    <div id="nowWrap">
+      <div class="slab"><h2>On court now</h2><span class="rule"></span><span class="n" id="nowN"></span></div>
+      <div id="courts"></div>
+    </div>
+
+    <div class="slab"><h2>Live standings</h2><span class="rule"></span><span class="n">by wins</span></div>
+    <div class="board" id="liveBoard"></div>
+
+    <p class="note"><span class="refresh"><span class="spin"></span> Updating live · standings refresh automatically</span></p>
+    <p class="note" style="margin-top:2px">Tap <b style="color:var(--orange)">Claim</b> next to your name to link this to your Trekkr passport.</p>
+    <p class="footer">Powered by <b>Trekkr</b> · ranked padel for Indonesia</p>
+  </div>
+
+  <!-- ============ FINAL ============ -->
+  <div id="view-final" hidden>
+    <header class="hd">
+      <span class="live" style="color:var(--gold)">★ Final results</span>
+      <div class="title">Play<b>Rank</b> · Wrapped</div>
+      <div class="sub" id="finalSub"></div>
+    </header>
+
+    <div class="recap" id="recap" hidden></div>
+
+    <div class="slab"><h2>Podium</h2><span class="rule"></span></div>
+    <div class="podium" id="podium"></div>
+
+    <div class="slab"><h2>Session analysis</h2><span class="rule"></span><span class="n">the numbers talk</span></div>
+    <div class="acards" id="analysis"></div>
+
+    <div class="slab"><h2>Final table</h2><span class="rule"></span><span class="n">ELO change</span></div>
+    <div class="board" id="finalBoard"></div>
+
+    <div class="cta">
+      <a class="btn pri" id="claimBtn" href="https://trekkr.online/app">Claim my profile →</a>
+      <button class="btn sec" id="shareBtn">Share result</button>
+    </div>
+    <p class="footer">Powered by <b>Trekkr</b> · ranked padel for Indonesia</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+var API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')))
+  ? '/api' : 'https://trekkr.online/api';
+
+// ---- code from /live/<code> or ?code= ----
+function getCode(){
+  var q = new URLSearchParams(location.search).get('code');
+  if(q) return q.trim().toLowerCase();
+  var seg = location.pathname.replace(/\/+$/,'').split('/').filter(Boolean);
+  var last = seg[seg.length-1] || '';
+  if(last && last.toLowerCase()!=='live') return last.trim().toLowerCase();
+  return '';
+}
+var CODE = getCode();
+
+// ---- helpers ----
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function $(id){return document.getElementById(id);}
+function firstName(n){return String(n||'').split(' ')[0];}
+function tierName(elo){
+  if(elo>=3000)return'Platinum';if(elo>=2500)return'Gold';if(elo>=2100)return'Silver';
+  if(elo>=1800)return'Upper Bronze';if(elo>=1500)return'Bronze';if(elo>=1200)return'Lower Bronze';
+  if(elo>=900)return'Upper Beginner';return'Beginner';
+}
+function tierCls(elo){
+  if(elo>=3000)return't-plt';if(elo>=2500)return't-gld';if(elo>=2100)return't-slv';
+  if(elo>=1200)return't-brz';return't-beg';
+}
+function genderLabel(g){g=String(g||'').toUpperCase();return g==='F'?"Women's":g==='M'?"Men's":g||'';}
+
+// ---- prediction: ELO + form ----
+// Form nudges the raw ELO by recent results so a hot underdog or a cold favourite
+// is reflected in the odds — capped and confidence-weighted so a 1-match sample
+// doesn't swing the bar wildly.
+function formAdj(p){
+  var m=(p.w||0)+(p.l||0);
+  if(!m) return 0;
+  var winRate=(p.w||0)/m;
+  var base=(winRate-0.5)*160;                 // up to ±80 at 100%/0%
+  var streak=Math.max(0,Math.min(4,p.streak||0))*12;
+  var conf=Math.min(1,m/4);                    // trust grows with sample size
+  return (base+streak)*conf;
+}
+function effRating(p){return (p.elo||1350)+formAdj(p);}
+function teamWinPct(teamA,teamB){
+  var ea=(effRating(teamA[0])+effRating(teamA[1]))/2;
+  var eb=(effRating(teamB[0])+effRating(teamB[1]))/2;
+  return 1/(1+Math.pow(10,(eb-ea)/400));
+}
+
+// ---- playful-pro one-liners for a live matchup ----
+function take(teamA,teamB,pa){
+  var favTeam = pa>=.5 ? teamA : teamB, dogTeam = pa>=.5 ? teamB : teamA;
+  var favPct = Math.round((pa>=.5?pa:1-pa)*100);
+  var favNames = favTeam.map(function(p){return firstName(p.name);});
+  var dogHot = dogTeam.filter(function(p){return (p.streak||0)>=2;})[0];
+  if(favPct<=54) return "Coin-flip alert — <b>"+favPct+"/"+(100-favPct)+"</b>. Grab a seat. 🍿";
+  if(dogHot) return "Model likes <b>"+esc(favNames.join(' & '))+"</b> at <b>"+favPct+"%</b>, but "+esc(firstName(dogHot.name))+" is on a <b>"+(dogHot.streak)+"-win heater</b> 🔥";
+  if(favPct>=68) return "<b>"+esc(favNames.join(' & '))+"</b> are the analytics' pick at <b>"+favPct+"%</b> — paper says routine, padel says prove it.";
+  return "Edge to <b>"+esc(favNames.join(' & '))+"</b> (<b>"+favPct+"%</b>). Tight enough that one break flips it.";
+}
+
+// ---- state ----
+var STATE=null, BYKEY={}, POLL=null;
+function indexPlayers(players){
+  BYKEY={};
+  (players||[]).forEach(function(p){
+    BYKEY[p.name]=p;
+    if(p.short) BYKEY[p.short]=p;
+  });
+}
+function look(key){return BYKEY[key] || {name:key,elo:1350,w:0,l:0,pd:0,streak:0};}
+function sortStandings(players){
+  return (players||[]).slice().sort(function(a,b){return (b.w-a.w)||(b.pd-a.pd)||(b.elo-a.elo);});
+}
+function claimUrl(name){return 'https://trekkr.online/app?claim='+encodeURIComponent(name);}
+
+// ---- render: live ----
+function tierChip(elo){return '<span class="tier '+tierCls(elo)+'">'+tierName(elo)+'</span>';}
+function teamBlock(names){
+  return names.map(function(n){var p=look(n);
+    return '<div class="team"><div class="who"><div class="nm">'+esc(p.short||firstName(p.name))+'</div>'+
+      '<div class="nm2">'+tierName(p.elo)+'</div></div><span class="elo">'+(p.elo||'')+'</span></div>';
+  }).join('<div style="height:8px"></div>');
+}
+function renderCourts(d){
+  var now=d.now||[];
+  var wrap=$('nowWrap');
+  if(!now.length){ wrap.hidden=true; }
+  else{
+    wrap.hidden=false;
+    $('nowN').textContent=now.length+(now.length===1?' match':' matches');
+    var tgt = d.scoreTarget ? ('Race to '+d.scoreTarget+' · live') : 'Live';
+    $('courts').innerHTML=now.map(function(m){
+      var A=(m.a||[]).map(look), B=(m.b||[]).map(look);
+      if(A.length<2||B.length<2) return '';
+      var pa=teamWinPct(A,B), pctA=Math.round(pa*100), pctB=100-pctA;
+      var an=A.map(function(p){return esc(p.short||firstName(p.name));}).join(' & ');
+      var bn=B.map(function(p){return esc(p.short||firstName(p.name));}).join(' & ');
+      return '<div class="court">'+
+        '<div class="top"><span class="ct">Court '+esc(m.court||'')+'</span><span class="fmt">'+esc(tgt)+'</span></div>'+
+        teamBlock(m.a)+
+        '<div class="vs"><span class="l"></span><span class="v">VS</span><span class="l"></span></div>'+
+        teamBlock(m.b)+
+        '<div class="prob"><div class="lab"><span class="a">'+an+' · '+pctA+'%</span>'+
+          '<span class="b">'+pctB+'% · '+bn+'</span></div>'+
+          '<div class="track"><span class="fa" style="width:'+pctA+'%"></span><span class="fb" style="width:'+pctB+'%"></span></div>'+
+          '<div class="take">'+take(A,B,pa)+'</div></div>'+
+      '</div>';
+    }).join('');
+  }
+  var bye=(d.bye||[]).map(function(n){return esc(firstName(look(n).name));});
+  var byeEl=$('byeRow');
+  if(byeEl) byeEl.remove();
+  if(bye.length && !wrap.hidden){
+    var el=document.createElement('div'); el.className='byecard'; el.id='byeRow';
+    el.innerHTML='⏸ Resting this round: <b>'+bye.join(', ')+'</b>';
+    $('courts').appendChild(el);
+  }
+}
+function liveRow(p,i){
+  var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
+  var streak=(p.streak||0)>=2?' <span class="elo" style="color:var(--orange-ink)">'+p.streak+'W🔥</span>':'';
+  var meta = p.claimed
+    ? '<span class="pmeta" style="color:var(--grn)">Claimed ✓</span>'
+    : '<a class="claim" href="'+claimUrl(p.name)+'">Is this you? Claim →</a>';
+  return '<div class="row grid2">'+
+    '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
+    '<div class="pl"><div class="pn">'+esc(p.short||firstName(p.name))+' '+tierChip(p.elo)+streak+'</div>'+meta+'</div>'+
+    '<span class="wl">'+(p.w||0)+'<span class="l">–'+(p.l||0)+'</span></span>'+
+  '</div>';
+}
+function renderLive(d){
+  $('liveSub').innerHTML =
+    '<span>'+esc(d.venue||'Trekkr session')+'</span>'+
+    (d.gender?'<span class="chip">'+esc(genderLabel(d.gender))+'</span>':'')+
+    (d.round?'<span class="chip cy">Round '+esc(d.round)+'</span>':'');
+  renderCourts(d);
+  var s=sortStandings(d.players);
+  $('liveBoard').innerHTML = s.length ? s.map(liveRow).join('')
+    : '<div class="row"><span></span><div class="pl"><div class="pmeta">Waiting for the first scores…</div></div></div>';
+}
+
+// ---- render: final ----
+function playerAnalysis(p,i){
+  var d=(p.elo||0)-(p.start||p.elo||0), tn=tierName(p.elo);
+  var deltaTxt = d>0 ? '<b class="up">+'+d+' ELO</b>' : d<0 ? '<b class="dn">'+d+' ELO</b>' : '<b>flat on ELO</b>';
+  var sn=esc(p.short||firstName(p.name));
+  var lead;
+  if(i===0)      lead='Ran the table at <b>'+(p.w||0)+'–'+(p.l||0)+'</b> and finished top of the board. '+deltaTxt+' — everyone else was playing for second.';
+  else if(i===1) lead='Pushed the leader all night, '+deltaTxt+'. One more break here or there and this is a different story.';
+  else if(i===2) lead='Solid podium finish at <b>'+(p.w||0)+'–'+(p.l||0)+'</b>, '+deltaTxt+'. Quietly one of the most reliable racquets on court.';
+  else if(d>0)   lead='Walked in and walked out richer — '+deltaTxt+'. The rating is still catching up to the level.';
+  else if(d<0)   lead='Tough night on paper ('+deltaTxt+'), but the point diff of <b>'+((p.pd||0)>=0?'+':'')+(p.pd||0)+'</b> says the games were closer than the ELO admits.';
+  else           lead='Broke even on the day — '+deltaTxt+'. A steady hand who kept every match honest.';
+  var tail;
+  if((p.streak||0)>=2)      tail=' Closed on a <b>'+p.streak+'-match win streak 🔥</b> — peaking at exactly the right time.';
+  else if((p.pd||0)>=15)    tail=' Best point diff in the room (<b>+'+p.pd+'</b>): when '+sn+' won, it wasn\'t close.';
+  else if((p.pd||0)<=-15)   tail=' The scoreline (<b>'+p.pd+'</b> diff) stung, but that\'s the calibration tax — the next session pays it back.';
+  else                      tail=' Sits in <b>'+tn+'</b> and trending the right way — a couple of statement wins from the next tier.';
+  return lead+tail;
+}
+window.__togglePa=function(btn){
+  var pa=btn.closest('.pcard').querySelector('.pa');
+  var open=pa.classList.toggle('open');
+  btn.querySelector('.cv').style.transform=open?'rotate(180deg)':'';
+  btn.querySelector('.tx').textContent=open?'Hide analysis':'Analysis';
+};
+function finalCard(p,i){
+  var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
+  var d=(p.elo||0)-(p.start||p.elo||0), top4=i<4;
+  var streak=(p.streak||0)>=2?' <span class="elo" style="color:var(--orange-ink)">'+p.streak+'W🔥</span>':'';
+  var claim = p.claimed ? '' : ' <a class="claim" href="'+claimUrl(p.name)+'" style="font-size:10px">Claim</a>';
+  var btn = top4 ? '' : '<button class="anbtn" onclick="__togglePa(this)"><span class="tx">Analysis</span> <span class="cv">▾</span></button>';
+  return '<div class="pcard">'+
+    '<div class="row">'+
+      '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
+      '<div class="pl"><div class="pn">'+esc(p.short||firstName(p.name))+' '+tierChip(p.elo)+streak+claim+'</div>'+
+        '<div class="pmeta">'+esc(p.name)+'</div>'+btn+'</div>'+
+      '<span class="wl">'+(d>=0?'<span class="up">+'+d:'<span class="dn">'+d)+'</span></span>'+
+      '<span class="elo">'+(p.elo||'')+'</span>'+
+    '</div>'+
+    '<div class="pa'+(top4?' open':'')+'">'+playerAnalysis(p,i)+'</div>'+
+  '</div>';
+}
+function ac(k,nm,ds){return '<div class="ac"><div class="k">'+k+'</div><div class="nm">'+esc(nm)+'</div><div class="ds">'+ds+'</div></div>';}
+function renderFinal(d){
+  $('finalSub').innerHTML =
+    '<span>'+esc(d.venue||'Trekkr session')+'</span>'+
+    (d.gender?'<span class="chip">'+esc(genderLabel(d.gender))+'</span>':'')+
+    (d.round?'<span class="chip cy">'+esc(d.round)+' rounds</span>':'');
+
+  var rc=STATE.recap;
+  var rEl=$('recap');
+  if(rc && rc.line){
+    rEl.hidden=false;
+    rEl.innerHTML=(rc.headline?'<div class="rh">'+esc(rc.headline)+'</div>':'')+
+      '<div class="rl">'+esc(rc.line)+'</div>'+
+      '<div class="tag">'+(rc.ai?'AI recap':'Session recap')+' · powered by Trekkr</div>';
+  } else rEl.hidden=true;
+
+  var s=sortStandings(d.players);
+  if(!s.length){ $('podium').innerHTML=''; $('analysis').innerHTML=''; $('finalBoard').innerHTML=''; return; }
+
+  var pods=[s[1],s[0],s[2]], meds=['🥈','🥇','🥉'];
+  $('podium').innerHTML=pods.map(function(p,idx){
+    if(!p) return '<div></div>';
+    var dl=(p.elo||0)-(p.start||p.elo||0);
+    return '<div class="pod'+(idx===1?' first':'')+'"><div class="medal">'+meds[idx]+'</div>'+
+      '<div class="pn">'+esc(p.short||firstName(p.name))+'</div><div class="rec">'+(p.w||0)+'–'+(p.l||0)+'</div>'+
+      '<div class="dl '+(dl>=0?'up':'dn')+'">'+(dl>=0?'+':'')+dl+' ELO</div></div>';
+  }).join('');
+
+  var best=s[0];
+  var climber=s.slice().sort(function(a,b){return ((b.elo-b.start)-(a.elo-a.start));})[0];
+  var wall=s.slice().sort(function(a,b){return (b.pd-a.pd);})[0];
+  var cards=ac('🏆 Player of the day', best.short||firstName(best.name), (best.w||0)+'–'+(best.l||0)+' — the wall nobody solved.');
+  if(climber && (climber.elo-climber.start)>0)
+    cards+=ac('📈 Biggest climber', climber.short||firstName(climber.name), '<span class="big">+'+(climber.elo-climber.start)+' ELO</span> — trending toward the next tier.');
+  if(wall)
+    cards+=ac('🧱 Iron defense', wall.short||firstName(wall.name), 'Best point diff <span class="big">'+((wall.pd||0)>=0?'+':'')+(wall.pd||0)+'</span>. Points went there to die.');
+  cards+=ac('🎾 The grind', String(d.round||s.length)+' rounds', s.length+' players · every match counted toward ELO.');
+  $('analysis').innerHTML=cards;
+
+  $('finalBoard').innerHTML=s.map(finalCard).join('');
+
+  // "Claim my profile" primary CTA → generic claim/join if we can't tell who's viewing.
+  $('claimBtn').href='https://trekkr.online/app';
+}
+
+function render(){
+  var d=STATE.data||{};
+  indexPlayers(d.players);
+  $('stateLoading').hidden=true; $('stateError').hidden=true; $('app').hidden=false;
+  var isFinal = STATE.status==='final';
+  $('view-live').hidden=isFinal;
+  $('view-final').hidden=!isFinal;
+  if(isFinal){ renderFinal(d); stopPoll(); }
+  else renderLive(d);
+  document.title=(d.venue?d.venue+' · ':'')+'PlayRank Live · Trekkr';
+}
+
+function showError(title,msg){
+  $('stateLoading').hidden=true; $('app').hidden=true;
+  if(title) $('errTitle').textContent=title;
+  if(msg) $('errMsg').textContent=msg;
+  $('stateError').hidden=false;
+}
+
+var lastStamp=null;
+function fetchState(initial){
+  return fetch(API_BASE+'/live?code='+encodeURIComponent(CODE),{headers:{'Accept':'application/json'}})
+    .then(function(r){
+      if(r.status===404) throw {kind:'notfound'};
+      if(!r.ok) throw {kind:'http',status:r.status};
+      return r.json();
+    })
+    .then(function(j){
+      // Only re-render when something actually changed.
+      var stamp=(j.updatedAt||'')+'|'+(j.status||'');
+      if(stamp!==lastStamp || initial){ lastStamp=stamp; STATE=j; render(); }
+    })
+    .catch(function(e){
+      if(initial){
+        if(e && e.kind==='notfound') showError();
+        else showError('Connection hiccup','Couldn\'t reach the live feed. Check your connection and try again.');
+      }
+      // On a background poll failure, keep showing the last good state silently.
+    });
+}
+function startPoll(){ stopPoll(); POLL=setInterval(function(){ if(!document.hidden) fetchState(false); },5000); }
+function stopPoll(){ if(POLL){ clearInterval(POLL); POLL=null; } }
+document.addEventListener('visibilitychange',function(){ if(!document.hidden && STATE && STATE.status!=='final') fetchState(false); });
+
+// share
+$('shareBtn').addEventListener('click',function(){
+  var url=location.href;
+  var venue=(STATE&&STATE.data&&STATE.data.venue)||'Trekkr';
+  var text='Final results — '+venue+' PlayRank on Trekkr';
+  if(navigator.share){ navigator.share({title:'Trekkr PlayRank',text:text,url:url}).catch(function(){}); }
+  else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ var b=$('shareBtn'); var o=b.textContent; b.textContent='Link copied ✓'; setTimeout(function(){b.textContent=o;},1600); }); }
+  else window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
+});
+
+// theme toggle
+$('themeBtn').addEventListener('click',function(){
+  var r=document.documentElement, cur=r.getAttribute('data-theme');
+  var isDark = cur ? cur==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+  r.setAttribute('data-theme', isDark?'light':'dark');
+});
+
+// boot
+if(!CODE){ showError('No session code','This link is missing its session code. Ask the host for the full link.'); }
+else { fetchState(true).then(function(){ if(STATE && STATE.status!=='final') startPoll(); }); }
+})();
+</script>
+</body>
+</html>

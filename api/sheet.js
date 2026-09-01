@@ -593,6 +593,11 @@ const netlifyHandler = async (event) => {
     // Liga page AND the mobile app; edited from superadmin.
     if (path === "liga/config" && method === "GET") return await getLigaConfig();
     if (path === "liga/config" && method === "PUT") return await saveLigaConfig(body);
+    // PlayRank Live — shareable live standings page for a ranked-match session.
+    // GET is public (read by /live/<code>); POST is admin-driven (create/update/finalize),
+    // guarded by an unguessable write_key held only by the host that created it.
+    if (path === "live" && method === "GET") return await liveGet(params);
+    if (path === "live" && method === "POST") return await livePost(body);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
@@ -4581,6 +4586,131 @@ async function saveLigaConfig(body) {
     await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${LIGA_TAB}!A1`, valueInputOption: "RAW", requestBody: { values: [[json]] } });
   }
   return respond(200, { success: true });
+}
+
+// ==============================================================
+// PLAYRANK LIVE — shareable live standings for a ranked-match session
+// ==============================================================
+// Stored in Supabase public.live_sessions. `code` (short, shareable) is the read
+// key exposed in the /live/<code> URL; `write_key` (long, unguessable) is returned
+// only to the host on create and required for every update/finalize, so a viewer
+// who knows the code cannot push fake standings. Falls back to an in-memory store
+// when Supabase is off (dev only — not durable across cold starts).
+const LIVE_MEM = {};
+function liveGenCode() {
+  // 6 chars, no ambiguous 0/o/1/l/i — easy to read off a screen.
+  const abc = "abcdefghjkmnpqrstuvwxyz23456789";
+  let s = ""; for (let i = 0; i < 6; i++) s += abc[Math.floor(Math.random() * abc.length)];
+  return s;
+}
+function livePublicView(row) {
+  // Never leak write_key to public readers.
+  return {
+    code: row.code, status: row.status || "live", venue: row.venue || "",
+    data: row.data || {}, recap: row.recap || null, updatedAt: row.updated_at || row.updatedAt || null,
+  };
+}
+async function liveRead(code) {
+  if (!code) return null;
+  if (supaOn()) {
+    const rows = await supaRest("GET", `live_sessions?code=eq.${encodeURIComponent(code)}&limit=1`);
+    return (rows && rows[0]) || null;
+  }
+  return LIVE_MEM[code] || null;
+}
+async function liveGet(params) {
+  const code = String((params && params.code) || "").trim().toLowerCase();
+  if (!code) return respond(400, { error: "code required" });
+  let row;
+  try { row = await liveRead(code); } catch (e) { console.error("[live] read:", e.message); return respond(500, { error: "read failed" }); }
+  if (!row) return respond(404, { error: "not found" });
+  return respond(200, livePublicView(row), { "Cache-Control": "no-store" });
+}
+// One POST endpoint; `action` selects create / update / finalize.
+async function livePost(body) {
+  const b = body || {};
+  const action = String(b.action || "").toLowerCase();
+  const session = (b.session && typeof b.session === "object") ? b.session : {};
+  const venue = String(session.venue || b.venue || "").slice(0, 120);
+  const now = new Date().toISOString();
+
+  if (action === "create") {
+    let code = liveGenCode();
+    const writeKey = crypto.randomBytes(18).toString("base64url");
+    const row = { code, write_key: writeKey, status: "live", venue, data: session, recap: null, created_at: now, updated_at: now };
+    try {
+      if (supaOn()) {
+        // Retry once on the (astronomically unlikely) code collision.
+        try { await supaRest("POST", "live_sessions", [row], "return=minimal"); }
+        catch (e) { code = liveGenCode(); row.code = code; await supaRest("POST", "live_sessions", [row], "return=minimal"); }
+      } else { LIVE_MEM[code] = row; }
+    } catch (e) { console.error("[live] create:", e.message); return respond(500, { error: "create failed" }); }
+    return respond(200, { ok: true, code, key: writeKey, url: `${appBaseUrl()}/live/${code}` }, { "Cache-Control": "no-store" });
+  }
+
+  // update / finalize both require code + matching write_key.
+  const code = String(b.code || "").trim().toLowerCase();
+  const key = String(b.key || "");
+  if (!code || !key) return respond(400, { error: "code and key required" });
+  let row;
+  try { row = await liveRead(code); } catch (e) { return respond(500, { error: "read failed" }); }
+  if (!row) return respond(404, { error: "not found" });
+  if (row.write_key !== key) return respond(403, { error: "bad key" });
+
+  if (action === "update") {
+    const patch = { data: session, venue: venue || row.venue, status: "live", updated_at: now };
+    try {
+      if (supaOn()) await supaRest("PATCH", `live_sessions?code=eq.${encodeURIComponent(code)}`, patch);
+      else Object.assign(LIVE_MEM[code], patch);
+    } catch (e) { console.error("[live] update:", e.message); return respond(500, { error: "update failed" }); }
+    return respond(200, { ok: true }, { "Cache-Control": "no-store" });
+  }
+
+  if (action === "finalize") {
+    let recap = null;
+    try { recap = await liveAiRecap(session); } catch (e) { console.error("[live] ai:", e.message); }
+    if (!recap) recap = liveRecapFallback(session);
+    const patch = { data: session, venue: venue || row.venue, status: "final", recap, updated_at: now };
+    try {
+      if (supaOn()) await supaRest("PATCH", `live_sessions?code=eq.${encodeURIComponent(code)}`, patch);
+      else Object.assign(LIVE_MEM[code], patch);
+    } catch (e) { console.error("[live] finalize:", e.message); return respond(500, { error: "finalize failed" }); }
+    return respond(200, { ok: true, recap }, { "Cache-Control": "no-store" });
+  }
+
+  return respond(400, { error: "unknown action" });
+}
+// A short, playful-but-grounded one-liner for the final recap. Only ever fed
+// facts already computed from the session — never invents names or numbers.
+async function liveAiRecap(session) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const players = (session.players || []).slice().sort((a, b) => (b.w - a.w) || (b.pd - a.pd) || (b.elo - a.elo));
+  if (!players.length) return null;
+  const facts = {
+    venue: session.venue || "", rounds: session.round || 0,
+    players: players.map((p) => ({ name: p.short || p.name, w: p.w, l: p.l, eloChange: (p.elo - p.start), pointDiff: p.pd, streak: p.streak || 0 })),
+  };
+  const prompt = `You are a witty padel analyst for Trekkr. From these session FACTS, write a short recap.\nRULES: use ONLY names and numbers present in the facts — never invent players, scores, or stats. English, playful but sharp (ESPN-meets-group-chat). No hashtags.\nReply ONLY valid JSON, no other text:\n{"headline":"max 6 words, punchy","line":"1-2 sentence recap naming the winner and one storyline"}\n\nFACTS:\n${JSON.stringify(facts)}`;
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001", max_tokens: 400, messages: [{ role: "user", content: prompt }] }),
+  });
+  const j = await r.json();
+  let txt = (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("").trim().replace(/```json|```/g, "").trim();
+  const o = JSON.parse(txt);
+  if (!o || !o.line) return null;
+  return { headline: String(o.headline || "").slice(0, 60), line: String(o.line).slice(0, 280), ai: true };
+}
+function liveRecapFallback(session) {
+  const players = (session.players || []).slice().sort((a, b) => (b.w - a.w) || (b.pd - a.pd) || (b.elo - a.elo));
+  if (!players.length) return { headline: "That's a wrap", line: "Session complete.", ai: false };
+  const top = players[0];
+  const climber = players.slice().sort((a, b) => (b.elo - b.start) - (a.elo - a.start))[0];
+  let line = `${top.short || top.name} took the day at ${top.w}–${top.l}.`;
+  if (climber && climber !== top && (climber.elo - climber.start) > 0) line += ` ${climber.short || climber.name} was the biggest climber (+${climber.elo - climber.start} ELO).`;
+  return { headline: `${top.short || top.name} takes the crown`, line, ai: false };
 }
 
 // ── Schedule admin: list-all / upsert / delete ──
