@@ -1046,11 +1046,12 @@
         ? ranked.slice(0, 10).map(function (s) { return sessionCard(s, false); }).join("")
         : '<div class="plain"><h3>No ranked sessions listed yet</h3><p>New ranked sessions open regularly — check back soon, or explore the rankings meanwhile.</p></div>';
 
-      var seriesList = series.length
-        ? series.slice(0, 6).map(function (s) { return sessionCard(s, true); }).join("")
-        : ((C.series && C.series.dates) || []).slice(0, 3).map(function (s) {
-            return '<div class="plain"><h3>' + esc(s.name || "Trekkr Series") + '</h3><p>' + esc([s.label, s.venue].filter(Boolean).join(" · ")) + '</p></div>';
-          }).join("");
+      // Series cards come from the Liga config (superadmin → Liga) — the single
+      // source of truth for Series venue & dates. The Schedule tab drives only
+      // the bookable ranked sessions above.
+      var seriesList = ((C.series && C.series.dates) || []).slice(0, 3).map(function (s) {
+        return '<div class="plain"><h3>' + esc(s.venue || s.name || "Trekkr Series") + '</h3><p>' + esc([s.label, s.name].filter(Boolean).join(" · ")) + '</p></div>';
+      }).join("");
 
       viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1>' +
         '<p class="lede">Your road to the Trekkr Championship — in three steps.</p>' +

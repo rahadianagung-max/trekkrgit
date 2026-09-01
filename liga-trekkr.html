@@ -190,15 +190,10 @@
       return "<div><b>" + W.esc(s.label) + "</b><span>" + W.esc(line) + "</span></div>";
     }).join("");
   }
+  // Liga config is the single source of truth for the Series cards (venue,
+  // dates, name) — managed in superadmin → Liga. The Schedule tab drives only
+  // the bookable ranked sessions below, not these Series venues.
   renderSeriesCards(C.series.dates);
-  W.api.schedule({ type: "SERIES" }).then(function (r) {
-    var rows = (r && r.schedule) || [];
-    if (rows.length) {
-      renderSeriesCards(rows.map(function (s) {
-        return { label: W.dayNum(s.date) + " " + W.monShort(s.date), venue: s.venue || "Trekkr Series" };
-      }));
-    }
-  }).catch(function () { /* keep config cards */ });
 
   // --- Block 3: qualifying caption ---
   $("qual-caption").textContent = "Qualifying closes " +
