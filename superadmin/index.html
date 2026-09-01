@@ -291,7 +291,7 @@ footer span{color:var(--lime)}
       </div>
     </div>
   </div>
-  <footer>TREKKR · <span>SUPERADMIN</span> · © 2026</footer>
+  <footer>TREKKR · <span>SUPERADMIN</span> · © 2026 · <span id="buildTag">build 2026-09-01c</span></footer>
 </div>
 <script src="trekkr-api.js"></script>
 <script>
@@ -536,8 +536,12 @@ function renderDupGroup(g,gi){
       +'<button class="er-rej" onclick="ddIgnore('+gi+')">Bukan duplikat — lewati</button>'
       +'<span class="dd-msg" id="dd-msg-'+gi+'" style="font-size:12px"></span></div></div>';
 }
-// A player can't be merged into itself: choosing a row as canonical unchecks its own "gabung".
-function ddOnCanon(gi,i){var box=document.querySelector('.dd-alias-'+gi+'[data-idx="'+i+'"]');if(box)box.checked=false;}
+// Choosing a row as canonical: auto-check every OTHER row's "gabung" and uncheck
+// its own — so picking the main player leaves all the rest selected to merge.
+function ddOnCanon(gi,i){
+  var boxes=document.querySelectorAll('.dd-alias-'+gi);
+  Array.prototype.forEach.call(boxes,function(b){b.checked=(String(b.getAttribute('data-idx'))!==String(i));});
+}
 function ddIgnore(gi){
   var card=document.getElementById('dd-card-'+gi);if(!card)return;
   var sig=card.getAttribute('data-sig');var ig=ddIgnored();if(sig&&ig.indexOf(sig)<0){ig.push(sig);ddSetIgnored(ig);}
