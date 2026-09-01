@@ -43,13 +43,6 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 footer{border-top:1px solid var(--border);padding-top:24px;margin-top:40px;text-align:center;font-family:'Saira Condensed',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
 footer span{color:var(--lime)}
 @media(max-width:640px){.field-row{grid-template-columns:1fr}.a-tab{padding:8px 12px;font-size:8px}}
-  .rm-pf{position:relative}
-  .rm-sug{display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:40;background:var(--s2);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 26px rgba(0,0,0,0.12);max-height:230px;overflow-y:auto}
-  .rm-sug.show{display:block}
-  .rm-sug-item{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;gap:8px;align-items:center}
-  .rm-sug-item:last-child{border-bottom:0}.rm-sug-item:hover{background:var(--s3)}
-  .rm-sug-item .elo{color:var(--muted);font-family:'Saira Condensed',monospace;font-size:11px}
-  .rm-sug-empty{padding:9px 12px;font-size:11px;color:var(--muted)}
   .er-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
   .er-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   .er-pend{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a5a00;background:rgba(255,176,0,.18);border:1px solid rgba(255,176,0,.4);border-radius:99px;padding:4px 10px}
@@ -131,58 +124,24 @@ footer span{color:var(--lime)}
     <div class="logout-bar"><span class="user-info" id="userLabel">—</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
     <div class="admin-tabs">
       <button class="a-tab active" onclick="switchTab('players')">Players</button>
-      <button class="a-tab" onclick="switchTab('record')">Record Match</button>
       <button class="a-tab" onclick="switchTab('edits');loadEditRequests()">Edit Requests</button>
       <button class="a-tab" onclick="switchTab('claims');loadClaimRequests()">Claim Requests</button>
+      <button class="a-tab" onclick="switchTab('leads');loadLeads()">Leads</button>
       <button class="a-tab" onclick="switchTab('import')">Import Tournament</button>
+      <button class="a-tab" onclick="switchTab('dupes');loadDupes()">Duplicates</button>
       <button class="a-tab" onclick="switchTab('venues')">Venues</button>
       <button class="a-tab" onclick="switchTab('admins')">Admins</button>
-      <button class="a-tab" onclick="switchTab('sessions')">Sessions</button>
-      <button class="a-tab" onclick="switchTab('settings')">Site Settings</button>
+      <button class="a-tab" onclick="switchTab('tiers');loadTiers()">Tiers &amp; Calibration</button>
     </div>
     <!-- PLAYERS -->
     <div class="tab-pane active" id="tab-players">
-      <div class="section">
-        <div class="section-title">ADD PLAYER</div>
-        <div class="field-row"><div class="field"><label class="field-label">Name *</label><input class="field-input" id="ap-name" placeholder="Player name"></div><div class="field"><label class="field-label">Display Name</label><input class="field-input" id="ap-display" placeholder="Display name"></div></div>
-        <div class="field-row"><div class="field"><label class="field-label">Gender</label><select class="field-select" id="ap-gender"><option value="M">Male</option><option value="F">Female</option></select></div><div class="field"><label class="field-label">Instagram</label><input class="field-input" id="ap-ig" placeholder="@handle"></div></div>
-        <div class="field-row"><div class="field"><label class="field-label">Region</label><input class="field-input" id="ap-region" placeholder="Jakarta, Tangerang"></div><div class="field"><label class="field-label">Photo URL</label><input class="field-input" id="ap-photo" placeholder="https://drive.google.com/..."></div></div>
-        <div class="field"><label class="field-label">Clubs / Venues</label><input class="field-input" id="ap-clubs" placeholder="Stellar Squad, Padelized Bintaro"></div>
-        <button class="btn btn-primary" onclick="addPlayer()">Add Player →</button>
-        <div class="status-msg" id="addPlayerStatus"></div>
-      </div>
-      <div class="section"><div class="section-title">ALL PLAYERS</div><div style="margin-bottom:12px"><input class="field-input" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()"></div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Photo</th><th>Name</th><th>Gender</th><th>ELO</th><th>IG</th><th>Region</th><th>Actions</th></tr></thead><tbody id="playersTbody"></tbody></table></div></div>
-    </div>
-    <!-- VENUES -->
-    <div class="tab-pane" id="tab-record">
-      <div class="section">
-        <div class="section-title">RECORD MATCH · MANUAL INPUT</div>
-        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Tentukan venue/community, isi 4 pemain &amp; skor. Nama pemain diambil dari database (klik dari daftar agar tidak salah tulis); pemain baru diberi level manual. Skor langsung direkam &amp; ELO dihitung.</p>
-        <div class="field-row">
-          <div class="field"><label class="field-label">Venue / Community *</label><input class="field-input" id="rm-venue" list="rm-venue-list" placeholder="Pilih atau ketik baru..." autocomplete="off"><datalist id="rm-venue-list"></datalist></div>
-          <div class="field"><label class="field-label">Kategori</label><select class="field-select" id="rm-gender" onchange="rmGenderChange()"><option value="M">Men's Doubles (Putra)</option><option value="F">Women's Doubles (Putri)</option><option value="MIXED">Mixed Doubles (Campuran)</option></select></div>
-        </div>
-        <div class="field-row" id="rm-mixed-genders" style="display:none">
-          <div style="border:1px solid var(--border2);border-radius:8px;padding:12px;width:100%">
-            <div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">GENDER PER PEMAIN (Mixed Doubles)</div>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-              <div class="field"><label class="field-label">T1 · Pemain 1</label><select class="field-select" id="rm-g-p1t1"><option value="M">Male</option><option value="F">Female</option></select></div>
-              <div class="field"><label class="field-label">T1 · Pemain 2</label><select class="field-select" id="rm-g-p2t1"><option value="F">Female</option><option value="M">Male</option></select></div>
-              <div class="field"><label class="field-label">T2 · Pemain 1</label><select class="field-select" id="rm-g-p1t2"><option value="M">Male</option><option value="F">Female</option></select></div>
-              <div class="field"><label class="field-label">T2 · Pemain 2</label><select class="field-select" id="rm-g-p2t2"><option value="F">Female</option><option value="M">Male</option></select></div>
-            </div>
-          </div>
-        </div>
-        <div class="field-row">
-          <div style="border:1px solid var(--border2);border-radius:8px;padding:14px"><div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">TEAM 1</div><div class="field"><label class="field-label">Pemain 1 *</label><div class="rm-pf"><input class="field-input" id="rm-p1t1" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p1t1')" onfocus="rmSug('rm-p1t1')"><div class="rm-sug" id="rm-p1t1-sug"></div></div><div id="rm-p1t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p1t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Pemain 2 *</label><div class="rm-pf"><input class="field-input" id="rm-p2t1" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p2t1')" onfocus="rmSug('rm-p2t1')"><div class="rm-sug" id="rm-p2t1-sug"></div></div><div id="rm-p2t1-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p2t1-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Skor Team 1 *</label><input class="field-input" id="rm-sT1" type="number" min="0" placeholder="0"></div></div>
-          <div style="border:1px solid var(--border2);border-radius:8px;padding:14px"><div class="field-label" style="color:var(--lime);font-size:11px;margin-bottom:10px">TEAM 2</div><div class="field"><label class="field-label">Pemain 1 *</label><div class="rm-pf"><input class="field-input" id="rm-p1t2" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p1t2')" onfocus="rmSug('rm-p1t2')"><div class="rm-sug" id="rm-p1t2-sug"></div></div><div id="rm-p1t2-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p1t2-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Pemain 2 *</label><div class="rm-pf"><input class="field-input" id="rm-p2t2" placeholder="Ketik / pilih nama..." autocomplete="off" oninput="rmSug('rm-p2t2')" onfocus="rmSug('rm-p2t2')"><div class="rm-sug" id="rm-p2t2-sug"></div></div><div id="rm-p2t2-new" style="display:none;margin-top:6px;padding:8px;background:var(--s3);border-radius:6px"><label class="field-label" style="color:var(--coral)">Pemain baru — pilih level</label><select class="field-select" id="rm-p2t2-level"><option value="Beginner">Beginner</option><option value="Upper Beginner">Upper Beginner</option><option value="Lower Bronze" selected>Lower Bronze</option><option value="Bronze">Bronze</option><option value="Upper Bronze">Upper Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option></select></div></div><div class="field"><label class="field-label">Skor Team 2 *</label><input class="field-input" id="rm-sT2" type="number" min="0" placeholder="0"></div></div>
-        </div>
-        <button class="btn btn-primary" onclick="recordMatch()" style="margin-top:6px">Record Match &amp; Compute ELO</button>
-        <div class="status-msg" id="rm-status"></div>
-        <div id="rm-result" style="margin-top:14px;overflow-x:auto"></div>
+      <div class="section"><div class="section-title">ALL PLAYERS</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Pemain masuk otomatis lewat registrasi app, Import Tournament, atau saat host merekam match. Di sini kamu bisa <b>edit</b> profil atau <b>hapus</b> pemain. Untuk pemain dobel, gunakan tab <b>Duplicates</b> agar riwayat &amp; ELO tergabung.</p>
+        <div style="margin-bottom:12px"><input class="field-input" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()"></div>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Photo</th><th>Name</th><th>Gender</th><th>ELO</th><th>IG</th><th>Region</th><th>Actions</th></tr></thead><tbody id="playersTbody"></tbody></table></div>
+        <div class="status-msg" id="playerActionStatus"></div>
       </div>
     </div>
-
     <div class="tab-pane" id="tab-import">
       <div class="section">
         <div class="section-title">IMPORT TOURNAMENT · XLSX</div>
@@ -205,6 +164,30 @@ footer span{color:var(--lime)}
         <div id="cr-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
       </div>
     </div>
+    <!-- LEADS -->
+    <div class="tab-pane" id="tab-leads">
+      <div class="section">
+        <div class="section-title">VENUE / COMMUNITY LEADS</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Pendaftaran dari form <b>Get Listed</b> (trekkr.online/get-listed). Newest first.</p>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Date</th><th>Venue / Community</th><th>PIC</th><th>Region</th><th>WhatsApp</th><th>Email</th></tr></thead><tbody id="venueLeadsTbody"><tr><td colspan="6" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div>
+      </div>
+      <div class="section">
+        <div class="section-title">TOURNAMENT / LEAGUE LEADS</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Organizer yang ingin dibantu menjalankan turnamen / liga.</p>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Date</th><th>Name</th><th>Location</th><th>PIC</th><th>Phone</th><th>Email</th><th>Message</th></tr></thead><tbody id="tourLeadsTbody"><tr><td colspan="7" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- DUPLICATES -->
+    <div class="tab-pane" id="tab-dupes">
+      <div class="section">
+        <div class="section-title">DUPLICATE PLAYERS</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Nama yang mirip (kemungkinan orang yang sama, salah tulis). <b>Merge</b> menggabungkan alias ke pemain utama: riwayat match &amp; ELO ikut dipindah, baris alias dihapus. Pilih pemain utama (canonical) lalu centang alias yang mau digabung.</p>
+        <div style="margin-bottom:12px"><button class="btn btn-ghost btn-sm" onclick="loadDupes()">↻ Rescan</button></div>
+        <div id="dd-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
+      </div>
+    </div>
+
     <div class="tab-pane" id="tab-venues">
       <div class="section">
         <div class="section-title">ADD VENUE</div>
@@ -226,37 +209,23 @@ footer span{color:var(--lime)}
         <button class="btn btn-primary" onclick="addAdmin()">Create Admin →</button>
         <div class="status-msg" id="addAdminStatus"></div>
       </div>
-      <div class="section"><div class="section-title">ALL ADMINS</div><table class="data-table"><thead><tr><th>Username</th><th>Role</th><th>Venue</th></tr></thead><tbody id="adminsTbody"></tbody></table></div>
-    </div>
-    <!-- SESSIONS -->
-    <div class="tab-pane" id="tab-sessions">
-      <div class="section"><div class="section-title">ALL SESSIONS</div><table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Venue</th><th>Players</th><th>Rounds</th><th>Date</th></tr></thead><tbody id="sessionsTbody"></tbody></table></div>
+      <div class="section"><div class="section-title">ALL ADMINS</div><table class="data-table"><thead><tr><th>Username</th><th>Role</th><th>Venue</th><th>Actions</th></tr></thead><tbody id="adminsTbody"></tbody></table><div class="status-msg" id="adminActionStatus"></div></div>
     </div>
 
-    <!-- SITE SETTINGS TAB -->
-    <div class="tab-pane" id="tab-settings">
+    <!-- TIERS & CALIBRATION -->
+    <div class="tab-pane" id="tab-tiers">
       <div class="section">
-        <div class="section-title">NATIONAL RANKING PAGE</div>
-        <div class="field"><label class="field-label">Eyebrow Text</label><input class="field-input" id="st-hero-eyebrow" placeholder="Official Data"></div>
-        <div class="field"><label class="field-label">Hero Title (use \n for line break)</label><input class="field-input" id="st-hero-title" placeholder="National\nRankings"></div>
-        <div class="field"><label class="field-label">Hero Subtitle</label><textarea class="field-textarea" id="st-hero-subtitle" placeholder="The definitive padel ELO ranking system..."></textarea></div>
-        <div class="field"><label class="field-label">Hero Background Image URL</label><input class="field-input" id="st-hero-image" placeholder="https://images.unsplash.com/..."></div>
+        <div class="section-title">COMPETITIVE DIVISIONS (T1 / T2 / T3)</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Cutoff ELO untuk divisi kompetitif, dihitung dari persentil populasi pemain yang sudah kalibrasi. Di-cache; tekan <b>Recompute</b> untuk menghitung ulang sekarang (dipakai ranking app &amp; web).</p>
+        <div id="tiers-box" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><span style="color:var(--muted2);font-size:12px">Memuat…</span></div>
+        <button class="btn btn-primary" onclick="recomputeTiers()">↻ Recompute cutoffs</button>
+        <div class="status-msg" id="tiersStatus"></div>
       </div>
       <div class="section">
-        <div class="section-title">VENUE DIRECTORY PAGE</div>
-        <div class="field"><label class="field-label">Eyebrow Text</label><input class="field-input" id="st-venue-eyebrow" placeholder="Official Listings"></div>
-        <div class="field"><label class="field-label">Hero Title</label><input class="field-input" id="st-venue-title" placeholder="Venue\nDirectory"></div>
-        <div class="field"><label class="field-label">Hero Subtitle</label><textarea class="field-textarea" id="st-venue-subtitle" placeholder="Discover verified courts..."></textarea></div>
-        <div class="field"><label class="field-label">Hero Background Image URL</label><input class="field-input" id="st-venue-image" placeholder="https://images.unsplash.com/..."></div>
+        <div class="section-title">CALIBRATION FLAGS · OPEN</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Pemain yang naik ELO tidak wajar selama masa kalibrasi (kemungkinan seed terlalu rendah / sandbagging). Tinjau, lalu <b>Resolve</b> untuk menandai sudah diperiksa.</p>
+        <div id="cf-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
       </div>
-      <div class="section">
-        <div class="section-title">PLAYER PASSPORT PAGE</div>
-        <div class="field"><label class="field-label">Label Badge Text</label><input class="field-input" id="st-passport-label" placeholder="Trekkr Passport"></div>
-        <div class="field"><label class="field-label">Page Title</label><input class="field-input" id="st-passport-title" placeholder="Player Passport"></div>
-        <div class="field"><label class="field-label">Header Background Image URL</label><input class="field-input" id="st-passport-image" placeholder="https://images.unsplash.com/..."></div>
-      </div>
-      <button class="btn btn-primary" onclick="saveSettings()">Save All Settings →</button>
-      <div class="status-msg" id="settingsStatus"></div>
     </div>
   </div>
   <footer>TREKKR · <span>SUPERADMIN</span> · © 2026</footer>
@@ -272,21 +241,19 @@ function showDash(s){document.getElementById('loginScreen').style.display='none'
 function doLogout(){TrekkrAPI.logout();location.reload()}
 function switchTab(id){document.querySelectorAll('.a-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));var btn=document.querySelector(`[onclick^="switchTab('${id}')"]`);if(btn)btn.classList.add('active');var pane=document.getElementById(`tab-${id}`);if(pane)pane.classList.add('active')}
 
-async function loadAll(){await Promise.all([loadPlayers(),loadVenues(),loadAdmins(),loadSessions(),loadSettings()])}
+async function loadAll(){await Promise.all([loadPlayers(),loadVenues(),loadAdmins()])}
 
 async function loadPlayers(){
   try{const d=await TrekkrAPI.getPlayers(),e=await TrekkrAPI.getLatestElo();
-    allPC=d.players.map(p=>({...p,elo:e.players?.[p.name]?.elo||1350}));renderPlayers(allPC);populatePlayerList()}catch(e){console.warn(e)}
+    allPC=d.players.map(p=>({...p,elo:e.players?.[p.name]?.elo||1350}));renderPlayers(allPC)}catch(e){console.warn(e)}
 }
-function renderPlayers(pl){document.getElementById('playersTbody').innerHTML=pl.map(p=>`<tr><td class="photo-cell"><img src="${p.photoUrl||DA}" onerror="this.src='${DA}'"></td><td><strong>${p.displayName||p.name}</strong></td><td><span class="badge ${p.gender==='F'?'badge-lime':'badge-muted'}">${p.gender}</span></td><td>${p.elo}</td><td>${p.ig||'—'}</td><td>${p.region||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editPlayer('${p.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('')}
+function renderPlayers(pl){document.getElementById('playersTbody').innerHTML=pl.map(p=>{const nm=p.name.replace(/'/g,"\\'");return `<tr><td class="photo-cell"><img src="${p.photoUrl||DA}" onerror="this.src='${DA}'"></td><td><strong>${p.displayName||p.name}</strong></td><td><span class="badge ${p.gender==='F'?'badge-lime':'badge-muted'}">${p.gender}</span></td><td>${p.elo}</td><td>${p.ig||'—'}</td><td>${p.region||'—'}</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editPlayer('${nm}')">Edit</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deletePlayerUI('${nm}')">Delete</button></td></tr>`;}).join('')}
 function filterPlayers(){const q=document.getElementById('playerSearch').value.toLowerCase();renderPlayers(allPC.filter(p=>p.name.toLowerCase().includes(q)||(p.displayName||'').toLowerCase().includes(q)||(p.ig||'').toLowerCase().includes(q)))}
-
-async function addPlayer(){
-  const st=document.getElementById('addPlayerStatus'),n=document.getElementById('ap-name').value.trim();
-  if(!n){st.className='status-msg error';st.textContent='Name required';return}
-  try{await TrekkrAPI.addPlayer({name:n,displayName:document.getElementById('ap-display').value.trim()||n,gender:document.getElementById('ap-gender').value,ig:document.getElementById('ap-ig').value.trim(),region:document.getElementById('ap-region').value.trim(),photoUrl:document.getElementById('ap-photo').value.trim(),clubs:document.getElementById('ap-clubs').value.trim()});
-    st.className='status-msg success';st.textContent=`✓ "${n}" added at ELO 1350`;['ap-name','ap-display','ap-ig','ap-region','ap-photo','ap-clubs'].forEach(id=>document.getElementById(id).value='');await loadPlayers()}
-  catch(e){st.className='status-msg error';st.textContent=e.message}
+async function deletePlayerUI(name){
+  const st=document.getElementById('playerActionStatus');
+  if(!confirm('Hapus pemain "'+name+'"?\n\nBaris pemain + seluruh riwayat ELO_Log-nya akan dihapus permanen. Untuk menggabungkan pemain dobel, pakai tab Duplicates.'))return;
+  try{const r=await fetch(crApi()+'/players/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus ('+d.eloRemoved+' baris ELO).';await loadPlayers();}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
 
 function editPlayer(name){
@@ -301,10 +268,16 @@ function editPlayer(name){
 
 async function loadVenues(){
   try{const d=await TrekkrAPI.getVenues();
-    document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>`<tr><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="editVenue('${v.name.replace(/'/g,"\\'")}')">Edit</button></td></tr>`).join('');
+    document.getElementById('venuesTbody').innerHTML=d.venues.map(v=>{const nm=v.name.replace(/'/g,"\\'");return `<tr><td><strong>${v.name}</strong></td><td>${v.location||'—'}</td><td>${v.region||'—'}</td><td>${v.prizePool||'—'}</td><td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.registerUrl||'—'}</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editVenue('${nm}')">Edit</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deleteVenueUI('${nm}')">Delete</button></td></tr>`;}).join('');
     const s=document.getElementById('aa-venue');while(s.options.length>1)s.remove(1);
-    d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});allVenues=d.venues;populateVenueList();
+    d.venues.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name;s.appendChild(o)});allVenues=d.venues;
   }catch(e){console.warn(e)}
+}
+async function deleteVenueUI(name){
+  const st=document.getElementById('addVenueStatus');
+  if(!confirm('Hapus venue "'+name+'" dari direktori?\n\nBaris venue dihapus; tab match Venue_ tidak ikut dihapus.'))return;
+  try{const r=await fetch(crApi()+'/venues/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus.';await loadVenues();}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
 
 async function addVenue(){
@@ -328,92 +301,92 @@ function editVenue(name){
   });
 }
 
-async function loadAdmins(){try{const d=await TrekkrAPI.getAdmins();document.getElementById('adminsTbody').innerHTML=d.admins.map(a=>`<tr><td><strong>${a.username}</strong></td><td><span class="badge ${a.role==='superadmin'?'badge-lime':'badge-muted'}">${a.role}</span></td><td>${a.venue||'—'}</td></tr>`).join('')}catch(e){console.warn(e)}}
+async function loadAdmins(){try{const d=await TrekkrAPI.getAdmins();document.getElementById('adminsTbody').innerHTML=d.admins.map(a=>{const u=String(a.username||'').replace(/'/g,"\\'");return `<tr><td><strong>${a.username}</strong></td><td><span class="badge ${a.role==='superadmin'?'badge-lime':'badge-muted'}">${a.role}</span></td><td>${a.venue||'—'}</td><td><button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deleteAdminUI('${u}')">Delete</button></td></tr>`;}).join('')}catch(e){console.warn(e)}}
 async function addAdmin(){const st=document.getElementById('addAdminStatus'),u=document.getElementById('aa-user').value.trim(),p=document.getElementById('aa-pass').value;if(!u||!p){st.className='status-msg error';st.textContent='Username and password required';return}try{await TrekkrAPI.addAdmin({username:u,password:p,role:document.getElementById('aa-role').value,venue:document.getElementById('aa-venue').value});st.className='status-msg success';st.textContent=`✓ "${u}" created`;document.getElementById('aa-user').value='';document.getElementById('aa-pass').value='';await loadAdmins()}catch(e){st.className='status-msg error';st.textContent=e.message}}
-async function loadSessions(){try{const d=await TrekkrAPI.listSessions();document.getElementById('sessionsTbody').innerHTML=d.sessions.map(s=>`<tr><td style="font-family:'Saira Condensed',monospace;font-size:10px">${s.id}</td><td>${s.name}</td><td>${s.venue||'—'}</td><td>${s.playerCount||'—'}</td><td>${s.roundCount||'—'}</td><td style="font-size:10px">${s.createdAt?new Date(s.createdAt).toLocaleDateString():''}</td></tr>`).join('')}catch(e){console.warn(e)}}
-
-// Site Settings
-const SETTINGS_KEYS=['hero_eyebrow','hero_title','hero_subtitle','hero_image','venue_eyebrow','venue_title','venue_subtitle','venue_image','passport_label','passport_title','passport_image'];
-async function loadSettings(){
-  try{
-    const d=await TrekkrAPI.getSettings();
-    const st=d.settings||{};
-    SETTINGS_KEYS.forEach(k=>{
-      const el=document.getElementById('st-'+k.replace(/_/g,'-'));
-      if(el)el.value=st[k]||'';
-    });
-  }catch(e){console.warn('Could not load settings:',e)}
+async function deleteAdminUI(username){
+  const st=document.getElementById('adminActionStatus');
+  if(!confirm('Hapus akun admin "'+username+'"?'))return;
+  try{const r=await fetch(crApi()+'/admins/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+username+'" dihapus.';await loadAdmins();}
+  catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
-async function saveSettings(){
-  const st=document.getElementById('settingsStatus');
-  const settings={};
-  SETTINGS_KEYS.forEach(k=>{
-    const el=document.getElementById('st-'+k.replace(/_/g,'-'));
-    if(el&&el.value.trim())settings[k]=el.value.trim();
-  });
-  try{
-    await TrekkrAPI.updateSettings(settings);
-    st.className='status-msg success';st.textContent='✓ Settings saved! Changes will appear on public pages immediately.';
-  }catch(e){st.className='status-msg error';st.textContent=e.message||'Failed to save settings'}
+
+// ── LEADS (venue + tournament) ──
+function leadDate(s){try{return new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return (s||'').slice(0,10);}}
+async function loadLeads(){
+  var vb=document.getElementById('venueLeadsTbody'),tb=document.getElementById('tourLeadsTbody');
+  try{const r=await fetch(crApi()+'/venue-leads');const d=await r.json();const L=(d&&d.leads)||[];
+    vb.innerHTML=L.length?L.map(x=>`<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.venue)}</strong></td><td>${erEsc(x.picName)}</td><td>${erEsc(x.region)||'—'}</td><td><a href="https://wa.me/${String(x.whatsapp).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.whatsapp)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td></tr>`).join(''):'<tr><td colspan="6" style="color:var(--muted2)">Belum ada lead.</td></tr>';
+  }catch(e){vb.innerHTML='<tr><td colspan="6" style="color:#e03b30">Gagal memuat.</td></tr>';}
+  try{const r=await fetch(crApi()+'/tournament-leads');const d=await r.json();const L=(d&&d.leads)||[];
+    tb.innerHTML=L.length?L.map(x=>`<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.name)}</strong></td><td>${erEsc(x.location)||'—'}</td><td>${erEsc(x.picName)}</td><td><a href="https://wa.me/${String(x.phone).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.phone)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td><td style="font-size:11px;max-width:220px">${erEsc(x.message)||'—'}</td></tr>`).join(''):'<tr><td colspan="7" style="color:var(--muted2)">Belum ada lead.</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="7" style="color:#e03b30">Gagal memuat.</td></tr>';}
+}
+
+// ── DUPLICATES (dedup scan + merge) ──
+async function loadDupes(){
+  var box=document.getElementById('dd-list');box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memindai…</p>';
+  try{const r=await fetch(crApi()+'/dedup/players-scan');const d=await r.json();const cl=(d&&d.clusters)||[];
+    if(!cl.length){box.innerHTML='<p style="color:var(--muted2);font-size:13px">Tidak ada nama mirip. ('+((d&&d.totalPlayers)||0)+' pemain dipindai.)</p>';return;}
+    box.innerHTML='<p style="font-size:12px;color:var(--muted2);margin-bottom:12px">'+cl.length+' grup nama mirip ditemukan.</p>'+cl.map(renderDupGroup).join('');
+  }catch(e){box.innerHTML='<p style="color:#e03b30;font-size:12px">Gagal memindai.</p>';}
+}
+function renderDupGroup(g,gi){
+  var rows=g.members.map(function(m,i){var nm=erEsc(m.name);var enc=encodeURIComponent(m.name);
+    return '<label class="imp-sim" style="cursor:pointer"><div class="imp-sim-n"><input type="radio" name="dd-canon-'+gi+'" value="'+enc+'"'+(i===0?' checked':'')+' style="margin-right:8px">'
+      +'<span class="nn">'+nm+'</span> <span class="ss">ELO '+(m.elo||'?')+' · '+(m.matches||0)+' match'+(m.verified?' · ✓':'')+'</span></div>'
+      +'<label style="font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:5px"><input type="checkbox" class="dd-alias-'+gi+'" value="'+enc+'"'+(i===0?'':' checked')+'> alias</label></label>';
+  }).join('');
+  return '<div class="imp-card"><div class="imp-sec">Grup — pilih pemain utama &amp; centang alias</div>'+rows
+    +'<div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="er-app" onclick="doMerge('+gi+')">Merge alias → utama</button><span class="dd-msg" id="dd-msg-'+gi+'" style="font-size:12px"></span></div></div>';
+}
+async function doMerge(gi){
+  var canonEl=document.querySelector('input[name="dd-canon-'+gi+'"]:checked');
+  if(!canonEl){alert('Pilih pemain utama.');return;}
+  var canonical=decodeURIComponent(canonEl.value);
+  var aliases=Array.prototype.slice.call(document.querySelectorAll('.dd-alias-'+gi+':checked'))
+    .map(function(c){return decodeURIComponent(c.value);}).filter(function(a){return a.toLowerCase()!==canonical.toLowerCase();});
+  var msg=document.getElementById('dd-msg-'+gi);
+  if(!aliases.length){msg.style.color='#e03b30';msg.textContent='Centang minimal 1 alias (bukan pemain utama).';return;}
+  if(!confirm('Gabungkan '+aliases.length+' alias ke "'+canonical+'"?\n\nRiwayat & ELO alias dipindah ke pemain utama, baris alias dihapus. Tidak bisa di-undo.'))return;
+  msg.style.color='var(--muted2)';msg.textContent='Menggabungkan…';
+  try{const r=await fetch(crApi()+'/dedup/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({canonical,aliases})});const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'Gagal');
+    msg.style.color='#22A052';msg.textContent='✓ '+(d.playersRemoved||aliases.length)+' alias digabung.';
+    await loadPlayers();setTimeout(loadDupes,700);
+  }catch(e){msg.style.color='#e03b30';msg.textContent=e.message||'Gagal.';}
+}
+
+// ── TIERS & CALIBRATION ──
+async function loadTiers(){loadTierBoundaries(false);loadCalibrationFlags();}
+async function loadTierBoundaries(force){
+  var box=document.getElementById('tiers-box');
+  try{const r=await fetch(crApi()+'/tiers/'+(force?'recompute':'boundaries'),{method:force?'POST':'GET'});const d=await r.json();
+    var chip=function(l,v,c){return '<span class="imp-chip"><b style="color:'+(c||'var(--lime)')+'">'+v+'</b><div style="font-size:10px;color:var(--muted2);letter-spacing:1px">'+l+'</div></span>';};
+    box.innerHTML=chip('T1 ≥',d.t1,'#D4A017')+chip('T2 ≥',d.t2,'#8E8E93')+chip('T3 &lt;',d.t2,'#B87333')+chip('POOL (kalibrasi)',d.n||0,'var(--text)')+'<span class="imp-chip"><b style="font-size:12px;color:var(--muted2)">'+(d.method||'')+'</b><div style="font-size:10px;color:var(--muted2)">METHOD'+(d.cached?' · cached':'')+'</div></span>';
+  }catch(e){box.innerHTML='<span style="color:#e03b30;font-size:12px">Gagal memuat cutoff.</span>';}
+}
+async function recomputeTiers(){
+  var st=document.getElementById('tiersStatus');st.className='status-msg success';st.style.display='block';st.textContent='Menghitung ulang…';
+  await loadTierBoundaries(true);st.textContent='✓ Cutoff dihitung ulang.';
+}
+async function loadCalibrationFlags(){
+  var box=document.getElementById('cf-list');box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
+  try{const r=await fetch(crApi()+'/flags/calibration');const d=await r.json();const F=(d&&d.flags)||[];
+    if(!F.length){box.innerHTML='<p style="color:var(--muted2);font-size:13px">Tidak ada flag terbuka.</p>';return;}
+    box.innerHTML=F.map(function(f){return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(f.player)+'</b><div style="font-size:11px;color:var(--muted2)">'+erEsc(f.reason||'')+' · '+(f.created_at||'').slice(0,10)+'</div></div><span class="er-pend">Open</span></div>'
+      +'<div class="er-body"><div class="er-row"><span class="er-k">Gain</span><span class="er-new">'+(f.gain!=null?('+'+f.gain):'—')+'</span><span></span><span></span></div>'
+      +'<div class="er-row"><span class="er-k">Win rate</span><span class="er-new">'+(f.win_rate!=null?Math.round(f.win_rate*100)+'%':'—')+'</span><span class="er-k">Matches</span><span class="er-new">'+(f.matches||'—')+'</span></div>'
+      +'<div class="er-row"><span class="er-k">ELO</span><span class="er-new">'+(f.elo||'—')+'</span><span></span><span></span></div></div>'
+      +'<div class="er-btns"><button class="er-app" onclick="resolveFlag('+Number(f.id)+')">Mark reviewed</button></div></div>';}).join('');
+  }catch(e){box.innerHTML='<p style="color:#e03b30;font-size:12px">Gagal memuat.</p>';}
+}
+async function resolveFlag(id){
+  try{const r=await fetch(crApi()+'/flags/calibration/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const d=await r.json();if(d&&d.ok)loadCalibrationFlags();else alert((d&&d.error)||'Gagal.');}
+  catch(e){alert('Error jaringan.');}
 }
 
 window.addEventListener('load',checkAuth);
 
-const RM_IDS=['rm-p1t1','rm-p2t1','rm-p1t2','rm-p2t2'];
-function isExistingPlayer(name){const n=String(name||'').trim().toLowerCase();return !!n&&allPC.some(p=>String(p.name||'').toLowerCase()===n);}
-function rmSug(id){
-  const inp=document.getElementById(id); if(!inp)return;
-  const box=document.getElementById(id+'-sug'), newb=document.getElementById(id+'-new');
-  const raw=inp.value.trim(), q=raw.toLowerCase();
-  if(newb) newb.style.display=(raw && !isExistingPlayer(raw))?'block':'none';
-  if(!box)return;
-  let list=allPC;
-  if(q) list=allPC.filter(p=>String(p.name||'').toLowerCase().includes(q)||String(p.displayName||'').toLowerCase().includes(q));
-  list=list.slice(0,8);
-  if(!list.length){ box.innerHTML='<div class="rm-sug-empty">'+(raw?('Tidak ada di database — pemain baru, pilih level di bawah'):'Ketik untuk mencari...')+'</div>'; box.classList.add('show'); return; }
-  box.innerHTML=list.map(p=>{const nm=String(p.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');const dn=String(p.displayName||p.name).replace(/</g,'&lt;');return `<div class="rm-sug-item" onmousedown="rmPick('${id}','${nm}')"><span>${dn}${p.gender?' · '+p.gender:''}</span><span class="elo">${p.elo||''}</span></div>`;}).join('');
-  box.classList.add('show');
-}
-function rmPick(id,name){const inp=document.getElementById(id);if(inp){const d=document.createElement('textarea');d.innerHTML=name;inp.value=d.value;}const box=document.getElementById(id+'-sug');if(box)box.classList.remove('show');const newb=document.getElementById(id+'-new');if(newb)newb.style.display='none';}
-function rmCloseSug(){RM_IDS.forEach(id=>{const b=document.getElementById(id+'-sug');if(b)b.classList.remove('show');});}
-document.addEventListener('click',function(e){if(!e.target.closest('.rm-pf'))rmCloseSug();});
-function populatePlayerList(){RM_IDS.forEach(id=>{const inp=document.getElementById(id);if(inp&&inp.value.trim())rmSug(id);});}
-function populateVenueList(){const dl=document.getElementById('rm-venue-list');if(!dl)return;dl.innerHTML=allVenues.map(v=>`<option value="${String(v.name||'').replace(/"/g,'&quot;')}">`).join('');}
-// Show the per-player gender selectors only for Mixed Doubles.
-function rmGenderChange(){
-  const box=document.getElementById('rm-mixed-genders');
-  if(box)box.style.display=document.getElementById('rm-gender').value==='MIXED'?'':'none';
-}
-async function recordMatch(){
-  const st=document.getElementById('rm-status'),res=document.getElementById('rm-result');res.innerHTML='';
-  const show=(cls,msg)=>{st.className='status-msg'+(cls?' '+cls:'');st.style.display='block';st.textContent=msg;};
-  const venue=document.getElementById('rm-venue').value.trim();
-  const gender=document.getElementById('rm-gender').value;
-  // Per-player genders: for Mixed, read each slot's select; otherwise apply the category to all four.
-  const genders = gender==='MIXED'
-    ? {p1t1:document.getElementById('rm-g-p1t1').value, p2t1:document.getElementById('rm-g-p2t1').value, p1t2:document.getElementById('rm-g-p1t2').value, p2t2:document.getElementById('rm-g-p2t2').value}
-    : {p1t1:gender, p2t1:gender, p1t2:gender, p2t2:gender};
-  const p1t1=document.getElementById('rm-p1t1').value.trim(),p2t1=document.getElementById('rm-p2t1').value.trim(),p1t2=document.getElementById('rm-p1t2').value.trim(),p2t2=document.getElementById('rm-p2t2').value.trim();
-  const scoreT1=document.getElementById('rm-sT1').value,scoreT2=document.getElementById('rm-sT2').value;
-  if(!venue){show('error','Venue / community wajib diisi.');return;}
-  const arr=[p1t1,p2t1,p1t2,p2t2];
-  if(arr.some(n=>!n)){show('error','Keempat pemain wajib diisi.');return;}
-  if(new Set(arr.map(n=>n.toLowerCase())).size!==4){show('error','Keempat pemain harus berbeda.');return;}
-  if(scoreT1===''||scoreT2===''){show('error','Kedua skor wajib diisi.');return;}
-  const levels={};
-  RM_IDS.forEach(id=>{const v=document.getElementById(id).value.trim();if(v&&!isExistingPlayer(v)){const ls=document.getElementById(id+'-level');if(ls)levels[v]=ls.value;}});
-  show('','Menyimpan & menghitung ELO...');
-  try{
-    const r=await fetch(((location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api')+'/elo/record-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({venue,gender,genders,p1t1,p2t1,p1t2,p2t2,scoreT1,scoreT2,levels})});
-    const d=await r.json();
-    if(!r.ok||!d.success){show('error',d.error||'Gagal menyimpan match.');return;}
-    show('success',`✓ Match direkam di "${d.venue}". ELO diperbarui.`);
-    res.innerHTML='<table class="data-table"><thead><tr><th>Player</th><th>New ELO</th><th>Δ</th><th>W</th><th>L</th></tr></thead><tbody>'+d.results.map(x=>`<tr><td><strong>${x.name}</strong></td><td>${x.newElo}</td><td style="color:${x.delta>=0?'var(--lime)':'var(--coral)'}">${x.delta>=0?'+':''}${x.delta}</td><td>${x.w}</td><td>${x.l}</td></tr>`).join('')+'</tbody></table>';
-    ['rm-p1t1','rm-p2t1','rm-p1t2','rm-p2t2','rm-sT1','rm-sT2'].forEach(id=>document.getElementById(id).value='');
-    RM_IDS.forEach(id=>{const b=document.getElementById(id+'-new');if(b)b.style.display='none';});
-    loadPlayers();
-  }catch(e){show('error','Error: '+(e.message||e));}
-}
 
 
 function erEsc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}

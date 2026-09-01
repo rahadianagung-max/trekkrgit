@@ -628,6 +628,7 @@ const netlifyHandler = async (event) => {
     if (path === "players/register" && method === "POST") return await registerNewPlayer(body);
     if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
     if (path === "players/edit-requests/resolve" && method === "POST") return await resolveEditRequest(body);
+    if (path === "players/delete" && method === "POST") return await deletePlayer(body);
     if (path.startsWith("players/") && path.endsWith("/matches") && method === "GET") {
       return await getPlayerMatches(decodeURIComponent(path.replace("players/", "").replace("/matches", "")));
     }
@@ -639,6 +640,7 @@ const netlifyHandler = async (event) => {
     if (path === "venues" && method === "GET") return await getVenues();
     if (path === "venues" && method === "POST") return await addVenue(body);
     if (path === "venues/update" && method === "PUT") return await updateVenue(body);
+    if (path === "venues/delete" && method === "POST") return await deleteVenue(body);
     if (path.startsWith("venues/") && path.endsWith("/matches") && method === "GET") {
       const v = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
       return await getVenueMatches(v, params);
@@ -670,6 +672,11 @@ const netlifyHandler = async (event) => {
 
     if (path === "admins" && method === "GET") return await getAdmins();
     if (path === "admins" && method === "POST") return await addAdmin(body);
+    if (path === "admins/delete" && method === "POST") return await deleteAdmin(body);
+
+    // --- Superadmin: leads inbox (read the self-bootstrapping lead tabs) ---
+    if (path === "venue-leads" && method === "GET") return await listVenueLeads();
+    if (path === "tournament-leads" && method === "GET") return await listTournamentLeads();
 
     // --- TOURNAMENT ROUTES (Phase 1) ---
     if (path === "tournament/event" && method === "POST") return await tCreateEvent(body);
@@ -4461,6 +4468,84 @@ async function submitTournamentLead(body) {
     requestBody: { values: [[leadId, now, name, location, picName, phone, email, message, "NEW"]] },
   });
   return respond(200, { success: true, leadId });
+}
+
+// ── Superadmin: leads inbox readers (newest first) ──
+async function listVenueLeads() {
+  const sheets = getSheets();
+  await ensureVenueLeadsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venue_leads}!A2:H` }).catch(() => ({ data: { values: [] } }));
+  const leads = (res.data.values || [])
+    .filter((r) => String(r[0] || "").trim())
+    .map((r) => ({ id: r[0] || "", timestamp: r[1] || "", picName: r[2] || "", venue: r[3] || "", region: r[4] || "", whatsapp: r[5] || "", email: r[6] || "", status: r[7] || "NEW" }))
+    .reverse();
+  return respond(200, { leads }, { "Cache-Control": "no-store" });
+}
+async function listTournamentLeads() {
+  const sheets = getSheets();
+  await ensureTournamentLeadsTab(sheets);
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.tournament_leads}!A2:I` }).catch(() => ({ data: { values: [] } }));
+  const leads = (res.data.values || [])
+    .filter((r) => String(r[0] || "").trim())
+    .map((r) => ({ id: r[0] || "", timestamp: r[1] || "", name: r[2] || "", location: r[3] || "", picName: r[4] || "", phone: r[5] || "", email: r[6] || "", message: r[7] || "", status: r[8] || "NEW" }))
+    .reverse();
+  return respond(200, { leads }, { "Cache-Control": "no-store" });
+}
+
+// ── Superadmin: delete rows (players / venues / admins) ──
+// Delete whole sheet rows whose key column value is in keysLower. Returns count.
+async function deleteRowsByKey(sheets, tabTitle, keyCol, keysLower) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(sheetId,title))" });
+  const sh = (meta.data.sheets || []).find((s) => s.properties.title === tabTitle);
+  if (!sh) return 0;
+  const sheetId = sh.properties.sheetId;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tabTitle}!A2:Z` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const del = [];
+  rows.forEach((r, i) => { if (keysLower.has(String(r[keyCol] || "").trim().toLowerCase())) del.push(i + 1); }); // api row index = i+1 (row 2 == index 1)
+  if (!del.length) return 0;
+  del.sort((a, b) => b - a);
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: { requests: del.map((idx) => ({ deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: idx, endIndex: idx + 1 } } })) },
+  });
+  return del.length;
+}
+// Remove a player entirely: their Players row + their ELO_Log rows (col B = name).
+// Use MERGE (dedup) instead when the goal is to fold a duplicate into a real player.
+async function deletePlayer(body) {
+  const name = String((body && body.name) || "").trim();
+  if (!name) return respond(400, { error: "name required" });
+  const sheets = getSheets();
+  const key = new Set([name.toLowerCase()]);
+  const playersRemoved = await deleteRowsByKey(sheets, TABS.players, 0, key);
+  if (!playersRemoved) return respond(404, { error: "Player not found" });
+  let eloRemoved = 0;
+  try { eloRemoved = await deleteRowsByKey(sheets, TABS.elo_log, 1, key); } catch (e) { console.error("deletePlayer elo:", e.message); }
+  return respond(200, { success: true, playersRemoved, eloRemoved });
+}
+async function deleteVenue(body) {
+  const name = String((body && body.name) || "").trim();
+  if (!name) return respond(400, { error: "name required" });
+  const removed = await deleteRowsByKey(getSheets(), TABS.venues, 0, new Set([name.toLowerCase()]));
+  if (!removed) return respond(404, { error: "Venue not found" });
+  return respond(200, { success: true, removed });
+}
+async function deleteAdmin(body) {
+  const username = String((body && body.username) || "").trim();
+  if (!username) return respond(400, { error: "username required" });
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.admins}!A2:E` }).catch(() => ({ data: { values: [] } }));
+  const rows = res.data.values || [];
+  const target = rows.find((r) => String(r[0] || "").trim().toLowerCase() === username.toLowerCase());
+  if (!target) return respond(404, { error: "Admin not found" });
+  // Guard: never delete the last remaining superadmin (lock-out protection).
+  if (String(target[2] || "").toLowerCase() === "superadmin") {
+    const supers = rows.filter((r) => String(r[2] || "").toLowerCase() === "superadmin");
+    if (supers.length <= 1) return respond(400, { error: "Cannot delete the last superadmin." });
+  }
+  const removed = await deleteRowsByKey(sheets, TABS.admins, 0, new Set([username.toLowerCase()]));
+  return respond(200, { success: true, removed });
 }
 
 // ── COMPETITIONS registry (standalone Tournament / League result pages) ──
