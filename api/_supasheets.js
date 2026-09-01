@@ -30,7 +30,7 @@ const SHEET_MAP = {
   Players:            { table: "players",             cols: ["name","ig","verified","display_name","gender","region","photo_url","clubs","created_at","winner_at","tournaments","claim_email","seed_estimate"] },
   Sessions:           { table: "sessions",            cols: ["session_id","session_name","source_url","format","sub_format","venue","player_count","match_count","created_at"] },
   ELO_Log:            { table: "elo_log",             cols: ["session_id","player","new_elo","elo_change","wins","losses","timestamp"] },
-  Venues:             { table: "venues",              cols: ["name","location","region","schedule","prize_pool","contact","logo_url","created_at","register_url"] },
+  Venues:             { table: "venues",              cols: ["name","location","region","schedule","prize_pool","contact","logo_url","created_at","register_url","featured","sort_order","hidden"] },
   Admins:             { table: "admins",              cols: ["username","password","role","venue","created_at"] },
   Claims:             { table: "claims",              cols: ["name","ig","session_id","status","created_at"] },
   PlayRank_Active:    { table: "playrank_active",     cols: ["event_id","title","venue","level","gender","format","week_start","week_end","status","players","leader","url","highlight"] },
