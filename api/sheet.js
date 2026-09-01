@@ -4163,6 +4163,8 @@ async function tPublicEvent(eventId, opts) {
 // exact previous behavior, so this change is safe for those paths. ---
 const CALIB_MATCHES = 15;   // "calibrating" until this many career matches (tunable)
 const CALIB_K = 60;         // aggressive K during calibration (vs 40 normal early)
+const CALIB_DAMP = 0.6;     // how much a settled player's K is dampened when the
+                            // opposing team is unrated/calibrating (uncertain rating)
 function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
 function rmEffectiveK(p) { return p && p.calibrating ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
 function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
@@ -4170,11 +4172,19 @@ function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
   const margin = 1 + Math.min(Math.abs(s1 - s2) * .04, .3);
   const exp1 = 1 / (1 + Math.pow(10, (t2a - t1a) / 400)), exp2 = 1 - exp1;
-  const upd = (p, r, e) => {
-    const k = rmEffectiveK(p) * margin;
+  // Reliability damping: a result against calibrating opponents (whose rating is
+  // still uncertain) carries less information, so a SETTLED player's rating moves
+  // less against them — calibrating players keep their full (fast) K so they still
+  // converge quickly. oppFrac = share of the OPPOSING team that is calibrating.
+  const cal = (p) => (p && p.calibrating) ? 1 : 0;
+  const oppFracT1 = (cal(p1t2) + cal(p2t2)) / 2; // team 1 faces team 2
+  const oppFracT2 = (cal(p1t1) + cal(p2t1)) / 2; // team 2 faces team 1
+  const upd = (p, r, e, oppFrac) => {
+    let k = rmEffectiveK(p) * margin;
+    if (!(p && p.calibrating)) k *= (1 - CALIB_DAMP * oppFrac);
     return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
   };
-  return [upd(p1t1, t1r, exp1), upd(p2t1, t1r, exp1), upd(p1t2, t2r, exp2), upd(p2t2, t2r, exp2)];
+  return [upd(p1t1, t1r, exp1, oppFracT1), upd(p2t1, t1r, exp1, oppFracT1), upd(p1t2, t2r, exp2, oppFracT2), upd(p2t2, t2r, exp2, oppFracT2)];
 }
 // Write a tournament's completed matches into its venue match-log tab so player
 // passports show match history + best-performing-partner (both derived from venue
