@@ -4504,7 +4504,6 @@ async function setSettingKey(sheets, key, value) {
   const i = rows.findIndex((x) => String(x[0] || "") === key);
   const sr = (i === -1) ? (rows.length + 2) : (i + 2); // explicit row — no append() table guessing
   await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `Settings!A${sr}:B${sr}`, valueInputOption: "RAW", requestBody: { values: [[key, value]] } });
-  console.log(`[settings] wrote key=${key} row=${sr} len=${String(value).length}`);
 }
 async function readSettingKey(sheets, key) {
   try {
@@ -4554,7 +4553,6 @@ async function getLigaConfig() {
       if (raw) cfg = JSON.parse(raw);
     } catch (e) {}
   }
-  console.log(`[liga] get source=${cfg ? "custom" : "default"}`);
   return respond(200, { config: cfg || LIGA_DEFAULT, source: cfg ? "custom" : "default" }, { "Cache-Control": "no-store" });
 }
 async function saveLigaConfig(body) {
@@ -4572,7 +4570,6 @@ async function saveLigaConfig(body) {
     }
     await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${LIGA_TAB}!A1`, valueInputOption: "RAW", requestBody: { values: [[json]] } });
   }
-  console.log(`[liga] saved len=${json.length} via=${supaOn() ? "supabase" : "sheets"}`);
   return respond(200, { success: true });
 }
 
@@ -5417,11 +5414,9 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
   try {
     const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:B` });
     const eRows = eRes.data.values || [];
-    console.log(`[merge] elo read ${eRows.length} rows @${ms()}`);
     const data = [];
     eRows.forEach((r, i) => { if (hit(r[1])) { elo++; data.push({ range: `${TABS.elo_log}!B${i + 2}`, values: [[canonical]] }); } });
     if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
-    console.log(`[merge] elo rebound ${elo} cells @${ms()}`);
   } catch (e) { console.error("rebind elo:", e.message); }
   // Registrations col D — same targeted approach.
   try {
@@ -5430,7 +5425,6 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
     const data = [];
     rRows.forEach((r, i) => { if (hit(r[3])) { regs++; data.push({ range: `${TABS.registrations}!D${i + 2}`, values: [[canonical]] }); } });
     if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
-    console.log(`[merge] reg rebound ${regs} cells @${ms()}`);
   } catch (e) { console.error("rebind reg:", e.message); }
   // Every Venue_ tab: player-name columns are C,D,E,F (indices 2..5). This is the
   // Playing History source that the merge/rename previously left behind.
@@ -5440,11 +5434,9 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID, fields: "sheets(properties(title))" });
     const venueTabs = (meta.data.sheets || []).map((s) => s.properties.title).filter((t) => t.startsWith("Venue_"));
-    console.log(`[merge] ${venueTabs.length} venue tabs @${ms()}`);
     if (venueTabs.length) {
       const bg = await sheets.spreadsheets.values.batchGet({ spreadsheetId: SHEET_ID, ranges: venueTabs.map((t) => `${t}!C2:F`) });
       const valueRanges = (bg.data && bg.data.valueRanges) || [];
-      console.log(`[merge] venue batchGet done @${ms()}`);
       // Only the individual cells that change (targeted ranges), not whole columns.
       const data = [];
       valueRanges.forEach((vr, idx) => {
@@ -5457,10 +5449,8 @@ async function rebindPlayerNames(sheets, aliasSetLower, canonical) {
         });
       });
       if (data.length) await sheets.spreadsheets.values.batchUpdate({ spreadsheetId: SHEET_ID, requestBody: { valueInputOption: "RAW", data } });
-      console.log(`[merge] venue rebound ${venues} cells @${ms()}`);
     }
   } catch (e) { console.error("rebind venues:", e.message); }
-  console.log(`[merge] rebind total @${ms()}`);
   return { elo, regs, venues };
 }
 
@@ -5511,7 +5501,6 @@ async function ddMerge(body) {
       await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A${keepSheetRow}`, valueInputOption: "USER_ENTERED", requestBody: { values: [[canonical]] } }).catch((e) => console.error("merge normalize:", e.message));
     }
   } catch (e) { console.error("merge players:", e.message); }
-  console.log(`[merge] DONE total ${Date.now() - tStart}ms removed=${removed}`);
   return respond(200, { success: true, canonical, merged: aliasExact, eloRebind: rebind, playersRemoved: removed });
 }
 
