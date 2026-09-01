@@ -223,12 +223,24 @@
   }
 
   /* ---------- boot ---------- */
+  // Read a query-string param (e.g. ?claim=Andi from a "claim your profile" email).
+  function qparam(k) {
+    try { return new URLSearchParams(w.location.search).get(k) || ""; } catch (e) { return ""; }
+  }
   function boot() {
     setHTML('<div class="center"><div class="spinner"></div></div>');
     sb.auth.getSession().then(function (r) {
       S.session = r.data.session; S.token = S.session ? S.session.access_token : null;
       // The splash stays as an interactive welcome screen; the user taps Play Now.
       S.view = "welcome";
+      // Deep link from a claim-outreach email: ?claim=<player name> opens the
+      // Register/claim screen with the name pre-filled (one tap to claim).
+      var cp = qparam("claim");
+      if (cp) {
+        S.claimPrefill = cp;
+        S.view = "join";
+        try { w.history.replaceState({}, "", w.location.pathname); } catch (e) {}
+      }
       render();
       hideSplash();
     });
@@ -446,6 +458,9 @@
       else if (res.data && res.data.claim) { setHint("", ""); renderClaimForm(name); }
       else { m.textContent = (res.data && res.data.error) || "Couldn't register."; m.classList.remove("hidden"); b.disabled = false; b.textContent = "Register"; }
     }
+    // Prefill from a claim-outreach deep link (?claim=<name>): fill the name and
+    // trigger the check so the claim form appears automatically.
+    if (S.claimPrefill) { nameEl.value = S.claimPrefill; S.claimPrefill = null; }
     if ((nameEl.value || "").trim().length >= 2) nameEl.dispatchEvent(new Event("input"));
   }
   function joinDone(kind, detail) {
