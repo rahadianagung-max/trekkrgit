@@ -4726,13 +4726,32 @@ async function liveRead(code) {
   }
   return LIVE_MEM[code] || null;
 }
+// Mark which players in a live snapshot have a claimed Trekkr profile, computed
+// at READ time (not baked into the snapshot) so a claim made after the session
+// ended is reflected on the shared /live page. A profile counts as claimed once
+// its players row has a linked account (user_id) or a registered claim_email.
+// Matched case-insensitively so a snapshot name that differs only in case from
+// the stored profile still resolves.
+async function liveEnrichClaims(data) {
+  if (!data || !Array.isArray(data.players) || !data.players.length || !supaOn()) return data;
+  try {
+    const rows = await supaRest("GET",
+      "players?or=(user_id.not.is.null,claim_email.not.is.null)&select=name&limit=5000") || [];
+    const claimed = new Set(rows.map((r) => String(r.name || "").trim().toLowerCase()).filter(Boolean));
+    if (!claimed.size) return data;
+    data.players = data.players.map((p) => ({ ...p, claimed: claimed.has(String(p.name || "").trim().toLowerCase()) }));
+  } catch (e) { console.error("[live] claim enrich:", e.message); }
+  return data;
+}
 async function liveGet(params) {
   const code = String((params && params.code) || "").trim().toLowerCase();
   if (!code) return respond(400, { error: "code required" });
   let row;
   try { row = await liveRead(code); } catch (e) { console.error("[live] read:", e.message); return respond(500, { error: "read failed" }); }
   if (!row) return respond(404, { error: "not found" });
-  return respond(200, livePublicView(row), { "Cache-Control": "no-store" });
+  const view = livePublicView(row);
+  view.data = await liveEnrichClaims(view.data);
+  return respond(200, view, { "Cache-Control": "no-store" });
 }
 // One POST endpoint; `action` selects create / update / finalize.
 async function livePost(body) {

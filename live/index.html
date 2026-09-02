@@ -135,6 +135,8 @@ header.hd{padding:18px 2px 6px}
 .t-gld{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
 .t-plt{background:color-mix(in srgb,var(--cyan) 22%,transparent);color:var(--cyan-ink)}
 .claim{font-size:11px;font-weight:800;color:var(--orange);cursor:pointer;white-space:nowrap;background:none;border:0;padding:0;text-decoration:none}
+.verified{font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--grn);white-space:nowrap;
+  background:color-mix(in srgb,var(--grn) 13%,transparent);padding:2px 7px;border-radius:6px}
 .grid2{grid-template-columns:26px 1fr auto}
 /* per-player analysis (final table) */
 .pcard{border-bottom:1px solid var(--line2)}
@@ -408,7 +410,7 @@ function liveRow(p,i){
   var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
   var streak=(p.streak||0)>=2?' <span class="elo" style="color:var(--orange-ink)">'+p.streak+'W🔥</span>':'';
   var meta = p.claimed
-    ? '<span class="pmeta" style="color:var(--grn)">Claimed ✓</span>'
+    ? '<span class="verified">Verified ✓</span>'
     : '<a class="claim" href="'+claimUrl(p.name)+'">Is this you? Claim →</a>';
   return '<div class="row grid2">'+
     '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
@@ -456,7 +458,9 @@ function finalCard(p,i){
   var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
   var d=(p.elo||0)-(p.start||p.elo||0), top4=i<4;
   var streak=(p.streak||0)>=2?' <span class="elo" style="color:var(--orange-ink)">'+p.streak+'W🔥</span>':'';
-  var claim = p.claimed ? '' : ' <a class="claim" href="'+claimUrl(p.name)+'" style="font-size:10px">Claim</a>';
+  var claim = p.claimed
+    ? ' <span class="verified">Verified ✓</span>'
+    : ' <a class="claim" href="'+claimUrl(p.name)+'" style="font-size:10px">Claim</a>';
   var btn = top4 ? '' : '<button class="anbtn" onclick="__togglePa(this)"><span class="tx">Analysis</span> <span class="cv">▾</span></button>';
   return '<div class="pcard">'+
     '<div class="row">'+
