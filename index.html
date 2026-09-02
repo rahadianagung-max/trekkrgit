@@ -220,19 +220,18 @@
   }
   function fmt(n){return(n||0).toLocaleString('en-US');}
 
-  Promise.all([
-    fetch(BASE+'/elo/leaderboard?limit=5000').then(function(r){return r.json();}).catch(function(){return{};}),
-    fetch(BASE+'/players').then(function(r){return r.json();}).catch(function(){return{};})
-  ]).then(function(results){
-    var lbData=results[0],playersData=results[1];
-    var leaderboard=(lbData&&lbData.leaderboard)||[];
-    var players=(playersData&&playersData.players)||[];
+  // One slim, CDN-cached call powers the whole homepage below the hero (5 most
+  // active + 4 newest + the 3 numbers) instead of downloading the full ~500KB
+  // leaderboard on every visit.
+  fetch(BASE+'/home-summary').then(function(r){return r.json();}).then(function(d){
+    d=d||{};
+    var active=d.topActive||[];
+    var newPlayers=d.newPlayers||[];
 
     // --- Most Active Players ---
     var activeEl=document.getElementById('activePlayersEl');
     if(activeEl){
-      var sorted=leaderboard.slice().sort(function(a,b){return(b.totalMatches||0)-(a.totalMatches||0);}).slice(0,5);
-      activeEl.innerHTML=sorted.length?sorted.map(function(p,i){
+      activeEl.innerHTML=active.length?active.map(function(p,i){
         return'<a class="prow" href="/player/'+slug(p.name)+'">'
           +'<span class="rk">'+(i+1)+'</span>'
           +av(p)
@@ -245,14 +244,8 @@
     // --- New Players ---
     var newEl=document.getElementById('newPlayersEl');
     if(newEl){
-      var lbMap={};
-      leaderboard.forEach(function(p){lbMap[normName(p.name)]=p;});
-      var newPlayers=players.slice(-4).reverse();
       newEl.innerHTML=newPlayers.length?'<div class="np-grid">'+newPlayers.map(function(p){
-        var lb=lbMap[normName(p.name)]||{};
-        var level=lb.level||'Unrated';
-        var region=p.region||lb.region||'';
-        var meta=[region,level].filter(Boolean).join(' · ');
+        var meta=[p.region,p.level].filter(Boolean).join(' · ');
         return'<div class="np-card">'
           +av({displayName:p.name,name:p.name,photoUrl:p.photoUrl||''})
           +'<div class="np-info"><div class="np-name">'+esc(p.name)+'</div>'
@@ -262,13 +255,12 @@
     }
 
     // --- The Numbers ---
-    var total=leaderboard.reduce(function(s,p){return s+(p.totalMatches||0);},0);
     var sp=document.getElementById('statPlayers');
     var sm=document.getElementById('statMatches');
     var sa=document.getElementById('statAvg');
-    if(sp)sp.textContent=fmt(leaderboard.length);
-    if(sm)sm.textContent=fmt(total);
-    if(sa)sa.textContent=leaderboard.length?Math.round(total/leaderboard.length):0;
+    if(sp)sp.textContent=fmt(d.playerCount||0);
+    if(sm)sm.textContent=fmt(d.totalMatches||0);
+    if(sa)sa.textContent=d.avg||0;
 
   }).catch(function(){ /* data load failed — sections keep their Loading… state */ });
 })();

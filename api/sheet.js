@@ -133,6 +133,17 @@ function respond(statusCode, data, extraHeaders) {
   };
 }
 
+// Attach a shared-CDN cache header to a 200 response without touching its body,
+// so Vercel's edge serves repeat public reads instantly and revalidates in the
+// background (stale-while-revalidate). Non-mutating; leaves errors untouched.
+function withCdnCache(resp, sMaxAge, swr) {
+  if (!resp || resp.statusCode !== 200) return resp;
+  return {
+    ...resp,
+    headers: { ...(resp.headers || {}), "Cache-Control": `public, s-maxage=${sMaxAge}, stale-while-revalidate=${swr == null ? sMaxAge : swr}` },
+  };
+}
+
 // ==============================================================
 // PLAYER ACCOUNTS / AUTH (registration, set-password, login, session token)
 // ==============================================================
@@ -738,7 +749,8 @@ const netlifyHandler = async (event) => {
 
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
-    if (path === "elo/leaderboard" && method === "GET") return await cached60("leaderboard:" + JSON.stringify(params || {}), () => getNationalLeaderboard(params));
+    if (path === "elo/leaderboard" && method === "GET") return withCdnCache(await cached60("leaderboard:" + JSON.stringify(params || {}), () => getNationalLeaderboard(params)), 60, 300);
+    if (path === "home-summary" && method === "GET") return withCdnCache(await cached60("home-summary", getHomeSummary), 60, 300);
     if (path === "elo/record-match" && method === "POST") return await recordManualMatch(body);
     if (path === "elo/import-matches" && method === "POST") return await importMatches(body);
 
@@ -2820,6 +2832,36 @@ async function getNationalLeaderboard(params) {
     leaderboard: paginated, total: leaderboard.length, page, limit,
     totalPages: Math.ceil(leaderboard.length / limit)
   });
+}
+
+// Slim homepage payload: the numbers + 5 most-active + 4 newest players, built
+// from the (server-cached) leaderboard and players reads. Replaces the homepage
+// pulling the full ~500KB leaderboard on every load; the response itself is
+// CDN-cached so most visitors are served from the edge. Additive endpoint.
+async function getHomeSummary() {
+  const lbResp = await cached60("leaderboard:" + JSON.stringify({ limit: "5000" }), () => getNationalLeaderboard({ limit: "5000" }));
+  const plResp = await cached60("players:" + JSON.stringify({}), () => getPlayers({}));
+  let leaderboard = [], players = [];
+  try { leaderboard = JSON.parse(lbResp.body).leaderboard || []; } catch (e) {}
+  try { players = JSON.parse(plResp.body).players || []; } catch (e) {}
+
+  const totalMatches = leaderboard.reduce((s, p) => s + (p.totalMatches || 0), 0);
+  const playerCount = leaderboard.length;
+  const avg = playerCount ? Math.round(totalMatches / playerCount) : 0;
+
+  const topActive = leaderboard.slice()
+    .sort((a, b) => (b.totalMatches || 0) - (a.totalMatches || 0))
+    .slice(0, 5)
+    .map((p) => ({ name: p.name, photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0 }));
+
+  const lbMap = {};
+  leaderboard.forEach((p) => { lbMap[String(p.name || "").trim().toLowerCase()] = p; });
+  const newPlayers = players.slice(-4).reverse().map((p) => {
+    const lb = lbMap[String(p.name || "").trim().toLowerCase()] || {};
+    return { name: p.name, photoUrl: p.photoUrl || "", region: p.region || lb.region || "", level: lb.level || "Unrated" };
+  });
+
+  return respond(200, { playerCount, totalMatches, avg, topActive, newPlayers });
 }
 
 // ── PARSE AMERICANO-PADEL.COM (FETCH FIX) ──
