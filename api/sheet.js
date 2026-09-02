@@ -1766,7 +1766,9 @@ async function getVenues() {
   const rows = res.data.values || [];
   const venues = rows.map((r) => ({
     name: r[0] || "", location: r[1] || "", region: r[2] || "", schedule: r[3] || "",
-    prizePool: r[4] || "", contact: r[5] || "", logoUrl: r[6] || "", createdAt: r[7] || "", registerUrl: r[8] || "",
+    // col F holds the venue's RECLUB link (was "contact/social"); expose both the
+    // legacy `contact` key and the clearer `reclubUrl` alias.
+    prizePool: r[4] || "", contact: r[5] || "", reclubUrl: r[5] || "", logoUrl: r[6] || "", createdAt: r[7] || "", registerUrl: r[8] || "",
     featured: String(r[9] || "").toUpperCase() === "TRUE",
     sortOrder: r[10] != null && String(r[10]).trim() !== "" ? Number(r[10]) : null,
     hidden: String(r[11] || "").toUpperCase() === "TRUE",

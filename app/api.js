@@ -52,6 +52,7 @@
     updateProfile: function (token, updates) { return request("account/profile", { method: "PUT", body: { token: token, updates: updates } }); },
     changePassword: function (token, newPassword) { return request("account/change-password", { method: "POST", body: { token: token, new_password: newPassword } }); },
     getSchedule: function (params) { return request("schedule" + qs(params)); },
+    getVenues: function () { return request("venues"); },
     getTrackedEvents: function () { return request("tracked-events"); },
     // Registration / claim (in-app, mirrors the web /join flow).
     checkName: function (name) { return request("players/check-name?name=" + encodeURIComponent(name)); },

@@ -250,3 +250,24 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:13px;font-weight:600;padding:10px 16px;border-radius:11px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88%}
 .toast.show{opacity:.96}
+
+/* PlayRank venue directory */
+.rp-filter{display:flex;align-items:center;gap:10px;margin:4px 4px 0}
+.rp-flabel{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);flex-shrink:0}
+.rp-select{flex:1;position:relative}
+.rp-select::after{content:"▾";position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:12px;pointer-events:none}
+.rp-select select{width:100%;-webkit-appearance:none;appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:12px;padding:12px 34px 12px 14px;font-size:15px;font-weight:700;font-family:inherit}
+.rp-select select:focus{outline:none;border-color:var(--or)}
+.rp-card{margin-bottom:10px}
+.rp-head{display:flex;align-items:center;gap:11px}
+.rp-logo{width:46px;height:46px;border-radius:12px;flex-shrink:0;overflow:hidden;background:var(--line-soft);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:20px;color:var(--faint)}
+.rp-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.rp-hb{min-width:0;flex:1}
+.rp-hb h3{margin:0;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-star{color:var(--or);font-size:13px}
+.rp-loc{font-size:12.5px;color:var(--faint);font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-sched{display:flex;gap:7px;align-items:flex-start;margin-top:11px;font-size:13.5px;color:var(--mu);font-weight:600;line-height:1.4}
+.rp-ico{flex-shrink:0}
+.rp-nolink{margin-top:10px;text-align:center;font-size:12.5px;color:var(--faint);font-weight:700;border:1px dashed var(--line);border-radius:11px;padding:11px}

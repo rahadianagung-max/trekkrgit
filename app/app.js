@@ -988,81 +988,75 @@
   function rp(n) { return "Rp" + Number(n || 0).toLocaleString("id-ID"); }
   function daysTo(iso) { var t = Date.parse(iso); if (isNaN(t)) return null; return Math.max(0, Math.ceil((t - Date.now()) / 86400000)); }
 
+  // PlayRank tab = a directory of venues / communities running PlayRank. Filter
+  // by region, then see each venue's schedule and open its RECLUB / booking link.
+  // Schedule + link come from Venue Admin → Venue Info.
+  var _rpVenues = null, _rpRegion = "__ALL__";
+  function rpVenueLink(v) {
+    var u = String((v.reclubUrl || v.contact || "")).trim();
+    if (u && !/^https?:\/\//i.test(u)) { u = /^www\./i.test(u) ? "https://" + u : ""; } // ignore non-URL handles
+    return u || String(v.registerUrl || "").trim();
+  }
+  function rpRegionOf(v) { return (v.region || "").trim() || "Other"; }
+  function rpVenueCard(v) {
+    var link = rpVenueLink(v);
+    var loc = (v.location || "").trim();
+    var sched = (v.schedule || "").trim();
+    var logo = v.logoUrl
+      ? '<span class="rp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
+      : '<span class="rp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
+    var btn = link
+      ? '<a class="btn" style="display:block;text-decoration:none;text-align:center;margin-top:10px" href="' + esc(link) + '" target="_blank" rel="noopener">Book / info →</a>'
+      : '<div class="rp-nolink">Booking link coming soon</div>';
+    return '<div class="plain rp-card">' +
+      '<div class="rp-head">' + logo +
+        '<div class="rp-hb"><h3>' + esc(v.name || "Venue") + (v.featured ? ' <span class="rp-star">★</span>' : "") + '</h3>' +
+        (loc ? '<div class="rp-loc">' + esc(loc) + '</div>' : "") + '</div></div>' +
+      '<div class="rp-sched"><span class="rp-ico">🗓️</span><span>' + esc(sched || "Schedule coming soon") + '</span></div>' +
+      btn + '</div>';
+  }
+  function renderRpList() {
+    var box = d.getElementById("rp-list");
+    if (!box) return;
+    var vs = (_rpVenues || []).filter(function (v) { return !v.hidden && v.name; });
+    if (_rpRegion !== "__ALL__") vs = vs.filter(function (v) { return rpRegionOf(v) === _rpRegion; });
+    vs.sort(function (a, b) {
+      if (!!b.featured !== !!a.featured) return b.featured ? 1 : -1;
+      var ao = a.sortOrder == null ? 9999 : a.sortOrder, bo = b.sortOrder == null ? 9999 : b.sortOrder;
+      if (ao !== bo) return ao - bo;
+      return String(a.name).localeCompare(String(b.name));
+    });
+    box.innerHTML = vs.length
+      ? vs.map(rpVenueCard).join("")
+      : '<div class="plain"><h3>No venues in this region yet</h3><p>Try another region, or check back soon — new PlayRank venues are added regularly.</p></div>';
+  }
   async function renderMain() {
     viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
     try {
-      var todayISO = new Date().toISOString().slice(0, 10);
-      var r = await Promise.all([
-        API.getSchedule({ type: "RANKPLAY", from: todayISO }).catch(function () { return { schedule: [] }; }),
-        API.getSchedule({ type: "SERIES" }).catch(function () { return { schedule: [] }; }),
-        ligaConfig(),
-      ]);
-      var ranked = (r[0] && r[0].schedule) || [];
-      var series = (r[1] && r[1].schedule) || [];
-      var C = r[2] || LIGA_FALLBACK;
-
-      // Fallback: if the schedule has no RANKPLAY rows, show any untyped sessions.
-      if (!ranked.length) {
-        try { var any = await API.getSchedule({ from: todayISO }); ranked = (any && any.schedule) || []; } catch (e) {}
+      if (!_rpVenues) {
+        var res = await API.getVenues();
+        _rpVenues = (res && res.venues) || [];
       }
-
-      function sessionCard(s, ghost) {
-        var when = [s.date ? fmtDate(Date.parse(s.date) || s.date) : "", s.startTime].filter(Boolean).join(" · ");
-        var spots = (s.spotsLeft != null) ? (s.spotsLeft + " spots left") : "";
-        var price = s.pricePerPlayer ? rp(s.pricePerPlayer) : "";
-        var meta = [s.venue || s.area, when].filter(Boolean).join(" · ");
-        var sub = [spots, price].filter(Boolean).join(" · ");
-        var href = s.whatsappUrl || (C.waFallback || "");
-        var btn = href ? '<a class="btn' + (ghost ? " ghost" : "") + '" style="display:block;text-decoration:none;text-align:center;margin-top:10px" href="' + esc(href) + '" target="_blank" rel="noopener">Register</a>' : "";
-        return '<div class="plain"><h3>' + esc(s.venue || s.type || "Ranked session") + '</h3>' +
-          '<p>' + esc(meta || "Schedule coming soon") + (sub ? '<br>' + esc(sub) : "") + '</p>' + btn + '</div>';
-      }
-
-      var champ = C.championship || LIGA_FALLBACK.championship;
-      var days = daysTo(champ.date);
-      var champPrizes = (champ.prizes || []).map(function (p) {
-        return '<div class="cp-row"><span>' + esc(p.tier) + ' · ' + esc(p.label) + '</span><b>' + rp(p.amount) + '</b></div>';
-      }).join("");
-
-      // Journey: the player-facing order — ranked session → monthly league → championship.
-      var journey =
-        '<div class="journey">' +
-          '<div class="jstep on"><div class="jnum">1</div><div class="jb"><b>Find a ranked session</b>' +
-            '<span>Play ranked sessions at partner venues to earn your ELO &amp; Series Tier (15 matches to calibrate).</span></div></div>' +
-          '<div class="jstep"><div class="jnum">2</div><div class="jb"><b>Join the monthly league</b>' +
-            '<span>Enter Trekkr Series events — ' + rp((C.series || {}).prizePool || 9000000) + ' pool each, and every result adds season points.</span></div></div>' +
-          '<div class="jstep"><div class="jnum">3</div><div class="jb"><b>Reach the Championship</b>' +
-            '<span>Finish top ' + (((C.qualifying || {}).topN) || 16) + ' in your tier on season points to play for the title.</span></div></div>' +
-        '</div>';
-
-      var champCard =
-        '<div class="champcard">' +
-          '<div class="cc-eyebrow">Trekkr Championship</div>' +
-          '<div class="cc-pool">' + rp(champ.prizePool) + '</div>' +
-          '<div class="cc-sub">One champion per tier · ' + esc(champ.city || "") + (days != null ? ' · in ' + days + ' days' : '') + '</div>' +
-          '<div class="cp-rows">' + champPrizes + '</div>' +
-        '</div>';
-
-      var rankedHTML = ranked.length
-        ? ranked.slice(0, 10).map(function (s) { return sessionCard(s, false); }).join("")
-        : '<div class="plain"><h3>No ranked sessions listed yet</h3><p>New ranked sessions open regularly — check back soon, or explore the rankings meanwhile.</p></div>';
-
-      // Series cards come from the Liga config (superadmin → Liga) — the single
-      // source of truth for Series venue & dates. The Schedule tab drives only
-      // the bookable ranked sessions above.
-      var seriesList = ((C.series && C.series.dates) || []).slice(0, 3).map(function (s) {
-        return '<div class="plain"><h3>' + esc(s.venue || s.name || "Trekkr Series") + '</h3><p>' + esc([s.label, s.name].filter(Boolean).join(" · ")) + '</p></div>';
-      }).join("");
+      var regions = {};
+      _rpVenues.forEach(function (v) { if (!v.hidden && v.name) regions[rpRegionOf(v)] = true; });
+      var regionList = Object.keys(regions).sort(function (a, b) {
+        if (a === "Other") return 1; if (b === "Other") return -1; return a.localeCompare(b);
+      });
+      if (_rpRegion !== "__ALL__" && regionList.indexOf(_rpRegion) < 0) _rpRegion = "__ALL__";
+      var opts = '<option value="__ALL__">All regions</option>' +
+        regionList.map(function (rg) { return '<option value="' + esc(rg) + '"' + (rg === _rpRegion ? " selected" : "") + '>' + esc(rg) + '</option>'; }).join("");
 
       viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1>' +
-        '<p class="lede">Your road to the Trekkr Championship — in three steps.</p>' +
-        journey +
-        '<div class="sec">Step 1 · Next ranked sessions</div>' + rankedHTML +
-        '<div class="sec">Step 2 · Monthly league — Trekkr Series</div>' + seriesList +
-        '<div class="sec">Step 3 · Championship</div>' + champCard +
+        '<p class="lede">Venues &amp; communities running PlayRank near you. Pick a region to see schedules and book.</p>' +
+        '<div class="rp-filter"><label class="rp-flabel">Region</label>' +
+          '<div class="rp-select"><select id="rp-region">' + opts + '</select></div></div>' +
+        '<div id="rp-list" style="margin-top:12px"></div>' +
         '</div>';
+      renderRpList();
+      var sel = d.getElementById("rp-region");
+      if (sel) sel.onchange = function () { _rpRegion = sel.value; renderRpList(); };
     } catch (e) {
-      viewEl().innerHTML = errorBox("Couldn't load PlayRank.", renderMain);
+      viewEl().innerHTML = errorBox("Couldn't load PlayRank venues.", renderMain);
     }
   }
 
