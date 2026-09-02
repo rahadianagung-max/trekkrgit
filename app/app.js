@@ -245,6 +245,10 @@
       hideSplash();
     });
     sb.auth.onAuthStateChange(function (_e, session) {
+      // INITIAL_SESSION fires on subscribe and duplicates getSession() above —
+      // only sync the token here, never touch the view, or it clobbers a deep
+      // link like /app?claim=<name> (which boot routed to the claim screen).
+      if (_e === "INITIAL_SESSION") { S.session = session; S.token = session ? session.access_token : null; return; }
       var wasGuest = !S.session;
       S.session = session; S.token = session ? session.access_token : null;
       S.me = null; S.myName = ""; S.card = null;
