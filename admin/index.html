@@ -2280,6 +2280,7 @@ function rmLiveSnapshot(final){
     .filter(p=>p.active!==false)
     .map(p=>({
       name:p.name, short:(p.name||'').split(' ')[0],
+      displayName:p.displayName||p.name, photoUrl:p.photoUrl||'',
       elo:p.elo, start:startOf(p.name),
       w:p.wins||0, l:p.losses||0, pd:p.pointDiff||0,
       streak:rmLiveStreak(p.name), gender:(p.gender||'M').toUpperCase(),

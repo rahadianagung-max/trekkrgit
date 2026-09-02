@@ -598,6 +598,8 @@ const netlifyHandler = async (event) => {
     // guarded by an unguessable write_key held only by the host that created it.
     if (path === "live" && method === "GET") return await liveGet(params);
     if (path === "live" && method === "POST") return await livePost(body);
+    // Venue TV: the currently-live (or just-finished) PlayRank session for a venue.
+    if (path === "live/venue" && method === "GET") return await liveVenue(params);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
@@ -665,6 +667,10 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("venues/") && path.endsWith("/ranking") && method === "GET") {
       const v = decodeURIComponent(path.replace("venues/", "").replace("/ranking", ""));
       return await getVenueWeeklyRanking(v, params);
+    }
+    if (path.startsWith("venues/") && path.endsWith("/monthly") && method === "GET") {
+      const v = decodeURIComponent(path.replace("venues/", "").replace("/monthly", ""));
+      return await getVenueMonthly(v, params);
     }
 
     if (path === "sessions" && method === "POST") return await saveSession(body);
@@ -4711,6 +4717,141 @@ function liveRecapFallback(session) {
   let line = `${top.short || top.name} took the day at ${top.w}–${top.l}.`;
   if (climber && climber !== top && (climber.elo - climber.start) > 0) line += ` ${climber.short || climber.name} was the biggest climber (+${climber.elo - climber.start} ELO).`;
   return { headline: `${top.short || top.name} takes the crown`, line, ai: false };
+}
+
+// Latest PlayRank Live session for a venue — powers the venue TV. `active` is true
+// while it is live OR finished within the last 5 minutes (the celebration window),
+// so the TV keeps the podium up before switching to the weekly/monthly rotation.
+const LIVE_CELEBRATE_MS = 5 * 60 * 1000;
+async function liveVenue(params) {
+  const venue = String((params && params.venue) || "").trim();
+  if (!venue) return respond(400, { error: "venue required" });
+  let row = null;
+  try {
+    if (supaOn()) {
+      const rows = await supaRest("GET", `live_sessions?venue=eq.${encodeURIComponent(venue)}&order=updated_at.desc&limit=1`);
+      row = (rows && rows[0]) || null;
+    } else {
+      // in-memory fallback: newest matching venue
+      const list = Object.values(LIVE_MEM).filter((r) => (r.venue || "") === venue)
+        .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+      row = list[0] || null;
+    }
+  } catch (e) { console.error("[live] venue:", e.message); return respond(500, { error: "read failed" }); }
+  if (!row) return respond(200, { active: false }, { "Cache-Control": "no-store" });
+  const ageMs = Date.now() - new Date(row.updated_at || row.updatedAt || 0).getTime();
+  const isLive = row.status === "live";
+  const celebrating = row.status === "final" && ageMs < LIVE_CELEBRATE_MS;
+  return respond(200, {
+    active: isLive || celebrating,
+    phase: isLive ? "live" : (celebrating ? "celebrate" : "idle"),
+    status: row.status || "live",
+    code: row.code,
+    session: row.data || {},
+    recap: row.recap || null,
+    updatedAt: row.updated_at || row.updatedAt || null,
+  }, { "Cache-Control": "no-store" });
+}
+
+// Monthly awards for a venue TV: "Most Wins of the Month" and "Most Loyal Player
+// of the Month" (loyalty = distinct days played this month). Split by gender so a
+// Men's and Women's champion both get the spotlight. Aggregated from venue_matches.
+const VENUE_MONTH_TZ = 7 * 60; // WIB (UTC+7): the month boundary players think in.
+function monthKeyOf(dateStr) {
+  const s = String(dateStr || "").trim();
+  let m = s.match(/^(\d{4})-(\d{2})/);            // ISO 2026-09-01...
+  if (m) return `${m[1]}-${m[2]}`;
+  m = s.match(/^(\d{1,2})[/](\d{1,2})[/](\d{4})/); // id-ID d/m/yyyy
+  if (m) return `${m[3]}-${String(m[2]).padStart(2, "0")}`;
+  const d = new Date(s);
+  if (!isNaN(d)) return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  return "";
+}
+function currentMonthKey() {
+  const d = new Date(Date.now() + VENUE_MONTH_TZ * 60000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+function monthLabel(key) {
+  const [y, mo] = String(key).split("-");
+  const names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  return `${names[(parseInt(mo, 10) || 1) - 1]} ${y}`;
+}
+async function getVenueMonthly(venueName, params) {
+  const monthKey = String((params && params.month) || "") || currentMonthKey();
+  // Normalized rows: [week,date,p1t1,p2t1,p1t2,p2t2,s1,s2,g1,g2,g3,g4,source]
+  let rows = [];
+  if (supaOn()) {
+    const sel = "week,date,p1_team1,p2_team1,p1_team2,p2_team2,score_t1,score_t2,p1_team1_gender,p2_team1_gender,p1_team2_gender,p2_team2_gender,source_url";
+    // Newest first + capped: the current/recent months are always included even for
+    // very active venues (PostgREST caps a page at 1000 rows).
+    const data = await supaRest("GET", `venue_matches?venue=eq.${encodeURIComponent(venueName)}&select=${sel}&order=id.desc&limit=1000`).catch(() => []);
+    rows = (data || []).map((r) => [r.week, r.date, r.p1_team1, r.p2_team1, r.p1_team2, r.p2_team2, r.score_t1, r.score_t2, r.p1_team1_gender, r.p2_team1_gender, r.p1_team2_gender, r.p2_team2_gender, r.source_url]);
+  } else {
+    const tab = venueTabName(venueName);
+    const res = await getSheets().spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${tab}!${VENUE_READ_RANGE}` }).catch(() => ({ data: { values: [] } }));
+    rows = res.data.values || [];
+  }
+
+  // Aggregate per month in one pass, then pick the target month. When the current
+  // month has no matches yet (e.g. early in a new month) and no month was asked for,
+  // fall back to the most recent month that has data so the TV never shows an empty award.
+  const perMonth = {}; // monthKey -> { name -> {w,played,days:Set,gender} }
+  const monthsSeen = new Set();
+  rows.forEach((r) => {
+    const mk = monthKeyOf(r[1]);
+    if (!mk) return;
+    const s1 = parseInt(r[6], 10), s2 = parseInt(r[7], 10);
+    if (isNaN(s1) || isNaN(s2)) return;                 // skip non-score/junk rows
+    const t1 = [r[2], r[3]].filter(Boolean), t2 = [r[4], r[5]].filter(Boolean);
+    if (!t1.length || !t2.length) return;
+    monthsSeen.add(mk);
+    const bucket = perMonth[mk] || (perMonth[mk] = {});
+    const [g1, g2, g3, g4] = venueRowGenders(r);
+    const slotGender = { [r[2]]: g1, [r[3]]: g2, [r[4]]: g3, [r[5]]: g4 };
+    const day = String(r[1]).slice(0, 10);
+    [...t1, ...t2].forEach((p) => {
+      if (!bucket[p]) bucket[p] = { w: 0, played: 0, days: new Set(), gender: "" };
+      if (!bucket[p].gender) bucket[p].gender = toGender(slotGender[p], "");
+      bucket[p].played++; bucket[p].days.add(day);
+    });
+    if (s1 > s2) t1.forEach((p) => bucket[p].w++);
+    else if (s2 > s1) t2.forEach((p) => bucket[p].w++);
+  });
+  let targetMonth = monthKey;
+  if (!(params && params.month) && !perMonth[targetMonth]) {
+    const latest = [...monthsSeen].sort().reverse()[0];
+    if (latest) targetMonth = latest;
+  }
+  const stats = perMonth[targetMonth] || {};
+
+  // Join the Players tab for photos / display names / gender fallback.
+  const info = {};
+  if (supaOn()) {
+    const pl = await supaRest("GET", "players?select=name,display_name,gender,photo_url,verified,region").catch(() => []);
+    (pl || []).forEach((p) => { if (p.name) info[normName(p.name)] = { displayName: p.display_name || p.name, gender: toGender(p.gender, ""), photoUrl: ibbHostFix(p.photo_url || ""), verified: p.verified === true || p.verified === "TRUE", region: p.region || "" }; });
+  } else {
+    const pRes = await getSheets().spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` }).catch(() => ({ data: { values: [] } }));
+    (pRes.data.values || []).forEach((r) => { if (r[0]) info[normName(r[0])] = { displayName: r[3] || r[0], gender: toGender(r[4], ""), photoUrl: ibbHostFix(r[6] || ""), verified: r[2] === "TRUE", region: r[5] || "" }; });
+  }
+
+  const all = Object.keys(stats).map((name) => {
+    const gi = info[normName(name)] || {};
+    return {
+      name, displayName: gi.displayName || name,
+      gender: stats[name].gender || gi.gender || "M",
+      wins: stats[name].w, played: stats[name].played, days: stats[name].days.size,
+      photoUrl: gi.photoUrl || "", verified: !!gi.verified, region: gi.region || "",
+    };
+  });
+  const byGender = (g) => all.filter((p) => p.gender === g);
+  const topWins = (arr) => arr.slice().sort((a, b) => b.wins - a.wins || b.days - a.days || b.played - a.played).slice(0, 5);
+  const topLoyal = (arr) => arr.slice().sort((a, b) => b.days - a.days || b.played - a.played || b.wins - a.wins).slice(0, 5);
+
+  return respond(200, {
+    venue: venueName, month: targetMonth, monthLabel: monthLabel(targetMonth),
+    wins: { M: topWins(byGender("M")), F: topWins(byGender("F")) },
+    loyal: { M: topLoyal(byGender("M")), F: topLoyal(byGender("F")) },
+  }, { "Cache-Control": "no-store" });
 }
 
 // ── Schedule admin: list-all / upsert / delete ──
