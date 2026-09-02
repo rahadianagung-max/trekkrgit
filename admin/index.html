@@ -1363,17 +1363,22 @@ async function rmLoadPlayers() {
   try {
     const [pRes, eRes, fRes] = await Promise.all([rmApi('players'), rmApi('elo/latest'), rmApi('flags/calibration').catch(()=>({flags:[]}))]);
     const eloMap = eRes.players || {};
+    // Case-insensitive ELO lookup: a player's stored name can differ in case from
+    // their ELO_Log name (e.g. "rahadian agung" vs "Rahadian Agung"). A case-
+    // sensitive miss would seed them at the default and undercount their rating.
+    const eloLc = {}; Object.keys(eloMap).forEach(k=>{ eloLc[String(k).toLowerCase()]=eloMap[k]; });
+    const eloOf = n => eloMap[n] || eloLc[String(n).toLowerCase()];
     // Step 5: pemain dengan flag kalibrasi terbuka → tampilkan badge saat dipilih.
     RM.flagged = new Set((((fRes&&fRes.flags)||[])).map(f=>String(f.player||'').toLowerCase()));
     RM.allPlayers = (pRes.players || [])
       .filter(p => !/^[\d\s]+$/.test(p.name.trim()))
-      .map(p => ({
+      .map(p => { const e=eloOf(p.name); return ({
         ...p,
-        elo: eloMap[p.name]?.elo || RM.startElo,
+        elo: (e&&e.elo) || RM.startElo,
         // Career matches (server now returns .matches = Σ w+l across all rows);
         // fall back to last-row w+l for older API responses.
-        matchCount: (eloMap[p.name]?.matches ?? ((eloMap[p.name]?.w||0)+(eloMap[p.name]?.l||0))),
-      }));
+        matchCount: (e ? (e.matches ?? ((e.w||0)+(e.l||0))) : 0),
+      }); });
     rmRenderPlayers();
   } catch(e) {
     document.getElementById('rm-player-list').innerHTML =
