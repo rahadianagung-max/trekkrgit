@@ -4735,9 +4735,13 @@ async function liveRead(code) {
 async function liveEnrichClaims(data) {
   if (!data || !Array.isArray(data.players) || !data.players.length || !supaOn()) return data;
   try {
+    // Coarse filter is a superset (an empty-string claim_email is "not null" to
+    // PostgREST), so re-check strictly in JS: a linked account, or a non-empty email.
     const rows = await supaRest("GET",
-      "players?or=(user_id.not.is.null,claim_email.not.is.null)&select=name&limit=5000") || [];
-    const claimed = new Set(rows.map((r) => String(r.name || "").trim().toLowerCase()).filter(Boolean));
+      "players?or=(user_id.not.is.null,claim_email.not.is.null)&select=name,user_id,claim_email&limit=5000") || [];
+    const claimed = new Set(
+      rows.filter((r) => r.user_id != null || String(r.claim_email || "").trim() !== "")
+        .map((r) => String(r.name || "").trim().toLowerCase()).filter(Boolean));
     if (!claimed.size) return data;
     data.players = data.players.map((p) => ({ ...p, claimed: claimed.has(String(p.name || "").trim().toLowerCase()) }));
   } catch (e) { console.error("[live] claim enrich:", e.message); }
