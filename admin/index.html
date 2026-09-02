@@ -2466,10 +2466,22 @@ function rmLiveSnapshot(final){
     now=(cur.matches||[]).map(m=>({court:m.court, a:m.team1.map(p=>p.name), b:m.team2.map(p=>p.name)}));
     bye=(cur.byePlayers||[]).slice();
   }
+  // Completed match-by-match history (newest last), so the live page can show
+  // every game's teams, score and point difference — not just aggregate standings.
+  let rnum=0; const history=[];
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    rnum++;
+    (r.matches||[]).forEach(m=>{
+      if(m.score1==null||m.score2==null) return;
+      history.push({ round:rnum, court:m.court,
+        a:(m.team1||[]).map(p=>p.name), b:(m.team2||[]).map(p=>p.name),
+        sa:Number(m.score1), sb:Number(m.score2) });
+    });
+  });
   return {
     venue:RM.venue||'', gender:RM.gender, courts:RM.courts, scoreTarget:RM.scoreTarget,
     round: final ? doneRounds : (RM.currentRound+1),
-    now, bye, players,
+    now, bye, players, history,
   };
 }
 async function rmLivePush(final){

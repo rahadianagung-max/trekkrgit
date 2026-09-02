@@ -149,6 +149,18 @@ header.hd{padding:18px 2px 6px}
 .pa b{color:var(--ink)}
 .pa b.up{color:var(--grn)} .pa b.dn{color:var(--red)}
 @media (prefers-reduced-motion:reduce){.pa{transition:none}.anbtn .cv{transition:none}}
+/* match history (final) */
+.mhist{display:flex;flex-direction:column;gap:8px}
+.mh{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:9px 12px 10px}
+.mh .mhh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.mh .mrc{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.mh .mpd{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--mute)}
+.mh .mt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0;font-size:13.5px}
+.mh .mt .mn{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh .mt .ms{font-family:'Space Mono',monospace;font-weight:700;font-size:15px}
+.mh .mt.win .mn,.mh .mt.win .ms{color:var(--grn)}
+.mh .mt.win .mn::after{content:' ✓';font-size:11px}
+.mh .mt.lose .mn,.mh .mt.lose .ms{color:var(--mute)}
 
 .note{text-align:center;color:var(--dim);font-size:11.5px;margin:16px 0 4px}
 .refresh{display:inline-flex;gap:6px;align-items:center}
@@ -255,6 +267,11 @@ header.hd{padding:18px 2px 6px}
 
     <div class="slab"><h2>Final table</h2><span class="rule"></span><span class="n">ELO change</span></div>
     <div class="board" id="finalBoard"></div>
+
+    <div id="mhWrap" hidden>
+      <div class="slab"><h2>Match history</h2><span class="rule"></span><span class="n">every game · W/L · point diff</span></div>
+      <div class="mhist" id="mhBoard"></div>
+    </div>
 
     <div class="cta">
       <a class="btn pri" id="claimBtn" href="https://trekkr.online/app">Claim my profile →</a>
@@ -453,6 +470,26 @@ function finalCard(p,i){
   '</div>';
 }
 function ac(k,nm,ds){return '<div class="ac"><div class="k">'+k+'</div><div class="nm">'+esc(nm)+'</div><div class="ds">'+ds+'</div></div>';}
+// ---- render: match history (every completed game, newest first) ----
+function renderMatchHistory(d){
+  var h=(d.history||[]), wrap=$('mhWrap');
+  if(!wrap) return;
+  if(!h.length){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  $('mhBoard').innerHTML = h.slice().reverse().map(function(m){
+    var an=(m.a||[]).map(function(n){return esc(look(n).short||firstName(n));}).join(' & ');
+    var bn=(m.b||[]).map(function(n){return esc(look(n).short||firstName(n));}).join(' & ');
+    var sa=Number(m.sa)||0, sb=Number(m.sb)||0, pd=Math.abs(sa-sb);
+    var aWin=sa>sb, bWin=sb>sa;
+    var loc=[m.round?('Round '+m.round):'', (m.court!=null&&m.court!=='')?('Court '+m.court):''].filter(Boolean).join(' · ');
+    return '<div class="mh">'+
+      '<div class="mhh"><span class="mrc">'+esc(loc||'Match')+'</span>'+
+        '<span class="mpd">'+(pd>0?('+'+pd+' point diff'):'draw')+'</span></div>'+
+      '<div class="mt '+(aWin?'win':bWin?'lose':'')+'"><span class="mn">'+an+'</span><span class="ms">'+sa+'</span></div>'+
+      '<div class="mt '+(bWin?'win':aWin?'lose':'')+'"><span class="mn">'+bn+'</span><span class="ms">'+sb+'</span></div>'+
+    '</div>';
+  }).join('');
+}
 function renderFinal(d){
   $('finalSub').innerHTML =
     '<span>'+esc(d.venue||'Trekkr session')+'</span>'+
@@ -492,6 +529,7 @@ function renderFinal(d){
   $('analysis').innerHTML=cards;
 
   $('finalBoard').innerHTML=s.map(finalCard).join('');
+  renderMatchHistory(d);
 
   // "Claim my profile" primary CTA → generic claim/join if we can't tell who's viewing.
   $('claimBtn').href='https://trekkr.online/app';
