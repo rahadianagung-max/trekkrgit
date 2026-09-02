@@ -295,6 +295,7 @@
         '<div class="wc-cta">' +
           '<button class="btn" id="wc-start">Play Now</button>' +
           (signedIn ? '' : '<button class="link" id="wc-guest">Browse as guest</button>') +
+          '<a class="link wc-admin" href="https://admin.trekkr.online" style="color:var(--faint);font-size:12px;margin-top:6px;text-decoration:none">Venue admin? Sign in →</a>' +
         '</div>' +
       '</div>'
     );
