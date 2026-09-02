@@ -408,8 +408,17 @@ async function leadApprove(id,venue){
   if(!confirm('Approve "'+venue+'"?\nVenue akan menerima email onboarding untuk mengisi info & set password.'))return;
   try{const r=await fetch(crApi()+'/venue-leads/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({leadId:id})});const d=await r.json();
     if(!r.ok||!d.success)throw new Error(d.error||'Gagal');
-    alert('✓ Disetujui. '+(d.emailSent?('Email onboarding terkirim ke '+d.email+'.'):('Akun dibuat, tapi email GAGAL terkirim ke '+d.email+' — cek konfigurasi email.')));
     loadLeads();
+    if(d.emailSent){ alert('✓ Disetujui. Email onboarding terkirim ke '+d.email+'.'); return; }
+    // Email failed — offer to send the onboarding link manually via WhatsApp.
+    var wa=String(d.whatsapp||'').replace(/[^0-9]/g,''); if(wa.charAt(0)==='0') wa='62'+wa.slice(1);
+    var url=d.onboardUrl||'';
+    if(wa && url && confirm('✓ Disetujui, tapi email GAGAL terkirim ke '+d.email+'.\n\nKirim link onboarding ke WhatsApp venue sekarang?')){
+      var msg='Halo! Pendaftaran '+venue+' di Trekkr disetujui 🎾\nSilakan lengkapi info venue & buat password di sini:\n'+url;
+      window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(msg),'_blank');
+    } else if(url){
+      window.prompt('Email gagal terkirim. Salin link onboarding ini & kirim ke venue:', url);
+    }
   }catch(e){alert('Gagal approve: '+e.message);}
 }
 async function leadReject(id,venue){

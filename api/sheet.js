@@ -5156,7 +5156,8 @@ async function approveVenueLead(body) {
   let emailSent = false;
   try { await sendBrevoEmail(email, `Set up ${venue} on Trekkr 🎾`, tplVenueOnboard(venue, pic, link)); emailSent = true; }
   catch (e) { console.error("[venue] onboard email:", e.message); }
-  return respond(200, { success: true, email, venue, emailSent });
+  // Always return the link + WhatsApp so the host can share it manually if email fails.
+  return respond(200, { success: true, email, venue, emailSent, onboardUrl: link, whatsapp: String(lead.whatsapp || "") });
 }
 async function rejectVenueLead(body) {
   if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
