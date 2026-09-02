@@ -17,6 +17,8 @@
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/live", "destination": "/live/index.html" },
     { "source": "/live/:code", "destination": "/live/index.html" },
+    { "source": "/venue-onboard", "destination": "/venue-onboard.html" },
+    { "source": "/venue-reset", "destination": "/venue-reset.html" },
     { "source": "/venues", "destination": "/venues/index.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
 

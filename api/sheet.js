@@ -172,6 +172,18 @@ function verifyPassword(password, saltHex, hashHex) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+// Admin password storage: self-describing "scrypt$<salt>$<hash>". pwVerify accepts
+// that format and, for backward compatibility, a legacy plaintext value.
+function pwStore(password) { const { salt, hash } = hashPassword(password); return `scrypt$${salt}$${hash}`; }
+function pwVerify(password, stored) {
+  const s = String(stored || "");
+  if (s.indexOf("scrypt$") === 0) {
+    const p = s.split("$"); // ["scrypt", salt, hash]
+    return p.length === 3 && verifyPassword(password, p[1], p[2]);
+  }
+  return s !== "" && s === String(password); // legacy plaintext
+}
+
 // Single-use email tokens (set-password / reset): store only the hash in the sheet.
 function makeToken() { return crypto.randomBytes(32).toString("hex"); }
 function hashToken(t) { return crypto.createHash("sha256").update(String(t)).digest("hex"); }
@@ -378,6 +390,40 @@ function tplClaimApproved(playerName, passportUrl, loginUrl) {
 
 // Button wrapper that also leaves breathing room below.
 function emButtonBlock(label, url) { return `<div style="margin:4px 0 20px">${emailButton(label, url)}</div>`; }
+
+// ── Venue-admin onboarding emails ──
+// 1) Approved → set up your venue + password.
+function tplVenueOnboard(venueName, picName, link) {
+  const v = escHtml(venueName || "your venue"), who = escHtml(picName ? picName.split(" ")[0] : "there");
+  const c = emH(`You're in — welcome to Trekkr 🎾`)
+    + emP(`Hi ${who}, great news: <b>${v}</b> has been <b>approved</b> to run PlayRank on Trekkr. Let's finish setting up your venue.`)
+    + emP(`Tap below to add your venue details (schedule, location, RECLUB booking link) and choose a password. It only takes a minute:`)
+    + emButtonBlock("Set up my venue", link)
+    + emP(`Once you're done, your venue appears in the Trekkr app's PlayRank directory and you can run ranked sessions from the admin app.`, true)
+    + emSmall(`This link is valid for 7 days and can be used once. If you didn't request this, you can ignore this email.`)
+    + emLinkFallback(link);
+  return emailShell(c, `Your venue is approved — set up your details and password.`);
+}
+// 2) Setup complete → congratulations, you can log in.
+function tplVenueCongrats(venueName, loginUrl) {
+  const v = escHtml(venueName || "your venue");
+  const c = emH(`Congratulations — ${v} is live! 🎉`)
+    + emP(`Your venue is all set up. <b>${v}</b> is now part of the Trekkr network and listed in the app's PlayRank directory.`)
+    + emP(`You can log in to the venue admin anytime to run ranked sessions, update your info, and share your live standings:`)
+    + emButtonBlock("Open Venue Admin", loginUrl)
+    + emP(`Log in with your email and the password you just set. Forgot it later? Use “Forgot password” on the login screen.`, true);
+  return emailShell(c, `Your venue is live on Trekkr — log in to the admin.`);
+}
+// 3) Password reset for a venue admin.
+function tplVenueReset(venueName, link) {
+  const v = escHtml(venueName || "your venue");
+  const c = emH(`Reset your venue admin password`)
+    + emP(`We received a request to reset the password for the <b>${v}</b> venue admin on Trekkr. Choose a new one below:`)
+    + emButtonBlock("Reset password", link)
+    + emSmall(`This link is valid for 60 minutes and can be used once. If you didn't request this, you can safely ignore this email — your password won't change.`)
+    + emLinkFallback(link);
+  return emailShell(c, `Reset your Trekkr venue admin password.`);
+}
 
 // Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
 async function findAuthByEmail(sheets, email) {
@@ -701,6 +747,15 @@ const netlifyHandler = async (event) => {
     // --- Superadmin: leads inbox (read the self-bootstrapping lead tabs) ---
     if (path === "venue-leads" && method === "GET") return await listVenueLeads();
     if (path === "tournament-leads" && method === "GET") return await listTournamentLeads();
+    // --- VENUE ONBOARDING (lead → approve → set info + password → login) ---
+    if (path === "venue-leads/approve" && method === "POST") return await approveVenueLead(body);
+    if (path === "venue-leads/reject" && method === "POST") return await rejectVenueLead(body);
+    if (path === "venue/onboard" && method === "GET") return await venueOnboardVerify(params);
+    if (path === "venue/onboard" && method === "POST") return await venueOnboardSubmit(body);
+    if (path === "venue/forgot" && method === "POST") return await venueForgot(body);
+    if (path === "venue/reset" && method === "GET") return await venueResetVerify(params);
+    if (path === "venue/reset" && method === "POST") return await venueResetSubmit(body);
+    if (path === "venue/change-password" && method === "POST") return await venueChangePassword(body);
 
     // --- TOURNAMENT ROUTES (Phase 1) ---
     if (path === "tournament/event" && method === "POST") return await tCreateEvent(body);
@@ -1072,12 +1127,25 @@ module.exports = async (req, res) => {
 // ── AUTH ──
 async function login({ username, password }) {
   if (!username || !password) return respond(400, { error: "Username and password required" });
+  const u = String(username).trim();
+  if (supaOn()) {
+    // Case-insensitive username/email match; verify scrypt hash (or legacy plaintext).
+    let rows = [];
+    try { rows = await supaRest("GET", `admins?username=ilike.${encodeURIComponent(u)}&select=username,password,role,venue,status&limit=1`); } catch (e) { console.error("login:", e.message); }
+    const a = rows && rows[0];
+    if (!a) return respond(401, { error: "Invalid credentials" });
+    if (String(a.status || "active") === "pending") return respond(403, { error: "Akun belum aktif — selesaikan onboarding lewat link di email Anda." });
+    if (!pwVerify(password, a.password)) return respond(401, { error: "Invalid credentials" });
+    const role = a.role || "venue_admin", venue = a.venue || "";
+    const token = Buffer.from(`${a.username}:${role}:${venue}:${Date.now()}`).toString("base64");
+    return respond(200, { token, role, venue, username: a.username });
+  }
+  // Non-Supabase fallback: legacy plaintext compare over the Admins sheet.
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.admins}!A2:E` });
   const rows = res.data.values || [];
-  const match = rows.find((r) => r[0] === username && r[1] === password);
+  const match = rows.find((r) => r[0] === username && pwVerify(password, r[1]));
   if (!match) return respond(401, { error: "Invalid credentials" });
-
   const role = match[2] || "venue_admin";
   const venue = match[3] || "";
   const token = Buffer.from(`${username}:${role}:${venue}:${Date.now()}`).toString("base64");
@@ -5035,6 +5103,170 @@ async function listVenueLeads() {
     .reverse();
   return respond(200, { leads }, { "Cache-Control": "no-store" });
 }
+
+// ==============================================================
+// VENUE ONBOARDING FLOW (lead → approve → set info + password → login)
+// Stored directly in Supabase (venue_leads / venues / admins) via supaRest.
+// ==============================================================
+const VENUE_ONBOARD_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const VENUE_RESET_TTL = 60 * 60 * 1000;            // 60 minutes
+async function adminByUsername(u) {
+  const rows = await supaRest("GET", `admins?username=ilike.${encodeURIComponent(String(u).trim())}&limit=1`);
+  return (rows && rows[0]) || null;
+}
+// Approve a venue lead: create/prime the venue + a pending venue-admin account,
+// then email a one-time onboarding link (set info + password).
+async function approveVenueLead(body) {
+  if (!supaOn()) return respond(501, { error: "Onboarding requires Supabase backend" });
+  const leadId = String((body && body.leadId) || "").trim();
+  if (!leadId) return respond(400, { error: "leadId required" });
+  const leads = await supaRest("GET", `venue_leads?lead_id=eq.${encodeURIComponent(leadId)}&limit=1`);
+  const lead = leads && leads[0];
+  if (!lead) return respond(404, { error: "Lead not found" });
+  const email = normEmail(lead.email);
+  const venue = String(lead.venue_community || "").trim();
+  const region = String(lead.region || "").trim();
+  const pic = String(lead.pic_name || "").trim();
+  if (!validEmail(email)) return respond(400, { error: "Lead has no valid email" });
+  if (!venue) return respond(400, { error: "Lead has no venue name" });
+
+  // 1) Ensure the venue exists so the onboarding form has a row to fill.
+  try {
+    const ex = await supaRest("GET", `venues?name=eq.${encodeURIComponent(venue)}&select=name&limit=1`);
+    if (!ex || !ex.length) await supaRest("POST", "venues", [{ name: venue, region, created_at: new Date().toISOString() }], "return=minimal");
+  } catch (e) { console.error("[venue] ensure:", e.message); }
+
+  // 2) Create/prime the pending admin with a one-time onboarding token.
+  const token = makeToken();
+  const patch = {
+    username: email, email, venue, role: "venue_admin", status: "pending", pic_name: pic,
+    token_hash: hashToken(token), token_exp: Date.now() + VENUE_ONBOARD_TTL, token_kind: "onboard",
+  };
+  try {
+    const existing = await adminByUsername(email);
+    if (existing) await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`, patch);
+    else await supaRest("POST", "admins", [Object.assign({ password: "", created_at: new Date().toISOString() }, patch)], "return=minimal");
+  } catch (e) { console.error("[venue] admin upsert:", e.message); return respond(500, { error: "Could not create admin" }); }
+
+  // 3) Mark the lead approved.
+  try { await supaRest("PATCH", `venue_leads?lead_id=eq.${encodeURIComponent(leadId)}`, { status: "approved" }); } catch (e) {}
+
+  // 4) Email the onboarding link (best-effort — approval still succeeds if email fails).
+  const link = `${appBaseUrl()}/venue-onboard?token=${token}&e=${encodeURIComponent(email)}`;
+  let emailSent = false;
+  try { await sendBrevoEmail(email, `Set up ${venue} on Trekkr 🎾`, tplVenueOnboard(venue, pic, link)); emailSent = true; }
+  catch (e) { console.error("[venue] onboard email:", e.message); }
+  return respond(200, { success: true, email, venue, emailSent });
+}
+async function rejectVenueLead(body) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const leadId = String((body && body.leadId) || "").trim();
+  if (!leadId) return respond(400, { error: "leadId required" });
+  try { await supaRest("PATCH", `venue_leads?lead_id=eq.${encodeURIComponent(leadId)}`, { status: "rejected" }); }
+  catch (e) { return respond(500, { error: "Could not update lead" }); }
+  return respond(200, { success: true });
+}
+// Verify a token of a given kind against an admin row; returns the admin or null.
+async function verifyAdminToken(email, token, kind) {
+  const a = await adminByUsername(email);
+  if (!a || a.token_kind !== kind || !a.token_hash) return null;
+  if (a.token_hash !== hashToken(token)) return null;
+  if (!a.token_exp || Date.now() > Number(a.token_exp)) return null;
+  return a;
+}
+async function venueOnboardVerify(params) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const email = normEmail(params && params.email);
+  const token = String((params && params.token) || "");
+  const a = await verifyAdminToken(email, token, "onboard").catch(() => null);
+  if (!a) return respond(400, { error: "This link is invalid or has expired. Ask the Trekkr team to resend it." });
+  let info = {};
+  try {
+    const vs = await supaRest("GET", `venues?name=eq.${encodeURIComponent(a.venue)}&limit=1`);
+    const v = (vs && vs[0]) || {};
+    info = { name: a.venue, region: v.region || "", location: v.location || "", schedule: v.schedule || "", prizePool: v.prize_pool || "", reclubUrl: v.contact || "", logoUrl: v.logo_url || "" };
+  } catch (e) {}
+  return respond(200, { ok: true, email, venue: a.venue, pic: a.pic_name || "", info }, { "Cache-Control": "no-store" });
+}
+async function venueOnboardSubmit(body) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const b = body || {};
+  const email = normEmail(b.email);
+  const token = String(b.token || "");
+  const password = String(b.password || "");
+  if (password.length < 6) return respond(400, { error: "Password minimal 6 karakter" });
+  const a = await verifyAdminToken(email, token, "onboard").catch(() => null);
+  if (!a) return respond(400, { error: "This link is invalid or has expired." });
+  const info = (b.info && typeof b.info === "object") ? b.info : {};
+  // Save venue info (only fields the form owns).
+  const vpatch = {};
+  if (info.schedule != null) vpatch.schedule = String(info.schedule).slice(0, 500);
+  if (info.location != null) vpatch.location = String(info.location).slice(0, 200);
+  if (info.region != null) vpatch.region = String(info.region).slice(0, 120);
+  if (info.prizePool != null) vpatch.prize_pool = String(info.prizePool).slice(0, 120);
+  if (info.reclubUrl != null) vpatch.contact = String(info.reclubUrl).slice(0, 400);
+  if (info.logoUrl != null && String(info.logoUrl).trim()) vpatch.logo_url = String(info.logoUrl).slice(0, 600);
+  try { if (Object.keys(vpatch).length) await supaRest("PATCH", `venues?name=eq.${encodeURIComponent(a.venue)}`, vpatch); }
+  catch (e) { console.error("[venue] info save:", e.message); }
+  // Activate the account with the chosen password; clear the token.
+  try {
+    await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`,
+      { password: pwStore(password), status: "active", token_hash: null, token_exp: null, token_kind: null });
+  } catch (e) { console.error("[venue] activate:", e.message); return respond(500, { error: "Could not set password" }); }
+  const loginUrl = "https://admin.trekkr.online";
+  try { await sendBrevoEmail(email, `🎉 ${a.venue} is live on Trekkr`, tplVenueCongrats(a.venue, loginUrl)); } catch (e) { console.error("[venue] congrats email:", e.message); }
+  return respond(200, { success: true, venue: a.venue, loginUrl });
+}
+async function venueForgot(body) {
+  if (!supaOn()) return respond(200, { success: true }); // never leak; no-op off-Supabase
+  const email = normEmail(body && body.email);
+  if (!validEmail(email)) return respond(200, { success: true });
+  try {
+    const a = await adminByUsername(email);
+    if (a && String(a.status) !== "pending") {
+      const token = makeToken();
+      await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`,
+        { token_hash: hashToken(token), token_exp: Date.now() + VENUE_RESET_TTL, token_kind: "reset" });
+      const link = `${appBaseUrl()}/venue-reset?token=${token}&e=${encodeURIComponent(email)}`;
+      try { await sendBrevoEmail(email, `Reset your Trekkr venue admin password`, tplVenueReset(a.venue, link)); } catch (e) { console.error("[venue] reset email:", e.message); }
+    }
+  } catch (e) { console.error("[venue] forgot:", e.message); }
+  return respond(200, { success: true }); // always ok — don't reveal whether the email exists
+}
+async function venueResetVerify(params) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const a = await verifyAdminToken(normEmail(params && params.email), String((params && params.token) || ""), "reset").catch(() => null);
+  if (!a) return respond(400, { error: "This reset link is invalid or has expired." });
+  return respond(200, { ok: true, email: normEmail(params.email), venue: a.venue }, { "Cache-Control": "no-store" });
+}
+async function venueResetSubmit(body) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const b = body || {};
+  const email = normEmail(b.email), password = String(b.password || "");
+  if (password.length < 6) return respond(400, { error: "Password minimal 6 karakter" });
+  const a = await verifyAdminToken(email, String(b.token || ""), "reset").catch(() => null);
+  if (!a) return respond(400, { error: "This reset link is invalid or has expired." });
+  try {
+    await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`,
+      { password: pwStore(password), status: "active", token_hash: null, token_exp: null, token_kind: null });
+  } catch (e) { return respond(500, { error: "Could not reset password" }); }
+  return respond(200, { success: true });
+}
+async function venueChangePassword(body) {
+  if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
+  const b = body || {};
+  const tok = decodeAdminToken(b.token);
+  if (!tok || !tok.username) return respond(401, { error: "Not signed in" });
+  const newPassword = String(b.newPassword || "");
+  if (newPassword.length < 6) return respond(400, { error: "Password baru minimal 6 karakter" });
+  const a = await adminByUsername(tok.username);
+  if (!a) return respond(404, { error: "Account not found" });
+  if (!pwVerify(String(b.currentPassword || ""), a.password)) return respond(403, { error: "Password saat ini salah" });
+  try { await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(tok.username)}`, { password: pwStore(newPassword) }); }
+  catch (e) { return respond(500, { error: "Could not change password" }); }
+  return respond(200, { success: true });
+}
+
 async function listTournamentLeads() {
   const sheets = getSheets();
   await ensureTournamentLeadsTab(sheets);

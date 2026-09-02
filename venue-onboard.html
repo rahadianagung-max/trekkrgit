@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Set up your venue · Trekkr</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="robots" content="noindex"/>
+<meta name="theme-color" content="#FF6A00"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--or:#FF6A00;--ink:#17140F;--mu:#6B655A;--faint:#9C9689;--bg:#F5F3EF;--card:#fff;--line:#E7E3DA;--grn:#1B9E5A;--red:#E14338}
+@media(prefers-color-scheme:dark){:root{--ink:#F4EFE6;--mu:#A79E8E;--faint:#786F60;--bg:#0E0C0A;--card:#1A1712;--line:#2C271F}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 60px}
+.wrap{max-width:520px;margin:0 auto;padding:0 18px}
+.top{background:linear-gradient(135deg,#FF6A00,#FF9A3D);color:#fff;padding:calc(24px + env(safe-area-inset-top)) 18px 22px;text-align:center;margin-bottom:22px}
+.brand{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:30px}
+.top p{font-size:13px;opacity:.95;margin-top:2px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 8px 24px rgba(30,22,10,.06)}
+h1{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;font-size:26px;line-height:1;margin-bottom:6px}
+.sub{color:var(--mu);font-size:14px;margin-bottom:18px}
+.sub b{color:var(--ink)}
+.field{margin-bottom:14px}
+label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+input,textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:11px;padding:12px 13px;font-size:15px;font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--or)}
+input[readonly]{opacity:.75}
+textarea{min-height:66px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:11.5px;color:var(--faint);margin-top:4px}
+.btn{width:100%;border:none;border-radius:12px;background:var(--or);color:#fff;font-weight:800;font-size:16px;padding:15px;cursor:pointer;margin-top:6px}
+.btn:disabled{opacity:.55}
+.msg{border-radius:11px;padding:12px 14px;font-size:13.5px;font-weight:600;margin-bottom:14px}
+.msg.err{background:rgba(225,67,56,.12);color:var(--red)}
+.state{text-align:center;padding:40px 10px}
+.spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.done .em{font-size:46px}
+.done h1{margin-top:10px}
+.done .btn{max-width:280px;margin:18px auto 0;text-decoration:none;display:block;text-align:center}
+.sec{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:20px 0 10px}
+[hidden]{display:none!important}
+.foot{text-align:center;color:var(--faint);font-size:11px;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="top"><div class="brand">Trekk<span style="color:#2A1400">r</span></div><p>Venue onboarding</p></div>
+<div class="wrap">
+  <div id="loading" class="state"><div class="spin"></div><p style="color:var(--mu)">Checking your link…</p></div>
+
+  <div id="bad" class="card" hidden>
+    <h1>Link expired</h1>
+    <p class="sub" id="badMsg">This onboarding link is invalid or has expired. Please ask the Trekkr team to resend it.</p>
+    <a class="btn" href="https://trekkr.online" style="text-decoration:none;text-align:center;display:block">Go to Trekkr</a>
+  </div>
+
+  <form id="form" class="card" hidden>
+    <h1 id="hi">Welcome 🎾</h1>
+    <p class="sub">Set up <b id="vname">your venue</b> and choose a password. This is what players will see in the Trekkr app.</p>
+    <div class="msg err" id="err" hidden></div>
+
+    <div class="sec">Venue details</div>
+    <div class="field"><label>Venue / community name</label><input id="f-name" readonly/></div>
+    <div class="row2">
+      <div class="field"><label>Region / city</label><input id="f-region" placeholder="e.g. Jakarta Selatan"/></div>
+      <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Kemang"/></div>
+    </div>
+    <div class="field"><label>Playing schedule</label><textarea id="f-schedule" placeholder="e.g. Wed 19:00–21:00, Fri 19:00–21:00"></textarea>
+      <div class="hint">Shown in the app's PlayRank directory.</div></div>
+    <div class="field"><label>RECLUB link</label><input id="f-reclub" placeholder="https://reclub.co/… (booking / community link)"/>
+      <div class="hint">The “Book / info” button in the app links here.</div></div>
+    <div class="row2">
+      <div class="field"><label>Prize pool <span style="font-weight:600;text-transform:none;letter-spacing:0">(optional)</span></label><input id="f-prize" placeholder="e.g. IDR 2,500,000"/></div>
+      <div class="field"><label>Logo URL <span style="font-weight:600;text-transform:none;letter-spacing:0">(optional)</span></label><input id="f-logo" placeholder="https://…"/></div>
+    </div>
+
+    <div class="sec">Your login</div>
+    <div class="field"><label>Email (your login)</label><input id="f-email" readonly/></div>
+    <div class="row2">
+      <div class="field"><label>Password</label><input id="f-pass" type="password" autocomplete="new-password" placeholder="Min. 6 characters"/></div>
+      <div class="field"><label>Confirm password</label><input id="f-pass2" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+    </div>
+
+    <button class="btn" id="go" type="submit">Finish setup →</button>
+  </form>
+
+  <div id="done" class="card done" hidden>
+    <div class="em">🎉</div>
+    <h1>You're all set!</h1>
+    <p class="sub" id="doneMsg">Your venue is live on Trekkr. You can now log in to the venue admin with your email and password.</p>
+    <a class="btn" href="https://admin.trekkr.online">Open Venue Admin →</a>
+  </div>
+
+  <p class="foot">Powered by <b style="color:var(--or)">Trekkr</b> · ranked padel for Indonesia</p>
+</div>
+
+<script>
+(function(){
+  var API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+  var qp=new URLSearchParams(location.search), token=qp.get('token')||'', email=qp.get('e')||qp.get('email')||'';
+  var $=function(id){return document.getElementById(id);};
+  function show(id){['loading','bad','form','done'].forEach(function(x){$(x).hidden=(x!==id);});}
+  if(!token||!email){ $('badMsg').textContent='This link is missing its token. Please use the full link from your email.'; show('bad'); return; }
+
+  fetch(API+'/venue/onboard?token='+encodeURIComponent(token)+'&e='+encodeURIComponent(email))
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+    .then(function(res){
+      if(!res.ok||!res.d.ok){ if(res.d&&res.d.error)$('badMsg').textContent=res.d.error; show('bad'); return; }
+      var info=res.d.info||{};
+      $('vname').textContent=res.d.venue||'your venue';
+      $('hi').textContent='Welcome, '+((res.d.pic||'').split(' ')[0]||'')+' 🎾';
+      $('f-name').value=res.d.venue||'';
+      $('f-email').value=res.d.email||email;
+      $('f-region').value=info.region||''; $('f-location').value=info.location||'';
+      $('f-schedule').value=info.schedule||''; $('f-reclub').value=info.reclubUrl||'';
+      $('f-prize').value=info.prizePool||''; $('f-logo').value=info.logoUrl||'';
+      show('form');
+    })
+    .catch(function(){ $('badMsg').textContent='Could not verify your link. Check your connection and try again.'; show('bad'); });
+
+  $('form').addEventListener('submit',function(e){
+    e.preventDefault();
+    var err=$('err'); err.hidden=true;
+    var pass=$('f-pass').value||'', pass2=$('f-pass2').value||'';
+    if(pass.length<6){ err.textContent='Password must be at least 6 characters.'; err.hidden=false; return; }
+    if(pass!==pass2){ err.textContent='Passwords do not match.'; err.hidden=false; return; }
+    var go=$('go'); go.disabled=true; go.textContent='Saving…';
+    fetch(API+'/venue/onboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      token:token, email:email, password:pass,
+      info:{ region:$('f-region').value.trim(), location:$('f-location').value.trim(), schedule:$('f-schedule').value.trim(),
+        reclubUrl:$('f-reclub').value.trim(), prizePool:$('f-prize').value.trim(), logoUrl:$('f-logo').value.trim() }
+    })}).then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+    .then(function(res){
+      if(!res.ok||!res.d.success){ err.textContent=(res.d&&res.d.error)||'Something went wrong. Try again.'; err.hidden=false; go.disabled=false; go.textContent='Finish setup →'; return; }
+      $('doneMsg').textContent='"'+(res.d.venue||'Your venue')+'" is live on Trekkr. Log in to the venue admin with your email and the password you just set.';
+      show('done'); window.scrollTo(0,0);
+    })
+    .catch(function(){ err.textContent='Network error. Please try again.'; err.hidden=false; go.disabled=false; go.textContent='Finish setup →'; });
+  });
+})();
+</script>
+</body>
+</html>

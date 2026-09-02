@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Reset password · Trekkr Venue</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="robots" content="noindex"/>
+<meta name="theme-color" content="#FF6A00"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,800;1,800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--or:#FF6A00;--ink:#17140F;--mu:#6B655A;--faint:#9C9689;--bg:#F5F3EF;--card:#fff;--line:#E7E3DA;--red:#E14338}
+@media(prefers-color-scheme:dark){:root{--ink:#F4EFE6;--mu:#A79E8E;--faint:#786F60;--bg:#0E0C0A;--card:#1A1712;--line:#2C271F}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 22px;width:100%;max-width:400px;box-shadow:0 8px 24px rgba(30,22,10,.06)}
+.brand{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:26px;color:var(--or);text-align:center;margin-bottom:4px}
+h1{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;font-size:22px;text-align:center;margin-bottom:6px}
+.sub{color:var(--mu);font-size:13.5px;text-align:center;margin-bottom:18px}
+label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
+input{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:11px;padding:12px 13px;font-size:15px;font-family:inherit;margin-bottom:12px}
+input:focus{outline:none;border-color:var(--or)}
+.btn{width:100%;border:none;border-radius:12px;background:var(--or);color:#fff;font-weight:800;font-size:16px;padding:14px;cursor:pointer;text-decoration:none;display:block;text-align:center}
+.btn:disabled{opacity:.55}
+.msg{border-radius:11px;padding:11px 13px;font-size:13px;font-weight:600;margin-bottom:14px}
+.msg.err{background:rgba(225,67,56,.12);color:var(--red)}
+.state{text-align:center;padding:20px}
+.spin{width:24px;height:24px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">Trekkr</div>
+  <div id="loading" class="state"><div class="spin"></div><p style="color:var(--mu)">Checking your link…</p></div>
+
+  <div id="bad" hidden>
+    <h1>Link expired</h1>
+    <p class="sub" id="badMsg">This reset link is invalid or has expired.</p>
+    <a class="btn" href="https://admin.trekkr.online">Back to login</a>
+  </div>
+
+  <form id="form" hidden>
+    <h1>Set a new password</h1>
+    <p class="sub" id="forWho">For your venue admin account.</p>
+    <div class="msg err" id="err" hidden></div>
+    <label>New password</label><input id="p1" type="password" autocomplete="new-password" placeholder="Min. 6 characters"/>
+    <label>Confirm password</label><input id="p2" type="password" autocomplete="new-password" placeholder="Repeat password"/>
+    <button class="btn" id="go" type="submit">Reset password →</button>
+  </form>
+
+  <div id="done" hidden>
+    <div style="text-align:center;font-size:42px">✅</div>
+    <h1>Password updated</h1>
+    <p class="sub">You can now log in with your new password.</p>
+    <a class="btn" href="https://admin.trekkr.online">Open Venue Admin →</a>
+  </div>
+</div>
+<script>
+(function(){
+  var API=(location.hostname==='trekkr.online'||location.hostname.endsWith('.vercel.app'))?'/api':'https://trekkr.online/api';
+  var qp=new URLSearchParams(location.search), token=qp.get('token')||'', email=qp.get('e')||qp.get('email')||'';
+  var $=function(id){return document.getElementById(id);};
+  function show(id){['loading','bad','form','done'].forEach(function(x){$(x).hidden=(x!==id);});}
+  if(!token||!email){ show('bad'); return; }
+  fetch(API+'/venue/reset?token='+encodeURIComponent(token)+'&e='+encodeURIComponent(email))
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+    .then(function(res){ if(!res.ok||!res.d.ok){ if(res.d&&res.d.error)$('badMsg').textContent=res.d.error; show('bad'); return; }
+      $('forWho').textContent='For '+(res.d.venue||'your venue')+' ('+(res.d.email||email)+').'; show('form'); })
+    .catch(function(){ show('bad'); });
+
+  $('form').addEventListener('submit',function(e){
+    e.preventDefault(); var err=$('err'); err.hidden=true;
+    var a=$('p1').value||'', b=$('p2').value||'';
+    if(a.length<6){ err.textContent='Password must be at least 6 characters.'; err.hidden=false; return; }
+    if(a!==b){ err.textContent='Passwords do not match.'; err.hidden=false; return; }
+    var go=$('go'); go.disabled=true; go.textContent='Saving…';
+    fetch(API+'/venue/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,email:email,password:a})})
+      .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+      .then(function(res){ if(!res.ok||!res.d.success){ err.textContent=(res.d&&res.d.error)||'Something went wrong.'; err.hidden=false; go.disabled=false; go.textContent='Reset password →'; return; } show('done'); })
+      .catch(function(){ err.textContent='Network error. Try again.'; err.hidden=false; go.disabled=false; go.textContent='Reset password →'; });
+  });
+})();
+</script>
+</body>
+</html>

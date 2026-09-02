@@ -172,7 +172,7 @@ footer span{color:var(--lime)}
       <div class="section">
         <div class="section-title">VENUE / COMMUNITY LEADS</div>
         <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Pendaftaran dari form <b>Get Listed</b> (trekkr.online/get-listed). Newest first.</p>
-        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Date</th><th>Venue / Community</th><th>PIC</th><th>Region</th><th>WhatsApp</th><th>Email</th></tr></thead><tbody id="venueLeadsTbody"><tr><td colspan="6" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Date</th><th>Venue / Community</th><th>PIC</th><th>Region</th><th>WhatsApp</th><th>Email</th><th>Status</th><th>Action</th></tr></thead><tbody id="venueLeadsTbody"><tr><td colspan="8" style="color:var(--muted2)">Memuat…</td></tr></tbody></table></div>
       </div>
       <div class="section">
         <div class="section-title">TOURNAMENT / LEAGUE LEADS</div>
@@ -389,11 +389,34 @@ function leadDate(s){try{return new Date(s).toLocaleDateString('en-GB',{day:'2-d
 async function loadLeads(){
   var vb=document.getElementById('venueLeadsTbody'),tb=document.getElementById('tourLeadsTbody');
   try{const r=await fetch(crApi()+'/venue-leads');const d=await r.json();const L=(d&&d.leads)||[];
-    vb.innerHTML=L.length?L.map(x=>`<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.venue)}</strong></td><td>${erEsc(x.picName)}</td><td>${erEsc(x.region)||'—'}</td><td><a href="https://wa.me/${String(x.whatsapp).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.whatsapp)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td></tr>`).join(''):'<tr><td colspan="6" style="color:var(--muted2)">Belum ada lead.</td></tr>';
-  }catch(e){vb.innerHTML='<tr><td colspan="6" style="color:#e03b30">Gagal memuat.</td></tr>';}
+    vb.innerHTML=L.length?L.map(x=>{
+      var st=String(x.status||'NEW').toUpperCase();
+      var badge=st==='APPROVED'?'<span class="badge badge-lime">Approved</span>'
+        :st==='REJECTED'?'<span class="badge" style="background:rgba(255,56,48,.15);color:#e03b30">Rejected</span>'
+        :'<span class="badge" style="background:var(--s3);color:var(--muted2)">New</span>';
+      var act=(st==='APPROVED'||st==='REJECTED')
+        ? (st==='REJECTED'?`<button class="btn btn-ghost btn-sm" onclick="leadApprove('${erEsc(x.id)}','${erEsc(x.venue)}')">Approve</button>`:`<button class="btn btn-ghost btn-sm" onclick="leadApprove('${erEsc(x.id)}','${erEsc(x.venue)}')">Resend</button>`)
+        : `<button class="btn btn-primary btn-sm" onclick="leadApprove('${erEsc(x.id)}','${erEsc(x.venue)}')">Approve</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="leadReject('${erEsc(x.id)}','${erEsc(x.venue)}')">Reject</button>`;
+      return `<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.venue)}</strong></td><td>${erEsc(x.picName)}</td><td>${erEsc(x.region)||'—'}</td><td><a href="https://wa.me/${String(x.whatsapp).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.whatsapp)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td><td>${badge}</td><td style="white-space:nowrap">${act}</td></tr>`;
+    }).join(''):'<tr><td colspan="8" style="color:var(--muted2)">Belum ada lead.</td></tr>';
+  }catch(e){vb.innerHTML='<tr><td colspan="8" style="color:#e03b30">Gagal memuat.</td></tr>';}
   try{const r=await fetch(crApi()+'/tournament-leads');const d=await r.json();const L=(d&&d.leads)||[];
     tb.innerHTML=L.length?L.map(x=>`<tr><td style="font-size:10px;white-space:nowrap">${leadDate(x.timestamp)}</td><td><strong>${erEsc(x.name)}</strong></td><td>${erEsc(x.location)||'—'}</td><td>${erEsc(x.picName)}</td><td><a href="https://wa.me/${String(x.phone).replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--lime)">${erEsc(x.phone)}</a></td><td style="font-size:11px">${erEsc(x.email)}</td><td style="font-size:11px;max-width:220px">${erEsc(x.message)||'—'}</td></tr>`).join(''):'<tr><td colspan="7" style="color:var(--muted2)">Belum ada lead.</td></tr>';
   }catch(e){tb.innerHTML='<tr><td colspan="7" style="color:#e03b30">Gagal memuat.</td></tr>';}
+}
+async function leadApprove(id,venue){
+  if(!confirm('Approve "'+venue+'"?\nVenue akan menerima email onboarding untuk mengisi info & set password.'))return;
+  try{const r=await fetch(crApi()+'/venue-leads/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({leadId:id})});const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'Gagal');
+    alert('✓ Disetujui. '+(d.emailSent?('Email onboarding terkirim ke '+d.email+'.'):('Akun dibuat, tapi email GAGAL terkirim ke '+d.email+' — cek konfigurasi email.')));
+    loadLeads();
+  }catch(e){alert('Gagal approve: '+e.message);}
+}
+async function leadReject(id,venue){
+  if(!confirm('Reject "'+venue+'"? Lead akan ditandai ditolak.'))return;
+  try{const r=await fetch(crApi()+'/venue-leads/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({leadId:id})});const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'Gagal');loadLeads();
+  }catch(e){alert('Gagal reject: '+e.message);}
 }
 
 // ── HOME EVENTS (tracked tournaments/leagues shown on the home section) ──
