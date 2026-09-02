@@ -92,10 +92,12 @@ function parseRange(range) {
 }
 
 function resolve(title) {
-  if (/^Venue_/.test(title)) return { table: VENUE_TABLE, cols: VENUE_COLS, venue: venueFromTab(title) };
+  // Explicit map wins first, so a specifically-mapped tab like `Venue_Leads`
+  // (→ venue_leads) is never mistaken for a dynamic per-venue match tab.
   const m = SHEET_MAP[title];
-  if (!m) return null;
-  return { table: m.table, cols: m.cols, venue: null };
+  if (m) return { table: m.table, cols: m.cols, venue: null };
+  if (/^Venue_/.test(title)) return { table: VENUE_TABLE, cols: VENUE_COLS, venue: venueFromTab(title) };
+  return null;
 }
 
 function s(v) { return v == null ? "" : String(v); }
