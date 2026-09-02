@@ -1192,6 +1192,16 @@ async function getPlayerDetail(name) {
     // further edits behind the registered email. We never expose the email itself.
     claimed: !!String(pRow[11] || "").trim(),
   };
+  // A profile is also claimed once a Trekkr account is linked (players.user_id),
+  // even with no claim_email — match the /live page's definition so the passport
+  // shows "Verified" and blocks a re-claim. One small extra read on Supabase.
+  if (supaOn()) {
+    try {
+      const cr = await supaRest("GET", `players?name=eq.${encodeURIComponent(pRow[0])}&select=user_id,claim_email&limit=1`);
+      const row0 = cr && cr[0];
+      if (row0) player.claimed = (row0.user_id != null) || String(row0.claim_email || "").trim() !== "";
+    } catch (e) { /* fall back to the sheet-derived claimed flag */ }
+  }
 
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const eRows = eRes.data.values || [];
