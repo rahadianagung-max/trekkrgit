@@ -5176,7 +5176,7 @@ async function verifyAdminToken(email, token, kind) {
 }
 async function venueOnboardVerify(params) {
   if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
-  const email = normEmail(params && params.email);
+  const email = normEmail(params && (params.e || params.email));
   const token = String((params && params.token) || "");
   const a = await verifyAdminToken(email, token, "onboard").catch(() => null);
   if (!a) return respond(400, { error: "This link is invalid or has expired. Ask the Trekkr team to resend it." });
@@ -5235,9 +5235,10 @@ async function venueForgot(body) {
 }
 async function venueResetVerify(params) {
   if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
-  const a = await verifyAdminToken(normEmail(params && params.email), String((params && params.token) || ""), "reset").catch(() => null);
+  const email = normEmail(params && (params.e || params.email));
+  const a = await verifyAdminToken(email, String((params && params.token) || ""), "reset").catch(() => null);
   if (!a) return respond(400, { error: "This reset link is invalid or has expired." });
-  return respond(200, { ok: true, email: normEmail(params.email), venue: a.venue }, { "Cache-Control": "no-store" });
+  return respond(200, { ok: true, email, venue: a.venue }, { "Cache-Control": "no-store" });
 }
 async function venueResetSubmit(body) {
   if (!supaOn()) return respond(501, { error: "Requires Supabase backend" });
