@@ -600,6 +600,8 @@ const netlifyHandler = async (event) => {
     if (path === "live" && method === "POST") return await livePost(body);
     // Venue TV: the currently-live (or just-finished) PlayRank session for a venue.
     if (path === "live/venue" && method === "GET") return await liveVenue(params);
+    // Admin cross-device: list a venue's running sessions (token-scoped, no write_key).
+    if (path === "live/venue-list" && method === "GET") return await liveVenueList(params);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
@@ -4654,6 +4656,22 @@ async function livePost(body) {
     return respond(200, { ok: true, code, key: writeKey, url: `${appBaseUrl()}/live/${code}` }, { "Cache-Control": "no-store" });
   }
 
+  // Admin cross-device close: authorize by login token scoped to the session's
+  // venue (the write_key lives on the device that created it, not this one).
+  if (action === "close") {
+    const ccode = String(b.code || "").trim().toLowerCase();
+    if (!ccode) return respond(400, { error: "code required" });
+    let crow;
+    try { crow = await liveRead(ccode); } catch (e) { return respond(500, { error: "read failed" }); }
+    if (!crow) return respond(200, { ok: true });   // already gone — treat as success
+    if (!adminCanVenue(decodeAdminToken(b.token), crow.venue)) return respond(403, { error: "not authorized for this venue" });
+    try {
+      if (supaOn()) await supaRest("DELETE", `live_sessions?code=eq.${encodeURIComponent(ccode)}`);
+      else delete LIVE_MEM[ccode];
+    } catch (e) { console.error("[live] close:", e.message); return respond(500, { error: "close failed" }); }
+    return respond(200, { ok: true });
+  }
+
   // update / finalize both require code + matching write_key.
   const code = String(b.code || "").trim().toLowerCase();
   const key = String(b.key || "");
@@ -4762,6 +4780,47 @@ async function liveVenue(params) {
     recap: row.recap || null,
     updatedAt: row.updated_at || row.updatedAt || null,
   }, { "Cache-Control": "no-store" });
+}
+
+// Decode the lightweight login token base64(username:role:venue:ts). Not signed
+// (see CLAUDE.md) — used only to scope an admin action to their own venue.
+function decodeAdminToken(t) {
+  try {
+    const parts = Buffer.from(String(t || ""), "base64").toString("utf8").split(":");
+    if (parts.length < 2 || !parts[0]) return null;
+    return { username: parts[0], role: parts[1] || "venue_admin", venue: parts[2] || "" };
+  } catch (e) { return null; }
+}
+function adminCanVenue(tok, venue) {
+  if (!tok) return false;
+  if (tok.role === "superadmin") return true;
+  return String(tok.venue || "").trim().toLowerCase() === String(venue || "").trim().toLowerCase();
+}
+// Admin cross-device: every running (live) session for a venue, so a host on
+// another device can end a match they can't resume there. Token-scoped; never
+// returns write_key. Includes just-finished sessions within the celebrate window.
+async function liveVenueList(params) {
+  const venue = String((params && params.venue) || "").trim();
+  const tok = decodeAdminToken(params && params.token);
+  if (!venue) return respond(400, { error: "venue required" });
+  if (!adminCanVenue(tok, venue)) return respond(403, { error: "not authorized for this venue" });
+  let rows = [];
+  try {
+    if (supaOn()) rows = await supaRest("GET", `live_sessions?venue=eq.${encodeURIComponent(venue)}&order=updated_at.desc&limit=20`) || [];
+    else rows = Object.values(LIVE_MEM).filter((r) => (r.venue || "") === venue);
+  } catch (e) { console.error("[live] list:", e.message); return respond(500, { error: "read failed" }); }
+  const STALE_MS = 3 * 60 * 60 * 1000, now = Date.now();
+  const sessions = rows.map((r) => {
+    const ageMs = now - new Date(r.updated_at || r.updatedAt || 0).getTime();
+    const d = r.data || {};
+    return {
+      code: r.code, status: r.status || "live", venue: r.venue || venue,
+      players: (d.players || []).length, round: d.round || 0, courts: d.courts || 0,
+      gender: d.gender || "", updatedAt: r.updated_at || r.updatedAt || null,
+      stale: r.status === "live" && ageMs >= STALE_MS,
+    };
+  }).filter((s) => s.status === "live" || (s.status === "final" && (now - new Date(s.updatedAt || 0).getTime()) < LIVE_CELEBRATE_MS));
+  return respond(200, { venue, sessions }, { "Cache-Control": "no-store" });
 }
 
 // Monthly awards for a venue TV: "Most Wins of the Month" and "Most Loyal Player

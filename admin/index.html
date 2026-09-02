@@ -974,7 +974,7 @@ const RM = { // shared state for ranked match
   teams: [], _teamPick: null, _manageBuf: [],
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
-  _inited: false, _savedToRestore: null,
+  _inited: false, _savedToRestore: null, _serverLive: [],
 };
 const API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 
@@ -1217,6 +1217,9 @@ function rmInit() {
   } else {
     rmGo('intro');
   }
+  // Then merge in live sessions from the server (matches started on another
+  // device) so they can be ended from here too — cross-device.
+  rmSyncServerSessions();
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -2388,11 +2391,13 @@ function rmShowRunning(){
   rmRenderRunningList();
   document.getElementById('rm-modal-restore').classList.remove('hidden');
 }
+function rmLocalCodes(){ return new Set(rmListRunning().map(s=>s.liveCode).filter(Boolean)); }
+function rmOrphans(){ const loc=rmLocalCodes(); return (RM._serverLive||[]).filter(s=>s.code&&!loc.has(s.code)); }
 function rmRenderRunningList(){
-  const list=rmListRunning();
+  const list=rmListRunning(), orphans=rmOrphans();
   const wrap=document.getElementById('rm-running-list');
-  if(!list.length){ document.getElementById('rm-modal-restore').classList.add('hidden'); rmGo('intro'); return; }
-  wrap.innerHTML=list.map(s=>{
+  if(!list.length&&!orphans.length){ document.getElementById('rm-modal-restore').classList.add('hidden'); rmGo('intro'); return; }
+  let html=list.map(s=>{
     const done=(s.rounds||[]).filter(r=>r.submitted).length;
     const sys=(s.courts===1)?'Americano':'Mexicano';
     const mid=String(s.matchId||'').replace(/"/g,'');
@@ -2410,6 +2415,44 @@ function rmRenderRunningList(){
       </div>
     </div>`;
   }).join('');
+  if(orphans.length){
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin:4px 0 -2px"><span style="flex:1;height:1px;background:var(--sur-hi)"></span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)">Dari perangkat lain</span><span style="flex:1;height:1px;background:var(--sur-hi)"></span></div>`;
+    html+=orphans.map(s=>{
+      const sys=(s.courts===1)?'Americano':(s.courts>1?'Mexicano':'');
+      const code=String(s.code||'').replace(/'/g,'');
+      const meta=[s.players?s.players+' pemain':'',s.courts?s.courts+' court':'',sys].filter(Boolean).join(' · ');
+      const when=s.updatedAt?rmAgo(Date.parse(s.updatedAt)):'';
+      return `<div style="background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${s.stale?'var(--txt3)':'var(--red)'};box-shadow:0 0 0 3px rgba(225,67,56,.14);flex-shrink:0"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:14px">${meta||'Live session'}</div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:1px">${s.round?'di ronde '+s.round+' · ':''}dibuat di perangkat lain${when?' · '+when:''}${s.stale?' · idle lama':''}</div>
+          </div>
+        </div>
+        <button class="rm-btn-full rm-btn-ghost" style="color:var(--red)" onclick="rmCloseServer('${code}')">🏁 Akhiri & Tutup Live</button>
+      </div>`;
+    }).join('');
+  }
+  wrap.innerHTML=html;
+}
+async function rmSyncServerSessions(){
+  if(!RM.venue||!RM.token) return;
+  try{
+    const res=await rmApi('live/venue-list?venue='+encodeURIComponent(RM.venue)+'&token='+encodeURIComponent(RM.token));
+    RM._serverLive=(res&&res.sessions)||[];
+  }catch(e){ return; }
+  const modalOpen=!document.getElementById('rm-modal-restore').classList.contains('hidden');
+  const introOpen=(document.getElementById('rm-intro')||{}).classList&&document.getElementById('rm-intro').classList.contains('active');
+  if(modalOpen){ rmRenderRunningList(); }
+  else if(rmOrphans().length && introOpen){ rmShowRunning(); }
+}
+async function rmCloseServer(code){
+  if(!confirm('Akhiri & hapus match ini? Halaman live & tampilan TV-nya akan ditutup. (Tidak bisa dilanjutkan dari sini)'))return;
+  try{ await rmApi('live',{method:'POST',body:JSON.stringify({action:'close',code:code,token:RM.token})}); }
+  catch(e){ alert('Gagal menutup match: '+e.message); return; }
+  RM._serverLive=(RM._serverLive||[]).filter(s=>s.code!==code);
+  rmRenderRunningList();
 }
 function rmApplySaved(saved){
   Object.assign(RM,{
