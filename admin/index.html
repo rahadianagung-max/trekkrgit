@@ -359,6 +359,30 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 #apanel-edits .er-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 #apanel-edits .er-rej{border:1px solid rgba(255,45,48,.5);color:var(--danger);background:transparent;border-radius:99px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer}
 #apanel-edits .er-app{background:#22A052;color:#fff;border:0;border-radius:99px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer}
+/* Match History tab */
+.mh-tabs{display:inline-flex;background:var(--sur-lo);border:1px solid var(--sur-hi);border-radius:99px;padding:3px;margin-bottom:16px}
+.mh-tab{border:0;background:transparent;color:var(--on-v);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;padding:8px 16px;border-radius:99px;cursor:pointer}
+.mh-tab.is-active{background:var(--pr);color:#fff}
+.mh-list{display:flex;flex-direction:column;gap:6px}
+.mh-row{display:grid;grid-template-columns:64px 1fr auto 1fr 44px;align-items:center;gap:8px;background:var(--sur-0);border:1px solid var(--bdr);border-radius:11px;padding:9px 12px;color:var(--on)}
+.mh-date{font-size:10.5px;color:var(--txt3);white-space:nowrap;font-weight:700}
+.mh-team{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-team.r{text-align:right}
+.mh-team.win{font-weight:800;color:#2FD07A}
+.mh-score{font-family:'Saira Condensed',monospace;font-weight:800;font-size:16px;white-space:nowrap}
+.mh-score span{color:var(--txt3);margin:0 3px}
+.mh-pd{font-size:11px;font-weight:700;color:var(--txt3);text-align:right}
+.mh-sess{background:var(--sur-0);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.mh-sess-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--on-v);margin-bottom:8px}
+.mh-sess-h span{color:var(--txt3);font-weight:700;text-transform:none;letter-spacing:0}
+.mh-erow{display:grid;grid-template-columns:1fr auto 54px 54px;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--sur-hi);font-size:13px;color:var(--on)}
+.mh-erow:first-of-type{border-top:0}
+.mh-erow .nm{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-erow .wl{font-size:11.5px;color:var(--txt3);font-weight:700}
+.mh-erow .el{font-family:'Saira Condensed',monospace;font-weight:800;text-align:right}
+.mh-erow .dl{font-weight:800;text-align:right;font-size:12.5px}
+.mh-erow .dl.up{color:#2FD07A}.mh-erow .dl.dn{color:#FF5A52}
+@media(max-width:600px){.mh-row{grid-template-columns:52px 1fr auto 1fr 36px;gap:6px;padding:8px 9px}.mh-team{font-size:12px}}
 </style>
 </head>
 <body>
@@ -579,9 +603,26 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       <p class="dash-venue" id="dashVenue">Loading...</p>
       <nav class="tab-nav">
         <button class="tab-btn is-active" onclick="switchTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
+        <button class="tab-btn" onclick="switchTab('history')" id="atab-history">Match History</button>
         <button class="tab-btn" onclick="switchTab('venue-info')" id="atab-venue-info">Venue Info</button>
         <button class="tab-btn" onclick="switchTab('edits')" id="atab-edits">Edit Requests</button>
       </nav>
+    </div>
+  </div>
+
+  <!-- TAB: MATCH HISTORY -->
+  <div class="dash-panel" id="apanel-history">
+    <div class="container">
+      <div style="max-width:820px;margin:0 auto">
+        <h2 style="font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;font-size:26px;margin:0 0 4px">Match History</h2>
+        <p style="color:rgba(255,255,255,.55);font-size:13px;margin:0 0 18px">Semua match yang tercatat di venue ini — hasil W/L, selisih poin, dan perubahan ELO tiap sesi.</p>
+        <div class="mh-tabs">
+          <button class="mh-tab is-active" id="mhtab-matches" onclick="mhSwitch('matches')">Matches</button>
+          <button class="mh-tab" id="mhtab-elo" onclick="mhSwitch('elo')">ELO Changes</button>
+        </div>
+        <div id="mh-matches"><p style="color:rgba(255,255,255,.5);font-size:12px">Memuat…</p></div>
+        <div id="mh-elo" style="display:none"><p style="color:rgba(255,255,255,.5);font-size:12px">Memuat…</p></div>
+      </div>
     </div>
   </div>
 
@@ -1120,6 +1161,65 @@ function switchTab(id) {
     rmInit();
   }
   if (id === 'edits') loadEditRequests();
+  if (id === 'history') loadMatchHistory();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MATCH HISTORY (all venue matches: W/L + point diff, and per-session ELO)
+   ══════════════════════════════════════════════════════════════════════ */
+let _mhLoaded = false;
+function mhSwitch(which){
+  document.getElementById('mhtab-matches').classList.toggle('is-active', which==='matches');
+  document.getElementById('mhtab-elo').classList.toggle('is-active', which==='elo');
+  document.getElementById('mh-matches').style.display = which==='matches' ? 'block' : 'none';
+  document.getElementById('mh-elo').style.display = which==='elo' ? 'block' : 'none';
+}
+function mhFirst(n){ return String(n||'').split(' ')[0]; }
+function mhDate(s){ try{ return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}); }catch(e){ return String(s||'').slice(0,10); } }
+async function loadMatchHistory(){
+  if(_mhLoaded) return; _mhLoaded = true;
+  const mv=document.getElementById('mh-matches'), ev=document.getElementById('mh-elo');
+  if(!RM.venue){ mv.innerHTML='<p style="color:var(--red)">No venue assigned.</p>'; return; }
+  const v=encodeURIComponent(RM.venue);
+  // Matches
+  try{
+    const d=await rmApi('venues/'+v+'/matches');
+    const ms=((d&&d.matches)||[]).slice().sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+    if(!ms.length){ mv.innerHTML='<p style="color:rgba(255,255,255,.5)">Belum ada match tercatat.</p>'; }
+    else{
+      mv.innerHTML='<div class="mh-list">'+ms.map(m=>{
+        const t1=[m.p1t1,m.p2t1].filter(Boolean).map(mhFirst).join(' & ');
+        const t2=[m.p1t2,m.p2t2].filter(Boolean).map(mhFirst).join(' & ');
+        const s1=Number(m.scoreT1)||0, s2=Number(m.scoreT2)||0, w1=s1>s2, w2=s2>s1;
+        const pd=Math.abs(s1-s2);
+        return '<div class="mh-row">'
+          +'<div class="mh-date">'+mhDate(m.date)+'</div>'
+          +'<div class="mh-team'+(w1?' win':'')+'">'+erEsc(t1||'—')+'</div>'
+          +'<div class="mh-score">'+s1+'<span>–</span>'+s2+'</div>'
+          +'<div class="mh-team r'+(w2?' win':'')+'">'+erEsc(t2||'—')+'</div>'
+          +'<div class="mh-pd">±'+pd+'</div></div>';
+      }).join('')+'</div>';
+    }
+  }catch(e){ mv.innerHTML='<p style="color:var(--red)">Gagal memuat matches: '+erEsc(e.message)+'</p>'; }
+  // ELO changes per session
+  try{
+    const d=await rmApi('venues/'+v+'/sessions');
+    const ss=(d&&d.sessions)||[];
+    const withElo=ss.filter(s=>s.results&&s.results.length);
+    if(!withElo.length){ ev.innerHTML='<p style="color:rgba(255,255,255,.5)">Belum ada perubahan ELO tercatat.</p>'; }
+    else{
+      ev.innerHTML=withElo.map(s=>{
+        const rows=s.results.map(r=>{
+          const up=(r.eloChange||0)>=0;
+          return '<div class="mh-erow"><span class="nm">'+erEsc(r.player)+'</span>'
+            +'<span class="wl">'+(r.w||0)+'W–'+(r.l||0)+'L</span>'
+            +'<span class="el">'+r.newElo+'</span>'
+            +'<span class="dl '+(up?'up':'dn')+'">'+(up?'+':'')+r.eloChange+'</span></div>';
+        }).join('');
+        return '<div class="mh-sess"><div class="mh-sess-h">'+mhDate(s.date)+' · <span>'+erEsc(s.format||'Ranked Match')+'</span></div>'+rows+'</div>';
+      }).join('');
+    }
+  }catch(e){ ev.innerHTML='<p style="color:var(--red)">Gagal memuat ELO: '+erEsc(e.message)+'</p>'; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════

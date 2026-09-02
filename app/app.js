@@ -85,7 +85,7 @@
       var partner = team.filter(function (n) { return n && !isMe(n); })[0] || "";
       var opps = opp.filter(Boolean).join(" & ");
       var ts = Date.parse(m.date); if (isNaN(ts)) ts = 0;
-      out.push({ res: res, sf: sf, sa: sa, partner: partner, opps: opps, date: m.date || "", ts: ts });
+      out.push({ res: res, sf: sf, sa: sa, pd: sf - sa, partner: partner, opps: opps, venue: m.venue || "", date: m.date || "", ts: ts });
     });
     out.sort(function (a, b) { return b.ts - a.ts; });
     return out;
@@ -525,11 +525,13 @@
     rankings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4.5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.6a2.4 2.4 0 0 0 3 2.6"/><path d="M17 6h2.4a2.4 2.4 0 0 1-3 2.6"/><path d="M9.5 16.5h5l.6 3.5h-6.2z"/><line x1="12" y1="13.4" x2="12" y2="16.5"/></svg>',
     // Play → racket
     main: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10.2" cy="8.8" rx="6" ry="6.6"/><path d="M6.5 13.4 3.7 20.3"/><path d="M8.7 18.7 5.9 21"/><path d="M6.6 8.7 13.8 6M6.9 11.4l6.6-2.6M9.6 5.2l3.8 6.4" stroke-width="1"/></svg>',
+    // History → clock/log
+    history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3 1.8"/></svg>',
     // Profile → person
     profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.4-3.6 3.4-6 7.2-6s6.8 2.4 7.2 6"/></svg>',
   };
   function tabbarHTML() {
-    var tabs = [["passport", "Passport"], ["rankings", "Rankings"], ["main", "PlayRank"], ["profil", "Profile"]];
+    var tabs = [["passport", "Passport"], ["rankings", "Rankings"], ["main", "PlayRank"], ["history", "History"], ["profil", "Profile"]];
     var active = S.view;
     if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
     if (S.view === "player") active = "rankings";
@@ -549,6 +551,7 @@
     if (S.view === "passport") return S.session ? renderPassport() : renderSignIn("your passport");
     if (S.view === "rankings") return renderRankings();
     if (S.view === "main") return renderMain();
+    if (S.view === "history") return S.session ? renderHistory() : renderSignIn("your match history");
     if (S.view === "profil") return S.session ? renderProfil() : renderSignIn("your profile");
     if (S.view === "ranked-info") return renderRankedInfo();
     if (S.view === "player") return renderPlayerProfile();
@@ -691,6 +694,79 @@
       d.getElementById("howto").onclick = function () { S.prev = "passport"; S.view = "ranked-info"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
     } catch (e) {
       viewEl().innerHTML = errorBox("Couldn't load your passport.", renderPassport);
+    }
+  }
+  /* ---------- HISTORY (all matches + ELO history) ---------- */
+  async function renderHistory() {
+    viewEl().innerHTML = '<div class="center" style="min-height:40vh"><div class="spinner"></div></div>';
+    try {
+      var me = await ensureMe();
+      if (!me.player || !me.player.name) return passportNoPlayer(me);
+      var name = me.player.name;
+      var r = await Promise.all([
+        API.getPlayer(name).catch(function () { return {}; }),
+        API.getPlayerMatches(name).catch(function () { return { matches: [] }; }),
+        ensureCut(),
+      ]);
+      var det = r[0] || {}, matchesArr = (r[1] && r[1].matches) || [], cut = r[2];
+      var st = det.stats || {}, pd = det.player || {}, hist = det.history || [];
+      var display = pd.displayName || me.player.displayName || name;
+      var elo = st.currentElo != null ? st.currentElo : (hist.length ? hist[hist.length - 1].elo : null);
+      var unrated = (st.unrated != null ? !!st.unrated : (hist.length === 0)) || elo == null;
+      var tier = unrated ? null : API.tierName(elo, cut);
+      var results = matchResults(matchesArr, [name, display]); // all matches, newest first
+
+      var totalM = results.length;
+      var wCount = results.filter(function (x) { return x.res === "W"; }).length;
+      var lCount = results.filter(function (x) { return x.res === "L"; }).length;
+      var pdNet = results.reduce(function (a, x) { return a + (x.pd || 0); }, 0);
+      var winRate = totalM ? Math.round(wCount / totalM * 100) : 0;
+
+      var statRow =
+        '<div class="statrow4">' +
+          '<div class="stat"><b>' + totalM + '</b><span>Matches</span></div>' +
+          '<div class="stat"><b>' + wCount + '–' + lCount + '</b><span>W–L</span></div>' +
+          '<div class="stat"><b>' + winRate + '%</b><span>Win rate</span></div>' +
+          '<div class="stat hl"><b>' + (pdNet >= 0 ? "+" : "") + pdNet + '</b><span>Point diff</span></div>' +
+        '</div>';
+
+      var eloCard =
+        '<div class="sparkcard">' +
+          '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px">' +
+            '<div><span class="p-hi">ELO history</span></div>' +
+            '<div style="text-align:right"><b style="font-size:22px;color:var(--or)">' + (elo != null ? elo : "—") + '</b>' +
+              (tier ? '<span style="font-size:12px;color:var(--faint);font-weight:700;margin-left:6px">' + esc(tier) + '</span>' : "") + '</div>' +
+          '</div>' +
+          (sparkline(hist) || '<p style="color:var(--faint);font-size:12.5px;margin:8px 0 2px">Your ELO chart appears after a few matches.</p>') +
+        '</div>';
+
+      var eloLog = hist.length
+        ? '<div class="sec">ELO by session</div>' + hist.slice().reverse().map(function (h) {
+            var up = (h.delta || 0) >= 0;
+            return '<div class="hitem"><span class="d">' + esc(fmtDate(h.timestamp)) + '</span>' +
+              '<span style="flex:1;font-size:12px;color:var(--faint)">' + (h.w || 0) + 'W–' + (h.l || 0) + 'L</span>' +
+              '<span class="e">' + h.elo + '</span>' +
+              '<span class="' + (up ? "up" : "dn") + '" style="min-width:52px;text-align:right">' + (up ? "▲ +" : "▼ ") + Math.abs(h.delta || 0) + '</span></div>';
+          }).join("")
+        : "";
+
+      var matchList = results.length
+        ? '<div class="sec">All matches · ' + totalM + '</div>' + results.map(function (x) {
+            var meta = [x.date ? fmtDate(x.ts || x.date) : "", x.venue].filter(Boolean).join(" · ");
+            var line = (x.partner ? "with " + esc(x.partner) + " · " : "") + "vs " + esc(x.opps || "—");
+            var pdTxt = '<span class="' + ((x.pd || 0) >= 0 ? "up" : "dn") + '">' + ((x.pd || 0) >= 0 ? "+" : "") + (x.pd || 0) + '</span>';
+            return '<div class="mrow"><span class="mres ' + x.res + '">' + x.res + '</span>' +
+              '<div class="mmid"><b>' + line + '</b><span>' + esc(meta) + '</span></div>' +
+              '<div style="text-align:right"><span class="msc">' + x.sf + '–' + x.sa + '</span>' +
+              '<div style="font-size:11px;font-weight:700;margin-top:1px">' + pdTxt + ' pts</div></div></div>';
+          }).join("")
+        : '<div class="plain"><h3>No matches yet</h3><p>Play a PlayRank session at a partner venue — your matches and ELO will show up here.</p></div>';
+
+      viewEl().innerHTML = '<div class="screen"><h1 class="page">History</h1>' +
+        '<p class="lede">Every match you\'ve played, with results and your ELO over time.</p>' +
+        statRow + eloCard + eloLog + matchList + '</div>';
+    } catch (e) {
+      viewEl().innerHTML = errorBox("Couldn't load your history.", renderHistory);
     }
   }
   function passportNoPlayer(me) {

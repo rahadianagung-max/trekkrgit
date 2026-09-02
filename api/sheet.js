@@ -720,6 +720,10 @@ const netlifyHandler = async (event) => {
       const v = decodeURIComponent(path.replace("venues/", "").replace("/monthly", ""));
       return await getVenueMonthly(v, params);
     }
+    if (path.startsWith("venues/") && path.endsWith("/sessions") && method === "GET") {
+      const v = decodeURIComponent(path.replace("venues/", "").replace("/sessions", ""));
+      return await getVenueSessions(v, params);
+    }
 
     if (path === "sessions" && method === "POST") return await saveSession(body);
     if (path === "sessions" && method === "GET") return await listSessions(params);
@@ -2563,6 +2567,32 @@ async function getLatestElo() {
   return respond(200, { players: latest });
 }
 
+// Per-session ELO changes recorded at a venue (for the venue admin's Match History
+// → "ELO history"). Newest session first; each session lists players with their
+// new ELO and change. Reads sessions + elo_log directly via Supabase.
+async function getVenueSessions(venueName, params) {
+  if (!supaOn()) return respond(200, { venue: venueName, sessions: [] });
+  const limit = Math.min(100, parseInt((params && params.limit) || "40", 10) || 40);
+  let sess = [];
+  try { sess = await supaRest("GET", `sessions?venue=eq.${encodeURIComponent(venueName)}&select=session_id,session_name,format,created_at&order=created_at.desc&limit=${limit}`) || []; }
+  catch (e) { console.error("[venue] sessions:", e.message); return respond(500, { error: "read failed" }); }
+  const ids = sess.map((s) => s.session_id).filter(Boolean);
+  let logs = [];
+  if (ids.length) {
+    try { logs = await supaRest("GET", `elo_log?session_id=in.(${ids.map(encodeURIComponent).join(",")})&select=session_id,player,new_elo,elo_change,wins,losses`) || []; }
+    catch (e) { console.error("[venue] sessions elo:", e.message); }
+  }
+  const byS = {};
+  logs.forEach((l) => { (byS[l.session_id] || (byS[l.session_id] = [])).push({
+    player: l.player, newElo: Math.round(Number(l.new_elo) || 0), eloChange: Math.round(Number(l.elo_change) || 0),
+    w: Math.round(Number(l.wins) || 0), l: Math.round(Number(l.losses) || 0),
+  }); });
+  const sessions = sess.map((s) => ({
+    sessionId: s.session_id, name: s.session_name || "", format: s.format || "", date: s.created_at || "",
+    results: (byS[s.session_id] || []).sort((a, b) => b.eloChange - a.eloChange),
+  }));
+  return respond(200, { venue: venueName, sessions }, { "Cache-Control": "no-store" });
+}
 async function getEloHistory(player) {
   if (!player) return respond(400, { error: "player param required" });
   const sheets = getSheets();
