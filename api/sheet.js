@@ -2707,6 +2707,50 @@ async function tierBoundaries(force) {
   return b;
 }
 
+// Fallback / legacy path: scan the whole ELO_Log and build per-player stats in
+// JS. Used when Supabase is off (Google Sheets mode) or if the SQL aggregate
+// fails. Returns playerStats keyed by lower(name) with elo, totalW/L,
+// totalMatches, winRate and streak — identical shape to the fast path.
+async function legacyEloScan(sheets) {
+  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+  const eRows = eRes.data.values || [];
+  // Each row: [sessionId, name, elo, delta, w, l, timestamp]
+  const playerStats = {};
+  eRows.forEach((r) => {
+    if (!r[1]) return;
+    const k = r[1].toLowerCase();
+    if (!playerStats[k]) playerStats[k] = { elo: 1350, totalW: 0, totalL: 0, history: [] };
+    const elo   = parseInt(r[2]) || 1350;
+    const delta = parseInt(r[3]) || 0;
+    const w     = parseInt(r[4]) || 0;
+    const l     = parseInt(r[5]) || 0;
+    const ts    = r[6] || "";
+    if (r[0] !== "INITIAL") {
+      playerStats[k].elo = elo;
+      playerStats[k].totalW += w;
+      playerStats[k].totalL += l;
+      playerStats[k].history.push({ delta, timestamp: ts });
+    } else if (playerStats[k].history.length === 0) {
+      playerStats[k].elo = elo;
+    }
+  });
+  Object.keys(playerStats).forEach((k) => {
+    const ps = playerStats[k];
+    ps.totalMatches = ps.totalW + ps.totalL;
+    ps.winRate = ps.totalMatches > 0 ? Math.round((ps.totalW / ps.totalMatches) * 100) : 0;
+    let streak = 0, streakType = "";
+    for (let i = ps.history.length - 1; i >= 0; i--) {
+      const d = ps.history[i].delta;
+      if (d > 0) { if (streakType === "" || streakType === "W") { streak++; streakType = "W"; } else break; }
+      else if (d < 0) { if (streakType === "" || streakType === "L") { streak++; streakType = "L"; } else break; }
+      else break;
+    }
+    ps.streak = streak > 0 ? `${streak}${streakType}` : "—";
+    delete ps.history;
+  });
+  return playerStats;
+}
+
 async function getNationalLeaderboard(params) {
   const sheets = getSheets();
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
@@ -2733,63 +2777,32 @@ async function getNationalLeaderboard(params) {
     }
   });
 
-  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
-  const eRows = eRes.data.values || [];
-
-  // Build full stats per player from ELO_Log
-  // Each row: [sessionId, name, elo, delta, w, l, timestamp]
-  const playerStats = {};
-  eRows.forEach((r) => {
-    if (!r[1]) return;
-    const k = r[1].toLowerCase();
-    if (!playerStats[k]) {
-      playerStats[k] = {
-        elo: 1350,
-        totalW: 0,
-        totalL: 0,
-        history: [],   // [{delta, timestamp}] for streak calculation
-      };
-    }
-    const elo    = parseInt(r[2]) || 1350;
-    const delta  = parseInt(r[3]) || 0;
-    const w      = parseInt(r[4]) || 0;
-    const l      = parseInt(r[5]) || 0;
-    const ts     = r[6] || "";
-
-    // Always update to latest ELO (rows are in append order, last = current)
-    if (r[0] !== "INITIAL") {
-      playerStats[k].elo     = elo;
-      playerStats[k].totalW += w;
-      playerStats[k].totalL += l;
-      playerStats[k].history.push({ delta, timestamp: ts });
-    } else {
-      // INITIAL row: only set ELO if no other row yet
-      if (playerStats[k].history.length === 0) {
-        playerStats[k].elo = elo;
+  // Per-player stats keyed by lower(name). Fast path: Postgres aggregates the
+  // whole ELO_Log in one query (home_leaderboard()) — one request, one JSON
+  // array — instead of paging ~8k raw rows into the lambda. The SQL reproduces
+  // exactly what legacyEloScan() computes (elo, W/L, winRate, streak); on any
+  // error it falls back to the row scan so the endpoint never breaks.
+  let playerStats = null;
+  if (supaOn()) {
+    try {
+      const rows = await supaRest("POST", "rpc/home_leaderboard", {});
+      if (Array.isArray(rows)) {
+        playerStats = {};
+        rows.forEach((r) => {
+          if (!r || !r.key) return;
+          playerStats[r.key] = {
+            elo: Number(r.elo) || 1350,
+            totalW: Number(r.total_w) || 0,
+            totalL: Number(r.total_l) || 0,
+            totalMatches: Number(r.total_matches) || 0,
+            winRate: Number(r.win_rate) || 0,
+            streak: r.streak || "—",
+          };
+        });
       }
-    }
-  });
-
-  // Compute winRate + streak per player
-  Object.keys(playerStats).forEach((k) => {
-    const ps = playerStats[k];
-    const totalMatches = ps.totalW + ps.totalL;
-    ps.totalMatches = totalMatches;
-    ps.winRate = totalMatches > 0 ? Math.round((ps.totalW / totalMatches) * 100) : 0;
-
-    // Streak: walk history backwards
-    let streak = 0, streakType = "";
-    for (let i = ps.history.length - 1; i >= 0; i--) {
-      const d = ps.history[i].delta;
-      if (d > 0) {
-        if (streakType === "" || streakType === "W") { streak++; streakType = "W"; } else break;
-      } else if (d < 0) {
-        if (streakType === "" || streakType === "L") { streak++; streakType = "L"; } else break;
-      } else break; // delta 0 = draw / calibration row, stop streak
-    }
-    ps.streak = streak > 0 ? `${streak}${streakType}` : "—";
-    delete ps.history; // don't send raw history in leaderboard response
-  });
+    } catch (e) { console.error("[leaderboard] rpc fallback:", e.message); playerStats = null; }
+  }
+  if (!playerStats) playerStats = await legacyEloScan(sheets);
 
   let leaderboard = Object.keys(playerStats).map((k) => {
     const ps  = playerStats[k];
