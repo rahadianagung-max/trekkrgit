@@ -206,6 +206,7 @@
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 <script src="/trekkr-nav.js" defer></script>
+<script src="/trekkr-loader.js"></script>
 <script>
 (function(){
   var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
@@ -220,10 +221,19 @@
   }
   function fmt(n){return(n||0).toLocaleString('en-US');}
 
+  // Branded loader (bar + rotating Trekkr/ELO fact) while the data resolves.
+  var _homeLoader=null;
+  (function(){
+    var ael=document.getElementById('activePlayersEl');
+    if(ael&&window.TrekkrLoader) _homeLoader=TrekkrLoader.mount(ael,'Loading Trekkr');
+    var nel=document.getElementById('newPlayersEl'); if(nel) nel.innerHTML='';
+  })();
+
   // One slim, CDN-cached call powers the whole homepage below the hero (5 most
   // active + 4 newest + the 3 numbers) instead of downloading the full ~500KB
   // leaderboard on every visit.
   fetch(BASE+'/home-summary').then(function(r){return r.json();}).then(function(d){
+    if(_homeLoader)_homeLoader.stop();
     d=d||{};
     var active=d.topActive||[];
     var newPlayers=d.newPlayers||[];
@@ -262,7 +272,11 @@
     if(sm)sm.textContent=fmt(d.totalMatches||0);
     if(sa)sa.textContent=d.avg||0;
 
-  }).catch(function(){ /* data load failed — sections keep their Loading… state */ });
+  }).catch(function(){
+    if(_homeLoader)_homeLoader.stop();
+    var ael=document.getElementById('activePlayersEl');
+    if(ael) ael.innerHTML='<div class="empty" style="margin-top:8px">Couldn\'t load right now. Refresh to try again.</div>';
+  });
 })();
 </script>
 <script>

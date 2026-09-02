@@ -216,11 +216,7 @@ header.hd{padding:18px 2px 6px}
 <button class="themebtn" id="themeBtn" aria-label="Toggle theme">◐</button>
 
 <!-- loading / error states -->
-<div class="state" id="stateLoading">
-  <div class="spin"></div>
-  <div class="big">Loading</div>
-  <p>Tuning into the live feed…</p>
-</div>
+<div class="state" id="stateLoading"></div>
 <div class="state" id="stateError" hidden>
   <div style="font-size:34px">📡</div>
   <div class="big" id="errTitle">Can't find that session</div>
@@ -284,6 +280,7 @@ header.hd{padding:18px 2px 6px}
 
 </div>
 
+<script src="/trekkr-loader.js"></script>
 <script>
 (function(){
 "use strict";
@@ -602,6 +599,7 @@ $('themeBtn').addEventListener('click',function(){
 });
 
 // boot
+if(window.TrekkrLoader){ try{ TrekkrLoader.mount(document.getElementById('stateLoading'),'Tuning into the live feed'); }catch(e){} }
 if(!CODE){ showError('No session code','This link is missing its session code. Ask the host for the full link.'); }
 else { fetchState(true).then(function(){ if(STATE && STATE.status!=='final') startPoll(); }); }
 })();

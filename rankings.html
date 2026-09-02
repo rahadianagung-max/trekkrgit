@@ -122,7 +122,8 @@
 
   <div id="tierNote"></div>
 
-  <div class="cols">
+  <div id="rankLoad"></div>
+  <div class="cols" id="cols" hidden>
     <div>
       <div class="col-head"><span class="dot" style="background:var(--orange)"></span><span class="label">MEN</span><span class="count" id="countM"></span></div>
       <div id="colM"><div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div></div>
@@ -160,9 +161,17 @@
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 
+<script src="/trekkr-loader.js"></script>
 <script>
 (function(){
   var BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit'))) ? '/api' : 'https://trekkr.online/api';
+  // Branded loader (bar + rotating Trekkr/ELO fact) on first load; re-filters
+  // keep the light per-column skeletons.
+  var _rankFirst=true, _rankL=null;
+  (function(){ var c=document.getElementById('rankLoad'); if(c&&window.TrekkrLoader) _rankL=TrekkrLoader.mount(c,'Building the rankings'); })();
+  function _rankReveal(){ if(!_rankFirst)return; _rankFirst=false; if(_rankL)_rankL.stop();
+    var rl=document.getElementById('rankLoad'); if(rl)rl.hidden=true;
+    var cg=document.getElementById('cols'); if(cg)cg.hidden=false; }
   // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
   // Series Tier cutoffs — percentile-based, fetched from /tiers/boundaries at load.
   // Defaults below are the absolute fallback (used until that resolves / if it fails).
@@ -265,8 +274,8 @@
                    .sort(function(a,b){return (Number(b.elo)||0)-(Number(a.elo)||0);});
       data[g]={rated:rated,calib:calib};
       document.getElementById(g==='M'?'countM':'countF').textContent=rated.length+' players'+(calib.length?(' · '+calib.length+' calibrating'):'');
-      expanded[g]=false; render(g);
-    }).catch(function(){box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
+      expanded[g]=false; render(g); _rankReveal();
+    }).catch(function(){ _rankReveal(); box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
   }
   function loadAll(){loadGender('M');loadGender('F');}
 

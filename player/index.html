@@ -730,6 +730,7 @@ canvas#shareCanvas{display:none}
 </div>
 
 <script src="https://trekkr.online/trekkr-api.js"></script>
+<script src="https://trekkr.online/trekkr-loader.js"></script>
 
 <script>
 let playerData=null;
@@ -805,6 +806,7 @@ async function loadPlayer(){
   const parts=window.location.pathname.split('/').filter(Boolean);
   const raw=decodeURIComponent(parts[parts.length-1]||'');
   if(!raw){document.getElementById('content').innerHTML='<div class="state-panel"><h2 class="state-title">Not Found</h2><p class="state-copy">Player not specified</p></div>';return}
+  if(window.TrekkrLoader){try{TrekkrLoader.mount(document.getElementById('content'),'Loading the passport');}catch(e){}}
 
   let name=raw, d=null;
   try { d = await TrekkrAPI.getPlayerDetail(raw); } catch(e) { d=null; }
