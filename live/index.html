@@ -456,12 +456,13 @@ window.__togglePa=function(btn){
 };
 function finalCard(p,i){
   var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
-  var d=(p.elo||0)-(p.start||p.elo||0), top4=i<4;
+  var d=(p.elo||0)-(p.start||p.elo||0);
   var streak=(p.streak||0)>=2?' <span class="elo" style="color:var(--orange-ink)">'+p.streak+'W🔥</span>':'';
   var claim = p.claimed
     ? ' <span class="verified">Verified ✓</span>'
     : ' <a class="claim" href="'+claimUrl(p.name)+'" style="font-size:10px">Claim</a>';
-  var btn = top4 ? '' : '<button class="anbtn" onclick="__togglePa(this)"><span class="tx">Analysis</span> <span class="cv">▾</span></button>';
+  // Every player's analysis is collapsed by default and revealed only on tap.
+  var btn = '<button class="anbtn" onclick="__togglePa(this)"><span class="tx">Analysis</span> <span class="cv">▾</span></button>';
   return '<div class="pcard">'+
     '<div class="row">'+
       '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
@@ -470,7 +471,7 @@ function finalCard(p,i){
       '<span class="wl">'+(d>=0?'<span class="up">+'+d:'<span class="dn">'+d)+'</span></span>'+
       '<span class="elo">'+(p.elo||'')+'</span>'+
     '</div>'+
-    '<div class="pa'+(top4?' open':'')+'">'+playerAnalysis(p,i)+'</div>'+
+    '<div class="pa">'+playerAnalysis(p,i)+'</div>'+
   '</div>';
 }
 function ac(k,nm,ds){return '<div class="ac"><div class="k">'+k+'</div><div class="nm">'+esc(nm)+'</div><div class="ds">'+ds+'</div></div>';}
