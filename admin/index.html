@@ -949,17 +949,14 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
   </div>
 </div>
 
-<!-- MODAL: RESTORE -->
-<div class="rm-modal-overlay hidden" id="rm-modal-restore" onclick="rmDismissRestore()">
+<!-- MODAL: RESTORE (list of running matches) -->
+<div class="rm-modal-overlay hidden" id="rm-modal-restore">
   <div class="rm-modal" onclick="event.stopPropagation()">
     <div class="rm-modal-handle"></div>
-    <div class="rm-modal-title">🔄 Lanjutkan Match?</div>
-    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Ditemukan sesi match yang belum selesai.</p>
-    <div style="background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);padding:14px;margin-bottom:16px" id="rm-restore-info"></div>
-    <div class="rm-grid2">
-      <button class="rm-btn-full rm-btn-ghost" onclick="rmDismissRestore()">Mulai Baru</button>
-      <button class="rm-btn-full rm-btn-primary" onclick="rmDoRestore()">▶ Lanjutkan</button>
-    </div>
+    <div class="rm-modal-title">🎾 Match Sedang Berjalan</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Lanjutkan match yang belum selesai, atau hapus jika sudah tidak dipakai.</p>
+    <div id="rm-running-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+    <button class="rm-btn-full rm-btn-primary" onclick="rmStartFresh()">+ Mulai Match Baru</button>
   </div>
 </div>
 
@@ -1213,10 +1210,10 @@ function rmGo(id) {
 }
 
 function rmInit() {
-  // Check for saved match to restore
-  const saved = rmRestoreLatest();
-  if (saved && saved.screen === 'match') {
-    rmShowRestorePrompt(saved);
+  // Show any unfinished matches saved on this device so the host can resume or
+  // delete them (e.g. after accidentally closing the browser mid-match).
+  if (rmListRunning().length) {
+    rmShowRunning();
   } else {
     rmGo('intro');
   }
@@ -2361,36 +2358,60 @@ function rmSaveState(screen){
       scoreTarget:RM.scoreTarget,partners:RM.partners,teams:RM.teams,
       level:RM.level,startElo:RM.startElo,
       token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
-      liveCode:RM_LIVE.code,liveKey:RM_LIVE.key,
+      liveCode:RM_LIVE.code,liveKey:RM_LIVE.key,savedAt:Date.now(),
     }));
   }catch(e){console.warn('Save state warn:',e);}
 }
 function rmClearStorage(){
   if(RM.matchId){try{localStorage.removeItem(rmStorageKey());}catch(e){}}
 }
-function rmRestoreLatest(){
+// All unfinished matches saved on THIS device for the current venue, newest first.
+// Each carries its own localStorage `_key` so delete/resume target the exact entry.
+function rmListRunning(){
   const prefix=`rm_match_${(RM.venue||'novenue').replace(/\s+/g,'_')}_`;
-  let latest=null;
+  const out=[];
   Object.keys(localStorage).filter(k=>k.startsWith(prefix)).forEach(k=>{
-    try{const d=JSON.parse(localStorage.getItem(k));if(d&&d.rounds&&d.rounds.length>0)latest=d;}catch(e){}
+    try{const d=JSON.parse(localStorage.getItem(k));if(d&&d.rounds&&d.rounds.length>0){d._key=k;out.push(d);}}catch(e){}
   });
-  return latest;
+  out.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  return out;
 }
-function rmShowRestorePrompt(saved){
-  RM._savedToRestore=saved;
-  const done=(saved.rounds||[]).filter(r=>r.submitted).length;
-  document.getElementById('rm-restore-info').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
-      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Pemain</div><div style="font-size:18px;font-weight:800">${saved.selectedPlayers?.length||0}</div></div>
-      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Courts</div><div style="font-size:18px;font-weight:800">${saved.courts||1}</div></div>
-      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Ronde Selesai</div><div style="font-size:14px;font-weight:700">${done}</div></div>
-      <div><div style="font-size:10px;font-weight:700;opacity:.7;text-transform:uppercase;margin-bottom:2px">Posisi</div><div style="font-size:14px;font-weight:700">Ronde ${(saved.currentRound||0)+1}</div></div>
-    </div>`;
+function rmAgo(ts){
+  if(!ts)return '';
+  const s=Math.max(0,Math.floor((Date.now()-ts)/1000));
+  if(s<60)return 'baru saja';
+  const m=Math.floor(s/60); if(m<60)return m+' menit lalu';
+  const h=Math.floor(m/60); if(h<24)return h+' jam lalu';
+  return Math.floor(h/24)+' hari lalu';
+}
+function rmShowRunning(){
+  rmRenderRunningList();
   document.getElementById('rm-modal-restore').classList.remove('hidden');
 }
-function rmDoRestore(){
-  const saved=RM._savedToRestore;if(!saved)return;
-  document.getElementById('rm-modal-restore').classList.add('hidden');
+function rmRenderRunningList(){
+  const list=rmListRunning();
+  const wrap=document.getElementById('rm-running-list');
+  if(!list.length){ document.getElementById('rm-modal-restore').classList.add('hidden'); rmGo('intro'); return; }
+  wrap.innerHTML=list.map(s=>{
+    const done=(s.rounds||[]).filter(r=>r.submitted).length;
+    const sys=(s.courts===1)?'Americano':'Mexicano';
+    const mid=String(s.matchId||'').replace(/"/g,'');
+    return `<div style="background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(225,67,56,.18);flex-shrink:0"></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px">${(s.selectedPlayers?.length||0)} pemain · ${s.courts||1} court · ${sys}</div>
+          <div style="font-size:11.5px;color:var(--txt3);margin-top:1px">${done} ronde selesai · di ronde ${(s.currentRound||0)+1}${s.savedAt?' · disimpan '+rmAgo(s.savedAt):''}</div>
+        </div>
+      </div>
+      <div class="rm-grid2">
+        <button class="rm-btn-full rm-btn-ghost" style="color:var(--red)" onclick="rmDeleteRunning('${mid}')">🗑 Hapus</button>
+        <button class="rm-btn-full rm-btn-primary" onclick="rmResumeMatch('${mid}')">▶ Lanjutkan</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function rmApplySaved(saved){
   Object.assign(RM,{
     matchId:saved.matchId, rounds:saved.rounds, currentRound:saved.currentRound,
     playerStats:saved.playerStats, selectedPlayers:saved.selectedPlayers,
@@ -2400,16 +2421,28 @@ function rmDoRestore(){
     gender:saved.gender||'M',
   });
   RM_LIVE={code:saved.liveCode||'',key:saved.liveKey||'',busy:false};
-  rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen();
-  rmUpdateLiveBar();
-  RM._savedToRestore=null;
 }
-function rmDismissRestore(){
+function rmResumeMatch(matchId){
+  const saved=rmListRunning().find(s=>String(s.matchId)===String(matchId));
+  if(!saved)return;
   document.getElementById('rm-modal-restore').classList.add('hidden');
-  if(RM._savedToRestore){
-    try{localStorage.removeItem(`rm_match_${(RM._savedToRestore.venue||'novenue').replace(/\s+/g,'_')}_${RM._savedToRestore.matchId}`);}catch(e){}
+  rmApplySaved(saved);
+  rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen(); rmUpdateFairBar(); rmUpdateLiveBar();
+}
+async function rmDeleteRunning(matchId){
+  const saved=rmListRunning().find(s=>String(s.matchId)===String(matchId));
+  if(!saved)return;
+  if(!confirm('Hapus match ini? Match yang belum selesai akan hilang dan halaman live-nya ditutup.'))return;
+  // Remove the local save…
+  try{localStorage.removeItem(saved._key);}catch(e){}
+  // …and tear down its shareable live page / TV entry (if one was created).
+  if(saved.liveCode&&saved.liveKey){
+    try{ await rmApi('live',{method:'POST',body:JSON.stringify({action:'delete',code:saved.liveCode,key:saved.liveKey})}); }catch(e){console.warn('live delete warn:',e.message);}
   }
-  RM._savedToRestore=null;
+  rmRenderRunningList();
+}
+function rmStartFresh(){
+  document.getElementById('rm-modal-restore').classList.add('hidden');
   rmGo('intro');
 }
 

@@ -4672,6 +4672,14 @@ async function livePost(body) {
     return respond(200, { ok: true }, { "Cache-Control": "no-store" });
   }
 
+  if (action === "delete") {
+    try {
+      if (supaOn()) await supaRest("DELETE", `live_sessions?code=eq.${encodeURIComponent(code)}`);
+      else delete LIVE_MEM[code];
+    } catch (e) { console.error("[live] delete:", e.message); return respond(500, { error: "delete failed" }); }
+    return respond(200, { ok: true }, { "Cache-Control": "no-store" });
+  }
+
   if (action === "finalize") {
     let recap = null;
     try { recap = await liveAiRecap(session); } catch (e) { console.error("[live] ai:", e.message); }
@@ -4740,7 +4748,10 @@ async function liveVenue(params) {
   } catch (e) { console.error("[live] venue:", e.message); return respond(500, { error: "read failed" }); }
   if (!row) return respond(200, { active: false }, { "Cache-Control": "no-store" });
   const ageMs = Date.now() - new Date(row.updated_at || row.updatedAt || 0).getTime();
-  const isLive = row.status === "live";
+  // A "live" session that hasn't been touched for hours was abandoned (host closed
+  // the browser and never came back) — don't let it haunt the TV forever.
+  const STALE_MS = 3 * 60 * 60 * 1000;
+  const isLive = row.status === "live" && ageMs < STALE_MS;
   const celebrating = row.status === "final" && ageMs < LIVE_CELEBRATE_MS;
   return respond(200, {
     active: isLive || celebrating,
