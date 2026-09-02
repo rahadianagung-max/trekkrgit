@@ -445,7 +445,7 @@ function finalCard(p,i){
     '<div class="row">'+
       '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
       '<div class="pl"><div class="pn">'+esc(p.short||firstName(p.name))+' '+tierChip(p.elo)+streak+claim+'</div>'+
-        '<div class="pmeta">'+esc(p.name)+'</div>'+btn+'</div>'+
+        '<div class="pmeta"><span class="rec">'+(p.w||0)+'W–'+(p.l||0)+'L</span> · <span class="'+((p.pd||0)>=0?'up':'dn')+'">'+((p.pd||0)>=0?'+':'')+(p.pd||0)+' pts</span></div>'+btn+'</div>'+
       '<span class="wl">'+(d>=0?'<span class="up">+'+d:'<span class="dn">'+d)+'</span></span>'+
       '<span class="elo">'+(p.elo||'')+'</span>'+
     '</div>'+

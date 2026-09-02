@@ -2218,7 +2218,16 @@ async function rmEndMatch(){
       // dengan yang tersimpan di rankings).
       if(resp&&resp.source==='server'&&Array.isArray(resp.results)&&resp.results.length){
         const byName={}; resp.results.forEach(r=>{byName[String(r.player).toLowerCase()]=r;});
-        standings.forEach(p=>{ const r=byName[p.name.toLowerCase()]; if(r&&r.new_elo!=null) p.elo=r.new_elo; });
+        standings.forEach(p=>{ const r=byName[p.name.toLowerCase()];
+          if(r&&r.new_elo!=null){
+            p.elo=Number(r.new_elo);
+            // Server is the ELO authority. Anchor the session-start baseline to its
+            // real value (new_elo − elo_change) so the live page's ELO delta matches
+            // the official change — even when the player was seeded at a default
+            // because the entered name didn't match their existing profile.
+            if(r.elo_change!=null) p._serverStart=Number(r.new_elo)-Number(r.elo_change);
+          }
+        });
       }
       RM.lastFlags=(resp&&resp.flags)||[];   // Step 5: dominant-calibration flags
     } catch(e){console.warn('Final session warn:',e.message);}
@@ -2331,7 +2340,11 @@ function rmLiveStreak(name){
   return s;
 }
 function rmLiveSnapshot(final){
-  const startOf=name=>{const s=RM.selectedPlayers.find(p=>p.name===name);return s?(s.elo||RM.startElo):RM.startElo;};
+  const startOf=name=>{
+    const ps=RM.playerStats[name];
+    if(ps&&ps._serverStart!=null) return ps._serverStart;   // server-authoritative baseline (set at End Match)
+    const s=RM.selectedPlayers.find(p=>p.name===name);return s?(s.elo||RM.startElo):RM.startElo;
+  };
   const players=Object.values(RM.playerStats)
     .filter(p=>p.active!==false)
     .map(p=>({
