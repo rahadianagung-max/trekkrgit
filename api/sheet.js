@@ -399,6 +399,16 @@ function tplClaimApproved(playerName, passportUrl, loginUrl) {
   return emailShell(c, `Your Trekkr profile claim was approved — log in to manage it.`);
 }
 
+// Player full-name change approved by an admin.
+function tplNameApproved(newName, passportUrl) {
+  const nm = escHtml(newName);
+  const c = emH(`Your name change is approved ✅`)
+    + emP(`Good news — your request to update your full name to <b>${nm}</b> on Trekkr has been <b>approved</b>. Every match and ELO point stays linked to your profile — only the name has changed.`)
+    + emButtonBlock("Open my passport", passportUrl)
+    + emSmall(`Prefer a different public name? You can set an alias anytime from your profile — no review needed.`);
+  return emailShell(c, `Your Trekkr full-name change was approved.`);
+}
+
 // Button wrapper that also leaves breathing room below.
 function emButtonBlock(label, url) { return `<div style="margin:4px 0 20px">${emailButton(label, url)}</div>`; }
 
@@ -466,6 +476,15 @@ function levelToElo(level) {
 }
 function normName(s) {
   return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+// First token of a full name (the public fallback when no alias is set).
+function firstName(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
+// The name shown on public surfaces (leaderboard, passport, live): a real alias
+// (display_name distinct from the full name) if set, otherwise just the first
+// name. Links and joins still use the canonical full name — this is display only.
+function publicName(name, displayName) {
+  const dn = String(displayName || "").trim();
+  return (dn && normName(dn) !== normName(name)) ? dn : firstName(name);
 }
 // Merge a club/venue name into an existing comma-separated clubs string.
 // Returns the new joined string, or null if the club was already present (no change).
@@ -699,6 +718,9 @@ const netlifyHandler = async (event) => {
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
     if (path === "account/claims" && method === "GET") return await accountClaimsList(params);
     if (path === "account/claims/resolve" && method === "POST") return await accountClaimsResolve(body);
+    if (path === "account/name-request" && method === "POST") return await submitNameRequest(body);
+    if (path === "account/name-requests" && method === "GET") return await listNameRequests(params);
+    if (path === "account/name-requests/resolve" && method === "POST") return await resolveNameRequest(body);
 
     if (path === "players" && method === "GET") return await cached60("players:" + JSON.stringify(params || {}), () => getPlayers(params));
     if (path === "players" && method === "POST") return await addPlayer(body);
@@ -1046,7 +1068,15 @@ async function accountMe(params) {
     const cr = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&order=created_at.desc&limit=1&select=player_name,status,created_at`);
     claim = (cr && cr[0]) || null;
   }
-  return respond(200, { email: user.email, player, claim });
+  // A pending full-name change (so the app can show "Name change pending review").
+  let pendingName = null;
+  if (player) {
+    try {
+      const nr = await supaRest("GET", `name_change_requests?user_id=eq.${user.id}&status=eq.pending&order=created_at.desc&limit=1&select=new_name,created_at`);
+      pendingName = (nr && nr[0] && nr[0].new_name) || null;
+    } catch (e) { /* table missing / transient — treat as no pending request */ }
+  }
+  return respond(200, { email: user.email, player, claim, pendingName });
 }
 
 // Claim an existing player profile: creates the login account now (email +
@@ -1127,6 +1157,85 @@ async function accountClaimsResolve(body) {
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
   }
   return respond(200, { ok: true });
+}
+
+// ── Player full-name change (moderated) ──
+// The player's `name` is their unique identity and the join key across ELO_Log,
+// Registrations and Venue tabs, so a change is queued for admin review rather
+// than applied instantly (unlike the alias/display_name, which accountProfile
+// updates on the spot).
+async function submitNameRequest(body) {
+  const user = await supaVerifyUser(body && body.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  const rows = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
+  if (!rows || !rows.length) return respond(403, { error: "Akun belum terhubung ke profil (menunggu persetujuan admin)" });
+  const oldName = String(rows[0].name || "").trim();
+  const newName = String((body && body.new_name) || "").trim().replace(/\s+/g, " ");
+  if (newName.length < 2) return respond(400, { error: "Nama terlalu pendek" });
+  if (newName.length > 60) return respond(400, { error: "Nama terlalu panjang" });
+  if (normName(newName) === normName(oldName)) return respond(400, { error: "Nama sama dengan sekarang" });
+  // Reject if the target name already belongs to a different player.
+  const taken = await supaRest("GET", `players?name=eq.${encodeURIComponent(newName)}&select=name,user_id&limit=1`);
+  if (taken && taken.length && (taken[0].user_id !== user.id)) {
+    return respond(409, { error: "Nama ini sudah dipakai pemain lain" });
+  }
+  // Keep the admin queue clean: cancel any earlier pending request from this user.
+  try { await supaRest("PATCH", `name_change_requests?user_id=eq.${user.id}&status=eq.pending`, { status: "superseded", resolved_at: new Date().toISOString() }); } catch (e) {}
+  await supaRest("POST", "name_change_requests", [{ user_id: user.id, email: user.email || "", old_name: oldName, new_name: newName, status: "pending" }], "return=minimal");
+  await notifyOwner(
+    `✏️ Name change request: ${oldName} → ${newName}`,
+    `<h2>A player asked to change their full name</h2>` +
+    `<p><b>From:</b> ${escHtml(oldName)}<br>` +
+    `<b>To:</b> ${escHtml(newName)}<br>` +
+    `<b>Account:</b> ${escHtml(user.email || "")}</p>` +
+    `<p>Review &amp; approve in the superadmin console.</p>`
+  );
+  return respond(200, { ok: true });
+}
+
+async function listNameRequests(params) {
+  const status = String((params && params.status) || "pending");
+  const rows = await supaRest("GET", `name_change_requests?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,old_name,new_name,status,created_at`);
+  return respond(200, { requests: rows || [] });
+}
+
+async function resolveNameRequest(body) {
+  const reqId = parseInt((body && body.reqId), 10);
+  const action = String((body && body.action) || "").toLowerCase();
+  const admin = String((body && body.admin) || "");
+  if (!reqId || (action !== "approve" && action !== "reject")) return respond(400, { error: "reqId & action wajib" });
+  const rr = await supaRest("GET", `name_change_requests?id=eq.${reqId}&select=id,user_id,email,old_name,new_name,status&limit=1`);
+  if (!rr || !rr.length) return respond(404, { error: "Request tidak ditemukan" });
+  const req = rr[0];
+  if (req.status !== "pending") return respond(400, { error: "Sudah diproses" });
+  const now = new Date().toISOString();
+  if (action === "reject") {
+    await supaRest("PATCH", `name_change_requests?id=eq.${reqId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
+    return respond(200, { ok: true, applied: false });
+  }
+  const oldName = String(req.old_name || "").trim();
+  const newName = String(req.new_name || "").trim();
+  if (!newName) return respond(400, { error: "Nama baru kosong" });
+  // Guard: don't overwrite another player who now holds the target name.
+  const taken = await supaRest("GET", `players?name=eq.${encodeURIComponent(newName)}&select=name,user_id&limit=1`);
+  if (taken && taken.length && (taken[0].user_id !== req.user_id)) {
+    await supaRest("PATCH", `name_change_requests?id=eq.${reqId}`, { status: "rejected", resolved_at: now, resolved_by: admin });
+    return respond(200, { ok: true, applied: false, reason: "name_taken" });
+  }
+  // Apply: rename the canonical Players.name, then re-point ELO_Log, Registrations
+  // and every Venue tab from the old name to the new one so history isn't orphaned.
+  await supaRest("PATCH", `players?user_id=eq.${req.user_id}`, { name: newName });
+  if (oldName && normName(oldName) !== normName(newName)) {
+    try { await rebindPlayerNames(getSheets(), new Set([oldName.toLowerCase()]), newName); }
+    catch (e) { console.error("name-change rebind:", e.message); }
+  }
+  await supaRest("PATCH", `name_change_requests?id=eq.${reqId}`, { status: "approved", resolved_at: now, resolved_by: admin });
+  // Tell the player their new name is live.
+  if (req.email) {
+    try { await sendBrevoEmail(req.email, "Your Trekkr name change is approved ✅", tplNameApproved(newName, passportUrl(newName))); }
+    catch (e) { console.error("name approved email:", e.message); }
+  }
+  return respond(200, { ok: true, applied: true });
 }
 
 module.exports = async (req, res) => {
@@ -1215,7 +1324,7 @@ async function getPlayerDetail(name) {
 
   const player = {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
-    displayName: pRow[3] || pRow[0], gender: (pRow[4] || "M").toUpperCase(),
+    displayName: pRow[3] || pRow[0], display: publicName(pRow[0], pRow[3]), gender: (pRow[4] || "M").toUpperCase(),
     region: pRow[5] || "", photoUrl: ibbHostFix(pRow[6] || ""), clubs: pRow[7] || "", createdAt: pRow[8] || "",
     winnerAt: pRow[9] || "", tournaments: pRow[10] || "",
     // Claim_Email (col L) set => profile has been claimed; the passport then gates
@@ -2828,6 +2937,7 @@ async function getNationalLeaderboard(params) {
     const info = playersInfo[k] || infoByKey[normName(k)] || { name: k, displayName: k, gender: "M", region: "", clubs: "", verified: false, photoUrl: "", winnerAt: "", tournaments: "" };
     return {
       ...info,
+      display:      publicName(info.name, info.displayName),
       elo,
       level:        getTierName(elo),
       totalMatches: ps.totalMatches,
@@ -2883,13 +2993,13 @@ async function getHomeSummary() {
   const topActive = leaderboard.slice()
     .sort((a, b) => (b.totalMatches || 0) - (a.totalMatches || 0))
     .slice(0, 5)
-    .map((p) => ({ name: p.name, photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0 }));
+    .map((p) => ({ name: p.name, display: p.display || publicName(p.name, p.displayName), photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0 }));
 
   const lbMap = {};
   leaderboard.forEach((p) => { lbMap[String(p.name || "").trim().toLowerCase()] = p; });
   const newPlayers = players.slice(-4).reverse().map((p) => {
     const lb = lbMap[String(p.name || "").trim().toLowerCase()] || {};
-    return { name: p.name, photoUrl: p.photoUrl || "", region: p.region || lb.region || "", level: lb.level || "Unrated" };
+    return { name: p.name, display: publicName(p.name, p.displayName || p.display_name || lb.displayName), photoUrl: p.photoUrl || "", region: p.region || lb.region || "", level: lb.level || "Unrated" };
   });
 
   return respond(200, { playerCount, totalMatches, avg, topActive, newPlayers });

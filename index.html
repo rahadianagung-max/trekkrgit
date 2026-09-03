@@ -214,10 +214,12 @@
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function normName(n){return String(n||'').trim().toLowerCase();}
   function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  // Public name = alias if set, else first name (server-computed as p.display).
+  function dnm(p){return (p&&(p.display||p.name))||'';}
   function av(p){
     var u=p.photoUrl||p.photo||'';
-    if(u)return'<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.textContent=\''+esc(initials(p.name))+'\'"/></div>';
-    return'<div class="av">'+esc(initials(p.name))+'</div>';
+    if(u)return'<div class="av"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.textContent=\''+esc(initials(dnm(p)))+'\'"/></div>';
+    return'<div class="av">'+esc(initials(dnm(p)))+'</div>';
   }
   function fmt(n){return(n||0).toLocaleString('en-US');}
 
@@ -245,7 +247,7 @@
         return'<a class="prow" href="/player/'+slug(p.name)+'">'
           +'<span class="rk">'+(i+1)+'</span>'
           +av(p)
-          +'<span class="pn">'+esc(p.name)+'</span>'
+          +'<span class="pn">'+esc(dnm(p))+'</span>'
           +'<span class="pm">'+fmt(p.totalMatches||0)+' matches</span>'
           +'</a>';
       }).join(''):'<div class="empty" style="margin-top:8px">No data yet.</div>';
@@ -257,8 +259,8 @@
       newEl.innerHTML=newPlayers.length?'<div class="np-grid">'+newPlayers.map(function(p){
         var meta=[p.region,p.level].filter(Boolean).join(' · ');
         return'<div class="np-card">'
-          +av({displayName:p.name,name:p.name,photoUrl:p.photoUrl||''})
-          +'<div class="np-info"><div class="np-name">'+esc(p.name)+'</div>'
+          +av({display:dnm(p),name:p.name,photoUrl:p.photoUrl||''})
+          +'<div class="np-info"><div class="np-name">'+esc(dnm(p))+'</div>'
           +(meta?'<div class="np-meta">'+esc(meta)+'</div>':'')
           +'</div><span class="np-new">New</span></div>';
       }).join('')+'</div>':'<div class="empty mt8">No new players yet.</div>';
@@ -285,10 +287,11 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function dnm(p){return (p&&(p.display||p.name))||'';}
   function av(p){
     var u=p.photoUrl||'';
     if(u)return'<div class="av" style="width:36px;height:36px"><img src="'+esc(u)+'" alt="" style="width:100%;height:100%;object-fit:cover"/></div>';
-    return'<div class="av" style="width:36px;height:36px">'+esc(initials(p.name))+'</div>';
+    return'<div class="av" style="width:36px;height:36px">'+esc(initials(dnm(p)))+'</div>';
   }
   var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
   function search(){
@@ -298,7 +301,7 @@
       var list=(d&&d.leaderboard)||[];
       if(!list.length){res.innerHTML='<p style="padding:8px 4px;font-size:13px;color:var(--muted)">No players found.</p>';return;}
       res.innerHTML=list.map(function(p){
-        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(p.name)+'</span><span style="font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)">'+(p.elo||0)+'</span></a>';
+        return'<a href="/player/'+slug(p.name)+'">'+av(p)+'<span class="pn">'+esc(dnm(p))+'</span><span style="font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--orange)">'+(p.elo||0)+'</span></a>';
       }).join('');
     }).catch(function(){res.innerHTML='';});
   }

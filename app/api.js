@@ -52,6 +52,8 @@
     updateProfile: function (token, updates) { return request("account/profile", { method: "PUT", body: { token: token, updates: updates } }); },
     changePassword: function (token, newPassword) { return request("account/change-password", { method: "POST", body: { token: token, new_password: newPassword } }); },
     forgotPassword: function (email) { return request("account/forgot", { method: "POST", body: { email: email } }); },
+    // Request a full-name change (moderated by an admin before it takes effect).
+    requestNameChange: function (token, newName) { return request("account/name-request", { method: "POST", body: { token: token, new_name: newName } }); },
     getSchedule: function (params) { return request("schedule" + qs(params)); },
     getVenues: function () { return request("venues"); },
     getTrackedEvents: function () { return request("tracked-events"); },

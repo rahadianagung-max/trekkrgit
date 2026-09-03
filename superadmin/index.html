@@ -126,6 +126,7 @@ footer span{color:var(--lime)}
       <button class="a-tab active" onclick="switchTab('players')">Players</button>
       <button class="a-tab" onclick="switchTab('edits');loadEditRequests()">Edit Requests</button>
       <button class="a-tab" onclick="switchTab('claims');loadClaimRequests()">Claim Requests</button>
+      <button class="a-tab" onclick="switchTab('names');loadNameRequests()">Name Changes</button>
       <button class="a-tab" onclick="switchTab('leads');loadLeads()">Leads</button>
       <button class="a-tab" onclick="switchTab('import')">Import Tournament</button>
       <button class="a-tab" onclick="switchTab('dupes');loadDupes()">Duplicates</button>
@@ -165,6 +166,13 @@ footer span{color:var(--lime)}
         <div class="section-title">CLAIM REQUESTS · PENDING</div>
         <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Permintaan pemain mengklaim profil miliknya (login email &amp; password). <b>Approve</b> menautkan akun ke profil, mengaktifkan login, &amp; mengirim email konfirmasi ke pemain. <b>Reject</b> menolak permintaan.</p>
         <div id="cr-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
+      </div>
+    </div>
+    <div class="tab-pane" id="tab-names">
+      <div class="section">
+        <div class="section-title">NAME CHANGES · PENDING</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Permintaan pemain mengubah <b>nama lengkap</b> (identitas unik yang jadi kunci ELO &amp; riwayat). <b>Approve</b> mengganti nama kanonik pemain, memindahkan seluruh riwayat ELO / match ke nama baru, &amp; mengirim email konfirmasi. <b>Reject</b> menolak — nama lama tetap.</p>
+        <div id="nr-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
       </div>
     </div>
     <!-- LEADS -->
@@ -685,6 +693,28 @@ async function resolveClaim(claimId,action){
   var admin=(TrekkrAPI.getSession().username)||"admin";
   try{ var r=await fetch(crApi()+"/account/claims/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({claimId:claimId,action:action,admin:admin})});
     var d=await r.json(); if(d&&d.ok){ loadClaimRequests(); if(action==="approve"&&typeof loadPlayers==="function")loadPlayers(); } else alert((d&&d.error)||"Gagal.");
+  }catch(e){ alert("Error jaringan."); }
+}
+
+// ---- Name-change Requests (player full-name edits, moderated) ----
+function renderNR(c){
+  return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(c.old_name||"")+'</b> → <b style="color:var(--accent,#FF6A00)">'+erEsc(c.new_name||"")+'</b>'
+    +'<div style="font-size:11px;color:var(--muted2)">'+erEsc(c.email||"")+' · '+erEsc((c.created_at||"").slice(0,10))+'</div></div>'
+    +'<span class="er-pend">Pending</span></div>'
+    +'<div class="er-btns"><button class="er-rej" onclick="resolveNR('+Number(c.id)+',\'reject\')">Reject</button>'
+    +'<button class="er-app" onclick="resolveNR('+Number(c.id)+',\'approve\')">Approve</button></div></div>';
+}
+async function loadNameRequests(){
+  var box=document.getElementById("nr-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
+  try{ var r=await fetch(crApi()+"/account/name-requests?status=pending"); var d=await r.json(); var cl=(d&&d.requests)||[];
+    box.innerHTML=cl.length?cl.map(renderNR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan ganti nama pending.</p>';
+  }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat.</p>'; }
+}
+async function resolveNR(reqId,action){
+  if(action==="approve"&&!confirm("Approve name change? Ini mengganti nama kanonik pemain & memindahkan seluruh riwayat ELO/match ke nama baru."))return;
+  var admin=(TrekkrAPI.getSession().username)||"admin";
+  try{ var r=await fetch(crApi()+"/account/name-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action,admin:admin})});
+    var d=await r.json(); if(d&&d.ok){ loadNameRequests(); if(action==="approve"&&typeof loadPlayers==="function")loadPlayers(); } else alert((d&&d.error)||"Gagal.");
   }catch(e){ alert("Error jaringan."); }
 }
 

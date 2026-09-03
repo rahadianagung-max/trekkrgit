@@ -41,6 +41,8 @@
   /* ---------- helpers ---------- */
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function initials(n) { return (String(n || "").trim().split(/\s+/).map(function (x) { return x[0] || ""; }).slice(0, 2).join("") || "?").toUpperCase(); }
+  function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
+  function firstName(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
   function fmtDate(ts) { var x = new Date(ts); return isNaN(x) ? "—" : x.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
   function slug(n) { return String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
   function norm(n) { return String(n || "").trim().toLowerCase(); }
@@ -917,10 +919,10 @@
       // Gender pool, then split calibrated (15+) vs calibrating (1–14).
       var pool = raw.filter(function (p) { return (String(p.gender || "M").toUpperCase() === "F" ? "F" : "M") === g; });
       var rated = pool.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
-        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl }; })
+        .map(function (p) { return { name: p.name, disp: p.display || p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl }; })
         .sort(function (a, b) { return b.elo - a.elo; });
       var calib = pool.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
-        .map(function (p) { return { name: p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl, m: Number(p.totalMatches) || 0 }; })
+        .map(function (p) { return { name: p.name, disp: p.display || p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl, m: Number(p.totalMatches) || 0 }; })
         .sort(function (a, b) { return b.elo - a.elo; });
 
       var genderSeg = '<div class="seg" id="genderSeg">' +
@@ -939,8 +941,8 @@
           var rank = i + 1;   // rank within the active tier (All = national)
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (rank <= 3 ? " top" : "") + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
-            '<span class="rk">' + rank + '</span>' + rowAvatar(p.photo, p.name) +
-            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(true) + '</span>' +
+            '<span class="rk">' + rank + '</span>' + rowAvatar(p.photo, p.disp || p.name) +
+            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.disp || p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(true) + '</span>' +
             (p.region ? '<span class="mt">' + esc(p.region) + '</span>' : "") + '</span>' +
             '<span class="el">' + p.elo + '</span><span class="rchev">›</span></div>';
         }).join("");
@@ -949,8 +951,8 @@
         var crows = calib.filter(function (p) { return f === "all" || tierOf(p.elo) === f; }).map(function (p) {
           var mine = S.myName && norm(p.name) === norm(S.myName);
           return '<div class="rrow' + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
-            '<span class="rk">·</span>' + rowAvatar(p.photo, p.name) +
-            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(false) + '</span>' +
+            '<span class="rk">·</span>' + rowAvatar(p.photo, p.disp || p.name) +
+            '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.disp || p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(false) + '</span>' +
             '<span class="mt">' + (p.region ? esc(p.region) + " · " : "") + p.m + '/15 matches</span></span>' +
             '<span class="el prov-el">' + p.elo + '</span><span class="rchev">›</span></div>';
         }).join("");
@@ -1191,13 +1193,25 @@
       var curPhoto = p.photo_url || p.photoUrl || "";
       var gM = (String(p.gender || "M").toUpperCase() === "F") ? "" : "selected";
       var gF = (String(p.gender || "M").toUpperCase() === "F") ? "selected" : "";
+      var pending = (me && me.pendingName) ? String(me.pendingName) : "";
+      var aliasVal = (p.displayName && normName(p.displayName) !== normName(p.name)) ? p.displayName : "";
       viewEl().innerHTML = '<div class="screen">' +
         '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
         '<h1 class="page" style="margin-top:4px">Edit profile</h1>' +
         '<div class="field"><label class="label">Photo</label><div style="display:flex;align-items:center;gap:14px">' +
-          '<div class="ava" id="pv" style="width:62px;height:62px;border-radius:14px">' + (curPhoto ? '<img src="' + esc(curPhoto) + '" alt=""/>' : esc(initials(p.displayName || p.name))) + '</div>' +
+          '<div class="ava" id="pv" style="width:62px;height:62px;border-radius:14px">' + (curPhoto ? '<img src="' + esc(curPhoto) + '" alt=""/>' : esc(initials(aliasVal || p.name))) + '</div>' +
           '<label class="btn ghost" style="width:auto;padding:10px 14px;margin:0">Upload<input type="file" id="photo" accept="image/*" style="display:none"></label></div></div>' +
-        '<div class="field"><label class="label">Display name</label><input class="input" id="dname" value="' + esc(p.displayName || p.name) + '"/></div>' +
+
+        '<div class="sec" style="margin-top:24px">Full name' + (pending ? '<span class="pendtag">Pending review</span>' : '') + '</div>' +
+        '<div class="field"><input class="input" id="fname" value="' + esc(p.name) + '"' + (pending ? ' disabled' : '') + '/></div>' +
+        '<div class="fhint">Your full name is your unique Trekkr identity — every match and ELO point is recorded to it. Editing it needs a quick admin review before it takes effect.</div>' +
+        (pending
+          ? '<div class="msg ok" style="margin-top:10px">Name change pending review — you asked to change it to “' + esc(pending) + '”. Your current name stays until an admin approves.</div>'
+          : '<div class="msg err hidden" id="nerr"></div><button class="btn ghost" id="savename" style="margin-top:10px">Request name change</button>') +
+
+        '<div class="sec" style="margin-top:26px">Public profile</div>' +
+        '<div class="field"><label class="label">Alias (nickname)</label><input class="input" id="dname" placeholder="e.g. your first name" value="' + esc(aliasVal) + '"/></div>' +
+        '<div class="fhint">This is the name shown on the public leaderboard and your passport. Leave it blank to use your first name. Change it anytime — no review needed.</div>' +
         '<div class="field"><label class="label">Instagram</label><input class="input" id="ig" placeholder="username" value="' + esc(String(p.ig || "").replace(/^@+/, "")) + '"/></div>' +
         '<div class="field"><label class="label">Region / City</label><input class="input" id="region" placeholder="e.g. Jakarta" value="' + esc(p.region || "") + '"/></div>' +
         '<div class="field"><label class="label">Gender</label><select class="input" id="gender"><option value="M" ' + gM + '>Male</option><option value="F" ' + gF + '>Female</option></select></div>' +
@@ -1225,7 +1239,6 @@
           region: (d.getElementById("region").value || "").trim(),
           gender: d.getElementById("gender").value || "M",
         };
-        if (!updates.display_name) { err.textContent = "Display name can't be empty."; err.classList.remove("hidden"); return; }
         if (newPhoto) updates.photo = newPhoto;
         saveBtn.disabled = true; saveBtn.textContent = "Saving…";
         try {
@@ -1236,6 +1249,23 @@
         } catch (e2) {
           err.textContent = e2.message || "Couldn't save."; err.classList.remove("hidden");
           saveBtn.disabled = false; saveBtn.textContent = "Save changes";
+        }
+      };
+      var saveName = d.getElementById("savename");
+      if (saveName) saveName.onclick = async function () {
+        var ne = d.getElementById("nerr"); ne.classList.add("hidden");
+        var nn = (d.getElementById("fname").value || "").trim();
+        if (nn.length < 2) { ne.textContent = "Please enter your full name."; ne.classList.remove("hidden"); return; }
+        if (normName(nn) === normName(p.name)) { ne.textContent = "That's already your name."; ne.classList.remove("hidden"); return; }
+        saveName.disabled = true; saveName.textContent = "Sending…";
+        try {
+          await API.requestNameChange(S.token, nn);
+          S.me = null; await ensureMe();
+          toast("Sent for review ✓");
+          renderEditProfile();
+        } catch (e2) {
+          ne.textContent = e2.message || "Couldn't send the request."; ne.classList.remove("hidden");
+          saveName.disabled = false; saveName.textContent = "Request name change";
         }
       };
       var savePw = d.getElementById("savepw");
