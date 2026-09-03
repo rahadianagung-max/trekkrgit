@@ -502,7 +502,7 @@
       m.classList.add("hidden");
       if (!validEmail(email)) { m.textContent = "Enter a valid email."; m.className = "msg err"; return; }
       go.disabled = true; go.textContent = "Sending…";
-      try { await sb.auth.resetPasswordForEmail(email, { redirectTo: "https://trekkr.online/reset" }); } catch (e) {}
+      try { await API.forgotPassword(email); } catch (e) {}
       m.textContent = "If that email is registered, a reset link is on its way. Check your inbox (and spam).";
       m.className = "msg"; m.style.color = "var(--grn)"; m.classList.remove("hidden");
       go.disabled = false; go.textContent = "Send reset link";

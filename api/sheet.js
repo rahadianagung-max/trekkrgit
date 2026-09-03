@@ -435,6 +435,14 @@ function tplVenueReset(venueName, link) {
     + emLinkFallback(link);
   return emailShell(c, `Reset your Trekkr venue admin password.`);
 }
+function tplPlayerReset(link) {
+  const c = emH(`Reset your Trekkr password`)
+    + emP(`We received a request to reset the password for your Trekkr player account. Choose a new one below:`)
+    + emButtonBlock("Reset password", link)
+    + emSmall(`This link is valid for a short time and can be used once. If you didn't request this, you can safely ignore this email — your password won't change.`)
+    + emLinkFallback(link);
+  return emailShell(c, `Reset your Trekkr player password.`);
+}
 
 // Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
 async function findAuthByEmail(sheets, email) {
@@ -687,6 +695,7 @@ const netlifyHandler = async (event) => {
     if (path === "account/register-new" && method === "POST") return await accountRegisterNew(body);
     if (path === "account/claim" && method === "POST") return await accountClaim(body);
     if (path === "account/change-password" && method === "POST") return await accountChangePassword(body);
+    if (path === "account/forgot" && method === "POST") return await accountForgot(body);
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
     if (path === "account/claims" && method === "GET") return await accountClaimsList(params);
     if (path === "account/claims/resolve" && method === "POST") return await accountClaimsResolve(body);
@@ -1008,6 +1017,25 @@ async function accountChangePassword(body) {
   return respond(200, { ok: true });
 }
 
+// Player forgot-password: email a BRANDED reset link (via Brevo) using a
+// Supabase-generated one-time recovery link. Clicking it lands on /reset, which
+// sets the new password. Always returns ok so we never reveal whether an email
+// is registered.
+async function accountForgot(body) {
+  const email = normEmail(body && body.email);
+  if (!validEmail(email)) return respond(200, { ok: true });
+  try {
+    const redirectTo = `${appBaseUrl()}/reset`;
+    const gl = await supaAdmin("POST", "generate_link", { type: "recovery", email, redirect_to: redirectTo });
+    const link = (gl && (gl.action_link || (gl.properties && gl.properties.action_link))) || "";
+    if (link) {
+      try { await sendBrevoEmail(email, "Reset your Trekkr password 🎾", tplPlayerReset(link)); }
+      catch (e) { console.error("[account] reset email:", e.message); }
+    }
+  } catch (e) { /* unknown email / GoTrue error — stay silent to avoid leaking */ }
+  return respond(200, { ok: true });
+}
+
 async function accountMe(params) {
   const user = await supaVerifyUser(params && params.token);
   if (!user) return respond(401, { error: "Belum login" });
@@ -1065,17 +1093,7 @@ async function accountProfile(body) {
   if (patch.photo_url) patch.photo_url = ibbHostFix(patch.photo_url);
   if (!Object.keys(patch).length) return respond(400, { error: "Tidak ada perubahan" });
   await supaRest("PATCH", `players?user_id=eq.${user.id}`, patch);
-  var changed = Object.keys(patch).map(function (k) {
-    // Don't dump the full photo URL in the alert — just note that a photo changed.
-    return k === "photo_url" ? "photo" : (k + ": " + escHtml(patch[k]).slice(0, 80));
-  }).join("<br>");
-  await notifyOwner(
-    `✏️ Player updated profile: ${rows[0].name}`,
-    `<h2>A player edited their profile</h2>` +
-    `<p><b>Player:</b> ${escHtml(rows[0].name)}<br>` +
-    `<b>Account:</b> ${escHtml(user.email || "")}</p>` +
-    `<p><b>Changed:</b><br>${changed}</p>`
-  );
+  // (No admin notification for profile edits — intentionally quiet.)
   return respond(200, { ok: true });
 }
 
