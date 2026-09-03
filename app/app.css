@@ -274,3 +274,6 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .rp-sched{display:flex;gap:7px;align-items:flex-start;margin-top:11px;font-size:13.5px;color:var(--mu);font-weight:600;line-height:1.4}
 .rp-ico{flex-shrink:0}
 .rp-nolink{margin-top:10px;text-align:center;font-size:12.5px;color:var(--faint);font-weight:700;border:1px dashed var(--line);border-radius:11px;padding:11px}
+.rp-btns{display:flex;gap:8px;margin-top:12px}
+.rp-btns .rp-btn{flex:1 1 0;min-width:0;margin-top:0;font-size:14px;padding:13px 10px;display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
+.rp-btns .rp-nolink{margin-top:0;display:flex;align-items:center;justify-content:center}

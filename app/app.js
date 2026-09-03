@@ -1087,15 +1087,20 @@
     var logo = v.logoUrl
       ? '<span class="rp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
       : '<span class="rp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
-    var btn = link
-      ? '<a class="btn" style="display:block;text-decoration:none;text-align:center;margin-top:10px" href="' + esc(link) + '" target="_blank" rel="noopener">Book / info →</a>'
-      : '<div class="rp-nolink">Booking link coming soon</div>';
+    // Left: this venue/community's Trekkr page (weekly ranking); right: booking.
+    var vpage = 'https://venue.trekkr.online/' + String(v.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    var btns = '<div class="rp-btns">' +
+      '<a class="btn ghost rp-btn" href="' + esc(vpage) + '" target="_blank" rel="noopener">Venue page</a>' +
+      (link
+        ? '<a class="btn rp-btn" href="' + esc(link) + '" target="_blank" rel="noopener">Book / info →</a>'
+        : '<span class="rp-nolink rp-btn">Booking soon</span>') +
+      '</div>';
     return '<div class="plain rp-card">' +
       '<div class="rp-head">' + logo +
         '<div class="rp-hb"><h3>' + esc(v.name || "Venue") + (v.featured ? ' <span class="rp-star">★</span>' : "") + '</h3>' +
         (loc ? '<div class="rp-loc">' + esc(loc) + '</div>' : "") + '</div></div>' +
       '<div class="rp-sched"><span class="rp-ico">🗓️</span><span>' + esc(sched || "Schedule coming soon") + '</span></div>' +
-      btn + '</div>';
+      btns + '</div>';
   }
   function renderRpList() {
     var box = d.getElementById("rp-list");
