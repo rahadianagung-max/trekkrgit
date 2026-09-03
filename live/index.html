@@ -117,7 +117,7 @@ header.hd{padding:18px 2px 6px}
 
 /* standings */
 .board{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
-.row{display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;
+.row{display:grid;grid-template-columns:26px 34px 1fr auto auto;gap:10px;align-items:center;
   padding:11px 13px;border-bottom:1px solid var(--line2);position:relative}
 .row:last-child{border-bottom:0}
 .row.me{background:color-mix(in srgb,var(--orange) 8%,transparent)}
@@ -137,7 +137,18 @@ header.hd{padding:18px 2px 6px}
 .claim{font-size:11px;font-weight:800;color:var(--orange);cursor:pointer;white-space:nowrap;background:none;border:0;padding:0;text-decoration:none}
 .verified{font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--grn);white-space:nowrap;
   background:color-mix(in srgb,var(--grn) 13%,transparent);padding:2px 7px;border-radius:6px}
-.grid2{grid-template-columns:26px 1fr auto}
+.grid2{grid-template-columns:26px 34px 1fr auto}
+/* player photo (standings + final table) */
+.lav{width:34px;height:34px;border-radius:9px;overflow:hidden;background:var(--line2);
+  display:flex;align-items:center;justify-content:center;font-family:'Saira Condensed',sans-serif;
+  font-style:italic;font-weight:800;color:var(--dim);font-size:13px;flex-shrink:0}
+.lav img{width:100%;height:100%;object-fit:cover;display:block}
+/* podium photo */
+.pod .pav{width:54px;height:54px;border-radius:13px;overflow:hidden;margin:8px auto 0;background:var(--line2);
+  display:flex;align-items:center;justify-content:center;font-family:'Saira Condensed',sans-serif;
+  font-style:italic;font-weight:800;color:var(--dim);font-size:19px}
+.pod.first .pav{width:64px;height:64px;font-size:22px}
+.pod .pav img{width:100%;height:100%;object-fit:cover;display:block}
 /* per-player analysis (final table) */
 .pcard{border-bottom:1px solid var(--line2)}
 .pcard:last-child{border-bottom:0}
@@ -302,6 +313,21 @@ var CODE = getCode();
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function $(id){return document.getElementById(id);}
 function firstName(n){return String(n||'').split(' ')[0];}
+function initials(n){return (String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').replace(/[^A-Za-z0-9]/g,'')||'?').toUpperCase();}
+// Player photo with an initials fallback; imgbb serves the same image on i.ibb.co
+// and i.ibb.co.com, so retry the alternate host once before falling back.
+window.__lavFallback=function(img,ini){
+  var s=img.getAttribute('src')||'';
+  if(!img.dataset.alt && s.indexOf('i.ibb.co')>-1){ img.dataset.alt='1';
+    img.src = s.indexOf('i.ibb.co.com')>-1 ? s.replace('i.ibb.co.com/','i.ibb.co/') : s.replace('i.ibb.co/','i.ibb.co.com/'); return; }
+  var d=img.parentNode; if(d){ img.remove(); d.textContent=ini; }
+};
+function avatar(p,cls){
+  var ini=initials(p.displayName||p.name||p.short);
+  var u=p.photoUrl||'';
+  if(u) return '<div class="'+cls+'"><img src="'+esc(u)+'" alt="" loading="lazy" onerror="__lavFallback(this,\''+ini+'\')"></div>';
+  return '<div class="'+cls+'">'+ini+'</div>';
+}
 function tierName(elo){
   if(elo>=3000)return'Platinum';if(elo>=2500)return'Gold';if(elo>=2100)return'Silver';
   if(elo>=1800)return'Upper Bronze';if(elo>=1500)return'Bronze';if(elo>=1200)return'Lower Bronze';
@@ -411,6 +437,7 @@ function liveRow(p,i){
     : '<a class="claim" href="'+claimUrl(p.name)+'">Is this you? Claim →</a>';
   return '<div class="row grid2">'+
     '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
+    avatar(p,'lav')+
     '<div class="pl"><div class="pn">'+esc(p.short||firstName(p.name))+' '+tierChip(p.elo)+streak+'</div>'+meta+'</div>'+
     '<span class="wl">'+(p.w||0)+'<span class="l">–'+(p.l||0)+'</span></span>'+
   '</div>';
@@ -463,6 +490,7 @@ function finalCard(p,i){
   return '<div class="pcard">'+
     '<div class="row">'+
       '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
+      avatar(p,'lav')+
       '<div class="pl"><div class="pn">'+esc(p.short||firstName(p.name))+' '+tierChip(p.elo)+streak+claim+'</div>'+
         '<div class="pmeta"><span class="rec">'+(p.w||0)+'W–'+(p.l||0)+'L</span> · <span class="'+((p.pd||0)>=0?'up':'dn')+'">'+((p.pd||0)>=0?'+':'')+(p.pd||0)+' pts</span></div>'+btn+'</div>'+
       '<span class="wl">'+(d>=0?'<span class="up">+'+d:'<span class="dn">'+d)+'</span></span>'+
@@ -515,6 +543,7 @@ function renderFinal(d){
     if(!p) return '<div></div>';
     var dl=(p.elo||0)-(p.start||p.elo||0);
     return '<div class="pod'+(idx===1?' first':'')+'"><div class="medal">'+meds[idx]+'</div>'+
+      avatar(p,'pav')+
       '<div class="pn">'+esc(p.short||firstName(p.name))+'</div><div class="rec">'+(p.w||0)+'–'+(p.l||0)+'</div>'+
       '<div class="dl '+(dl>=0?'up':'dn')+'">'+(dl>=0?'+':'')+dl+' ELO</div></div>';
   }).join('');
