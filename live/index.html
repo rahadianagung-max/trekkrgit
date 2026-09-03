@@ -283,7 +283,7 @@ header.hd{padding:18px 2px 6px}
     </div>
 
     <div class="cta">
-      <a class="btn pri" id="claimBtn" href="https://trekkr.online/app">Claim my profile →</a>
+      <a class="btn pri" id="weeklyBtn" href="https://trekkr.online/venues">Weekly ranking →</a>
       <button class="btn sec" id="shareBtn">Share result</button>
     </div>
     <p class="footer">Powered by <b>Trekkr</b> · ranked padel for Indonesia</p>
@@ -562,8 +562,9 @@ function renderFinal(d){
   $('finalBoard').innerHTML=s.map(finalCard).join('');
   renderMatchHistory(d);
 
-  // "Claim my profile" primary CTA → generic claim/join if we can't tell who's viewing.
-  $('claimBtn').href='https://trekkr.online/app';
+  // Primary CTA → this venue/community's weekly ranking page (venue subdomain).
+  var vslug=String(d.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+  $('weeklyBtn').href = vslug ? ('https://venue.trekkr.online/'+vslug) : 'https://trekkr.online/venues';
 }
 
 function render(){
