@@ -89,6 +89,7 @@
     (matches || []).forEach(function (m) {
       var t1 = [m.p1t1, m.p2t1], t2 = [m.p1t2, m.p2t2];
       var inT1 = t1.some(isMe), inT2 = t2.some(isMe);
+      if (inT1 && inT2) return; // self-match artifact — skip
       var team = inT1 ? t1 : (inT2 ? t2 : null); if (!team) return;
       var won = inT1 ? (m.scoreT1 > m.scoreT2) : (m.scoreT2 > m.scoreT1);
       var partner = team.filter(function (n) { return n && !isMe(n); })[0]; if (!partner) return;
@@ -107,11 +108,12 @@
     (matches || []).forEach(function (m) {
       var t1 = [m.p1t1, m.p2t1], t2 = [m.p1t2, m.p2t2];
       var inT1 = t1.some(isMe), inT2 = t2.some(isMe); if (!inT1 && !inT2) return;
+      if (inT1 && inT2) return; // self-match artifact (duplicate name on both teams) — skip
       var team = inT1 ? t1 : t2, opp = inT1 ? t2 : t1;
       var sf = inT1 ? m.scoreT1 : m.scoreT2, sa = inT1 ? m.scoreT2 : m.scoreT1;
       var res = (sf === sa) ? "D" : (sf > sa ? "W" : "L");
       var partner = team.filter(function (n) { return n && !isMe(n); })[0] || "";
-      var opps = opp.filter(Boolean).join(" & ");
+      var opps = opp.filter(function (n) { return n && !isMe(n); }).join(" & "); // never list yourself as opponent
       var ts = Date.parse(m.date); if (isNaN(ts)) ts = 0;
       out.push({ res: res, sf: sf, sa: sa, pd: sf - sa, partner: partner, opps: opps, venue: m.venue || "", date: m.date || "", ts: ts });
     });

@@ -942,20 +942,24 @@ async function loadPlayer(){
           const p2t1 = (m.p2t1 || "").toLowerCase().trim();
           const p1t2 = (m.p1t2 || "").toLowerCase().trim();
           const p2t2 = (m.p2t2 || "").toLowerCase().trim();
-          const isT1 = (isMe(p1t1) || isMe(p2t1));
+          const meT1 = (isMe(p1t1) || isMe(p2t1)), meT2 = (isMe(p1t2) || isMe(p2t2));
+          if (meT1 && meT2) return;   // self-match artifact (duplicate name on both teams) — skip
+          const isT1 = meT1;
 
           let partner = "";
           let opponents = "";
           let isWin = false;
           let isTie = (m.scoreT1 === m.scoreT2);
+          // Never list the viewer as their own opponent/partner.
+          const oppStr = (a, b) => [a, b].filter(n => n && !isMe((n || "").toLowerCase().trim())).join(" & ");
 
           if (isT1) {
               partner = isMe(p1t1) ? m.p2t1 : m.p1t1;
-              opponents = `${m.p1t2} & ${m.p2t2}`;
+              opponents = oppStr(m.p1t2, m.p2t2);
               isWin = m.scoreT1 > m.scoreT2;
           } else {
               partner = isMe(p1t2) ? m.p2t2 : m.p1t2;
-              opponents = `${m.p1t1} & ${m.p2t1}`;
+              opponents = oppStr(m.p1t1, m.p2t1);
               isWin = m.scoreT2 > m.scoreT1;
           }
 
