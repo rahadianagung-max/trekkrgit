@@ -44,6 +44,32 @@
   function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
   function firstName(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
   function fmtDate(ts) { var x = new Date(ts); return isNaN(x) ? "—" : x.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+  // Skill-tier ladder (Beginner → Platinum) with progress to the next tier.
+  function skillTier(elo) {
+    var T = [["Beginner", 0], ["Upper Beginner", 900], ["Lower Bronze", 1200], ["Bronze", 1500], ["Upper Bronze", 1800], ["Silver", 2100], ["Gold", 2500], ["Platinum", 3000]];
+    var i = 0; for (var k = 0; k < T.length; k++) if (elo >= T[k][1]) i = k;
+    var cur = T[i], nxt = T[i + 1] || null, min = cur[1], max = nxt ? nxt[1] : cur[1] + 300;
+    var prog = nxt ? Math.max(4, Math.min(100, Math.round((elo - min) / (max - min) * 100))) : 100;
+    return { name: cur[0], next: nxt ? nxt[0] : null, ptsAway: nxt ? (nxt[1] - elo) : 0, progress: prog };
+  }
+  function tierEmoji(n) { return ({ Platinum: "💎", Gold: "🥇", Silver: "🥈", "Upper Bronze": "🥉", Bronze: "🥉", "Lower Bronze": "🥉", "Upper Beginner": "🎾", Beginner: "🎾" })[n] || "🎾"; }
+  // Public alias = a distinct display_name, else first name.
+  function publicAlias(name, disp) { var dn = String(disp || "").trim(); return (dn && normName(dn) !== normName(name)) ? dn : firstName(name); }
+  // This player's rank at each played venue, vs same gender, from the leaderboard.
+  function computeVenueRanks(leaderboard, playedVenues, meNames, gender) {
+    var mine = (meNames || []).map(normName).filter(Boolean);
+    var pg = (String(gender || "M").toUpperCase() === "F") ? "F" : "M";
+    var gWord = pg === "F" ? "Women" : "Men";
+    var out = [];
+    (playedVenues || []).forEach(function (v) {
+      var vlow = String(v).toLowerCase().trim();
+      var pop = (leaderboard || []).filter(function (e) { return (String(e.gender || "M").toUpperCase() === pg) && String(e.clubs || "").toLowerCase().indexOf(vlow) > -1; });
+      var idx = pop.findIndex(function (e) { return mine.indexOf(normName(e.name)) !== -1 || mine.indexOf(normName(e.displayName)) !== -1 || mine.indexOf(normName(e.display)) !== -1; });
+      if (idx >= 0 && pop.length >= 3) out.push({ venue: v, rank: idx + 1, total: pop.length, pct: Math.max(1, Math.round((idx + 1) / pop.length * 100)), gender: gWord });
+    });
+    out.sort(function (a, b) { return a.rank - b.rank || a.pct - b.pct; });
+    return out;
+  }
   function slug(n) { return String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
   function norm(n) { return String(n || "").trim().toLowerCase(); }
   // Placeholder names used for walkovers / byes — never real players.
@@ -598,7 +624,10 @@
       var hist = det.history || [];             // [{elo,delta,w,l,timestamp}]
       var matchesArr = (r[2] && r[2].matches) || [];
 
-      var display = pd.displayName || me.player.displayName || name;
+      var realName = name;
+      var display = publicAlias(name, pd.displayName || me.player.displayName);   // public alias (used by share card too)
+      var showReal = normName(realName) !== normName(display);
+      var gender = pd.gender || me.player.gender || "M";
       var photo = pd.photoUrl || me.player.photo_url || me.player.photoUrl || "";
       var region = pd.region || me.player.region || "";
       var club = ((pd.clubs || me.player.clubs || "").split(",")[0] || "").trim();
@@ -611,38 +640,78 @@
       var winRate = st.winRate != null ? st.winRate : (matches ? Math.round((wins || 0) / matches * 100) : 0);
       var streak = st.streak && st.streak !== "0" ? st.streak : "—";
       var last = hist.length ? hist[hist.length - 1] : null;
-      var tier = unrated ? null : API.tierName(elo, cut);
+      var dir = last && last.delta > 0 ? "up" : (last && last.delta < 0 ? "down" : "flat");
+      var tier = unrated ? null : API.tierName(elo, cut);          // Series tier T1/T2/T3
+      var stier = skillTier(elo || 0);                             // skill ladder Bronze→Platinum
       var bp = bestPartner(matchesArr, [name, display]);
-      var results = matchResults(matchesArr, [name, display]).slice(0, 6);
+      var resultsAll = matchResults(matchesArr, [name, display]);
+      var results = resultsAll.slice(0, 6);
+
+      // Venue ranks (vs same gender), last session, highlights — mirror the web passport.
+      var leaderboard = (r[3] && r[3].leaderboard) || [];
+      var playedVenues = (r[2] && r[2].playedVenues) || [];
+      var venueRanks = unrated ? [] : computeVenueRanks(leaderboard, playedVenues, [name, display, pd.displayName], gender);
+      var eloReal = hist.filter(function (h) { return h && h.sessionId !== "INITIAL" && ((h.w || 0) + (h.l || 0)) > 0; });
+      var lastSession = null;
+      if (eloReal.length && resultsAll.length) {
+        var le = eloReal[eloReal.length - 1], r0 = resultsAll[0], ld = r0.date, lv = r0.venue || "";
+        var games = resultsAll.filter(function (x) { return x.date === ld && (!lv || (x.venue || "") === lv); });
+        var lw = games.filter(function (x) { return x.res === "W"; }).length, ll = games.filter(function (x) { return x.res === "L"; }).length;
+        var bw = null; games.forEach(function (g) { if (g.res === "W") { var m = g.sf - g.sa; if (!bw || m > bw.m) bw = { m: m, g: g }; } });
+        lastSession = { venue: lv, date: ld, delta: Number(le.delta || 0), w: lw, l: ll, games: games, bestWin: bw ? bw.g : null };
+      }
+      var peakElo = hist.length ? Math.max.apply(null, hist.map(function (h) { return Number(h.elo) || 0; })) : elo;
+      var biggestJump = eloReal.length ? Math.max.apply(null, eloReal.map(function (h) { return Number(h.delta) || 0; })) : 0;
+      var chrono = resultsAll.slice().reverse(), rl = 0, longest = 0;
+      chrono.forEach(function (x) { if (x.res === "W") { rl++; if (rl > longest) longest = rl; } else rl = 0; });
 
       // Achievement badges (earned ones surfaced first).
       var eloMap = {};
-      ((r[3] && r[3].leaderboard) || []).forEach(function (p) { if (p && p.name) eloMap[String(p.name).toLowerCase().trim()] = Number(p.elo) || 0; });
+      leaderboard.forEach(function (p) { if (p && p.name) eloMap[String(p.name).toLowerCase().trim()] = Number(p.elo) || 0; });
       var histForBadges = hist.map(function (h) { return { elo: h.elo, date: h.timestamp }; });
       var badges = computeBadges({ player: { name: name, displayName: display }, stats: { currentElo: elo, totalMatches: matches, winRate: winRate }, history: histForBadges }, matchesArr, eloMap);
       badges.sort(function (a, b) { return (b.earned ? 1 : 0) - (a.earned ? 1 : 0); });
       var earnedCount = badges.filter(function (b) { return b.earned; }).length;
 
-      S.card = { display: display, name: name, elo: elo, tier: tier, wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name), partner: bp };
+      S.card = { display: display, name: name, elo: elo, tier: (unrated ? null : (tierEmoji(stier.name) + " " + stier.name)), wins: wins, losses: losses, matches: matches, unrated: unrated, photo: photo, region: region, slug: slug(name), partner: bp, rank: venueRanks[0] || null, dir: dir };
 
-      // Tier progress toward the next Series Tier (dynamic cutoffs).
-      var t1 = (cut && cut.t1) || 2000, t2 = (cut && cut.t2) || 1500, tp = "";
-      if (!unrated) {
-        var prog = 100, away = 0, nx = "";
-        if (elo >= t1) { prog = 100; }
-        else if (elo >= t2) { prog = Math.round((elo - t2) / (t1 - t2) * 100); away = t1 - elo; nx = "T1 · Open"; }
-        else { prog = Math.round(elo / t2 * 100); away = t2 - elo; nx = "T2 · Contender"; }
-        prog = Math.max(4, Math.min(100, prog));
-        tp = '<div class="tierprog"><div class="tp-top"><span class="tp-cur">' + esc(tier) + '</span>' +
-          (nx ? '<span class="tp-away">' + away + ' pts to ' + esc(nx) + '</span>' : '<span class="tp-away">Top tier 🔥</span>') +
-          '</div><div class="tp-bar"><div class="tp-fill" style="width:' + prog + '%"></div></div></div>';
-      }
-
+      var triHTML = (!unrated && dir !== "flat") ? '<i class="pptri ' + dir + '">' + (dir === "up" ? "▲" : "▼") + '</i>' : "";
       var heroInner = unrated
         ? '<p class="lbl">ELO Rating</p><p class="num" style="font-size:34px">Unrated</p><p style="margin:6px 0 0;font-size:12.5px;opacity:.92">Your rating appears after your first PlayRank match</p>'
         : '<p class="lbl">ELO Rating</p><p class="num">' + elo + '</p>' +
-          '<span class="tier">🏆 ' + esc(tier) + '</span>' +
+          '<span class="tier">' + tierEmoji(stier.name) + ' ' + esc(stier.name) + '</span>' +
           (last && last.delta ? '<span class="delta">' + (last.delta >= 0 ? "▲ +" : "▼ ") + Math.abs(last.delta) + '</span>' : "");
+
+      // Where you stand — skill-tier ladder progress + per-venue rank.
+      function vrankRow(rk) {
+        return '<div class="vrank"><span class="vr-pos' + (rk.rank <= 3 ? " g" : "") + '">#' + rk.rank + '<small>/' + rk.total + '</small></span>' +
+          '<span class="vr-body"><b>' + esc(rk.venue) + '</b><span>Top ' + rk.pct + '% · ' + rk.gender + '</span></span>' +
+          (rk.rank <= 3 ? '<span class="vr-m">' + (rk.rank === 1 ? "🥇" : rk.rank === 2 ? "🥈" : "🥉") + '</span>' : "") + '</div>';
+      }
+      var stand = unrated ? "" : ('<div class="stand2"><div class="stand2-top">' +
+        '<div class="s2-tier">' + esc(stier.name) + '<span>Skill tier' + (matches < 15 ? " · calibrating" : " · calibrated") + '</span></div>' +
+        '<div class="s2-elo"><b>' + elo + triHTML + '</b><span>ELO</span></div></div>' +
+        '<div class="s2-bar"><span style="width:' + stier.progress + '%"></span></div>' +
+        '<div class="s2-next">' + (stier.next ? ('<b>' + stier.ptsAway + ' pts</b> to ' + esc(stier.next) + ' · ' + stier.progress + '%') : "Top tier reached 🏆") + '</div>' +
+        (tier ? '<div class="s2-next" style="margin-top:3px">Series Tier: <b>' + esc(tier) + '</b></div>' : "") +
+        (venueRanks.length ? ('<div class="s2-div"></div><div class="s2-rh">Your standing · vs ' + venueRanks[0].gender + '</div>' + venueRanks.map(vrankRow).join("")) : "") +
+        '</div>');
+
+      // Last session (grey card) — rule-based insight, current venue rank.
+      var lsHTML = "";
+      if (lastSession && lastSession.games.length) {
+        var ls = lastSession, dl = ls.delta, dcls = dl > 0 ? "up" : (dl < 0 ? "dn" : ""), dsign = dl > 0 ? "▲ +" : (dl < 0 ? "▼ " : "");
+        var rn = venueRanks.filter(function (x) { return normName(x.venue) === normName(ls.venue); })[0] || venueRanks[0] || null;
+        var ip = [];
+        if (dl > 0) ip.push("Climbed <b>+" + dl + " ELO</b>"); else if (dl < 0) ip.push("Dropped <b>" + dl + " ELO</b>"); else ip.push("Held your ELO");
+        if (ls.l === 0 && ls.w > 0) ip.push("won all " + ls.w); else if (ls.w > ls.l) ip.push("took " + ls.w + " of " + ls.games.length); else ip.push(ls.w + "W–" + ls.l + "L");
+        if (ls.bestWin && (ls.bestWin.sf - ls.bestWin.sa) >= 1) ip.push("best win <b>" + ls.bestWin.sf + "–" + ls.bestWin.sa + "</b> vs " + esc(ls.bestWin.opps));
+        lsHTML = '<div class="lsx"><div class="lsx-h">🎾 Your last session</div>' +
+          '<div class="lsx-title">' + (ls.venue ? esc(ls.venue) + " · " : "") + esc(fmtDate(ls.date)) + '</div>' +
+          '<div class="lsx-chips"><span class="lsx-chip ' + dcls + '">' + dsign + dl + ' ELO</span><span class="lsx-chip">' + ls.w + "W · " + ls.l + 'L</span>' +
+          (rn ? '<span class="lsx-chip or">Rank #' + rn.rank + " at " + esc(rn.venue) + '</span>' : "") + '</div>' +
+          '<div class="lsx-insight">' + ip.join(" · ") + '.</div></div>';
+      }
 
       var calib = (!unrated && matches < 15)
         ? '<div class="calib"><b>Calibrating:</b> ' + Math.max(0, 15 - matches) + ' more matches until your tier is set. Your ELO moves faster during this window.</div>'
@@ -653,6 +722,11 @@
         '<div class="stat hl"><b>' + (matches ? winRate + "%" : "–") + '</b><span>Win Rate</span></div>' +
         '<div class="stat"><b>' + (wins != null ? wins : "–") + "/" + (losses != null ? losses : "–") + '</b><span>W / L</span></div>' +
         '<div class="stat"><b>' + esc(streak) + '</b><span>Streak</span></div></div>';
+
+      var highlights = unrated ? "" : ('<div class="hix">' +
+        '<div class="hix-card"><i>📈</i><b>' + (peakElo || elo) + '</b><span>Peak ELO</span></div>' +
+        '<div class="hix-card"><i>🔥</i><b>' + longest + 'W</b><span>Best streak</span></div>' +
+        '<div class="hix-card"><i>⚡</i><b>+' + (biggestJump > 0 ? biggestJump : 0) + '</b><span>Biggest jump</span></div></div>');
 
       var recentHTML = results.length
         ? '<div class="sec">Recent matches</div>' + results.map(function (x) {
@@ -676,13 +750,15 @@
 
       viewEl().innerHTML =
         '<div class="screen">' +
-          '<div class="p-top"><div><div class="p-hi">Passport</div><div class="p-name">' + esc(display) + '</div>' +
+          '<div class="p-top"><div>' +
+            (showReal ? '<div class="p-real">Real name: <b>' + esc(realName) + '</b></div>' : '<div class="p-hi">Passport</div>') +
+            '<div class="p-name">' + esc(display) + '</div>' +
             (region || club ? '<div class="p-meta">' + esc([region, club].filter(Boolean).join(" · ")) + '</div>' : "") + '</div>' +
             '<div class="p-actions">' + themeBtnHTML("pp-theme") +
               '<button class="ava" id="pp-av" aria-label="Edit profile" style="padding:0;border:none">' + (photo ? '<img src="' + esc(photo) + '" alt=""/>' : esc(initials(display))) + '</button>' +
             '</div></div>' +
           '<div class="hero">' + heroInner + '</div>' +
-          calib + tp + statGrid +
+          stand + calib + lsHTML + statGrid + highlights +
           (bp ? '<div class="sec">Best partner</div><div class="hitem"><span class="d"><b style="color:var(--ink)">' + esc(bp.name) + '</b></span><span class="up">' + bp.w + '–' + bp.l + '</span></div>' : "") +
           badgesHTML +
           spark +
