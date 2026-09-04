@@ -707,6 +707,23 @@ canvas#shareCanvas{display:none}
 .pp2-acc .t .ct{color:var(--on-surface-variant);font-weight:600}
 .pp2-accbody{margin-top:14px}
 .pp2-accbody[hidden]{display:none}
+/* playing history — compact rows, fit mobile width (no clipping) */
+.pp2-hist{display:flex;flex-direction:column}
+.pp2-hrow{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--surface-container,#EFEFF1)}
+.pp2-hrow:last-child{border-bottom:0}
+.pp2-hrow .hres{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:15px}
+.pp2-hrow .hres.w{background:rgba(34,160,82,.14);color:var(--ok,#22A052)}
+.pp2-hrow .hres.l{background:rgba(255,56,48,.12);color:var(--danger,#FF3830)}
+.pp2-hrow .hres.d{background:var(--surface-container,#EFEFF1);color:var(--on-surface-variant)}
+.pp2-hrow .hmid{flex:1;min-width:0}
+.pp2-hrow .hp{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp2-hrow .hsub{font-size:11.5px;color:var(--on-surface-variant);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp2-hrow .hd{font-size:10.5px;color:var(--on-surface-variant);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp2-hrow .hright{flex-shrink:0;text-align:right;min-width:52px}
+.pp2-hrow .hscore{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:17px;line-height:1}
+.pp2-hrow .hdelta{font-size:11.5px;font-weight:800;margin-top:3px;color:var(--on-surface-variant)}
+.pp2-hrow .hdelta.up{color:var(--ok,#22A052)} .pp2-hrow .hdelta.dn{color:var(--danger,#FF3830)}
+.pp2-hempty{text-align:center;color:var(--on-surface-variant);font-size:13px;padding:16px}
 </style>
 </head>
 <body>
@@ -1021,6 +1038,8 @@ function skillTier(elo){
 }
 function tierEmoji(name){return ({'Platinum':'💎','Gold':'🥇','Silver':'🥈','Upper Bronze':'🥉','Bronze':'🥉','Lower Bronze':'🥉','Upper Beginner':'🎾','Beginner':'🎾'})[name]||'🎾';}
 function ppNN(x){return String(x||'').toLowerCase().trim().replace(/\s+/g,' ');}
+// Format any stored date form (ISO timestamp, YYYY-MM-DD, etc.) as "2 Sep 2026".
+function ppFmtDate(s){s=String(s||'').trim();if(!s||s==='N/A')return '';var d=new Date(s);if(!isNaN(d.getTime()))return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});return s.slice(0,10);}
 
 // Compute last-session analysis, highlights and ELO direction from loaded data.
 function ppComputeExtras(d, historyTable, canonName){
@@ -1212,24 +1231,29 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   if(history && history.length>1){
     h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="pp-chart" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div></div></div>';
   }
-  // Playing history
+  // Playing history — compact mobile-first rows (no wide table; nothing clipped)
   if(historyTable){
     var histRows='';
     if(historyTable.length>0){
       historyTable.slice().reverse().forEach(function(hItem){
         var dv=(hItem.delta==null)?null:Number(hItem.delta);
-        var cls=dv==null?'':(dv>0?'elo-up':(dv<0?'elo-dn':'elo-zero'));
-        var dtxt=dv==null?'—':((dv>0?'+':'')+dv);
-        var eloCell=dv==null?'<span style="color:var(--on-surface-variant)">—</span>':('<span class="elo-delta '+cls+'">'+dtxt+'</span>'+(hItem.newElo!=null?'<div style="font-size:10px;color:var(--on-surface-variant);margin-top:2px">'+hItem.newElo+'</div>':''));
-        histRows+='<tr><td><span style="color:var(--on-surface-variant);font-size:12px">'+hItem.date+'</span></td>'
-          +'<td><div style="font-weight:700;font-size:14px"><span style="color:var(--primary);font-size:11px;margin-right:4px">w/</span>'+hItem.partner+'</div>'
-          +'<div style="font-size:11px;color:var(--on-surface-variant);margin-top:2px">vs '+hItem.opponents+'</div>'
-          +'<div style="font-size:11px;color:var(--on-surface-variant);margin-top:3px">Score <b style="color:var(--on-surface);font-size:12px">'+hItem.scoreFor+'–'+hItem.scoreAgainst+'</b></div></td>'
-          +'<td>'+eloCell+'</td><td><div class="res-badge '+hItem.resClass+'">'+hItem.resText+'</div></td></tr>';
+        var dcls=dv==null?'':(dv>0?'up':(dv<0?'dn':''));
+        var dtxt=dv==null?'':((dv>0?'+':'')+dv+' ELO');
+        var rl=(hItem.resText||'D');                 // W / L / D
+        var rc=rl==='W'?'w':(rl==='L'?'l':'d');
+        var venue=hItem.venue?(' · '+hItem.venue):'';
+        histRows+='<div class="pp2-hrow">'
+          +'<div class="hres '+rc+'">'+rl+'</div>'
+          +'<div class="hmid"><div class="hp"><span style="color:var(--primary);font-size:11px;margin-right:3px">w/</span>'+hItem.partner+'</div>'
+          +'<div class="hsub">vs '+hItem.opponents+'</div>'
+          +'<div class="hd">'+ppFmtDate(hItem.date)+venue+'</div></div>'
+          +'<div class="hright"><div class="hscore">'+hItem.scoreFor+'–'+hItem.scoreAgainst+'</div>'
+          +(dtxt?('<div class="hdelta '+dcls+'">'+dtxt+'</div>'):'')+'</div>'
+          +'</div>';
       });
-    } else { histRows='<tr><td colspan="4" style="text-align:center;color:var(--on-surface-variant)">No match history found.</td></tr>'; }
+    } else { histRows='<div class="pp2-hempty">No match history found.</div>'; }
     h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppHist\')"><div class="t"><span class="em">📋</span> Playing history <span class="ct">· '+(historyTable.length||0)+'</span></div><span class="cv">›</span></div>'
-      +'<div class="pp2-accbody" id="ppHist" hidden><div class="data-table-wrap"><table class="data-table"><thead><tr><th width="84">Date</th><th>Matchup</th><th width="66">&Delta; ELO</th><th width="50">Res</th></tr></thead><tbody>'+histRows+'</tbody></table></div></div></div>';
+      +'<div class="pp2-accbody" id="ppHist" hidden><div class="pp2-hist">'+histRows+'</div></div></div>';
   }
   // About & venues
   var venuePills=ppListArr((playedVenues||[]).join(','));
