@@ -640,6 +640,73 @@ canvas#shareCanvas{display:none}
 .pp-unrated .ti{color:var(--primary);font-size:18px;flex:0 0 auto;margin-top:1px}
 .pp-unrated b{font-weight:800}
 .edit-in{width:100%;border:1px solid rgba(115,118,136,.22);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;background:#F9FAFC;color:var(--on-surface)}
+
+/* ===== Passport redesign v2 (concise + expand) ===== */
+.pp-tri{font-size:.62em;vertical-align:middle;margin-left:3px}
+.pp-tri.up{color:var(--ok,#22A052)} .pp-tri.down{color:var(--danger,#FF3830)}
+/* hero chips */
+.pp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.ppc{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
+.ppc.tier{background:rgba(199,147,32,.16);color:#8a6410;border:1px solid rgba(199,147,32,.4)}
+.ppc.elo{background:var(--surface,#fff);color:var(--on-surface);border:1px solid var(--line,#E7E7EB)}
+.ppc.elo b{color:var(--primary);font-family:'Saira Condensed',sans-serif;font-size:15px;margin-left:2px}
+.ppc.rank{background:var(--primary);color:#fff}
+.ppc.gray{background:var(--surface-container,#EFEFF1);color:var(--on-surface-variant)}
+/* where you stand */
+.pp2-stand{background:var(--surface,#fff);border:1px solid var(--line,#E7E7EB);border-radius:var(--radius-lg,14px);padding:16px;margin-top:12px;box-shadow:var(--shadow-soft)}
+.pp2-stand-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.pp2-tier{font-family:'Saira Condensed',sans-serif;font-size:30px;font-weight:900;line-height:1;text-transform:uppercase}
+.pp2-tier small{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--on-surface-variant);text-transform:none;margin-top:3px}
+.pp2-elo{text-align:right;flex-shrink:0}
+.pp2-elo .v{font-family:'Saira Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--primary);line-height:1}
+.pp2-elo .k{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--on-surface-variant)}
+.pp2-bar{height:9px;border-radius:999px;background:var(--surface-container,#EFEFF1);overflow:hidden;margin:13px 0 6px}
+.pp2-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#FFB000)}
+.pp2-next{font-size:12.5px;color:var(--on-surface-variant);font-weight:600}.pp2-next b{color:var(--on-surface)}
+.pp2-div{height:1px;background:var(--line,#E7E7EB);margin:14px 0}
+.pp2-exp{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none}
+.pp2-exp .cv{color:var(--on-surface-variant);font-size:14px;transition:transform .2s;flex-shrink:0}
+.pp2-exp .cv.open{transform:rotate(90deg)}
+.pp2-exp-t{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--on-surface-variant)}
+.pp2-rank-lead{font-size:13px;font-weight:700}
+.pp2-rank-lead .pos{color:var(--gold,#C79320);font-family:'Saira Condensed',sans-serif;font-size:17px;font-weight:900;margin-right:5px}
+.pp2-rankbody{margin-top:9px}
+.pp2-rank-item{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--surface-container,#EFEFF1)}
+.pp2-rank-item:last-child{border-bottom:0}
+.pp2-rank-pos{font-family:'Saira Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--primary);min-width:44px}
+.pp2-rank-pos.gold{color:var(--gold,#C79320)}
+.pp2-rank-pos small{font-size:10px;color:var(--on-surface-variant);font-weight:700}
+.pp2-rank-venue{font-weight:800;font-size:13.5px}
+.pp2-rank-sub{font-size:11px;color:var(--on-surface-variant);font-weight:600;margin-top:1px}
+/* last session (neutral / grey) */
+.pp2-ls{background:var(--surface-container,#EFEFF1);border:1px solid var(--line,#E7E7EB);border-radius:var(--radius-lg,14px);padding:16px;margin-top:10px}
+.pp2-ls-h{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--on-surface-variant)}
+.pp2-ls-h .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.pp2-ls-title{font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:900;margin-top:5px}
+.pp2-ls-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pp2-ls-chip{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--surface,#fff);border:1px solid var(--line,#E7E7EB)}
+.pp2-ls-chip.up{color:var(--ok,#22A052)} .pp2-ls-chip.down{color:var(--danger,#FF3830)} .pp2-ls-chip.or{color:var(--primary)}
+.pp2-ls-insight{font-size:12.5px;line-height:1.5;color:var(--on-surface);margin-top:11px}.pp2-ls-insight b{font-weight:800}
+.pp2-ls-foot{margin-top:11px;font-size:11.5px;font-weight:800;color:var(--primary);cursor:pointer}
+.pp2-game{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid rgba(0,0,0,.06)}
+.pp2-game .rr{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px}
+.pp2-game .rr.w{background:rgba(34,160,82,.14);color:var(--ok,#22A052)}
+.pp2-game .rr.l{background:rgba(255,56,48,.12);color:var(--danger,#FF3830)}
+.pp2-game .gv{flex:1;font-size:12px;color:var(--on-surface-variant);min-width:0}
+.pp2-game .gs{font-family:'Saira Condensed',sans-serif;font-weight:900;font-size:15px}
+/* achievement strip */
+.pp2-ach{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pp2-acard{background:var(--surface,#fff);border:1px solid var(--line,#E7E7EB);border-radius:var(--radius-md,10px);padding:12px 8px;text-align:center;box-shadow:var(--shadow-soft)}
+.pp2-acard .ic{font-size:17px}
+.pp2-acard .v{font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:900;margin-top:3px;line-height:1}
+.pp2-acard .k{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--on-surface-variant);margin-top:3px}
+/* accordions */
+.pp2-acc{background:var(--surface,#fff);border:1px solid var(--line,#E7E7EB);border-radius:var(--radius-md,10px);padding:14px 16px;margin-top:8px;box-shadow:var(--shadow-soft)}
+.pp2-acc .pp2-exp .t{font-weight:800;font-size:14px;display:flex;align-items:center;gap:9px}
+.pp2-acc .pp2-exp .t .em{font-size:16px}
+.pp2-acc .t .ct{color:var(--on-surface-variant);font-weight:600}
+.pp2-accbody{margin-top:14px}
+.pp2-accbody[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -884,6 +951,7 @@ async function loadPlayer(){
 
           historyTable.push({
               date: m.date || "N/A",
+              venue: m.venue || "",
               partner: partner || "None",
               opponents: opponents,
               scoreFor: isT1 ? m.scoreT1 : m.scoreT2,
@@ -930,6 +998,10 @@ async function loadPlayer(){
       } catch(e) {}
       d.badges = computeBadges(d, myMatches, myMatches, [eloMapForBadges]);
 
+      // ===== v2 extras: venue ranks · last session · highlights · ELO direction =====
+      try { ppComputeExtras(d, historyTable, name); } catch(e){ console.warn('extras', e); }
+      try { await ppComputeVenueRanks(d, name); } catch(e){ console.warn('venueRanks', e); }
+
   } catch(err) {
       console.warn("Gagal menarik data histori venue", err);
   }
@@ -939,7 +1011,254 @@ async function loadPlayer(){
   try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;}catch(e){}
 }
 
-function renderPlayer({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
+// ---- Skill tier ladder (Beginner → Platinum) with progress to next ----
+function skillTier(elo){
+  var T=[['Beginner',0],['Upper Beginner',900],['Lower Bronze',1200],['Bronze',1500],['Upper Bronze',1800],['Silver',2100],['Gold',2500],['Platinum',3000]];
+  var i=0; for(var k=0;k<T.length;k++){ if(elo>=T[k][1]) i=k; }
+  var cur=T[i], nxt=T[i+1]||null, min=cur[1], max=nxt?nxt[1]:cur[1]+300;
+  var prog=nxt?Math.max(2,Math.min(100,Math.round((elo-min)/(max-min)*100))):100;
+  return {name:cur[0], next:nxt?nxt[0]:null, ptsAway:nxt?(nxt[1]-elo):0, progress:prog};
+}
+function tierEmoji(name){return ({'Platinum':'💎','Gold':'🥇','Silver':'🥈','Upper Bronze':'🥉','Bronze':'🥉','Lower Bronze':'🥉','Upper Beginner':'🎾','Beginner':'🎾'})[name]||'🎾';}
+function ppNN(x){return String(x||'').toLowerCase().trim().replace(/\s+/g,' ');}
+
+// Compute last-session analysis, highlights and ELO direction from loaded data.
+function ppComputeExtras(d, historyTable, canonName){
+  var hist=d.history||[];
+  var eloReal=hist.filter(function(e){return e && e.sessionId!=='INITIAL' && ((e.w||0)+(e.l||0))>0;});
+  // ELO direction (last real session delta)
+  var lastDelta = eloReal.length ? Number(eloReal[eloReal.length-1].delta||0) : 0;
+  d.eloDelta=lastDelta; d.eloDir = lastDelta>0?'up':(lastDelta<0?'down':'flat');
+  // Highlights
+  var elos=hist.map(function(e){return Number(e.elo)||0;}).filter(Boolean);
+  var peakElo = elos.length?Math.max.apply(null,elos):null;
+  var biggestJump = eloReal.length?Math.max.apply(null,eloReal.map(function(e){return Number(e.delta)||0;})):0;
+  var ht=historyTable||[];
+  var longest=0,run=0,bestMargin=null;
+  ht.forEach(function(r){
+    if(r.resText==='W'){run++; if(run>longest)longest=run; var m=Number(r.scoreFor)-Number(r.scoreAgainst); if(bestMargin==null||m>bestMargin)bestMargin=m;}
+    else run=0;
+  });
+  d.highlights={peakElo:peakElo,longestStreak:longest,biggestJump:biggestJump>0?biggestJump:0,bestMargin:(bestMargin!=null&&bestMargin>0)?bestMargin:null};
+  // Last session = trailing run of history rows sharing the last row's date (+venue)
+  if(eloReal.length && ht.length){
+    var last=eloReal[eloReal.length-1], lastRow=ht[ht.length-1];
+    var ld=lastRow.date, lv=lastRow.venue||'';
+    var games=[];
+    for(var i=ht.length-1;i>=0;i--){ var r=ht[i]; if(r.date===ld && (!lv || (r.venue||'')===lv)) games.unshift(r); else break; }
+    var w=games.filter(function(g){return g.resText==='W';}).length;
+    var l=games.filter(function(g){return g.resText==='L';}).length;
+    var wins=games.filter(function(g){return g.resText==='W';});
+    var bw=null; wins.forEach(function(g){var m=Number(g.scoreFor)-Number(g.scoreAgainst); if(!bw||m>bw.m)bw={m:m,g:g};});
+    d.lastSession={
+      venue:lv, date:ld, delta:Number(last.delta||0), newElo:last.elo,
+      w:w, l:l, games:games, bestWin:bw?bw.g:null
+    };
+  }
+}
+
+// One leaderboard read → this player's rank at each venue, vs same gender.
+async function ppComputeVenueRanks(d, canonName){
+  var venues=(d.playedVenues||[]).filter(Boolean);
+  if(!venues.length){ d.venueRanks=[]; return; }
+  var lbRes=null; try{ lbRes=await TrekkrAPI.getNationalLeaderboard({limit:100000}); }catch(e){}
+  var lb=(lbRes&&lbRes.leaderboard)||[];
+  if(!lb.length){ d.venueRanks=[]; return; }
+  var p=d.player||{};
+  var mine=new Set([ppNN(p.name),ppNN(p.displayName),ppNN(canonName)].filter(Boolean));
+  var isMe=function(e){ return mine.has(ppNN(e.name))||mine.has(ppNN(e.display))||mine.has(ppNN(e.displayName)); };
+  var pg=(String(p.gender||'M').toUpperCase()==='F')?'F':'M';
+  var gWord=pg==='F'?'Women':'Men';
+  var out=[];
+  venues.forEach(function(v){
+    var vlow=String(v).toLowerCase().trim();
+    var pop=lb.filter(function(e){ return (String(e.gender||'M').toUpperCase()===pg) && String(e.clubs||'').toLowerCase().indexOf(vlow)>-1; });
+    var idx=pop.findIndex(isMe);
+    if(idx>=0 && pop.length>=3){
+      out.push({venue:v, rank:idx+1, total:pop.length, pct:Math.max(1,Math.round((idx+1)/pop.length*100)), gender:gWord});
+    }
+  });
+  out.sort(function(a,b){ return a.rank-b.rank || a.pct-b.pct; });
+  d.venueRanks=out;
+}
+
+function renderPlayer(d){
+  var p=d.player||{}, s=d.stats||{}, history=d.history||[];
+  var bestPartner=d.bestPartner, historyTable=d.historyTable, badges=d.badges, playedVenues=d.playedVenues;
+  var venueRanks=d.venueRanks||[], lastSession=d.lastSession||null, highlights=d.highlights||null;
+  return renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues,venueRanks,lastSession,highlights,d);
+}
+
+// Expand/collapse an accordion body; rotate the chevron in the tapped header.
+function ppTog(hdr, id){
+  var body=document.getElementById(id); if(!body) return;
+  var willOpen=body.hasAttribute('hidden');
+  if(willOpen){ body.removeAttribute('hidden'); } else { body.setAttribute('hidden',''); }
+  var cv=hdr&&hdr.querySelector?hdr.querySelector('.cv'):null; if(cv) cv.classList.toggle('open', willOpen);
+  if(willOpen && id==='ppEloAcc' && window.playerData && (playerData.history||[]).length>1){ requestAnimationFrame(function(){ try{ drawChart(playerData.history); }catch(e){} }); }
+}
+function ppRankItem(r){
+  var medal=r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':'';
+  return '<div class="pp2-rank-item"><div class="pp2-rank-pos'+(r.rank<=3?' gold':'')+'">#'+r.rank+'<small>/'+r.total+'</small></div>'
+    +'<div style="flex:1;min-width:0"><div class="pp2-rank-venue">'+r.venue+'</div><div class="pp2-rank-sub">Top '+r.pct+'% · '+r.gender+'</div></div>'
+    +(medal?'<div style="font-size:17px">'+medal+'</div>':'')+'</div>';
+}
+function ppListArr(str){return String(str||'').split(',').map(function(x){return x.trim();}).filter(function(x){return x && x.toUpperCase()!=='N/A';});}
+
+function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues,venueRanks,lastSession,highlights,d){
+  var unrated=!!s.unrated;
+  var eloDisp=unrated?'Unrated':s.currentElo;
+  var st=skillTier(s.currentElo||0);
+  var series=tierProg(s.currentElo||0);
+  var dir=d.eloDir||'flat';
+  var tri=(!unrated && dir!=='flat')?('<span class="pp-tri '+dir+'">'+(dir==='up'?'▲':'▼')+'</span>'):'';
+  document.title=(p.name)+' — Trekkr Passport';
+  var alias=(p.display||p.name||'');
+  var realLine=(ppNN(p.name)!==ppNN(alias))?('<p class="pp-realname">Real Name: <b>'+p.name+'</b></p>'):'';
+  var bestRank=(venueRanks&&venueRanks[0])||null;
+  var photo=p.photoUrl?('<img class="pp-photo" src="'+p.photoUrl+'" onerror="ibbFallback(this)">'):('<img class="pp-photo" src="'+IBB_PH+'">');
+  var verified=p.verified?'<span class="pp-verified">Verified</span>':'';
+
+  var h='';
+  // ---- HERO ----
+  h+='<article class="pp-hero"><div style="text-align:center">'+photo+'<br>'+verified+'</div>'
+    +'<div style="min-width:0">'+realLine
+    +'<h2 class="pp-name">'+(alias).toUpperCase()+'</h2>'
+    +'<div class="pp-chips">'
+    +(unrated?'<span class="ppc gray">Unrated</span>'
+       :('<span class="ppc tier">'+tierEmoji(st.name)+' '+st.name+'</span><span class="ppc elo">ELO<b>'+eloDisp+'</b>'+tri+'</span>'))
+    +(bestRank?('<span class="ppc rank">⭐ #'+bestRank.rank+' '+bestRank.venue+'</span>'):'')
+    +'</div>'
+    +'<button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()" style="margin-top:12px">Edit</button>'
+    +'</div></article>';
+
+  if(unrated){
+    h+='<div class="pp-unrated"><i class="ti ti-bolt" aria-hidden="true"></i><div><b>You\'re not rated yet.</b> Your ELO appears after your first <b>PlayRank</b> match. Play at any Trekkr-powered venue, league, or tournament to earn your rating.</div></div>';
+  } else {
+    // ---- WHERE YOU STAND ----
+    h+='<div class="pp2-stand"><div class="pp2-stand-top">'
+      +'<div class="pp2-tier">'+st.name+'<small>Skill tier'+(isCalibrating(s.totalMatches)?' · calibrating':' · calibrated')+'</small></div>'
+      +'<div class="pp2-elo"><div class="v">'+eloDisp+tri+'</div><div class="k">ELO</div></div></div>'
+      +'<div class="pp2-bar"><span style="width:'+st.progress+'%"></span></div>'
+      +'<div class="pp2-next">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
+      +'<div class="pp2-next" style="margin-top:4px">Series Tier: <b>'+series.current+'</b></div>';
+    if(venueRanks && venueRanks.length){
+      h+='<div class="pp2-div"></div>';
+      if(venueRanks.length===1){
+        h+='<div class="pp2-exp-t">Your standing · vs '+venueRanks[0].gender+'</div><div class="pp2-rankbody">'+ppRankItem(venueRanks[0])+'</div>';
+      } else {
+        h+='<div class="pp2-exp" onclick="ppTog(this,\'ppRanks\')"><span class="pp2-rank-lead"><span class="pos">#'+bestRank.rank+'</span>Best rank · '+bestRank.venue+'</span><span style="display:flex;gap:9px;align-items:center"><span class="pp2-exp-t">'+venueRanks.length+' venues</span><span class="cv">›</span></span></div>'
+          +'<div class="pp2-rankbody" id="ppRanks" hidden>'+venueRanks.map(ppRankItem).join('')+'</div>';
+      }
+    }
+    h+='</div>';
+  }
+
+  // ---- LAST SESSION ----
+  if(lastSession && lastSession.games && lastSession.games.length){
+    var ls=lastSession, dl=Number(ls.delta||0);
+    var dcls=dl>0?'up':(dl<0?'down':''), dsign=dl>0?'▲ +':(dl<0?'▼ ':'');
+    var rn=(venueRanks||[]).filter(function(r){return ppNN(r.venue)===ppNN(ls.venue);})[0]||bestRank||null;
+    // rule-based insight
+    var wins=ls.w, losses=ls.l, tot=ls.games.length, ip=[];
+    if(dl>0) ip.push('Climbed <b>+'+dl+' ELO</b>'); else if(dl<0) ip.push('Dropped <b>'+dl+' ELO</b>'); else ip.push('Held your ELO');
+    if(losses===0 && wins>0) ip.push('won all '+wins); else if(wins>losses) ip.push('took '+wins+' of '+tot); else ip.push(wins+'W–'+losses+'L');
+    if(ls.bestWin && (Number(ls.bestWin.scoreFor)-Number(ls.bestWin.scoreAgainst))>=1) ip.push('best win <b>'+ls.bestWin.scoreFor+'–'+ls.bestWin.scoreAgainst+'</b> vs '+ls.bestWin.opponents);
+    var gamesHTML=ls.games.map(function(g){return '<div class="pp2-game"><span class="rr '+(g.resText==='W'?'w':'l')+'">'+(g.resText||'D')+'</span><span class="gv">w/ '+g.partner+' · vs '+g.opponents+'</span><span class="gs">'+g.scoreFor+'–'+g.scoreAgainst+'</span></div>';}).join('');
+    h+='<div class="pp2-ls"><div class="pp2-ls-h"><span class="dot"></span> Your last session</div>'
+      +'<div class="pp2-ls-title">'+(ls.venue?ls.venue+' · ':'')+(ls.date||'')+'</div>'
+      +'<div class="pp2-ls-chips">'
+      +'<span class="pp2-ls-chip '+dcls+'">'+dsign+dl+' ELO</span>'
+      +'<span class="pp2-ls-chip">'+wins+'W · '+losses+'L</span>'
+      +(rn?('<span class="pp2-ls-chip or">Rank #'+rn.rank+' at '+rn.venue+'</span>'):'')
+      +'</div>'
+      +'<div class="pp2-ls-insight">'+ip.join(' · ')+'.</div>'
+      +'<div class="pp2-ls-foot" onclick="ppTog(this,\'ppLsGames\')">See every game ›</div>'
+      +'<div id="ppLsGames" hidden style="margin-top:4px">'+gamesHTML+'</div>'
+      +'</div>';
+  }
+
+  // ---- KEY STATS (deduped: no ELO) ----
+  h+='<div class="pp-stats" style="margin-top:12px">'
+    +'<div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">'+s.totalMatches+'</p></div>'
+    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">'+s.winRate+'%</p></div>'
+    +'<div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">'+s.totalW+'/'+s.totalL+'</p></div>'
+    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">'+(s.streak||'—')+'</p></div>'
+    +'</div>';
+
+  if(!unrated && isCalibrating(s.totalMatches)) h+=buildCalibBanner(s.totalMatches);
+
+  // ---- ACHIEVEMENT STRIP ----
+  if(highlights && !unrated){
+    h+='<div class="pp2-ach">'
+      +'<div class="pp2-acard"><div class="ic">📈</div><div class="v">'+(highlights.peakElo||eloDisp)+'</div><div class="k">Peak ELO</div></div>'
+      +'<div class="pp2-acard"><div class="ic">🔥</div><div class="v">'+(highlights.longestStreak||0)+'W</div><div class="k">Best streak</div></div>'
+      +'<div class="pp2-acard"><div class="ic">⚡</div><div class="v">+'+(highlights.biggestJump||0)+'</div><div class="k">Biggest jump</div></div>'
+      +'</div>';
+  }
+
+  // ---- ACCORDIONS ----
+  // Achievements & badges
+  var hasPartner=bestPartner && bestPartner.name && bestPartner.name!=='No Data';
+  var hasBadges=badges && badges.length;
+  if(hasPartner || hasBadges){
+    var abody='';
+    if(hasPartner) abody+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(hasBadges?'14px':'0')+'"><div><div class="pp2-exp-t">Best partner</div><div style="font-family:\'Saira Condensed\',sans-serif;font-size:22px;font-weight:900;margin-top:2px">'+bestPartner.name+'</div></div><div style="text-align:right"><div class="pp2-exp-t">Together</div><div style="color:var(--ok,#22A052);font-weight:800;font-size:16px;margin-top:2px">'+bestPartner.score+'</div></div></div>';
+    if(hasBadges) abody+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+badges.filter(function(b){return b.earned;}).map(function(b){return '<div style="width:60px;text-align:center"><div style="width:48px;height:48px;margin:0 auto;border-radius:12px;background:rgba(255,106,0,.1);border:1px solid rgba(255,106,0,.3);display:flex;align-items:center;justify-content:center;font-size:22px">'+(b.emoji||'🏅')+'</div><div style="font-size:9px;font-weight:700;color:var(--on-surface-variant);margin-top:4px;line-height:1.1">'+b.name+'</div></div>';}).join('')+'</div>';
+    if(hasBadges && !badges.some(function(b){return b.earned;})) abody+='<div class="pp2-exp-t">No badges earned yet — keep playing!</div>';
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
+  }
+  // ELO progress
+  if(history && history.length>1){
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="pp-chart" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div></div></div>';
+  }
+  // Playing history
+  if(historyTable){
+    var histRows='';
+    if(historyTable.length>0){
+      historyTable.slice().reverse().forEach(function(hItem){
+        var dv=(hItem.delta==null)?null:Number(hItem.delta);
+        var cls=dv==null?'':(dv>0?'elo-up':(dv<0?'elo-dn':'elo-zero'));
+        var dtxt=dv==null?'—':((dv>0?'+':'')+dv);
+        var eloCell=dv==null?'<span style="color:var(--on-surface-variant)">—</span>':('<span class="elo-delta '+cls+'">'+dtxt+'</span>'+(hItem.newElo!=null?'<div style="font-size:10px;color:var(--on-surface-variant);margin-top:2px">'+hItem.newElo+'</div>':''));
+        histRows+='<tr><td><span style="color:var(--on-surface-variant);font-size:12px">'+hItem.date+'</span></td>'
+          +'<td><div style="font-weight:700;font-size:14px"><span style="color:var(--primary);font-size:11px;margin-right:4px">w/</span>'+hItem.partner+'</div>'
+          +'<div style="font-size:11px;color:var(--on-surface-variant);margin-top:2px">vs '+hItem.opponents+'</div>'
+          +'<div style="font-size:11px;color:var(--on-surface-variant);margin-top:3px">Score <b style="color:var(--on-surface);font-size:12px">'+hItem.scoreFor+'–'+hItem.scoreAgainst+'</b></div></td>'
+          +'<td>'+eloCell+'</td><td><div class="res-badge '+hItem.resClass+'">'+hItem.resText+'</div></td></tr>';
+      });
+    } else { histRows='<tr><td colspan="4" style="text-align:center;color:var(--on-surface-variant)">No match history found.</td></tr>'; }
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppHist\')"><div class="t"><span class="em">📋</span> Playing history <span class="ct">· '+(historyTable.length||0)+'</span></div><span class="cv">›</span></div>'
+      +'<div class="pp2-accbody" id="ppHist" hidden><div class="data-table-wrap"><table class="data-table"><thead><tr><th width="84">Date</th><th>Matchup</th><th width="66">&Delta; ELO</th><th width="50">Res</th></tr></thead><tbody>'+histRows+'</tbody></table></div></div></div>';
+  }
+  // About & venues
+  var venuePills=ppListArr((playedVenues||[]).join(','));
+  var tourns=ppListArr(p.tournaments), winners=ppListArr(p.winnerAt);
+  var pill=function(x,st,ic){return '<span style="display:inline-flex;align-items:center;gap:4px;'+st+';padding:3px 10px;border-radius:99px;margin:2px 3px 0 0;font-size:12px">'+ic+' '+x+'</span>';};
+  var NA='<span style="color:var(--on-surface-variant);font-size:12px;font-weight:600">N/A</span>';
+  var aboutBody='<div style="display:flex;flex-direction:column;gap:12px">'
+    +'<div><div class="pp2-exp-t">🏟 Venue / Community</div><div style="margin-top:4px">'+(venuePills.length?venuePills.map(function(x){return pill(x,'background:var(--surface-container,#EFEFF1)','🏟');}).join(''):NA)+'</div></div>'
+    +'<div><div class="pp2-exp-t">🏆 Tournaments</div><div style="margin-top:4px">'+(tourns.length?tourns.map(function(x){return pill(x,'background:rgba(255,106,0,0.1);border:1px solid rgba(255,106,0,0.35);color:var(--primary)','🏆');}).join(''):NA)+'</div></div>'
+    +'<div><div class="pp2-exp-t">🥇 Winner at</div><div style="margin-top:4px">'+(winners.length?winners.map(function(x){return pill(x,'background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);color:#7a5800','🥇');}).join(''):NA)+'</div></div>'
+    +'<div style="display:flex;gap:20px">'+(p.region?'<div><div class="pp2-exp-t">Region</div><div style="font-weight:700;margin-top:2px">'+p.region+'</div></div>':'')
+      +(p.ig?'<div><div class="pp2-exp-t">Instagram</div><div style="font-weight:700;margin-top:2px">'+p.ig+'</div></div>':'')
+      +'<div><div class="pp2-exp-t">Gender</div><div style="font-weight:700;margin-top:2px">'+(p.gender==='F'?'Female':'Male')+'</div></div></div>'
+    +'</div>';
+  h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppAbout\')"><div class="t"><span class="em">🏟</span> About &amp; venues</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppAbout" hidden>'+aboutBody+'</div></div>';
+
+  // ---- SHARE ----
+  h+='<div class="pp-share-v2"><div class="pp-share-v2-title">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.7"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share your passport</div>'
+    +'<div class="pp-share-grid">'
+    +'<button class="pp-share-card" onclick="openResultModal()"><div class="pp-share-card-icon" style="background:#1e1700"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFB000" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div><div class="pp-share-card-label">Share your result</div><div class="pp-share-card-sub">Achievement card for IG/WA</div></button>'
+    +'<button class="pp-share-card" onclick="openUrlModal()"><div class="pp-share-card-icon" style="background:var(--surface-container)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div><div class="pp-share-card-label">Copy passport URL</div><div class="pp-share-card-sub">Share your profile link</div></button>'
+    +'</div></div>';
+
+  document.getElementById('content').innerHTML=h;
+  refreshEditBtn();
+}
+
+function renderPlayerLegacyUNUSED({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
   const ti=tierProg(s.currentElo);
   const unrated=!!s.unrated;
   const eloDisp=unrated?'Unrated':s.currentElo;
@@ -1712,9 +2031,11 @@ function openResultModal(){
   if(!playerData)return;
   var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
   var ti=tierProg(s.currentElo);
-  document.getElementById('ncpName').textContent=(p.name).toUpperCase();
-  document.getElementById('ncpSub').textContent=p.clubs||p.region||'';
-  var ncpTierShort=ti.current.split(' · ')[0];
+  var stier=(typeof skillTier==='function')?skillTier(s.currentElo||0).name:ti.current.split(' · ')[0];
+  var vr=(playerData.venueRanks||[])[0];
+  document.getElementById('ncpName').textContent=((p.display||p.name)).toUpperCase();
+  document.getElementById('ncpSub').textContent=vr?('#'+vr.rank+' at '+vr.venue):(p.clubs||p.region||'');
+  var ncpTierShort=stier;
   document.getElementById('ncpRankPill').textContent=ncpTierShort.toUpperCase();
   document.getElementById('ncpElo').textContent=s.currentElo;
   document.getElementById('ncpTier').textContent=ncpTierShort;
@@ -1753,15 +2074,19 @@ function downloadNightCard(){
 
   function drawCard(){
     var pname=(p.name).toUpperCase();
-    var sub=p.clubs||p.region||'';
+    var stier=(typeof skillTier==='function')?skillTier(s.currentElo||0):{name:ti.current.split(' · ')[0]};
+    var vr=(playerData.venueRanks||[])[0];
+    var dir=playerData.eloDir||'flat';
+    var rankStr=vr?('#'+vr.rank+' at '+vr.venue):'';
+    var sub=rankStr||p.clubs||p.region||'';
     var PHOTO_H=Math.round(H*0.60);
     var CONTENT_Y=PHOTO_H+60;
 
-    // Rank pill top-right
-    ctx.fillStyle='#FFB000';roundRect(ctx,W-240,56,180,54,27);ctx.fill();
-    ctx.fillStyle='#1a1000';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(ti.current.toUpperCase(),W-150,93);
+    // Skill-tier pill top-right
+    ctx.fillStyle='#FFB000';roundRect(ctx,W-260,56,200,54,27);ctx.fill();
+    ctx.fillStyle='#1a1000';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(stier.name.toUpperCase(),W-160,93);
 
-    // Name + URL + venue over gradient
+    // Name + URL + rank/venue over gradient
     var purl='trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
     ctx.fillStyle='#fff';ctx.font='700 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-78);
     ctx.fillStyle='#FF8A3D';ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(purl,60,PHOTO_H-38);
@@ -1774,8 +2099,10 @@ function downloadNightCard(){
     var eloY=CONTENT_Y+56;
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
     ctx.fillStyle='#fff';ctx.font='700 120px Saira Condensed,sans-serif';ctx.fillText(String(s.currentElo),60,eloY+118);
+    // ELO direction triangle (green up / red down)
+    if(dir!=='flat'){ var ew=ctx.measureText(String(s.currentElo)).width; ctx.fillStyle=dir==='up'?'#4ADE80':'#FF5A4D'; ctx.font='700 64px Saira Condensed,sans-serif'; ctx.fillText(dir==='up'?'▲':'▼',60+ew+24,eloY+112); }
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
-    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(ti.current.split(' · ')[0],W-60,eloY+50);
+    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(stier.name,W-60,eloY+50);
 
     // Stat boxes
     var bY=eloY+148,bW=306,bH=128,bGap=30,bX=60;
