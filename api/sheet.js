@@ -5016,7 +5016,11 @@ async function livePost(body) {
 
   if (action === "finalize") {
     let recap = null;
-    try { recap = await liveAiRecap(session); } catch (e) { console.error("[live] ai:", e.message); }
+    // AI recap is opt-in (LIVE_RECAP_AI=1) so live sessions cost zero Anthropic
+    // tokens by default — the rule-based recap below is always available.
+    if (process.env.LIVE_RECAP_AI === "1") {
+      try { recap = await liveAiRecap(session); } catch (e) { console.error("[live] ai:", e.message); }
+    }
     if (!recap) recap = liveRecapFallback(session);
     const patch = { data: session, venue: venue || row.venue, status: "final", recap, updated_at: now };
     try {
@@ -5051,14 +5055,38 @@ async function liveAiRecap(session) {
   if (!o || !o.line) return null;
   return { headline: String(o.headline || "").slice(0, 60), line: String(o.line).slice(0, 280), ai: true };
 }
+// Rule-based session recap — punchy, but strictly from the computed facts (never
+// invents names/numbers). Zero API cost; the default recap for every session.
 function liveRecapFallback(session) {
   const players = (session.players || []).slice().sort((a, b) => (b.w - a.w) || (b.pd - a.pd) || (b.elo - a.elo));
   if (!players.length) return { headline: "That's a wrap", line: "Session complete.", ai: false };
+  const nm = (p) => p.short || p.name;
   const top = players[0];
-  const climber = players.slice().sort((a, b) => (b.elo - b.start) - (a.elo - a.start))[0];
-  let line = `${top.short || top.name} took the day at ${top.w}–${top.l}.`;
-  if (climber && climber !== top && (climber.elo - climber.start) > 0) line += ` ${climber.short || climber.name} was the biggest climber (+${climber.elo - climber.start} ELO).`;
-  return { headline: `${top.short || top.name} takes the crown`, line, ai: false };
+  const gain = (p) => (Number(p.elo) || 0) - (Number(p.start) || Number(p.elo) || 0);
+  const climber = players.slice().sort((a, b) => gain(b) - gain(a))[0];
+  const wall = players.slice().sort((a, b) => (Number(b.pd) || 0) - (Number(a.pd) || 0))[0];
+  const streaker = players.slice().sort((a, b) => (Number(b.streak) || 0) - (Number(a.streak) || 0))[0];
+  const rounds = Number(session.round || 0);
+
+  // Headline: reflect how dominant the win was.
+  let headline;
+  if ((top.l || 0) === 0 && (top.w || 0) > 0) headline = `${nm(top)} runs the table`;
+  else if (players.length >= 2 && (top.w === players[1].w)) headline = `${nm(top)} edges it`;
+  else headline = `${nm(top)} takes the crown`;
+
+  // Lead: the winner's record.
+  let line = `${nm(top)} topped ${session.venue ? session.venue + " " : ""}at ${top.w}–${top.l}`;
+  line += (gain(top) > 0) ? ` (+${gain(top)} ELO).` : ".";
+
+  // One extra storyline — pick the most notable that isn't the winner.
+  const bits = [];
+  if (climber && climber !== top && gain(climber) > 0) bits.push(`${nm(climber)} climbed the most (+${gain(climber)} ELO)`);
+  if (streaker && streaker !== top && (Number(streaker.streak) || 0) >= 3) bits.push(`${nm(streaker)} rode a ${streaker.streak}-win streak`);
+  if (wall && wall !== top && (Number(wall.pd) || 0) > 0) bits.push(`${nm(wall)} owned the point diff (+${wall.pd})`);
+  if (bits.length) line += ` ${bits[0]}.`;
+  else if (rounds) line += ` ${rounds} rounds, every match counted toward ELO.`;
+
+  return { headline, line, ai: false };
 }
 
 // Latest PlayRank Live session for a venue — powers the venue TV. `active` is true
