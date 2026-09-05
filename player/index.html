@@ -1008,6 +1008,23 @@ async function loadPlayer(){
       } catch(_){}
       d.historyTable = historyTable;
 
+      // Reconcile the headline stats with the matches ACTUALLY on record, so the
+      // "Matches" number (and W/L, win-rate, calibration, achievements) can never
+      // exceed — or disagree with — the Playing History list below. The ELO
+      // rating/tier/streak still come from the rating ledger (d.history); only the
+      // match COUNT and its W/L are re-derived from the recorded matches. Bulk
+      // ELO imports that never wrote per-match rows therefore read as few/0 here,
+      // matching an empty history rather than claiming games with no detail.
+      try {
+          const recW = historyTable.filter(r => r.resText === 'W').length;
+          const recL = historyTable.filter(r => r.resText === 'L').length;
+          const recTot = historyTable.length;
+          d.stats = Object.assign({}, d.stats, {
+              totalMatches: recTot, totalW: recW, totalL: recL,
+              winRate: (recW + recL) > 0 ? Math.round(recW / (recW + recL) * 100) : 0,
+          });
+      } catch (_) {}
+
       // COMPUTE BADGES
       // Build a simple ELO map from elo/latest for enriching match data
       let eloMapForBadges = {};

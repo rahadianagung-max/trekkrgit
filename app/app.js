@@ -647,6 +647,16 @@
       var stier = skillTier(elo || 0);                             // skill ladder Bronze→Platinum
       var bp = bestPartner(matchesArr, [name, display]);
       var resultsAll = matchResults(matchesArr, [name, display]);
+      // Reconcile the headline stats with the matches ACTUALLY on record, so the
+      // Matches count / W-L / win-rate (and the achievements/share card that read
+      // them) never exceed or disagree with the match list shown below. ELO/tier
+      // still come from the rating ledger; only the match tally is re-derived.
+      (function () {
+        var recW = resultsAll.filter(function (x) { return x.res === "W"; }).length;
+        var recL = resultsAll.filter(function (x) { return x.res === "L"; }).length;
+        matches = resultsAll.length; wins = recW; losses = recL;
+        winRate = (recW + recL) ? Math.round(recW / (recW + recL) * 100) : 0;
+      })();
       var results = resultsAll.slice(0, 6);
 
       // Venue ranks (vs same gender), last session, highlights — mirror the web passport.
@@ -1064,13 +1074,18 @@
       var r = await Promise.all([
         API.getPlayer(name).catch(function () { return {}; }),
         ensureCut(),
+        API.getPlayerMatches(name).catch(function () { return { matches: [] }; }),
       ]);
       var det = r[0] || {}, cut = r[1];
       var st = det.stats || {}, pd = det.player || {}, hist = det.history || [];
       var elo = st.currentElo != null ? st.currentElo : (hist.length ? hist[hist.length - 1].elo : null);
       var unrated = (st.unrated != null ? !!st.unrated : (hist.length === 0)) || elo == null;
-      var wins = st.totalW, losses = st.totalL;
-      var matches = st.totalMatches != null ? st.totalMatches : hist.reduce(function (a, h) { return a + (h.w || 0) + (h.l || 0); }, 0);
+      // Match tally from the matches actually on record (consistent with the passport),
+      // not the ELO ledger — so the same player never shows two different match counts.
+      var _res = matchResults((r[2] && r[2].matches) || [], [name, pd.displayName || name]);
+      var wins = _res.filter(function (x) { return x.res === "W"; }).length;
+      var losses = _res.filter(function (x) { return x.res === "L"; }).length;
+      var matches = _res.length;
       var recent = hist.slice(-6).reverse();
       var display = pd.displayName || name;
       var photo = pd.photoUrl || "";
