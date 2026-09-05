@@ -1374,9 +1374,24 @@ async function getPlayerDetail(name) {
 // batchGet (instead of the browser fetching every venue's full match list). Also
 // returns the venues the player has appeared in. Match order is venue-order then
 // row-order — the same order the client used to build, so ELO-delta alignment holds.
+// Passport match-name key: normName() PLUS tolerance for cosmetic drift in
+// imported/hand-entered match data, so a slot recorded with a stray annotation
+// or trailing punctuation still resolves to the same registered player. It strips
+//   - bracketed / parenthesised annotations, e.g. "Fifi Yanti [walk out]", and
+//   - stray periods / middots and surrounding dashes, e.g. "Yuliana Sarah Henni K."
+// This ONLY affects the isMe() comparison below (which rows belong to the player);
+// display still uses the raw slot text, and no field name, ELO, or dedup key changes.
+function matchKey(s) {
+  return normName(String(s || "")
+    .replace(/\[[^\]]*\]/g, " ")            // [walk out], [walk over], …
+    .replace(/\([^)]*\)/g, " ")             // (walk out)
+    .replace(/[.·]+/g, " ")            // stray periods / middots
+    .replace(/^[\s-]+|[\s-]+$/g, " "));     // leading/trailing dashes
+}
+
 async function getPlayerMatches(name) {
   const sheets = getSheets();
-  const target = normName(name);
+  const target = matchKey(name);
   // Venue display names (ordered) + the set of tabs that actually exist, so a venue
   // whose Venue_ tab is missing doesn't make the whole batchGet fail.
   const [vRes, meta, pRes] = await Promise.all([
@@ -1387,10 +1402,10 @@ async function getPlayerMatches(name) {
   // Match venue rows by the player's Name (col A) OR Display_Name/alias (col D):
   // sessions recorded under a short name/alias would otherwise be invisible on the
   // passport now that it is keyed by the canonical Name.
-  const pRow = (pRes.data.values || []).find((r) => normName(r[0]) === target || normName(r[3]) === target);
+  const pRow = (pRes.data.values || []).find((r) => matchKey(r[0]) === target || matchKey(r[3]) === target);
   const aliasSet = new Set([target]);
-  if (pRow) { if (pRow[0]) aliasSet.add(normName(pRow[0])); if (pRow[3]) aliasSet.add(normName(pRow[3])); }
-  const isMe = (n) => aliasSet.has(normName(n));
+  if (pRow) { if (pRow[0]) aliasSet.add(matchKey(pRow[0])); if (pRow[3]) aliasSet.add(matchKey(pRow[3])); }
+  const isMe = (n) => aliasSet.has(matchKey(n));
   const existingTitles = (meta.data.sheets || []).map((s) => s.properties.title);
   const existingTabs = new Set(existingTitles);
   // Map each venue TAB we'll read -> a display name. Prefer the Venues-registry
