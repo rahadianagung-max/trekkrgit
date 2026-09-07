@@ -323,6 +323,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       </div>
       <nav class="tab-nav" aria-label="Admin sections">
         <button class="tab-btn is-active" onclick="switchAdminTab('venue-info')" id="atab-venue-info">Venue Info</button>
+        <button class="tab-btn" onclick="switchAdminTab('bookings')" id="atab-bookings">Bookings</button>
         <button class="tab-btn" onclick="switchAdminTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
       </nav>
     </div>
@@ -353,9 +354,39 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
             <label class="t-field-label" for="venueLocation">Location</label>
             <input class="t-field-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
           </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueAdminWa">Admin WhatsApp (for payment proof)</label>
+            <input class="t-field-input" id="venueAdminWa" placeholder="e.g. 0812xxxxxxx"/>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueBankName">Bank name</label>
+            <input class="t-field-input" id="venueBankName" placeholder="e.g. BCA"/>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueBankAccount">Bank account number</label>
+            <input class="t-field-input" id="venueBankAccount" placeholder="e.g. 1234 5678 90"/>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="venueBankHolder">Account holder</label>
+            <input class="t-field-input" id="venueBankHolder" placeholder="e.g. Pancasona Racquet Club"/>
+          </div>
         </div>
         <button class="btn-trekkr btn-trekkr--primary" onclick="updateVenueInfo()" style="margin-top:8px">Save Changes &rarr;</button>
         <div class="t-status" id="venueStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: BOOKINGS (session waiting list → approve/reject) ── -->
+  <div class="dash-panel" id="apanel-bookings">
+    <div class="container">
+      <div class="section-card">
+        <div class="section-card-title">
+          <span class="section-card-dot"></span>
+          <span class="section-card-label">Session bookings · waiting list</span>
+        </div>
+        <p style="color:var(--on-surface-variant,rgba(255,255,255,.6));font-size:13px;margin:8px 0 4px">Approve a player once you've verified their payment (proof arrives on WhatsApp). Approving confirms their spot and emails them the details.</p>
+        <div id="bookingsBox" style="margin-top:14px">Loading…</div>
       </div>
     </div>
   </div>
@@ -466,6 +497,9 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
         </button>
       </div>
     </div>
+
+    <!-- Confirmed bookings quick-add (from the venue page) -->
+    <div id="confirmed-quick" style="padding:0 20px 8px;display:none"></div>
 
     <!-- Selected chips -->
     <div id="selected-chips-wrap" style="padding:0 20px 8px;display:none">
@@ -810,6 +844,7 @@ function switchAdminTab(id) {
       initRankedMatch();
     }
   }
+  if (id === 'bookings') loadBookings();
 }
 
 /* ══════════════════════════════════════════════════
@@ -825,6 +860,10 @@ async function loadVenueInfo() {
       document.getElementById('venuePrize').value = v.prizePool || '';
       document.getElementById('venueContact').value = v.contact || '';
       document.getElementById('venueLocation').value = v.location || '';
+      document.getElementById('venueAdminWa').value = v.adminWa || '';
+      document.getElementById('venueBankName').value = v.bankName || '';
+      document.getElementById('venueBankAccount').value = v.bankAccount || '';
+      document.getElementById('venueBankHolder').value = v.bankHolder || '';
     }
   } catch(e) { console.warn('Could not load venue info'); }
 }
@@ -837,12 +876,82 @@ async function updateVenueInfo() {
       schedule: document.getElementById('venueSchedule').value,
       prizePool: document.getElementById('venuePrize').value,
       contact: document.getElementById('venueContact').value,
-      location: document.getElementById('venueLocation').value
+      location: document.getElementById('venueLocation').value,
+      adminWa: document.getElementById('venueAdminWa').value,
+      bankName: document.getElementById('venueBankName').value,
+      bankAccount: document.getElementById('venueBankAccount').value,
+      bankHolder: document.getElementById('venueBankHolder').value
     });
     showTStatus(st, 'success', 'Venue information saved successfully.');
   } catch(e) {
     showTStatus(st, 'error', e.message || 'Failed to save.');
   }
+}
+
+/* ══════════════════════════════════════════════════
+   SESSION BOOKINGS — venue waiting list → approve/reject
+   ══════════════════════════════════════════════════ */
+function _escB(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _bkDay(d){ try{ return new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return String(d||'').slice(0,10); } }
+async function loadBookings(){
+  const box=document.getElementById('bookingsBox'); if(!box) return;
+  if(!state.venue){ box.textContent='No venue assigned.'; return; }
+  box.textContent='Loading…';
+  try{
+    const r=await fetch(`${API_BASE}/venue/bookings?venue=${encodeURIComponent(state.venue)}&token=${encodeURIComponent(state.token)}`);
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    renderBookings(d.bookings||[]);
+  }catch(e){ box.innerHTML='<div style="color:#f97316;font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
+}
+function renderBookings(list){
+  const box=document.getElementById('bookingsBox');
+  if(!list.length){ box.innerHTML='<div style="color:rgba(255,255,255,.55);font-size:13px;padding:6px 0">No bookings yet.</div>'; return; }
+  // group by session
+  const groups={};
+  list.forEach(function(b){ (groups[b.sessionId]=groups[b.sessionId]||[]).push(b); });
+  const keys=Object.keys(groups).sort(function(a,c){ const sa=(groups[a][0].session||{}).date||'', sc=(groups[c][0].session||{}).date||''; return sa<sc?-1:sa>sc?1:0; });
+  let html='';
+  keys.forEach(function(k){
+    const arr=groups[k], s=arr[0].session||{};
+    const waiting=arr.filter(function(b){return b.status==='WAITING';});
+    const pending=arr.filter(function(b){return b.status==='PENDING_VERIFY';});
+    const confirmed=arr.filter(function(b){return b.status==='CONFIRMED';});
+    const time=[s.startTime,s.endTime].filter(Boolean).join(' – ');
+    const meta=[s.level,s.gender].filter(Boolean).join(' · ');
+    html+='<div style="border:1px solid var(--border,rgba(255,255,255,.12));border-radius:14px;padding:14px;margin-bottom:12px">';
+    html+='<div style="font-weight:800;font-size:14px">'+_escB(_bkDay(s.date))+(time?' · '+_escB(time):'')+'</div>';
+    html+='<div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:2px">'+_escB(meta)+' · '+confirmed.length+'/'+(s.capacity||0)+' confirmed</div>';
+    function row(b, actions){
+      const av=b.photo?'<img src="'+_escB(b.photo)+'" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none"/>':'<span style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;font-weight:800;font-size:12px;flex:none">'+_escB((b.playerDisplay||b.playerName||'?').slice(0,2).toUpperCase())+'</span>';
+      return '<div style="display:flex;align-items:center;gap:11px;margin-top:10px">'+av+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13.5px">'+_escB(b.playerDisplay||b.playerName)+'</div>'+
+        '<div style="color:rgba(255,255,255,.45);font-size:11px">'+_escB(b.gender||'')+'</div></div>'+actions+'</div>';
+    }
+    if(waiting.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#FF9800;margin-top:14px">Waiting ('+waiting.length+')</div>';
+      waiting.forEach(function(b){ html+=row(b,'<div style="display:flex;gap:6px;flex:none"><button onclick="admDecide(\''+_escB(b.bookingId)+'\',\'approve\',this)" style="background:#22c55e;color:#062e18;border:none;border-radius:9px;font-weight:800;font-size:12px;padding:8px 12px;cursor:pointer">Approve</button><button onclick="admDecide(\''+_escB(b.bookingId)+'\',\'reject\',this)" style="background:transparent;color:#f97316;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:9px;font-weight:800;font-size:12px;padding:8px 12px;cursor:pointer">Reject</button></div>'); });
+    }
+    if(pending.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:14px">Pending verification ('+pending.length+')</div>';
+      pending.forEach(function(b){ html+=row(b,'<span style="font-size:11px;color:rgba(255,255,255,.4);flex:none">not verified</span>'); }); }
+    if(confirmed.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#22c55e;margin-top:14px">Confirmed ('+confirmed.length+')</div>';
+      confirmed.forEach(function(b){ html+=row(b,'<span style="color:#22c55e;font-weight:800;font-size:13px;flex:none">✓</span>'); }); }
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+async function admDecide(bookingId, action, btn){
+  if(btn){ btn.disabled=true; btn.style.opacity='.5'; }
+  try{
+    let r=await fetch(`${API_BASE}/venue/booking/decide`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:state.token,bookingId:bookingId,action:action})});
+    let d=await r.json();
+    if(r.status===409 && d.full){
+      if(confirm('Session is full ('+d.confirmed+'/'+d.capacity+'). Confirm anyway (overbook)?')){
+        r=await fetch(`${API_BASE}/venue/booking/decide`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:state.token,bookingId:bookingId,action:action,override:true})});
+        d=await r.json();
+      } else { loadBookings(); return; }
+    }
+    if(!r.ok) throw new Error(d.error||'Failed');
+    loadBookings();
+  }catch(e){ alert(e.message||'Failed'); loadBookings(); }
 }
 
 /* ══════════════════════════════════════════════════
@@ -882,6 +991,7 @@ const state = {
   scoreFormat: "race",
   scoreTarget: 4,
   trekkrPlayers: [],
+  confirmedQuick: [],
   selectedPlayers: [],
   partners: {},
   playerStats: {},
@@ -1107,9 +1217,40 @@ async function loadPlayers() {
       console.warn("Corrupt players filtered:", corruptPlayers.map(p => p.name));
     }
     renderPlayerList();
+    loadConfirmedQuick();
   } catch(e) {
     listEl.innerHTML = `<div class="alert alert-red">Gagal load pemain: ${e.message}</div>`;
   }
+}
+
+// Confirmed venue-page bookings → one-tap add to the ranked match (no name search).
+async function loadConfirmedQuick(){
+  if(!state.venue||!state.token) return;
+  try{
+    const r=await fetch(`${API_BASE}/venue/bookings?venue=${encodeURIComponent(state.venue)}&token=${encodeURIComponent(state.token)}`);
+    const d=await r.json(); if(!r.ok) return;
+    const seen={}; const out=[];
+    (d.bookings||[]).forEach(function(b){ if(b.status!=='CONFIRMED') return; const k=b.playerName.toLowerCase().trim(); if(seen[k]) return; seen[k]=1; out.push({name:b.playerName, display:b.playerDisplay||b.playerName, photo:b.photo||''}); });
+    state.confirmedQuick=out;
+    renderConfirmedQuick();
+  }catch(e){}
+}
+function renderConfirmedQuick(){
+  const box=document.getElementById('confirmed-quick'); if(!box) return;
+  const list=state.confirmedQuick||[];
+  if(!list.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  const chips=list.map(function(p){
+    const added=state.selectedPlayers.some(function(s){return s.name===p.name;});
+    const known=state.trekkrPlayers.some(function(s){return s.name===p.name;});
+    const av=p.photo?`<img src="${p.photo}" referrerpolicy="no-referrer" style="width:20px;height:20px;border-radius:50%;object-fit:cover"/>`:`<span style="width:20px;height:20px;border-radius:50%;background:var(--border);display:grid;place-items:center;font-size:9px;font-weight:800">${(p.display||'?').slice(0,2).toUpperCase()}</span>`;
+    return `<button onclick="quickAddConfirmed('${p.name.replace(/'/g,"\\'")}')" ${added||!known?'disabled':''} style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 4px;font-size:12px;font-weight:700;color:var(--text);cursor:pointer;${added?'opacity:.5':''}">${av}${(p.display||p.name).split(' ')[0]}<span style="color:var(--blue);font-weight:800">${added?'✓':'＋'}</span></button>`;
+  }).join('');
+  box.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Confirmed bookings · tap to add</div><div style="display:flex;flex-wrap:wrap;gap:6px">${chips}</div>`;
+}
+function quickAddConfirmed(name){
+  if(!state.selectedPlayers.some(function(s){return s.name===name;})) togglePlayer(name);
+  renderConfirmedQuick();
 }
 
 function renderPlayerList() {
@@ -1235,6 +1376,7 @@ function togglePlayer(name) {
   renderPartnerSection();
   updateStartBtn();
   updateRoundRecommendation();
+  if (typeof renderConfirmedQuick === "function") renderConfirmedQuick();
 }
 
 function renderSelectedChips() {
