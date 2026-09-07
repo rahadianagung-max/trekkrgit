@@ -116,6 +116,7 @@ const TABS = {
   venue_leads: "Venue_Leads",
   player_auth: "Player_Auth",
   schedule: "Schedule",              // Wave 1: hand-maintained session/series/championship calendar
+  session_bookings: "Session_Bookings", // per-player venue-session bookings (waiting list → confirmed)
 };
 
 const headers = {
@@ -579,6 +580,7 @@ async function cached60(key, producer) {
 const SCHEDULE_HEADER = [
   "id", "type", "venue", "area", "date", "startTime", "endTime",
   "courts", "capacity", "booked", "pricePerPlayer", "status", "whatsappUrl", "note",
+  "level", "gender",
 ];
 async function ensureScheduleTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -603,7 +605,7 @@ async function getSchedule(params) {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
   const res = await sheets.spreadsheets.values
-    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` })
+    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:P` })
     .catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const from = params && params.from ? String(params.from).slice(0, 10) : null;
@@ -630,6 +632,8 @@ async function getSchedule(params) {
         status: (r[11] || "").trim().toUpperCase(),
         whatsappUrl: (r[12] || "").trim(),
         note: (r[13] || "").trim(),
+        level: (r[14] || "").trim(),
+        gender: (r[15] || "").trim(),
         spotsLeft: Math.max(0, capacity - booked),
       };
     })
@@ -644,6 +648,364 @@ async function getSchedule(params) {
   });
 
   return respond(200, { schedule });
+}
+
+// ============================================================
+// VENUE PAGE + SESSION BOOKINGS (waiting list → admin approval → confirmed)
+// session_bookings is a real Supabase table (see api/_supasheets.js migration):
+//   booking_id, session_id, venue, player_name, player_display, player_email,
+//   gender, status (PENDING_VERIFY|WAITING|CONFIRMED|REJECTED|CANCELLED),
+//   created_at, decided_at, decided_by.
+// All routes here are ADDITIVE — no existing endpoint/contract/ELO/auth touched.
+// ============================================================
+function slugifyVenue(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+const BK_ACTIVE = ["PENDING_VERIFY", "WAITING", "CONFIRMED"];
+
+// A session's gender ("Men"/"Women"/"Open"/blank) vs a player's ("M"/"F").
+// Open/Mixed/blank accepts everyone.
+function genderAllowsBooking(sessionGender, playerGender) {
+  const s = String(sessionGender || "").trim().toUpperCase();
+  if (!s || s === "OPEN" || s === "MIXED" || s === "ALL") return true;
+  const sg = (s.startsWith("W") || s.startsWith("F")) ? "F" : "M";
+  const p = String(playerGender || "").trim().toUpperCase();
+  const pg = (p.startsWith("W") || p.startsWith("F")) ? "F" : "M";
+  return sg === pg;
+}
+
+// This week (Mon–Sun) and this month, computed in Asia/Jakarta (UTC+7).
+function jakartaRanges() {
+  const now = new Date(Date.now() + 7 * 3600 * 1000);
+  const y = now.getUTCFullYear(), m = now.getUTCMonth(), d = now.getUTCDate();
+  const iso = (dt) => dt.toISOString().slice(0, 10);
+  const dow = now.getUTCDay();                 // 0 Sun .. 6 Sat
+  const monOffset = (dow + 6) % 7;             // days since Monday
+  const weekStart = new Date(Date.UTC(y, m, d - monOffset));
+  const weekEnd = new Date(Date.UTC(y, m, d - monOffset + 6));
+  const monthStart = new Date(Date.UTC(y, m, 1));
+  const monthEnd = new Date(Date.UTC(y, m + 1, 0));
+  return { today: iso(new Date(Date.UTC(y, m, d))), weekStart: iso(weekStart), weekEnd: iso(weekEnd), monthStart: iso(monthStart), monthEnd: iso(monthEnd) };
+}
+
+// Read the players table once → normName → { name, display, gender, photo, verified }.
+async function playerLookup() {
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:G` }).catch(() => ({ data: { values: [] } }));
+  const map = {};
+  for (const r of (res.data.values || [])) {
+    const name = r[0] || ""; if (!name) continue;
+    const rec = { name, display: r[3] || name, gender: (r[4] || "").toUpperCase(), photo: ibbHostFix(r[6] || ""), verified: String(r[2] || "").toUpperCase() === "TRUE" };
+    map[normName(name)] = rec;
+    if (r[3]) map[normName(r[3])] = map[normName(r[3])] || rec;
+  }
+  return map;
+}
+
+async function bookingsForVenue(venue) {
+  try { return (await supaRest("GET", `session_bookings?venue=eq.${encodeURIComponent(venue)}&select=*&order=id.asc`)) || []; }
+  catch (e) { return []; }
+}
+
+// Weekly / monthly "winner" boards for a venue, from venue_matches, split by
+// gender, ranked by wins then game-difference.
+async function venueWinners(name, pmap, R) {
+  let rows = [];
+  try { rows = (await supaRest("GET", `venue_matches?venue=eq.${encodeURIComponent(name)}&select=date,p1_team1,p2_team1,p1_team2,p2_team2,score_t1,score_t2`)) || []; }
+  catch (e) { rows = []; }
+  function board(start, end) {
+    const agg = {};
+    for (const r of rows) {
+      const dd = String(r.date || "").slice(0, 10);
+      if (!(dd >= start && dd <= end)) continue;
+      const s1 = Math.floor(parseFloat(r.score_t1) || 0), s2 = Math.floor(parseFloat(r.score_t2) || 0);
+      if (s1 === s2) continue;
+      const diff = Math.abs(s1 - s2), t1win = s1 > s2;
+      const t1 = [r.p1_team1, r.p2_team1].filter(Boolean), t2 = [r.p1_team2, r.p2_team2].filter(Boolean);
+      const add = (nm, win) => {
+        const k = normName(nm); if (!k) return;
+        const p = pmap[k];
+        if (!agg[k]) agg[k] = { name: (p && p.name) || nm, display: (p && p.display) || nm, gender: (p && p.gender) || "", photo: (p && p.photo) || "", w: 0, l: 0, gd: 0 };
+        if (win) { agg[k].w++; agg[k].gd += diff; } else { agg[k].l++; agg[k].gd -= diff; }
+      };
+      t1.forEach((n) => add(n, t1win)); t2.forEach((n) => add(n, !t1win));
+    }
+    const arr = Object.values(agg).sort((a, b) => b.w - a.w || b.gd - a.gd || String(a.display).localeCompare(String(b.display)));
+    const isF = (g) => { g = String(g || "").toUpperCase(); return g.startsWith("F") || g.startsWith("W"); };
+    return {
+      men: arr.filter((p) => String(p.gender || "").toUpperCase().startsWith("M")).slice(0, 10),
+      women: arr.filter((p) => isF(p.gender)).slice(0, 10),
+    };
+  }
+  return { week: board(R.weekStart, R.weekEnd), month: board(R.monthStart, R.monthEnd) };
+}
+
+// GET /api/venue/page/<slug>?token=<supabase access token, optional>
+async function getVenuePage(slug, params) {
+  slug = slugifyVenue(slug);
+  const vres = await getVenues();
+  const venues = (JSON.parse(vres.body).venues) || [];
+  const v = venues.find((x) => slugifyVenue(x.name) === slug);
+  if (!v) return respond(404, { error: "Venue not found" });
+
+  const R = jakartaRanges();
+  const sres = await getSchedule({ from: R.today, to: R.weekEnd });
+  const allSched = (JSON.parse(sres.body).schedule) || [];
+  const sessions = allSched.filter((s) => slugifyVenue(s.venue) === slug);
+
+  const [pmap, bookings] = await Promise.all([playerLookup(), bookingsForVenue(v.name)]);
+
+  // Who is viewing? (optional) — resolve player to show their booking state and
+  // lazily promote any PENDING_VERIFY → WAITING once they are verified.
+  let me = null;
+  if (params && params.token) {
+    const user = await supaVerifyUser(params.token);
+    if (user) {
+      try {
+        const pr = await supaRest("GET", `players?user_id=eq.${user.id}&select=name,display_name,gender,verified&limit=1`);
+        const p = pr && pr[0];
+        if (p) {
+          me = { name: p.name, display: p.display_name || p.name, gender: (p.gender || "").toUpperCase(), verified: p.verified === true || String(p.verified).toUpperCase() === "TRUE" };
+          if (me.verified) {
+            const mine = bookings.filter((b) => b.status === "PENDING_VERIFY" && normName(b.player_name) === normName(me.name));
+            for (const b of mine) {
+              try { await supaRest("PATCH", `session_bookings?id=eq.${b.id}`, { status: "WAITING" }, "return=minimal"); b.status = "WAITING"; } catch (e) {}
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  const bySession = {};
+  for (const b of bookings) { (bySession[b.session_id] = bySession[b.session_id] || []).push(b); }
+  const roster = (b) => ({ name: b.player_name, display: b.player_display || b.player_name, photo: (pmap[normName(b.player_name)] || {}).photo || "" });
+
+  const outSessions = sessions.map((s) => {
+    const bs = bySession[s.id] || [];
+    const confirmed = bs.filter((b) => b.status === "CONFIRMED");
+    const waiting = bs.filter((b) => b.status === "WAITING");
+    let myStatus = null, myBookingId = null;
+    if (me) { const mb = bs.find((b) => BK_ACTIVE.includes(b.status) && normName(b.player_name) === normName(me.name)); if (mb) { myStatus = mb.status; myBookingId = mb.booking_id; } }
+    return Object.assign({}, s, {
+      confirmedCount: confirmed.length,
+      spotsLeft: Math.max(0, (s.capacity || 0) - confirmed.length),
+      joined: confirmed.map(roster),
+      waiting: waiting.map(roster),
+      myStatus, myBookingId,
+    });
+  });
+
+  const winners = await venueWinners(v.name, pmap, R);
+  return respond(200, {
+    venue: { name: v.name, location: v.location, region: v.region, logoUrl: v.logoUrl, featured: v.featured,
+      bankName: v.bankName, bankAccount: v.bankAccount, bankHolder: v.bankHolder, adminWa: v.adminWa },
+    sessions: outSessions, winners, me, range: R,
+  }, { "Cache-Control": "no-store" });
+}
+
+// Resolve the logged-in player from a Supabase token (returns row or null).
+async function bookingPlayer(token) {
+  const user = await supaVerifyUser(token);
+  if (!user) return null;
+  const pr = await supaRest("GET", `players?user_id=eq.${user.id}&select=name,display_name,gender,verified&limit=1`);
+  const p = pr && pr[0];
+  if (!p) return null;
+  return { name: p.name, display: p.display_name || p.name, gender: (p.gender || "").toUpperCase(),
+    verified: p.verified === true || String(p.verified).toUpperCase() === "TRUE", email: user.email };
+}
+
+// POST /api/venue/book { token, sessionId }
+async function bookSession(body) {
+  const b = body || {};
+  const player = await bookingPlayer(b.token);
+  if (!player) return respond(401, { error: "Sign in with your Trekkr profile to book" });
+  const sessionId = String(b.sessionId || "").trim();
+  if (!sessionId) return respond(400, { error: "sessionId required" });
+
+  const sres = await getSchedule({});
+  const session = ((JSON.parse(sres.body).schedule) || []).find((s) => String(s.id) === sessionId);
+  if (!session) return respond(404, { error: "Session not found or no longer open" });
+  if (!genderAllowsBooking(session.gender, player.gender)) {
+    return respond(400, { error: `This session is for ${session.gender} players only` });
+  }
+
+  const existing = (await bookingsForVenue(session.venue))
+    .find((x) => String(x.session_id) === sessionId && BK_ACTIVE.includes(x.status) && normName(x.player_name) === normName(player.name));
+  if (existing) return respond(200, { ok: true, already: true, status: existing.status, bookingId: existing.booking_id });
+
+  const status = player.verified ? "WAITING" : "PENDING_VERIFY";
+  const bookingId = "BK_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  await supaRest("POST", "session_bookings", [{
+    booking_id: bookingId, session_id: sessionId, venue: session.venue,
+    player_name: player.name, player_display: player.display, player_email: player.email,
+    gender: player.gender, status, created_at: new Date().toISOString(),
+  }], "return=minimal");
+
+  return respond(200, {
+    ok: true, status, bookingId,
+    verifyNeeded: status === "PENDING_VERIFY",
+    verifyUrl: status === "PENDING_VERIFY" ? `${appBaseUrl()}/app` : null,
+    message: status === "WAITING"
+      ? "You're on the waiting list. Transfer the fee and send your payment proof to the venue admin on WhatsApp — they'll confirm your spot."
+      : "Verify your profile to join the waiting list. Once verified, your booking moves onto the list automatically.",
+  });
+}
+
+// POST /api/venue/booking/cancel { token, bookingId }
+async function cancelBooking(body) {
+  const b = body || {};
+  const player = await bookingPlayer(b.token);
+  if (!player) return respond(401, { error: "Sign in first" });
+  const bookingId = String(b.bookingId || "").trim();
+  if (!bookingId) return respond(400, { error: "bookingId required" });
+  const rows = await supaRest("GET", `session_bookings?booking_id=eq.${encodeURIComponent(bookingId)}&select=*&limit=1`);
+  const bk = rows && rows[0];
+  if (!bk) return respond(404, { error: "Booking not found" });
+  if (normName(bk.player_name) !== normName(player.name)) return respond(403, { error: "Not your booking" });
+  if (!BK_ACTIVE.includes(bk.status)) return respond(200, { ok: true, status: bk.status });
+  await supaRest("PATCH", `session_bookings?id=eq.${bk.id}`, { status: "CANCELLED", decided_at: new Date().toISOString() }, "return=minimal");
+  return respond(200, { ok: true, status: "CANCELLED" });
+}
+
+// GET /api/venue/bookings?venue=<name>&token=<admin token>
+// Admin view: active bookings (waiting + confirmed + pending-verify) with session
+// info, so the venue admin can approve/reject the waiting list.
+async function listVenueBookings(params) {
+  const venue = String((params && params.venue) || "").trim();
+  const tok = decodeAdminToken(params && params.token);
+  if (!venue) return respond(400, { error: "venue required" });
+  if (!adminCanVenue(tok, venue)) return respond(403, { error: "Not authorized for this venue" });
+  const [bookings, sres] = await Promise.all([bookingsForVenue(venue), getSchedule({})]);
+  const schedById = {}; ((JSON.parse(sres.body).schedule) || []).forEach((s) => { schedById[String(s.id)] = s; });
+  const pmap = await playerLookup();
+  const out = bookings.filter((b) => BK_ACTIVE.includes(b.status)).map((b) => {
+    const s = schedById[String(b.session_id)] || {};
+    return {
+      bookingId: b.booking_id, sessionId: b.session_id, status: b.status,
+      playerName: b.player_name, playerDisplay: b.player_display || b.player_name,
+      photo: (pmap[normName(b.player_name)] || {}).photo || "",
+      gender: b.gender, createdAt: b.created_at,
+      session: { date: s.date || "", startTime: s.startTime || "", endTime: s.endTime || "", level: s.level || "", gender: s.gender || "", capacity: s.capacity || 0, pricePerPlayer: s.pricePerPlayer || 0, courts: s.courts || 0 },
+    };
+  });
+  return respond(200, { bookings: out }, { "Cache-Control": "no-store" });
+}
+
+// POST /api/venue/booking/decide { token, bookingId, action:"approve"|"reject", override? }
+async function decideBooking(body) {
+  const b = body || {};
+  const tok = decodeAdminToken(b.token);
+  const bookingId = String(b.bookingId || "").trim();
+  const action = String(b.action || "").toLowerCase();
+  if (!bookingId) return respond(400, { error: "bookingId required" });
+  const rows = await supaRest("GET", `session_bookings?booking_id=eq.${encodeURIComponent(bookingId)}&select=*&limit=1`);
+  const bk = rows && rows[0];
+  if (!bk) return respond(404, { error: "Booking not found" });
+  if (!adminCanVenue(tok, bk.venue)) return respond(403, { error: "Not authorized for this venue" });
+
+  if (action === "reject") {
+    await supaRest("PATCH", `session_bookings?id=eq.${bk.id}`, { status: "REJECTED", decided_at: new Date().toISOString(), decided_by: tok.username || "" }, "return=minimal");
+    return respond(200, { ok: true, status: "REJECTED" });
+  }
+  if (action !== "approve") return respond(400, { error: "action must be approve or reject" });
+
+  const sres = await getSchedule({});
+  const session = ((JSON.parse(sres.body).schedule) || []).find((s) => String(s.id) === String(bk.session_id));
+  const capacity = session ? (session.capacity || 0) : 0;
+  const confirmed = (await bookingsForVenue(bk.venue)).filter((x) => String(x.session_id) === String(bk.session_id) && x.status === "CONFIRMED").length;
+  if (capacity && confirmed >= capacity && !b.override) {
+    return respond(409, { error: "Session is full", full: true, capacity, confirmed });
+  }
+
+  await supaRest("PATCH", `session_bookings?id=eq.${bk.id}`, { status: "CONFIRMED", decided_at: new Date().toISOString(), decided_by: tok.username || "" }, "return=minimal");
+
+  // The one automated email: player confirmation with calendar buttons.
+  try {
+    if (bk.player_email && session) await sendBookingConfirmation(bk, session);
+  } catch (e) { console.error("[booking] confirmation email:", e.message); }
+
+  return respond(200, { ok: true, status: "CONFIRMED" });
+}
+
+// GET /api/venue/session/<sessionId>/confirmed?token=<admin token>
+// For the PlayRank engine's quick-add list.
+async function getSessionConfirmed(sessionId, params) {
+  sessionId = String(sessionId || "").trim();
+  const tok = decodeAdminToken(params && params.token);
+  const sres = await getSchedule({});
+  const session = ((JSON.parse(sres.body).schedule) || []).find((s) => String(s.id) === sessionId);
+  if (!session) return respond(404, { error: "Session not found" });
+  if (!adminCanVenue(tok, session.venue)) return respond(403, { error: "Not authorized for this venue" });
+  const pmap = await playerLookup();
+  const confirmed = (await bookingsForVenue(session.venue))
+    .filter((x) => String(x.session_id) === sessionId && x.status === "CONFIRMED")
+    .map((b) => ({ name: b.player_name, display: b.player_display || b.player_name, gender: b.gender || (pmap[normName(b.player_name)] || {}).gender || "", photo: (pmap[normName(b.player_name)] || {}).photo || "" }));
+  return respond(200, { session: { id: session.id, venue: session.venue, date: session.date, level: session.level, gender: session.gender }, players: confirmed }, { "Cache-Control": "no-store" });
+}
+
+// ---- booking confirmation email + calendar links ----
+function sessionTimesUTC(dateStr, startT, endT) {
+  const d = String(dateStr || "").slice(0, 10);
+  const st = (String(startT || "").match(/\d{1,2}:\d{2}/) || ["07:00"])[0];
+  const et = (String(endT || "").match(/\d{1,2}:\d{2}/) || [""])[0];
+  const start = new Date(`${d}T${st}:00+07:00`);
+  if (isNaN(start.getTime())) return null;
+  let end = et ? new Date(`${d}T${et}:00+07:00`) : new Date(start.getTime() + 2 * 3600 * 1000);
+  if (isNaN(end.getTime()) || end <= start) end = new Date(start.getTime() + 2 * 3600 * 1000);
+  return { start, end };
+}
+function icsStamp(dt) { return dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
+function gcalUrl(title, times, location, details) {
+  const p = new URLSearchParams({ action: "TEMPLATE", text: title, dates: `${icsStamp(times.start)}/${icsStamp(times.end)}`, location: location || "", details: details || "" });
+  return "https://calendar.google.com/calendar/render?" + p.toString();
+}
+async function sendBookingConfirmation(bk, session) {
+  const times = sessionTimesUTC(session.date, session.startTime, session.endTime);
+  const title = `PlayRank — ${session.venue}`;
+  const details = `Your confirmed PlayRank session at ${session.venue}. See you on court! — Trekkr`;
+  const dateLabel = new Date(`${String(session.date).slice(0, 10)}T00:00:00+07:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
+  const timeLabel = `${(String(session.startTime || "").match(/\d{1,2}:\d{2}/) || [""])[0]}${session.endTime ? " – " + (String(session.endTime).match(/\d{1,2}:\d{2}/) || [""])[0] : ""} WIB`;
+  const gcal = times ? gcalUrl(title, times, session.venue, details) : "";
+  const ics = `${appBaseUrl()}/api/venue/ics/${encodeURIComponent(bk.booking_id)}`;
+  const html =
+    `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;color:#1A1614">` +
+    `<h2 style="color:#FF6A00;margin:0 0 6px">You're confirmed! 🎾</h2>` +
+    `<p style="margin:0 0 14px;color:#6C6660">Your spot at <b>${escHtml(session.venue)}</b> is confirmed. See you on court!</p>` +
+    `<table style="width:100%;border-collapse:collapse;background:#F7F5F2;border-radius:10px;overflow:hidden">` +
+    `<tr><td style="padding:9px 12px;color:#98918a">Date</td><td style="padding:9px 12px;text-align:right;font-weight:700">${escHtml(dateLabel)}</td></tr>` +
+    `<tr><td style="padding:9px 12px;color:#98918a">Time</td><td style="padding:9px 12px;text-align:right;font-weight:700">${escHtml(timeLabel)}</td></tr>` +
+    `<tr><td style="padding:9px 12px;color:#98918a">Venue</td><td style="padding:9px 12px;text-align:right;font-weight:700">${escHtml(session.venue)}</td></tr>` +
+    (session.level || session.gender ? `<tr><td style="padding:9px 12px;color:#98918a">Session</td><td style="padding:9px 12px;text-align:right;font-weight:700">${escHtml([session.level, session.gender].filter(Boolean).join(" · "))}</td></tr>` : "") +
+    `</table>` +
+    `<div style="margin:18px 0 6px">` +
+    (gcal ? `<a href="${gcal}" style="display:inline-block;background:#fff;border:1px solid #dadce0;color:#3c4043;text-decoration:none;font-weight:700;padding:11px 16px;border-radius:10px;margin:0 8px 8px 0">📅 Add to Google Calendar</a>` : "") +
+    `<a href="${ics}" style="display:inline-block;background:#FF6A00;color:#fff;text-decoration:none;font-weight:700;padding:11px 16px;border-radius:10px;margin:0 0 8px 0">Add to calendar (.ics)</a>` +
+    `</div>` +
+    `<p style="font-size:12px;color:#98918a;margin-top:14px">Trekkr · PlayRank</p></div>`;
+  await sendBrevoEmail(bk.player_email, `You're confirmed! 🎾 ${session.venue} — ${dateLabel}`, html);
+}
+
+// GET /api/venue/ics/<bookingId> → text/calendar (universal add-to-calendar)
+async function bookingIcs(bookingId) {
+  bookingId = String(bookingId || "").trim();
+  const rows = await supaRest("GET", `session_bookings?booking_id=eq.${encodeURIComponent(bookingId)}&select=*&limit=1`);
+  const bk = rows && rows[0];
+  if (!bk) return { statusCode: 404, headers, body: "Not found" };
+  const session = ((JSON.parse((await getSchedule({})).body).schedule) || []).find((s) => String(s.id) === String(bk.session_id));
+  const times = session ? sessionTimesUTC(session.date, session.startTime, session.endTime) : null;
+  if (!times) return { statusCode: 404, headers, body: "No schedule" };
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trekkr//PlayRank//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${bk.booking_id}@trekkr.online`,
+    `DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART:${icsStamp(times.start)}`,
+    `DTEND:${icsStamp(times.end)}`,
+    `SUMMARY:PlayRank — ${String(bk.venue).replace(/[,;\\]/g, " ")}`,
+    `LOCATION:${String(bk.venue).replace(/[,;\\]/g, " ")}`,
+    "DESCRIPTION:Your confirmed PlayRank session. See you on court! — Trekkr",
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+  return { statusCode: 200, headers: Object.assign({}, headers, { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `attachment; filename="trekkr-${bk.booking_id}.ics"` }), body: ics };
 }
 
 // ==============================================================
@@ -777,6 +1139,15 @@ const netlifyHandler = async (event) => {
     if (path === "schedule/all" && method === "GET") return await getScheduleAll();
     if (path === "schedule" && method === "POST") return await saveScheduleRow(body);
     if (path === "schedule/delete" && method === "POST") return await deleteScheduleRow(body);
+
+    // --- VENUE PAGE + SESSION BOOKINGS (waiting list → approval → confirmed) ---
+    if (path.startsWith("venue/page/") && method === "GET") return await getVenuePage(decodeURIComponent(path.replace("venue/page/", "")), params);
+    if (path === "venue/book" && method === "POST") return await bookSession(body);
+    if (path === "venue/booking/cancel" && method === "POST") return await cancelBooking(body);
+    if (path === "venue/bookings" && method === "GET") return await listVenueBookings(params);
+    if (path === "venue/booking/decide" && method === "POST") return await decideBooking(body);
+    if (path.startsWith("venue/session/") && path.endsWith("/confirmed") && method === "GET") return await getSessionConfirmed(decodeURIComponent(path.replace("venue/session/", "").replace("/confirmed", "")), params);
+    if (path.startsWith("venue/ics/") && method === "GET") return await bookingIcs(decodeURIComponent(path.replace("venue/ics/", "")));
 
     if (path === "elo/latest" && method === "GET") return await getLatestElo();
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
@@ -1998,7 +2369,7 @@ function buildVenueRow({ week, date, p1t1, p2t1, p1t2, p2t2, scoreT1, scoreT2, g
 
 async function getVenues() {
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:L` });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!A2:P` });
   const rows = res.data.values || [];
   const venues = rows.map((r) => ({
     name: r[0] || "", location: r[1] || "", region: r[2] || "", schedule: r[3] || "",
@@ -2008,6 +2379,8 @@ async function getVenues() {
     featured: String(r[9] || "").toUpperCase() === "TRUE",
     sortOrder: r[10] != null && String(r[10]).trim() !== "" ? Number(r[10]) : null,
     hidden: String(r[11] || "").toUpperCase() === "TRUE",
+    // Payment + admin contact (venue page booking). Cols M..P.
+    bankName: r[12] || "", bankAccount: r[13] || "", bankHolder: r[14] || "", adminWa: r[15] || "",
   }));
   return respond(200, { venues });
 }
@@ -2067,6 +2440,23 @@ async function updateVenue(body) {
     spreadsheetId: SHEET_ID, range: `${TABS.venues}!A${sr}:I${sr}`, valueInputOption: "USER_ENTERED",
     requestBody: { values: [updated] },
   });
+  // Payment + admin-contact fields live in cols M..P; write them separately so the
+  // A:I update above never clobbers featured/order/hidden (J:L). Only touched when
+  // one of these keys is present in the update.
+  if (["bankName", "bankAccount", "bankHolder", "adminWa"].some((k) => updates[k] != null)) {
+    const cur = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.venues}!M${sr}:P${sr}` }).catch(() => ({ data: { values: [] } }));
+    const m = (cur.data.values && cur.data.values[0]) || [];
+    const pay = [
+      updates.bankName != null ? updates.bankName : (m[0] || ""),
+      updates.bankAccount != null ? updates.bankAccount : (m[1] || ""),
+      updates.bankHolder != null ? updates.bankHolder : (m[2] || ""),
+      updates.adminWa != null ? updates.adminWa : (m[3] || ""),
+    ];
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: `${TABS.venues}!M${sr}:P${sr}`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [pay] },
+    });
+  }
   return respond(200, { success: true, logoUrl: logoUrl || c[6] || "" });
 }
 
@@ -5287,7 +5677,7 @@ async function getVenueMonthly(venueName, params) {
 async function getScheduleAll() {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:P` }).catch(() => ({ data: { values: [] } }));
   const schedule = (res.data.values || []).filter((r) => (r[0] || "").trim()).map((r) => {
     const o = {}; SCHEDULE_HEADER.forEach((h, i) => { o[h] = r[i] || ""; }); return o;
   });
@@ -5297,22 +5687,23 @@ async function saveScheduleRow(body) {
   const b = body || {};
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:N` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:P` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const id = String(b.id || "").trim();
   const rowVals = [
     id || ("SCH_" + Date.now()), String(b.type || "RANKPLAY").toUpperCase(), b.venue || "", b.area || "", b.date || "",
     b.startTime || "", b.endTime || "", b.courts || "", b.capacity || "", b.booked || "", b.pricePerPlayer || "",
     (b.status || "OPEN").toUpperCase(), b.whatsappUrl || "", b.note || "",
+    b.level || "", b.gender || "",
   ];
   if (id) {
     const ri = rows.findIndex((r) => String(r[0] || "").trim() === id);
     if (ri >= 0) {
-      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${ri + 2}:N${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${ri + 2}:P${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
       return respond(200, { success: true, id });
     }
   }
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:N`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:P`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
   return respond(200, { success: true, id: rowVals[0] });
 }
 async function deleteScheduleRow(body) {
