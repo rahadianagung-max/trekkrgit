@@ -602,7 +602,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       <h1 class="dash-title">Admin<br/>Dashboard</h1>
       <p class="dash-venue" id="dashVenue">Loading...</p>
       <nav class="tab-nav">
-        <button class="tab-btn is-active" onclick="switchTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
+        <button class="tab-btn is-active" onclick="switchTab('ranked-match')" id="atab-ranked-match">PlayRank</button>
+        <button class="tab-btn" onclick="switchTab('bookings')" id="atab-bookings">Bookings</button>
         <button class="tab-btn" onclick="switchTab('history')" id="atab-history">Match History</button>
         <button class="tab-btn" onclick="switchTab('venue-info')" id="atab-venue-info">Venue Info</button>
         <button class="tab-btn" onclick="switchTab('edits')" id="atab-edits">Edit Requests</button>
@@ -660,6 +661,22 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
             <label class="f-label" for="venueLocation">Location</label>
             <input class="f-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
           </div>
+          <div class="f-group">
+            <label class="f-label" for="venueAdminWa">Admin WhatsApp (payment proof)</label>
+            <input class="f-input" id="venueAdminWa" placeholder="e.g. 0812xxxxxxx"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueBankName">Bank name</label>
+            <input class="f-input" id="venueBankName" placeholder="e.g. BCA"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueBankAccount">Bank account number</label>
+            <input class="f-input" id="venueBankAccount" placeholder="e.g. 1234 5678 90"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueBankHolder">Account holder</label>
+            <input class="f-input" id="venueBankHolder" placeholder="e.g. Pancasona Racquet Club"/>
+          </div>
         </div>
         <button class="btn btn-primary" onclick="saveVenueInfo()" style="margin-top:12px">Save Changes →</button>
         <div class="t-status" id="venueStatus"></div>
@@ -689,8 +706,51 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       <div id="er-list"><p style="color:rgba(255,255,255,.5);font-size:12px">Memuat…</p></div>
     </div>
   </div>
+  <!-- TAB: BOOKINGS (session waiting list → approve/reject) -->
+  <div class="dash-panel" id="apanel-bookings">
+    <div class="container">
+      <div class="section-card">
+        <div class="sc-title"><span class="sc-dot"></span><span class="sc-label">Session bookings · waiting list</span></div>
+        <p style="color:var(--txt2);font-size:13px;margin:8px 0 4px">Approve a player once you've verified their payment (proof arrives on WhatsApp). Approving confirms their spot and emails them the details.</p>
+        <div id="bookingsBox" style="margin-top:14px">Loading…</div>
+      </div>
+    </div>
+  </div>
+
   <div class="dash-panel is-active" id="apanel-ranked-match">
     <div class="container">
+      <!-- Sessions editor (weekly PlayRank schedule) -->
+      <div class="section-card" id="sessionsEditor" data-edit-id="" style="margin-bottom:16px">
+        <div class="sc-title"><span class="sc-dot"></span><span class="sc-label" id="sesFormTitle">Add a PlayRank session</span></div>
+        <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then run the session with the engine below.</p>
+        <div class="form-grid">
+          <div class="f-group"><label class="f-label" for="sesDate">Date</label><input class="f-input" id="sesDate" type="date"/></div>
+          <div class="f-group" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="f-label" for="sesStart">Start</label><input class="f-input" id="sesStart" type="time"/></div>
+            <div style="flex:1"><label class="f-label" for="sesEnd">End</label><input class="f-input" id="sesEnd" type="time"/></div>
+          </div>
+          <div class="f-group" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
+            <div style="flex:1"><label class="f-label" for="sesCapacity">Capacity</label><input class="f-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
+          </div>
+          <div class="f-group"><label class="f-label" for="sesPrice">Price per player (Rp)</label><input class="f-input" id="sesPrice" type="number" min="0" placeholder="50000"/></div>
+          <div class="f-group" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="f-label" for="sesLevel">Level</label>
+              <select class="f-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
+            <div style="flex:1"><label class="f-label" for="sesGender">Gender</label>
+              <select class="f-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
+          </div>
+          <div class="f-group"><label class="f-label" for="sesStatus">Status</label>
+            <select class="f-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="sessionSave()" id="sesSaveBtn">Add session →</button>
+          <button class="btn btn-ghost" onclick="sessionResetForm()" id="sesCancelBtn" style="display:none">Cancel edit</button>
+        </div>
+        <div class="t-status" id="sessionStatus"></div>
+        <div class="sc-title" style="margin-top:22px"><span class="sc-dot"></span><span class="sc-label">Your sessions</span></div>
+        <div id="sessionsList" style="margin-top:12px">Loading…</div>
+      </div>
       <div id="rm-root">
 
         <!-- ── SCREEN: INTRO ── -->
@@ -821,6 +881,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <input class="rm-search" id="rm-search" placeholder="Ketik nama pemain..." oninput="rmRenderPlayers()" autocomplete="off" autocorrect="off" spellcheck="false"/>
               <button class="rm-search-clear" id="rm-search-clear" onclick="rmClearSearch()">×</button>
             </div>
+
+            <div id="rm-confirmed-quick" style="display:none;margin-bottom:12px"></div>
 
             <div id="rm-player-list" style="padding-bottom:100px"></div>
 
@@ -1037,7 +1099,7 @@ const RM = { // shared state for ranked match
   courts: 2, gender: 'M', format: 'individual',
   scoreFormat: 'race', scoreTarget: 4,
   level: 'lower_bronze', startElo: 1350,
-  allPlayers: [], selectedPlayers: [], partners: {},
+  allPlayers: [], selectedPlayers: [], partners: {}, confirmedQuick: [],
   teams: [], _teamPick: null, _manageBuf: [],
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
@@ -1136,6 +1198,7 @@ function showDash(s) {
   }
   document.getElementById('hdrLogout').style.display = 'inline-flex';
   loadVenueInfo();
+  loadSessions();
   // Ranked Match is the default tab — init immediately after login
   if (!RM._inited) {
     RM._inited = true;
@@ -1160,6 +1223,8 @@ function switchTab(id) {
     RM._inited = true;
     rmInit();
   }
+  if (id === 'ranked-match') loadSessions();
+  if (id === 'bookings') loadBookings();
   if (id === 'edits') loadEditRequests();
   if (id === 'history') loadMatchHistory();
 }
@@ -1256,6 +1321,179 @@ function cancelVenueLogo(){
   renderVenueLogo(venueCurrentLogo);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   VENUE PAGE BOOKINGS + SESSIONS EDITOR + engine quick-add
+   ══════════════════════════════════════════════════════════════════════ */
+function _escB(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _bkDay(d){ try{ return new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return String(d||'').slice(0,10); } }
+function _rpFmt(n){ return 'Rp'+Number(n||0).toLocaleString('id-ID'); }
+
+/* ---- Sessions editor ---- */
+var _sessions=[];
+async function loadSessions(){
+  var box=document.getElementById('sessionsList'); if(!box) return;
+  if(!RM.venue){ box.textContent='No venue assigned.'; return; }
+  box.textContent='Loading…';
+  try{
+    var r=await fetch(API_BASE+'/schedule/all'); var d=await r.json(); if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    _sessions=(d.schedule||[]).filter(function(s){return String(s.venue||'').trim().toLowerCase()===RM.venue.toLowerCase();});
+    renderSessions();
+  }catch(e){ box.innerHTML='<div style="color:var(--danger);font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
+}
+function renderSessions(){
+  var box=document.getElementById('sessionsList'); if(!box) return;
+  if(!_sessions.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:6px 0">No sessions yet — add one above.</div>'; return; }
+  var sorted=_sessions.slice().sort(function(a,c){ var da=(a.date||'')+(a.startTime||''),dc=(c.date||'')+(c.startTime||''); return da<dc?1:da>dc?-1:0; });
+  box.innerHTML=sorted.map(function(s){
+    var facts=[(s.courts?s.courts+' courts':''),(s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''),(s.level||''),(s.gender||''),'cap '+(s.capacity||0)].filter(Boolean).join(' · ');
+    var st=String(s.status||'OPEN').toUpperCase();
+    var stColor=st==='OPEN'?'var(--green)':(st==='CANCELLED'?'var(--danger)':'var(--txt3)');
+    return '<div style="border:1px solid var(--bdr);border-radius:12px;padding:13px 14px;margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
+      '<div><div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(_bkDay(s.date))+(s.startTime?' · '+_escB([s.startTime,s.endTime].filter(Boolean).join(' – ')):'')+'</div>'+
+      '<div style="color:var(--txt2);font-size:12px;margin-top:3px">'+_escB(facts)+'</div></div>'+
+      '<span style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+stColor+';flex:none">'+_escB(st)+'</span></div>'+
+      '<div style="display:flex;gap:6px;margin-top:11px">'+
+      '<button class="btn btn-ghost btn-sm" onclick="sessionEdit(\''+_escB(s.id)+'\')">Edit</button>'+
+      '<button class="btn btn-danger btn-sm" onclick="sessionDelete(\''+_escB(s.id)+'\')">Delete</button></div></div>';
+  }).join('');
+}
+function _sv(id){ return document.getElementById(id).value; }
+function sessionResetForm(){
+  ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice'].forEach(function(i){ document.getElementById(i).value=''; });
+  document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Open'; document.getElementById('sesStatus').value='OPEN';
+  document.getElementById('sessionsEditor').dataset.editId='';
+  document.getElementById('sesFormTitle').textContent='Add a PlayRank session';
+  document.getElementById('sesSaveBtn').textContent='Add session →';
+  document.getElementById('sesCancelBtn').style.display='none';
+}
+function sessionEdit(id){
+  var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
+  document.getElementById('sesDate').value=String(s.date||'').slice(0,10);
+  document.getElementById('sesStart').value=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  document.getElementById('sesEnd').value=(String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  document.getElementById('sesCourts').value=s.courts||'';
+  document.getElementById('sesCapacity').value=s.capacity||'';
+  document.getElementById('sesPrice').value=s.pricePerPlayer||'';
+  document.getElementById('sesLevel').value=s.level||'';
+  document.getElementById('sesGender').value=s.gender||'Open';
+  document.getElementById('sesStatus').value=String(s.status||'OPEN').toUpperCase();
+  document.getElementById('sessionsEditor').dataset.editId=id;
+  document.getElementById('sesFormTitle').textContent='Edit session';
+  document.getElementById('sesSaveBtn').textContent='Save changes →';
+  document.getElementById('sesCancelBtn').style.display='inline-flex';
+  window.scrollTo(0,0);
+}
+async function sessionSave(){
+  var st=document.getElementById('sessionStatus');
+  if(!RM.venue){ tStatus(st,'error','No venue assigned.'); return; }
+  var date=_sv('sesDate'); if(!date){ tStatus(st,'error','Pick a date.'); return; }
+  var body={ id:document.getElementById('sessionsEditor').dataset.editId||'', venue:RM.venue, type:'RANKPLAY', date:date,
+    startTime:_sv('sesStart'), endTime:_sv('sesEnd'), courts:_sv('sesCourts'), capacity:_sv('sesCapacity'), pricePerPlayer:_sv('sesPrice'),
+    level:_sv('sesLevel'), gender:_sv('sesGender'), status:_sv('sesStatus')||'OPEN', token:RM.token };
+  document.getElementById('sesSaveBtn').disabled=true;
+  try{
+    var r=await fetch(API_BASE+'/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
+    tStatus(st,'success','Session saved.'); sessionResetForm(); loadSessions();
+  }catch(e){ tStatus(st,'error',e.message||'Failed to save'); }
+  finally{ document.getElementById('sesSaveBtn').disabled=false; }
+}
+async function sessionDelete(id){
+  if(!confirm('Delete this session? Existing bookings for it will be orphaned.')) return;
+  try{
+    var r=await fetch(API_BASE+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:RM.token})});
+    var d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed'); loadSessions();
+  }catch(e){ alert(e.message||'Failed to delete'); }
+}
+
+/* ---- Bookings (waiting list) ---- */
+async function loadBookings(){
+  var box=document.getElementById('bookingsBox'); if(!box) return;
+  if(!RM.venue){ box.textContent='No venue assigned.'; return; }
+  box.textContent='Loading…';
+  try{
+    var r=await fetch(API_BASE+'/venue/bookings?venue='+encodeURIComponent(RM.venue)+'&token='+encodeURIComponent(RM.token));
+    var d=await r.json(); if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    renderBookings(d.bookings||[]);
+  }catch(e){ box.innerHTML='<div style="color:var(--danger);font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
+}
+function renderBookings(list){
+  var box=document.getElementById('bookingsBox');
+  if(!list.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:6px 0">No bookings yet.</div>'; return; }
+  var groups={}; list.forEach(function(b){ (groups[b.sessionId]=groups[b.sessionId]||[]).push(b); });
+  var keys=Object.keys(groups).sort(function(a,c){ var sa=(groups[a][0].session||{}).date||'',sc=(groups[c][0].session||{}).date||''; return sa<sc?-1:sa>sc?1:0; });
+  var html='';
+  keys.forEach(function(k){
+    var arr=groups[k], s=arr[0].session||{};
+    var waiting=arr.filter(function(b){return b.status==='WAITING';});
+    var pending=arr.filter(function(b){return b.status==='PENDING_VERIFY';});
+    var confirmed=arr.filter(function(b){return b.status==='CONFIRMED';});
+    var time=[s.startTime,s.endTime].filter(Boolean).join(' – ');
+    var meta=[s.level,s.gender].filter(Boolean).join(' · ');
+    html+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:12px">';
+    html+='<div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(_bkDay(s.date))+(time?' · '+_escB(time):'')+'</div>';
+    html+='<div style="color:var(--txt2);font-size:12px;margin-top:2px">'+_escB(meta)+' · '+confirmed.length+'/'+(s.capacity||0)+' confirmed</div>';
+    function row(b,actions){
+      var av=b.photo?'<img src="'+_escB(b.photo)+'" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none"/>':'<span style="width:34px;height:34px;border-radius:50%;background:var(--sur-hi);display:grid;place-items:center;font-weight:800;font-size:12px;flex:none;color:var(--on)">'+_escB((b.playerDisplay||b.playerName||'?').slice(0,2).toUpperCase())+'</span>';
+      return '<div style="display:flex;align-items:center;gap:11px;margin-top:10px">'+av+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13.5px;color:var(--on)">'+_escB(b.playerDisplay||b.playerName)+'</div>'+
+        '<div style="color:var(--txt3);font-size:11px">'+_escB(b.gender||'')+'</div></div>'+actions+'</div>';
+    }
+    if(waiting.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-top:14px">Waiting ('+waiting.length+')</div>';
+      waiting.forEach(function(b){ html+=row(b,'<div style="display:flex;gap:6px;flex:none"><button class="btn btn-sm" style="background:var(--green);color:#fff" onclick="admDecide(\''+_escB(b.bookingId)+'\',\'approve\',this)">Approve</button><button class="btn btn-danger btn-sm" onclick="admDecide(\''+_escB(b.bookingId)+'\',\'reject\',this)">Reject</button></div>'); }); }
+    if(pending.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:14px">Pending verification ('+pending.length+')</div>';
+      pending.forEach(function(b){ html+=row(b,'<span style="font-size:11px;color:var(--txt3);flex:none">not verified</span>'); }); }
+    if(confirmed.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--green);margin-top:14px">Confirmed ('+confirmed.length+')</div>';
+      confirmed.forEach(function(b){ html+=row(b,'<span style="color:var(--green);font-weight:800;font-size:14px;flex:none">✓</span>'); }); }
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+async function admDecide(bookingId,action,btn){
+  if(btn){ btn.disabled=true; btn.style.opacity='.5'; }
+  try{
+    var r=await fetch(API_BASE+'/venue/booking/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:RM.token,bookingId:bookingId,action:action})});
+    var d=await r.json();
+    if(r.status===409 && d.full){
+      if(confirm('Session is full ('+d.confirmed+'/'+d.capacity+'). Confirm anyway (overbook)?')){
+        r=await fetch(API_BASE+'/venue/booking/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:RM.token,bookingId:bookingId,action:action,override:true})});
+        d=await r.json();
+      } else { loadBookings(); return; }
+    }
+    if(!r.ok) throw new Error(d.error||'Failed');
+    loadBookings();
+  }catch(e){ alert(e.message||'Failed'); loadBookings(); }
+}
+
+/* ---- Engine quick-add: confirmed bookings → tap to add ---- */
+async function loadRmConfirmed(){
+  if(!RM.venue||!RM.token) return;
+  try{
+    var r=await fetch(API_BASE+'/venue/bookings?venue='+encodeURIComponent(RM.venue)+'&token='+encodeURIComponent(RM.token));
+    var d=await r.json(); if(!r.ok) return;
+    var seen={}; RM.confirmedQuick=[];
+    (d.bookings||[]).forEach(function(b){ if(b.status!=='CONFIRMED') return; var k=b.playerName.toLowerCase().trim(); if(seen[k])return; seen[k]=1; RM.confirmedQuick.push({name:b.playerName,display:b.playerDisplay||b.playerName}); });
+    renderRmConfirmed();
+  }catch(e){}
+}
+function renderRmConfirmed(){
+  var box=document.getElementById('rm-confirmed-quick'); if(!box) return;
+  var list=RM.confirmedQuick||[];
+  if(!list.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  var chips=list.map(function(p){
+    var added=RM.selectedPlayers.some(function(s){return s.name===p.name;});
+    var known=RM.allPlayers.some(function(s){return s.name===p.name;});
+    return '<button onclick="rmQuickAdd(\''+p.name.replace(/'/g,"\\'")+'\')" '+((added||!known)?'disabled':'')+' style="display:inline-flex;align-items:center;gap:6px;background:var(--sur-0);border:1.5px solid '+(added?'var(--blue)':'var(--bdr)')+';border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;color:var(--on);cursor:pointer;'+(added?'opacity:.55':'')+'">'+_escB((p.display||p.name).split(' ')[0])+'<span style="color:var(--blue);font-weight:800">'+(added?'✓':'＋')+'</span></button>';
+  }).join('');
+  box.innerHTML='<div class="rm-chip-label">Confirmed bookings · tap to add</div><div class="rm-chips">'+chips+'</div>';
+}
+function rmQuickAdd(name){
+  if(!RM.selectedPlayers.some(function(s){return s.name===name;})) rmTogglePlayer(name);
+  renderRmConfirmed();
+}
+
 async function loadVenueInfo() {
   if (!RM.venue) return;
   try {
@@ -1266,6 +1504,10 @@ async function loadVenueInfo() {
       document.getElementById('venuePrize').value    = v.prizePool || '';
       document.getElementById('venueContact').value  = v.contact || '';
       document.getElementById('venueLocation').value = v.location || '';
+      document.getElementById('venueAdminWa').value = v.adminWa || '';
+      document.getElementById('venueBankName').value = v.bankName || '';
+      document.getElementById('venueBankAccount').value = v.bankAccount || '';
+      document.getElementById('venueBankHolder').value = v.bankHolder || '';
       venueCurrentLogo = v.logoUrl || '';
       venueLogoData = null;
       document.getElementById('venueLogoInput').value='';
@@ -1283,6 +1525,10 @@ async function saveVenueInfo() {
     prizePool: document.getElementById('venuePrize').value,
     contact:   document.getElementById('venueContact').value,
     location:  document.getElementById('venueLocation').value,
+    adminWa:     document.getElementById('venueAdminWa').value,
+    bankName:    document.getElementById('venueBankName').value,
+    bankAccount: document.getElementById('venueBankAccount').value,
+    bankHolder:  document.getElementById('venueBankHolder').value,
   };
   if (venueLogoData) updates.logo = venueLogoData;  // base64 -> imgbb server-side
   try {
@@ -1480,6 +1726,7 @@ async function rmLoadPlayers() {
         matchCount: (e ? (e.matches ?? ((e.w||0)+(e.l||0))) : 0),
       }); });
     rmRenderPlayers();
+    loadRmConfirmed();
   } catch(e) {
     document.getElementById('rm-player-list').innerHTML =
       `<div class="rm-alert rm-alert-red">Gagal load pemain: ${e.message}</div>`;
@@ -1551,6 +1798,7 @@ function rmTogglePlayer(name) {
   rmUpdateStartBtn();
   rmUpdateRec();
   rmUpdateAnchorRec();
+  if (typeof renderRmConfirmed === 'function') renderRmConfirmed();
 }
 
 /* Anchor pool (Step 4): sesi kalibrasi jangan new-player-only — dorong admin
