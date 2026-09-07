@@ -338,7 +338,7 @@
     fillPlayerCount();
     d.getElementById("wc-start").onclick = function () { S.view = S.session ? "passport" : "login"; render(); };
     var g = d.getElementById("wc-guest");
-    if (g) g.onclick = function () { S.view = "rankings"; render(); };
+    if (g) g.onclick = function () { S.view = "main"; render(); };
   }
 
   /* ---------- LOGIN ---------- */
@@ -1182,14 +1182,10 @@
     var logo = v.logoUrl
       ? '<span class="rp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
       : '<span class="rp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
-    // Left: this venue's in-app page (schedule, booking, weekly/monthly winners);
-    // right: the venue's own RECLUB/booking link if set.
+    // Single CTA → this venue's in-app page (schedule, booking, weekly/monthly winners).
     var vslug = String(v.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
     var btns = '<div class="rp-btns">' +
-      '<button class="btn rp-btn rp-venue-open" data-venue="' + esc(vslug) + '">Venue page →</button>' +
-      (link
-        ? '<a class="btn ghost rp-btn" href="' + esc(link) + '" target="_blank" rel="noopener">RECLUB / info</a>'
-        : '') +
+      '<button class="btn rp-btn rp-venue-open" data-venue="' + esc(vslug) + '">PlayRank now →</button>' +
       '</div>';
     return '<div class="plain rp-card">' +
       '<div class="rp-head">' + logo +
