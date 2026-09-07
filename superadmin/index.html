@@ -533,14 +533,14 @@ function editSchedule(enc){
 }
 async function saveSchedule(){
   var st=document.getElementById('sc-status2');
-  var body={id:document.getElementById('sc-id').value.trim(),type:document.getElementById('sc-type').value,status:document.getElementById('sc-status').value,venue:document.getElementById('sc-venue').value.trim(),area:document.getElementById('sc-area').value.trim(),date:document.getElementById('sc-date').value.trim(),pricePerPlayer:document.getElementById('sc-price').value.trim(),startTime:document.getElementById('sc-start').value.trim(),endTime:document.getElementById('sc-end').value.trim(),capacity:document.getElementById('sc-cap').value.trim(),booked:document.getElementById('sc-booked').value.trim(),whatsappUrl:document.getElementById('sc-wa').value.trim(),note:document.getElementById('sc-note').value.trim()};
+  var body={id:document.getElementById('sc-id').value.trim(),type:document.getElementById('sc-type').value,status:document.getElementById('sc-status').value,venue:document.getElementById('sc-venue').value.trim(),area:document.getElementById('sc-area').value.trim(),date:document.getElementById('sc-date').value.trim(),pricePerPlayer:document.getElementById('sc-price').value.trim(),startTime:document.getElementById('sc-start').value.trim(),endTime:document.getElementById('sc-end').value.trim(),capacity:document.getElementById('sc-cap').value.trim(),booked:document.getElementById('sc-booked').value.trim(),whatsappUrl:document.getElementById('sc-wa').value.trim(),note:document.getElementById('sc-note').value.trim(),token:(TrekkrAPI.getSession()||{}).token||''};
   if(!body.venue||!body.date){st.className='status-msg error';st.textContent='Venue & Date wajib.';return;}
   try{const r=await fetch(crApi()+'/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ Sesi tersimpan.';scReset();loadScheduleAdmin();}
   catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal.'}
 }
 function delSchedule(enc){
   var id=decodeURIComponent(enc);if(!confirm('Hapus sesi ini?'))return;
-  fetch(crApi()+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadScheduleAdmin();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
+  fetch(crApi()+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:(TrekkrAPI.getSession()||{}).token||''})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadScheduleAdmin();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
 }
 
 // ── DUPLICATES (dedup scan + merge) ──

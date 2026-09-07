@@ -5685,31 +5685,60 @@ async function getScheduleAll() {
 }
 async function saveScheduleRow(body) {
   const b = body || {};
+  // Token-scoped: a venue admin may only write sessions for their own venue;
+  // superadmin may write any. (Schedule writes used to be unauthenticated.)
+  const tok = decodeAdminToken(b.token);
+  if (!tok) return respond(401, { error: "Login required" });
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:P` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const id = String(b.id || "").trim();
+  const existingRi = id ? rows.findIndex((r) => String(r[0] || "").trim() === id) : -1;
+  const existing = existingRi >= 0 ? rows[existingRi] : null;
+
+  // Resolve the target venue with scoping.
+  let venue;
+  if (existing) {
+    const exVenue = existing[2] || "";
+    if (!adminCanVenue(tok, exVenue)) return respond(403, { error: "Not authorized for this venue" });
+    venue = (tok.role === "superadmin" && b.venue) ? b.venue : exVenue;
+  } else {
+    venue = (tok.role === "superadmin") ? String(b.venue || "").trim() : String(tok.venue || "").trim();
+    if (!venue) return respond(400, { error: "venue required" });
+    if (!adminCanVenue(tok, venue)) return respond(403, { error: "Not authorized for this venue" });
+  }
+  // Preserve level/gender (cols O/P) on edit when the caller doesn't send them,
+  // so an editor that predates these fields (superadmin) can't wipe them.
+  const level = b.level != null ? b.level : (existing ? (existing[14] || "") : "");
+  const gender = b.gender != null ? b.gender : (existing ? (existing[15] || "") : "");
+
   const rowVals = [
-    id || ("SCH_" + Date.now()), String(b.type || "RANKPLAY").toUpperCase(), b.venue || "", b.area || "", b.date || "",
+    id || ("SCH_" + Date.now()), String(b.type || "RANKPLAY").toUpperCase(), venue, b.area || "", b.date || "",
     b.startTime || "", b.endTime || "", b.courts || "", b.capacity || "", b.booked || "", b.pricePerPlayer || "",
     (b.status || "OPEN").toUpperCase(), b.whatsappUrl || "", b.note || "",
-    b.level || "", b.gender || "",
+    level, gender,
   ];
-  if (id) {
-    const ri = rows.findIndex((r) => String(r[0] || "").trim() === id);
-    if (ri >= 0) {
-      await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${ri + 2}:P${ri + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
-      return respond(200, { success: true, id });
-    }
+  if (existing) {
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:P${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+    return respond(200, { success: true, id });
   }
   await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:P`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
   return respond(200, { success: true, id: rowVals[0] });
 }
 async function deleteScheduleRow(body) {
-  const id = String((body && body.id) || "").trim();
+  const b = body || {};
+  const tok = decodeAdminToken(b.token);
+  if (!tok) return respond(401, { error: "Login required" });
+  const id = String(b.id || "").trim();
   if (!id) return respond(400, { error: "id required" });
-  const removed = await deleteRowsByKey(getSheets(), TABS.schedule, 0, new Set([id.toLowerCase()]));
+  // Verify the row belongs to a venue this admin controls before deleting.
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:P` }).catch(() => ({ data: { values: [] } }));
+  const row = (res.data.values || []).find((r) => String(r[0] || "").trim() === id);
+  if (!row) return respond(404, { error: "Schedule row not found" });
+  if (!adminCanVenue(tok, row[2] || "")) return respond(403, { error: "Not authorized for this venue" });
+  const removed = await deleteRowsByKey(sheets, TABS.schedule, 0, new Set([id.toLowerCase()]));
   if (!removed) return respond(404, { error: "Schedule row not found" });
   return respond(200, { success: true, removed });
 }
