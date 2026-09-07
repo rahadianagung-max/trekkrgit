@@ -271,6 +271,13 @@
         S.view = "join";
         try { w.history.replaceState({}, "", w.location.pathname); } catch (e) {}
       }
+      // Deep link from a shared WhatsApp invite: ?venue=<slug> opens that venue
+      // page (works for guests too — booking then prompts sign-in).
+      var vp = qparam("venue");
+      if (vp) {
+        S.venueSlug = vp; S.venueTab = "sched"; S.venueGender = "men"; S.view = "venue";
+        try { w.history.replaceState({}, "", w.location.pathname); } catch (e) {}
+      }
       render();
       hideSplash();
     });
@@ -1270,6 +1277,22 @@
     if (s.gender) { var g = String(s.gender).toUpperCase(); var cl = (g.charAt(0) === "W" || g.charAt(0) === "F") ? "women" : (g.charAt(0) === "M" ? "men" : ""); chips += '<span class="vp-fact ' + cl + '">' + esc(s.gender) + '</span>'; }
     return chips;
   }
+  function vWaSession(s) {
+    var v = (S.venue && S.venue.venue) || {}, slug = S.venueSlug || "";
+    var day = ""; try { day = new Date(String(s.date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }); } catch (e) { day = String(s.date || "").slice(0, 10); }
+    var time = [s.startTime, s.endTime].filter(Boolean).join("–");
+    var lines = ["🎾 PlayRank · " + (v.name || ""), day + (time ? " · " + time : ""), [s.level, s.gender].filter(Boolean).join(" · ")];
+    if (s.pricePerPlayer) lines.push(rp(s.pricePerPlayer) + "/player");
+    if (s.prizePool) lines.push("🏆 " + s.prizePool);
+    if (s.freebies) lines.push("🎁 " + s.freebies);
+    lines.push("Join & jadwal: https://trekkr.online/app?venue=" + slug);
+    return "https://wa.me/?text=" + encodeURIComponent(lines.filter(Boolean).join("\n"));
+  }
+  function vWaVenue() {
+    var v = (S.venue && S.venue.venue) || {}, slug = S.venueSlug || "";
+    var txt = "🎾 PlayRank di " + (v.name || "") + "\nLihat jadwal & booking: https://trekkr.online/app?venue=" + slug;
+    return "https://wa.me/?text=" + encodeURIComponent(txt);
+  }
   function vSessionCard(s) {
     var full = s.spotsLeft <= 0;
     var cta;
@@ -1291,7 +1314,9 @@
       ((s.joined && s.joined.length) || (s.waiting && s.waiting.length)
         ? '<div class="vp-roster">' + vRosterRow("Joined", s.joined, false) + vRosterRow("Waiting list", s.waiting, true) + '</div>'
         : '') +
-      '<div class="vp-cta">' + cta + '</div></div>';
+      '<div class="vp-cta">' + cta + '</div>' +
+      '<a class="vp-share" href="' + vWaSession(s) + '" target="_blank" rel="noopener">↗ Share to WhatsApp</a>' +
+      '</div>';
   }
   function vWinnerRows(arr) {
     if (!arr || !arr.length) return '<div class="plain" style="text-align:center;color:var(--mu);font-size:13px;padding:16px">No results in this period yet.</div>';
@@ -1327,7 +1352,7 @@
     if (tab === "sched") {
       body = data.sessions && data.sessions.length
         ? data.sessions.map(vSessionCard).join("")
-        : '<div class="plain" style="text-align:center;color:var(--mu);padding:22px">No sessions scheduled for the rest of this week.</div>';
+        : '<div class="plain" style="text-align:center;color:var(--mu);padding:22px">No upcoming sessions scheduled yet.</div>';
     } else {
       var board = (data.winners && data.winners[tab === "week" ? "week" : "month"]) || { men: [], women: [] };
       body = '<div class="vp-gseg"><button class="' + (g === "men" ? "on" : "") + '" data-g="men">♂ Men</button><button class="' + (g === "women" ? "on" : "") + '" data-g="women">♀ Women</button></div>' +
@@ -1337,12 +1362,13 @@
 
     viewEl().innerHTML = '<div class="screen">' +
       '<button class="link" id="vback" style="padding-left:0">‹ PlayRank</button>' +
-      '<div class="vp-head">' + logo + '<div style="min-width:0"><div class="vp-name">' + esc(v.name || "Venue") + (v.featured ? ' <span class="vp-star">★</span>' : "") + '</div>' +
-      (v.location ? '<div class="vp-meta">' + esc(v.location) + (v.region ? " · " + esc(v.region) : "") + '</div>' : "") + '</div></div>' +
+      '<div class="vp-head">' + logo + '<div style="min-width:0;flex:1"><div class="vp-name">' + esc(v.name || "Venue") + (v.featured ? ' <span class="vp-star">★</span>' : "") + '</div>' +
+      (v.location ? '<div class="vp-meta">' + esc(v.location) + (v.region ? " · " + esc(v.region) : "") + '</div>' : "") + '</div>' +
+      '<a class="vp-hshare" href="' + vWaVenue() + '" target="_blank" rel="noopener" title="Share to WhatsApp">↗ Share</a></div>' +
       pay +
       '<div class="vp-sec">PlayRank Schedule</div>' +
       '<div class="vp-seg">' +
-        '<button class="' + (tab === "sched" ? "on" : "") + '" data-t="sched">This week</button>' +
+        '<button class="' + (tab === "sched" ? "on" : "") + '" data-t="sched">Schedule</button>' +
         '<button class="' + (tab === "week" ? "on" : "") + '" data-t="week">Weekly winner</button>' +
         '<button class="' + (tab === "month" ? "on" : "") + '" data-t="month">Monthly winner</button>' +
       '</div>' +

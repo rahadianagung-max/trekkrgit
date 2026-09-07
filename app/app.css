@@ -362,7 +362,9 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .vp-av img{width:100%;height:100%;object-fit:cover}
 .vp-av.sm{width:34px;height:34px;font-size:13px}
 .vp-more{display:inline-flex;align-items:center;border-radius:20px;padding:5px 11px;font-size:12px;font-weight:800;color:var(--mu);background:var(--line-soft);border:1px solid var(--line)}
+.vp-hshare{flex:none;align-self:center;display:inline-flex;align-items:center;gap:4px;background:#25D366;color:#06301c;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:800;text-decoration:none}
 .vp-cta{margin-top:12px}
+.vp-share{display:block;text-align:center;margin-top:8px;color:#128C4B;font-size:12.5px;font-weight:800;text-decoration:none}
 .vp-b{width:100%;border:none;border-radius:11px;font-family:inherit;font-weight:800;font-size:14px;padding:12px;cursor:pointer}
 .vp-b.book{background:var(--or);color:#fff}
 .vp-b.wait{background:var(--or-soft);color:var(--or);border:1px solid var(--or-line)}

@@ -749,7 +749,9 @@ async function getVenuePage(slug, params) {
   if (!v) return respond(404, { error: "Venue not found" });
 
   const R = jakartaRanges();
-  const sres = await getSchedule({ from: R.today, to: R.weekEnd });
+  // Show ALL upcoming sessions for this venue (from today onward), so a full
+  // month of weekly sessions is visible for booking — not just this week.
+  const sres = await getSchedule({ from: R.today });
   const allSched = (JSON.parse(sres.body).schedule) || [];
   const sessions = allSched.filter((s) => slugifyVenue(s.venue) === slug);
 
