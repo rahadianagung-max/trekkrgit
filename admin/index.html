@@ -1404,9 +1404,28 @@ function renderSessions(){
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">'+
       (canStart?'<button class="btn btn-primary btn-sm" onclick="startPlayrankFromSession(\''+_escB(s.id)+'\')">▶ Start PlayRank</button>':'')+
+      '<button class="btn btn-ghost btn-sm" onclick="sessionShare(\''+_escB(s.id)+'\')">↗ Share</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="sessionEdit(\''+_escB(s.id)+'\')">Edit</button>'+
       '<button class="btn btn-danger btn-sm" onclick="sessionDelete(\''+_escB(s.id)+'\')">Delete</button></div></div>';
   }).join('');
+}
+// Build the same short WhatsApp share title used on the app venue page and open wa.me.
+function sessionShare(id){
+  var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
+  var hrs=_durHours((String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0], (String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0]);
+  var start=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  var day=''; try{ day=new Date(String(s.date).slice(0,10)+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}).toLowerCase(); }catch(e){ day=String(s.date||'').slice(0,10); }
+  var head=(s.courts||0)+'C'+hrs+'H'+(s.capacity||0)+'P';
+  var mid=[s.gender,s.level].filter(Boolean).join(' ');
+  var where=(s.courtName||RM.venue||'');
+  var left=[head,mid,where?'@'+where:''].filter(Boolean).join(' ');
+  var right=[day,start?'start jam '+start:''].filter(Boolean).join(' ');
+  var lines=[[left,right].filter(Boolean).join(', ')];
+  if(s.prizePool) lines.push('Prize: '+s.prizePool);
+  if(s.freebies) lines.push('Freebies: '+s.freebies);
+  var slug=String(RM.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+  lines.push('https://trekkr.online/app?venue='+slug);
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank');
 }
 function _sv(id){ return document.getElementById(id).value; }
 // Court address is pasted manually from Google Maps; derive a clickable Maps
