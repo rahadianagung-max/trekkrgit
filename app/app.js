@@ -1287,6 +1287,7 @@
       '<div class="vp-ses-top"><div><div class="vp-day">' + esc(day) + '</div><div class="vp-time">' + esc(time) + '</div></div>' +
       '<div class="vp-spots"><span class="vp-dot' + (full ? " full" : "") + '"></span>' + s.confirmedCount + '/' + (s.capacity || 0) + '<small>' + (full ? "full" : "spots") + '</small></div></div>' +
       '<div class="vp-facts">' + vFacts(s) + '</div>' +
+      ((s.prizePool || s.freebies) ? '<div class="vp-perk">' + (s.prizePool ? '🏆 ' + esc(s.prizePool) : '') + (s.prizePool && s.freebies ? '<br>' : '') + (s.freebies ? '🎁 ' + esc(s.freebies) : '') + '</div>' : '') +
       ((s.joined && s.joined.length) || (s.waiting && s.waiting.length)
         ? '<div class="vp-roster">' + vRosterRow("Joined", s.joined, false) + vRosterRow("Waiting list", s.waiting, true) + '</div>'
         : '') +

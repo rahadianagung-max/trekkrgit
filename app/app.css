@@ -350,6 +350,7 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .vp-fact.lvl{color:var(--or);background:var(--or-soft);border-color:var(--or-line)}
 .vp-fact.men{color:#2563EB;background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.30)}
 .vp-fact.women{color:#DB2777;background:rgba(219,39,119,.12);border-color:rgba(219,39,119,.30)}
+.vp-perk{margin-top:9px;font-size:12px;line-height:1.5;color:var(--or);background:var(--or-soft);border:1px solid var(--or-line);border-radius:9px;padding:8px 10px}
 .vp-roster{margin-top:12px;border-top:1px solid var(--line-soft);padding-top:11px}
 .vp-rlabel{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin:0 0 7px}
 .vp-rlabel.w{color:var(--or);margin-top:10px}
