@@ -1287,7 +1287,10 @@
     var head = (s.courts || 0) + "C" + hrs + "H" + (s.capacity || 0) + "P";
     var mid = [s.gender, s.level].filter(Boolean).join(" ");
     var where = (s.courtName || v.name || "");
-    var title = [head, mid, where ? "@" + where : "", day, start ? "start jam " + start : ""].filter(Boolean).join(" ");
+    // "2C2H12P Men Lower Bronze @Court, 2 feb start jam 18:00"
+    var left = [head, mid, where ? "@" + where : ""].filter(Boolean).join(" ");
+    var right = [day, start ? "start jam " + start : ""].filter(Boolean).join(" ");
+    var title = [left, right].filter(Boolean).join(", ");
     var lines = [title];
     if (s.prizePool) lines.push("Prize: " + s.prizePool);
     if (s.freebies) lines.push("Freebies: " + s.freebies);
