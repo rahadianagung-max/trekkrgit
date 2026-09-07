@@ -5757,43 +5757,72 @@ async function deleteScheduleRow(body) {
 }
 
 // GET /api/places/search?q=<text>&token=<adminToken>
-// Server-side Google Places (New) Text Search so the Maps API key never reaches
-// the browser (same pattern as the imgbb / Anthropic calls). Token-scoped to any
-// signed-in admin because Places is billed per request. Returns
-// [{ name, address, placeId, mapsUrl }]. Degrades to { results:[], configured:false }
-// when no key is set, so the court-name field stays usable (manual link fallback).
+// Court-name lookup for the venue admin. Prefers Google Places (New) when a
+// WORKING key is configured (richer results); otherwise falls back to the free
+// OpenStreetMap / Nominatim geocoder — no key, no billing, no setup. The API key
+// (when used) never reaches the browser (same pattern as imgbb / Anthropic).
+// Token-scoped to any signed-in admin. Returns [{ name, address, placeId, mapsUrl }].
 async function placesSearch(params) {
   const tok = decodeAdminToken(params && params.token);
   if (!tok) return respond(401, { error: "admin token required" });
   const q = String((params && params.q) || "").trim();
   if (q.length < 3) return respond(200, { results: [] });
   const key = String(process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "").trim();
-  if (!key) return respond(200, { results: [], configured: false });
+  if (key) {
+    try {
+      const resp = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
+        },
+        body: JSON.stringify({ textQuery: q, regionCode: "ID", languageCode: "id", maxResultCount: 6 }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && Array.isArray(data.places) && data.places.length) {
+        const results = data.places.map((p) => {
+          const name = (p.displayName && p.displayName.text) || "";
+          const address = p.formattedAddress || "";
+          const placeId = p.id || "";
+          const query = encodeURIComponent((name + " " + address).trim());
+          const mapsUrl = placeId
+            ? `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${encodeURIComponent(placeId)}`
+            : `https://www.google.com/maps/search/?api=1&query=${query}`;
+          return { name, address, placeId, mapsUrl };
+        });
+        return respond(200, { results, configured: true, source: "google" });
+      }
+      // Key present but Google returned nothing or an error (not enabled, no
+      // permission, no billing) → silently fall through to the free provider.
+    } catch (e) { /* fall through to OSM */ }
+  }
+  return await placesSearchOSM(q);
+}
+
+// Free fallback: OpenStreetMap / Nominatim. No API key or billing. Usage policy
+// asks for a descriptive User-Agent and light traffic (the client debounces), so
+// this suits occasional admin lookups. mapsUrl points at Google Maps by lat/lng
+// so the venue page's 📍 link still opens Google Maps for navigation.
+async function placesSearchOSM(q) {
   try {
-    const resp = await fetch("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
-      },
-      body: JSON.stringify({ textQuery: q, regionCode: "ID", languageCode: "id", maxResultCount: 6 }),
+    const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=6&countrycodes=id&q=" + encodeURIComponent(q);
+    const resp = await fetch(url, { headers: { "User-Agent": "TrekkrPadel/1.0 (https://trekkr.online; PlayRank court lookup)", "Accept-Language": "id" } });
+    if (!resp.ok) return respond(200, { results: [], configured: true, source: "osm", error: "osm " + resp.status });
+    const arr = await resp.json().catch(() => []);
+    const results = (Array.isArray(arr) ? arr : []).map((it) => {
+      const nd = it.namedetails || {};
+      const name = nd.name || it.name || String(it.display_name || "").split(",")[0].trim();
+      const address = it.display_name || "";
+      const lat = it.lat, lon = it.lon;
+      const mapsUrl = (lat && lon)
+        ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(lat + "," + lon)
+        : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((name + " " + address).trim());
+      return { name, address, placeId: "", mapsUrl };
     });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) return respond(200, { results: [], configured: true, error: (data.error && data.error.message) || "places error" });
-    const results = (data.places || []).map((p) => {
-      const name = (p.displayName && p.displayName.text) || "";
-      const address = p.formattedAddress || "";
-      const placeId = p.id || "";
-      const query = encodeURIComponent((name + " " + address).trim());
-      const mapsUrl = placeId
-        ? `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${encodeURIComponent(placeId)}`
-        : `https://www.google.com/maps/search/?api=1&query=${query}`;
-      return { name, address, placeId, mapsUrl };
-    });
-    return respond(200, { results, configured: true });
+    return respond(200, { results, configured: true, source: "osm" });
   } catch (e) {
-    return respond(200, { results: [], configured: true, error: e.message || "places failed" });
+    return respond(200, { results: [], configured: true, source: "osm", error: e.message || "osm failed" });
   }
 }
 

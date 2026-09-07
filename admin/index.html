@@ -1427,7 +1427,7 @@ function courtAcInput(){
   if(q!==_sesPlaceName){ document.getElementById('sesMapsUrl').value=''; var ad=document.getElementById('sesCourtAddr'); ad.style.display='none'; ad.textContent=''; }
   if(_courtAcTimer) clearTimeout(_courtAcTimer);
   if(q.length<3){ _courtAcHide(); return; }
-  _courtAcTimer=setTimeout(function(){ _courtAcRun(q); }, 320);
+  _courtAcTimer=setTimeout(function(){ _courtAcRun(q); }, 550);
 }
 async function _courtAcRun(q){
   try{
