@@ -323,6 +323,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       </div>
       <nav class="tab-nav" aria-label="Admin sections">
         <button class="tab-btn is-active" onclick="switchAdminTab('venue-info')" id="atab-venue-info">Venue Info</button>
+        <button class="tab-btn" onclick="switchAdminTab('sessions')" id="atab-sessions">Sessions</button>
         <button class="tab-btn" onclick="switchAdminTab('bookings')" id="atab-bookings">Bookings</button>
         <button class="tab-btn" onclick="switchAdminTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
       </nav>
@@ -373,6 +374,56 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
         </div>
         <button class="btn-trekkr btn-trekkr--primary" onclick="updateVenueInfo()" style="margin-top:8px">Save Changes &rarr;</button>
         <div class="t-status" id="venueStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: SESSIONS (weekly PlayRank schedule editor) ── -->
+  <div class="dash-panel" id="apanel-sessions">
+    <div class="container">
+      <div class="section-card">
+        <div class="section-card-title">
+          <span class="section-card-dot"></span>
+          <span class="section-card-label" id="sesFormTitle">Add a session</span>
+        </div>
+        <p style="color:var(--on-surface-variant,rgba(255,255,255,.6));font-size:13px;margin:8px 0 4px">These are the bookable PlayRank sessions shown on your venue page. Players book, you approve in the Bookings tab.</p>
+        <div class="t-form-grid">
+          <div class="t-field">
+            <label class="t-field-label" for="sesDate">Date</label>
+            <input class="t-field-input" id="sesDate" type="date"/>
+          </div>
+          <div class="t-field" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="t-field-label" for="sesStart">Start</label><input class="t-field-input" id="sesStart" type="time"/></div>
+            <div style="flex:1"><label class="t-field-label" for="sesEnd">End</label><input class="t-field-input" id="sesEnd" type="time"/></div>
+          </div>
+          <div class="t-field" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="t-field-label" for="sesCourts">Courts</label><input class="t-field-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
+            <div style="flex:1"><label class="t-field-label" for="sesCapacity">Capacity</label><input class="t-field-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="sesPrice">Price per player (Rp)</label>
+            <input class="t-field-input" id="sesPrice" type="number" min="0" placeholder="50000"/>
+          </div>
+          <div class="t-field" style="display:flex;gap:10px">
+            <div style="flex:1"><label class="t-field-label" for="sesLevel">Level</label>
+              <select class="t-field-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
+            <div style="flex:1"><label class="t-field-label" for="sesGender">Gender</label>
+              <select class="t-field-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
+          </div>
+          <div class="t-field">
+            <label class="t-field-label" for="sesStatus">Status</label>
+            <select class="t-field-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-trekkr btn-trekkr--primary" onclick="sessionSave()" id="sesSaveBtn">Add session &rarr;</button>
+          <button class="btn-trekkr" onclick="sessionResetForm()" id="sesCancelBtn" style="display:none">Cancel edit</button>
+        </div>
+        <div class="t-status" id="sessionStatus"></div>
+      </div>
+      <div class="section-card" style="margin-top:16px">
+        <div class="section-card-title"><span class="section-card-dot"></span><span class="section-card-label">Your sessions</span></div>
+        <div id="sessionsList" style="margin-top:14px">Loading…</div>
       </div>
     </div>
   </div>
@@ -845,6 +896,7 @@ function switchAdminTab(id) {
     }
   }
   if (id === 'bookings') loadBookings();
+  if (id === 'sessions') loadSessions();
 }
 
 /* ══════════════════════════════════════════════════
@@ -938,6 +990,100 @@ function renderBookings(list){
   });
   box.innerHTML=html;
 }
+/* ══════════════════════════════════════════════════
+   SESSIONS — weekly PlayRank schedule editor (venue-scoped)
+   ══════════════════════════════════════════════════ */
+var _sessions = [];
+function _rpFmt(n){ return 'Rp' + Number(n||0).toLocaleString('id-ID'); }
+async function loadSessions(){
+  const box = document.getElementById('sessionsList');
+  if(!box) return;
+  if(!state.venue){ box.textContent = 'No venue assigned.'; return; }
+  box.textContent = 'Loading…';
+  try{
+    const r = await fetch(`${API_BASE}/schedule/all`);
+    const d = await r.json(); if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    _sessions = (d.schedule||[]).filter(s => String(s.venue||'').trim().toLowerCase() === state.venue.toLowerCase());
+    renderSessions();
+  }catch(e){ box.innerHTML = '<div style="color:#f97316;font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
+}
+function renderSessions(){
+  const box = document.getElementById('sessionsList');
+  if(!_sessions.length){ box.innerHTML = '<div style="color:rgba(255,255,255,.55);font-size:13px;padding:6px 0">No sessions yet — add one above.</div>'; return; }
+  const sorted = _sessions.slice().sort(function(a,c){ const da=(a.date||'')+ (a.startTime||''), dc=(c.date||'')+(c.startTime||''); return da<dc?1:da>dc?-1:0; });
+  box.innerHTML = sorted.map(function(s){
+    const day = _bkDay(s.date);
+    const facts = [ (s.courts?s.courts+' courts':''), (s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''), (s.level||''), (s.gender||''), 'cap '+(s.capacity||0) ].filter(Boolean).join(' · ');
+    const st = String(s.status||'OPEN').toUpperCase();
+    const stColor = st==='OPEN'?'#22c55e':(st==='CANCELLED'?'#f97316':'rgba(255,255,255,.4)');
+    return '<div style="border:1px solid var(--border,rgba(255,255,255,.12));border-radius:14px;padding:13px 14px;margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
+      '<div><div style="font-weight:800;font-size:14px">'+_escB(day)+(s.startTime?' · '+_escB([s.startTime,s.endTime].filter(Boolean).join(' – ')):'')+'</div>'+
+      '<div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:3px">'+_escB(facts)+'</div></div>'+
+      '<span style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+stColor+';flex:none">'+_escB(st)+'</span></div>'+
+      '<div style="display:flex;gap:6px;margin-top:11px">'+
+      '<button onclick="sessionEdit(\''+_escB(s.id)+'\')" style="background:transparent;color:var(--text,#fff);border:1px solid var(--border,rgba(255,255,255,.2));border-radius:9px;font-weight:800;font-size:12px;padding:8px 14px;cursor:pointer">Edit</button>'+
+      '<button onclick="sessionDelete(\''+_escB(s.id)+'\')" style="background:transparent;color:#f97316;border:1px solid var(--border,rgba(255,255,255,.2));border-radius:9px;font-weight:800;font-size:12px;padding:8px 14px;cursor:pointer">Delete</button>'+
+      '</div></div>';
+  }).join('');
+}
+function _sesVal(id){ return document.getElementById(id).value; }
+function sessionResetForm(){
+  ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice'].forEach(function(i){ document.getElementById(i).value=''; });
+  document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Open'; document.getElementById('sesStatus').value='OPEN';
+  document.getElementById('apanel-sessions').dataset.editId = '';
+  document.getElementById('sesFormTitle').textContent = 'Add a session';
+  document.getElementById('sesSaveBtn').innerHTML = 'Add session &rarr;';
+  document.getElementById('sesCancelBtn').style.display = 'none';
+}
+function sessionEdit(id){
+  const s = _sessions.find(function(x){ return String(x.id)===String(id); }); if(!s) return;
+  document.getElementById('sesDate').value = String(s.date||'').slice(0,10);
+  document.getElementById('sesStart').value = (String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  document.getElementById('sesEnd').value = (String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  document.getElementById('sesCourts').value = s.courts||'';
+  document.getElementById('sesCapacity').value = s.capacity||'';
+  document.getElementById('sesPrice').value = s.pricePerPlayer||'';
+  document.getElementById('sesLevel').value = s.level||'';
+  document.getElementById('sesGender').value = s.gender||'Open';
+  document.getElementById('sesStatus').value = String(s.status||'OPEN').toUpperCase();
+  document.getElementById('apanel-sessions').dataset.editId = id;
+  document.getElementById('sesFormTitle').textContent = 'Edit session';
+  document.getElementById('sesSaveBtn').innerHTML = 'Save changes &rarr;';
+  document.getElementById('sesCancelBtn').style.display = '';
+  window.scrollTo(0,0);
+}
+async function sessionSave(){
+  const st = document.getElementById('sessionStatus');
+  if(!state.venue){ showTStatus(st,'error','No venue assigned.'); return; }
+  const date = _sesVal('sesDate');
+  if(!date){ showTStatus(st,'error','Pick a date.'); return; }
+  const body = {
+    id: document.getElementById('apanel-sessions').dataset.editId || '',
+    venue: state.venue, type: 'RANKPLAY', date: date,
+    startTime: _sesVal('sesStart'), endTime: _sesVal('sesEnd'),
+    courts: _sesVal('sesCourts'), capacity: _sesVal('sesCapacity'), pricePerPlayer: _sesVal('sesPrice'),
+    level: _sesVal('sesLevel'), gender: _sesVal('sesGender'), status: _sesVal('sesStatus') || 'OPEN',
+    token: state.token,
+  };
+  document.getElementById('sesSaveBtn').disabled = true;
+  try{
+    const r = await fetch(`${API_BASE}/schedule`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
+    showTStatus(st,'success','Session saved.');
+    sessionResetForm(); loadSessions();
+  }catch(e){ showTStatus(st,'error',e.message||'Failed to save'); }
+  finally{ document.getElementById('sesSaveBtn').disabled = false; }
+}
+async function sessionDelete(id){
+  if(!confirm('Delete this session? Existing bookings for it will be orphaned.')) return;
+  try{
+    const r = await fetch(`${API_BASE}/schedule/delete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id:id, token:state.token }) });
+    const d = await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
+    loadSessions();
+  }catch(e){ alert(e.message||'Failed to delete'); }
+}
+
 async function admDecide(bookingId, action, btn){
   if(btn){ btn.disabled=true; btn.style.opacity='.5'; }
   try{
