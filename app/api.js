@@ -56,6 +56,10 @@
     requestNameChange: function (token, newName) { return request("account/name-request", { method: "POST", body: { token: token, new_name: newName } }); },
     getSchedule: function (params) { return request("schedule" + qs(params)); },
     getVenues: function () { return request("venues"); },
+    // Venue page (in-app): venue info + this-week schedule + rankings + my booking state.
+    getVenuePage: function (slug, token) { return request("venue/page/" + encodeURIComponent(slug) + qs({ token: token || "" })); },
+    bookSession: function (sessionId, token) { return request("venue/book", { method: "POST", body: { sessionId: sessionId, token: token } }); },
+    cancelBooking: function (bookingId, token) { return request("venue/booking/cancel", { method: "POST", body: { bookingId: bookingId, token: token } }); },
     getTrackedEvents: function () { return request("tracked-events"); },
     // Registration / claim (in-app, mirrors the web /join flow).
     checkName: function (name) { return request("players/check-name?name=" + encodeURIComponent(name)); },

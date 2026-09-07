@@ -569,6 +569,7 @@
     var active = S.view;
     if (S.view === "ranked-info") active = (S.prev === "passport") ? "passport" : "profil";
     if (S.view === "player") active = "rankings";
+    if (S.view === "venue") active = "main";
     if (S.view === "edit") active = "profil";
     return '<nav class="tabbar">' + tabs.map(function (t) {
       return '<button class="tab' + (t[0] === active ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ic">' + TAB_ICONS[t[0]] + '</span>' + t[1] + '</button>';
@@ -585,6 +586,7 @@
     if (S.view === "passport") return S.session ? renderPassport() : renderSignIn("your passport");
     if (S.view === "rankings") return renderRankings();
     if (S.view === "main") return renderMain();
+    if (S.view === "venue") return renderVenue();
     if (S.view === "history") return S.session ? renderHistory() : renderSignIn("your match history");
     if (S.view === "profil") return S.session ? renderProfil() : renderSignIn("your profile");
     if (S.view === "ranked-info") return renderRankedInfo();
@@ -1180,13 +1182,14 @@
     var logo = v.logoUrl
       ? '<span class="rp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
       : '<span class="rp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
-    // Left: this venue/community's Trekkr page (weekly ranking); right: booking.
-    var vpage = 'https://venue.trekkr.online/' + String(v.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    // Left: this venue's in-app page (schedule, booking, weekly/monthly winners);
+    // right: the venue's own RECLUB/booking link if set.
+    var vslug = String(v.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
     var btns = '<div class="rp-btns">' +
-      '<a class="btn ghost rp-btn" href="' + esc(vpage) + '" target="_blank" rel="noopener">Venue page</a>' +
+      '<button class="btn rp-btn rp-venue-open" data-venue="' + esc(vslug) + '">Venue page →</button>' +
       (link
-        ? '<a class="btn rp-btn" href="' + esc(link) + '" target="_blank" rel="noopener">Book / info →</a>'
-        : '<span class="rp-nolink rp-btn">Booking soon</span>') +
+        ? '<a class="btn ghost rp-btn" href="' + esc(link) + '" target="_blank" rel="noopener">RECLUB / info</a>'
+        : '') +
       '</div>';
     return '<div class="plain rp-card">' +
       '<div class="rp-head">' + logo +
@@ -1209,6 +1212,9 @@
     box.innerHTML = vs.length
       ? vs.map(rpVenueCard).join("")
       : '<div class="plain"><h3>No venues in this region yet</h3><p>Try another region, or check back soon — new PlayRank venues are added regularly.</p></div>';
+    Array.prototype.forEach.call(box.querySelectorAll(".rp-venue-open"), function (b) {
+      b.onclick = function () { S.venueSlug = b.getAttribute("data-venue"); S.venueTab = "sched"; S.venueGender = "men"; S.view = "venue"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
+    });
   }
   async function renderMain() {
     viewEl().innerHTML = '<div class="screen"><h1 class="page">PlayRank</h1><div class="center" style="min-height:36vh"><div class="spinner"></div></div></div>';
@@ -1237,6 +1243,145 @@
       if (sel) sel.onchange = function () { _rpRegion = sel.value; renderRpList(); };
     } catch (e) {
       viewEl().innerHTML = errorBox("Couldn't load PlayRank venues.", renderMain);
+    }
+  }
+
+  /* ---------- VENUE PAGE (schedule · booking · weekly/monthly winners) ---------- */
+  function vAvatar(p, cls) {
+    var nm = (p.display || p.name || "?");
+    return '<span class="vp-av ' + (cls || "") + '">' + (p.photo
+      ? '<img src="' + esc(p.photo) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc(initials(nm)) + '\'"/>'
+      : esc(initials(nm))) + '</span>';
+  }
+  function vChip(p, waiting) {
+    return '<span class="vp-chip' + (waiting ? " wait" : "") + '">' + vAvatar(p) + esc((p.display || p.name || "").split(" ")[0]) + '</span>';
+  }
+  function vRosterRow(label, arr, waiting) {
+    if (!arr || !arr.length) return "";
+    var show = arr.slice(0, 5), more = arr.length - show.length;
+    return '<div class="vp-rlabel' + (waiting ? " w" : "") + '">' + label + ' <span class="n">· ' + arr.length + '</span></div>' +
+      '<div class="vp-people">' + show.map(function (p) { return vChip(p, waiting); }).join("") +
+      (more > 0 ? '<span class="vp-more">+' + more + '</span>' : "") + '</div>';
+  }
+  function vFacts(s) {
+    var chips = "";
+    // courts + hours → "2c2h"
+    var hrs = "";
+    try { var st = (String(s.startTime).match(/(\d{1,2}):(\d{2})/)), et = (String(s.endTime).match(/(\d{1,2}):(\d{2})/)); if (st && et) { var h = (+et[1] * 60 + +et[2]) - (+st[1] * 60 + +st[2]); if (h > 0) hrs = Math.round(h / 60) + "h"; } } catch (e) {}
+    if (s.courts) chips += '<span class="vp-fact">🎾 ' + s.courts + 'c' + hrs + '</span>';
+    if (s.pricePerPlayer) chips += '<span class="vp-fact">' + rp(s.pricePerPlayer) + '</span>';
+    if (s.level) chips += '<span class="vp-fact lvl">🏅 ' + esc(s.level) + '</span>';
+    if (s.gender) { var g = String(s.gender).toUpperCase(); var cl = (g.charAt(0) === "W" || g.charAt(0) === "F") ? "women" : (g.charAt(0) === "M" ? "men" : ""); chips += '<span class="vp-fact ' + cl + '">' + esc(s.gender) + '</span>'; }
+    return chips;
+  }
+  function vSessionCard(s) {
+    var full = s.spotsLeft <= 0;
+    var cta;
+    if (s.myStatus === "CONFIRMED") cta = '<button class="vp-b ok" disabled>✓ Confirmed — you\'re in</button>';
+    else if (s.myStatus === "WAITING") cta = '<button class="vp-b wait" data-cancel="' + esc(s.myBookingId) + '">Waiting for approval <span class="x">· cancel</span></button>';
+    else if (s.myStatus === "PENDING_VERIFY") cta = '<button class="vp-b wait" data-cancel="' + esc(s.myBookingId) + '">Pending verification <span class="x">· cancel</span></button>';
+    else {
+      var label = full ? "Join waitlist" : "Book";
+      cta = '<button class="vp-b book" data-book="' + esc(s.id) + '">' + label + '</button>';
+    }
+    var day = "";
+    try { day = new Date(String(s.date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (e) { day = String(s.date || "").slice(0, 10); }
+    var time = [s.startTime, s.endTime].filter(Boolean).join(" – ");
+    return '<div class="vp-ses">' +
+      '<div class="vp-ses-top"><div><div class="vp-day">' + esc(day) + '</div><div class="vp-time">' + esc(time) + '</div></div>' +
+      '<div class="vp-spots"><span class="vp-dot' + (full ? " full" : "") + '"></span>' + s.confirmedCount + '/' + (s.capacity || 0) + '<small>' + (full ? "full" : "spots") + '</small></div></div>' +
+      '<div class="vp-facts">' + vFacts(s) + '</div>' +
+      ((s.joined && s.joined.length) || (s.waiting && s.waiting.length)
+        ? '<div class="vp-roster">' + vRosterRow("Joined", s.joined, false) + vRosterRow("Waiting list", s.waiting, true) + '</div>'
+        : '') +
+      '<div class="vp-cta">' + cta + '</div></div>';
+  }
+  function vWinnerRows(arr) {
+    if (!arr || !arr.length) return '<div class="plain" style="text-align:center;color:var(--mu);font-size:13px;padding:16px">No results in this period yet.</div>';
+    return arr.map(function (p, i) {
+      return '<div class="vp-rk"><div class="vp-pos' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</div>' + vAvatar(p, "sm") +
+        '<div class="vp-rk-b"><div class="vp-rk-n">' + esc(p.display || p.name) + '</div><div class="vp-rk-s">' + p.w + 'W · ' + p.l + 'L · ' + (p.gd >= 0 ? "+" : "") + p.gd + ' games</div></div>' +
+        '<div class="vp-rk-p">' + p.w + '<small>wins</small></div></div>';
+    }).join("");
+  }
+  function renderVenueView(data) {
+    var v = data.venue || {}, me = data.me || null;
+    var tab = S.venueTab || "sched", g = S.venueGender || "men";
+    var logo = v.logoUrl
+      ? '<span class="vp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
+      : '<span class="vp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
+
+    var pay = "";
+    if (v.bankAccount || v.bankName || v.adminWa) {
+      var waHref = "";
+      if (v.adminWa) { var digits = String(v.adminWa).replace(/[^0-9]/g, ""); if (digits.charAt(0) === "0") digits = "62" + digits.slice(1); waHref = "https://wa.me/" + digits + "?text=" + encodeURIComponent("Halo admin " + (v.name || "") + ", ini bukti pembayaran untuk sesi PlayRank saya."); }
+      pay = '<div class="vp-pay">' +
+        ((v.bankName || v.bankAccount) ? '<div class="vp-pay-top"><div><div class="vp-pay-l">Transfer to · bank account</div>' +
+          (v.bankName ? '<div class="vp-bank">' + esc(v.bankName) + '</div>' : "") +
+          (v.bankAccount ? '<div class="vp-num">' + esc(v.bankAccount) + '</div>' : "") +
+          (v.bankHolder ? '<div class="vp-holder">a.n. ' + esc(v.bankHolder) + '</div>' : "") +
+          '</div>' + (v.bankAccount ? '<button class="vp-copy" data-copy="' + esc(v.bankAccount) + '">Copy</button>' : "") + '</div>' : "") +
+        (waHref ? '<a class="vp-wa" href="' + esc(waHref) + '" target="_blank" rel="noopener">WhatsApp admin · kirim bukti bayar</a>' : "") +
+        '<div class="vp-pay-note">After booking, transfer the fee and send your payment proof to the venue admin on WhatsApp. The admin confirms your spot once payment is verified.</div>' +
+        '</div>';
+    }
+
+    var body;
+    if (tab === "sched") {
+      body = data.sessions && data.sessions.length
+        ? data.sessions.map(vSessionCard).join("")
+        : '<div class="plain" style="text-align:center;color:var(--mu);padding:22px">No sessions scheduled for the rest of this week.</div>';
+    } else {
+      var board = (data.winners && data.winners[tab === "week" ? "week" : "month"]) || { men: [], women: [] };
+      body = '<div class="vp-gseg"><button class="' + (g === "men" ? "on" : "") + '" data-g="men">♂ Men</button><button class="' + (g === "women" ? "on" : "") + '" data-g="women">♀ Women</button></div>' +
+        vWinnerRows(g === "men" ? board.men : board.women) +
+        '<div class="vp-note">Ranked by wins at this venue' + (tab === "week" ? " this week" : " this month") + ', then game difference.</div>';
+    }
+
+    viewEl().innerHTML = '<div class="screen">' +
+      '<button class="link" id="vback" style="padding-left:0">‹ PlayRank</button>' +
+      '<div class="vp-head">' + logo + '<div style="min-width:0"><div class="vp-name">' + esc(v.name || "Venue") + (v.featured ? ' <span class="vp-star">★</span>' : "") + '</div>' +
+      (v.location ? '<div class="vp-meta">' + esc(v.location) + (v.region ? " · " + esc(v.region) : "") + '</div>' : "") + '</div></div>' +
+      pay +
+      '<div class="vp-sec">PlayRank Schedule</div>' +
+      '<div class="vp-seg">' +
+        '<button class="' + (tab === "sched" ? "on" : "") + '" data-t="sched">This week</button>' +
+        '<button class="' + (tab === "week" ? "on" : "") + '" data-t="week">Weekly winner</button>' +
+        '<button class="' + (tab === "month" ? "on" : "") + '" data-t="month">Monthly winner</button>' +
+      '</div>' +
+      '<div id="vp-body">' + body + '</div>' +
+      '</div>';
+
+    d.getElementById("vback").onclick = function () { S.view = "main"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
+    Array.prototype.forEach.call(d.querySelectorAll(".vp-seg button"), function (b) { b.onclick = function () { S.venueTab = b.getAttribute("data-t"); renderVenueView(data); }; });
+    Array.prototype.forEach.call(d.querySelectorAll(".vp-gseg button"), function (b) { b.onclick = function () { S.venueGender = b.getAttribute("data-g"); renderVenueView(data); }; });
+    Array.prototype.forEach.call(d.querySelectorAll(".vp-copy"), function (b) { b.onclick = function () { try { navigator.clipboard.writeText(b.getAttribute("data-copy")); } catch (e) {} var t = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = t; }, 1400); }; });
+    Array.prototype.forEach.call(d.querySelectorAll("[data-book]"), function (b) { b.onclick = function () { venueBook(b.getAttribute("data-book")); }; });
+    Array.prototype.forEach.call(d.querySelectorAll("[data-cancel]"), function (b) { b.onclick = function () { venueCancel(b.getAttribute("data-cancel")); }; });
+  }
+  async function venueBook(sessionId) {
+    if (!S.session) { toast("Sign in to book a session"); S.view = "login"; render(); return; }
+    try {
+      var r = await API.bookSession(sessionId, S.token);
+      if (r.verifyNeeded) toast("Verify your profile to join — booking held");
+      else if (r.already) toast("You're already on this session");
+      else toast("You're on the waiting list — send payment proof to the admin");
+      renderVenue();
+    } catch (e) { toast(e.message || "Couldn't book"); }
+  }
+  async function venueCancel(bookingId) {
+    try { await API.cancelBooking(bookingId, S.token); toast("Booking cancelled"); renderVenue(); }
+    catch (e) { toast(e.message || "Couldn't cancel"); }
+  }
+  async function renderVenue() {
+    viewEl().innerHTML = '<div class="screen"><button class="link" id="vback0" style="padding-left:0">‹ PlayRank</button><div class="center" style="min-height:40vh"><div class="spinner"></div></div></div>';
+    var back = d.getElementById("vback0"); if (back) back.onclick = function () { S.view = "main"; refreshTabbar(); renderView(); };
+    try {
+      await ensureMe();
+      var data = await API.getVenuePage(S.venueSlug, S.token);
+      renderVenueView(data);
+    } catch (e) {
+      viewEl().innerHTML = errorBox("Couldn't load this venue.", renderVenue);
     }
   }
 
