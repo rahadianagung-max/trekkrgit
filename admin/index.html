@@ -719,38 +719,6 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 
   <div class="dash-panel is-active" id="apanel-ranked-match">
     <div class="container">
-      <!-- Sessions editor (weekly PlayRank schedule) -->
-      <div class="section-card" id="sessionsEditor" data-edit-id="" style="margin-bottom:16px">
-        <div class="sc-title"><span class="sc-dot"></span><span class="sc-label" id="sesFormTitle">Add a PlayRank session</span></div>
-        <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then run the session with the engine below.</p>
-        <div class="form-grid">
-          <div class="f-group"><label class="f-label" for="sesDate">Date</label><input class="f-input" id="sesDate" type="date"/></div>
-          <div class="f-group" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="f-label" for="sesStart">Start</label><input class="f-input" id="sesStart" type="time"/></div>
-            <div style="flex:1"><label class="f-label" for="sesEnd">End</label><input class="f-input" id="sesEnd" type="time"/></div>
-          </div>
-          <div class="f-group" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
-            <div style="flex:1"><label class="f-label" for="sesCapacity">Capacity</label><input class="f-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
-          </div>
-          <div class="f-group"><label class="f-label" for="sesPrice">Price per player (Rp)</label><input class="f-input" id="sesPrice" type="number" min="0" placeholder="50000"/></div>
-          <div class="f-group" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="f-label" for="sesLevel">Level</label>
-              <select class="f-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
-            <div style="flex:1"><label class="f-label" for="sesGender">Gender</label>
-              <select class="f-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
-          </div>
-          <div class="f-group"><label class="f-label" for="sesStatus">Status</label>
-            <select class="f-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select></div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-primary" onclick="sessionSave()" id="sesSaveBtn">Add session →</button>
-          <button class="btn btn-ghost" onclick="sessionResetForm()" id="sesCancelBtn" style="display:none">Cancel edit</button>
-        </div>
-        <div class="t-status" id="sessionStatus"></div>
-        <div class="sc-title" style="margin-top:22px"><span class="sc-dot"></span><span class="sc-label">Your sessions</span></div>
-        <div id="sessionsList" style="margin-top:12px">Loading…</div>
-      </div>
       <div id="rm-root">
 
         <!-- ── SCREEN: INTRO ── -->
@@ -770,7 +738,47 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-bitem"><span class="ck">✓</span><span><b>Everyone plays an equal number of matches</b> — the engine tells you when that's reached.</span></div>
               <div class="rm-bitem"><span class="ck">✓</span><span><b>Ranked by wins.</b> Ties are broken by point difference.</span></div>
             </div>
-            <button class="btn btn-primary" style="padding:14px 36px;font-size:14px" onclick="rmGo('setup')">Start the match →</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-primary" style="padding:14px 30px;font-size:14px" onclick="rmGo('setup')">▶ Start new PlayRank</button>
+              <button class="btn btn-ghost" style="padding:14px 24px;font-size:14px" onclick="toggleSchedForm()">＋ Add PlayRank sched</button>
+            </div>
+
+            <!-- Add / edit a scheduled session (hidden until "Add PlayRank sched") -->
+            <div class="section-card" id="sessionsEditor" data-edit-id="" style="display:none;margin-top:18px;text-align:left">
+              <div class="sc-title"><span class="sc-dot"></span><span class="sc-label" id="sesFormTitle">Add a PlayRank session</span></div>
+              <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then start the session here.</p>
+              <div class="form-grid">
+                <div class="f-group"><label class="f-label" for="sesDate">Date</label><input class="f-input" id="sesDate" type="date"/></div>
+                <div class="f-group" style="display:flex;gap:10px">
+                  <div style="flex:1"><label class="f-label" for="sesStart">Start</label><input class="f-input" id="sesStart" type="time"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesEnd">End</label><input class="f-input" id="sesEnd" type="time"/></div>
+                </div>
+                <div class="f-group" style="display:flex;gap:10px">
+                  <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesCapacity">Capacity</label><input class="f-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
+                </div>
+                <div class="f-group"><label class="f-label" for="sesPrice">Price per player (Rp)</label><input class="f-input" id="sesPrice" type="number" min="0" placeholder="50000"/></div>
+                <div class="f-group" style="display:flex;gap:10px">
+                  <div style="flex:1"><label class="f-label" for="sesLevel">Level</label>
+                    <select class="f-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
+                  <div style="flex:1"><label class="f-label" for="sesGender">Gender</label>
+                    <select class="f-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
+                </div>
+                <div class="f-group"><label class="f-label" for="sesStatus">Status</label>
+                  <select class="f-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-primary" onclick="sessionSave()" id="sesSaveBtn">Add session →</button>
+                <button class="btn btn-ghost" onclick="toggleSchedForm(true)" id="sesCancelBtn">Cancel</button>
+              </div>
+              <div class="t-status" id="sessionStatus"></div>
+            </div>
+
+            <!-- Scheduled PlayRank sessions with live status + start -->
+            <div style="margin-top:24px;text-align:left">
+              <div class="sc-title"><span class="sc-dot"></span><span class="sc-label">Scheduled PlayRank</span></div>
+              <div id="sessionsList" style="margin-top:12px">Loading…</div>
+            </div>
           </div>
         </div>
 
@@ -1328,47 +1336,70 @@ function _escB(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ret
 function _bkDay(d){ try{ return new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }catch(e){ return String(d||'').slice(0,10); } }
 function _rpFmt(n){ return 'Rp'+Number(n||0).toLocaleString('id-ID'); }
 
-/* ---- Sessions editor ---- */
+/* ---- Sessions editor + scheduled list (with live booking status) ---- */
 var _sessions=[];
+function toggleSchedForm(forceHide){
+  var el=document.getElementById('sessionsEditor'); if(!el) return;
+  if(forceHide===true){ el.style.display='none'; sessionResetForm(); return; }
+  var show = el.style.display==='none';
+  el.style.display = show ? 'block' : 'none';
+  if(show){ sessionResetForm(); try{ el.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} }
+}
 async function loadSessions(){
   var box=document.getElementById('sessionsList'); if(!box) return;
   if(!RM.venue){ box.textContent='No venue assigned.'; return; }
   box.textContent='Loading…';
   try{
-    var r=await fetch(API_BASE+'/schedule/all'); var d=await r.json(); if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
-    _sessions=(d.schedule||[]).filter(function(s){return String(s.venue||'').trim().toLowerCase()===RM.venue.toLowerCase();});
+    var res=await Promise.all([
+      fetch(API_BASE+'/schedule/all').then(function(r){return r.json();}),
+      fetch(API_BASE+'/venue/bookings?venue='+encodeURIComponent(RM.venue)+'&token='+encodeURIComponent(RM.token)).then(function(r){return r.json();}).catch(function(){return {bookings:[]};})
+    ]);
+    _sessions=((res[0]&&res[0].schedule)||[]).filter(function(s){return String(s.venue||'').trim().toLowerCase()===RM.venue.toLowerCase();});
+    var byId={}; ((res[1]&&res[1].bookings)||[]).forEach(function(b){ (byId[String(b.sessionId)]=byId[String(b.sessionId)]||[]).push(b); });
+    _sessions.forEach(function(s){
+      var arr=byId[String(s.id)]||[];
+      s._waiting=arr.filter(function(b){return b.status==='WAITING';}).length;
+      s._confirmed=arr.filter(function(b){return b.status==='CONFIRMED';}).length;
+      s._confirmedNames=arr.filter(function(b){return b.status==='CONFIRMED';}).map(function(b){return b.playerName;});
+    });
     renderSessions();
   }catch(e){ box.innerHTML='<div style="color:var(--danger);font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
 }
 function renderSessions(){
   var box=document.getElementById('sessionsList'); if(!box) return;
-  if(!_sessions.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:6px 0">No sessions yet — add one above.</div>'; return; }
+  if(!_sessions.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:6px 0">No sessions scheduled yet — tap “＋ Add PlayRank sched”.</div>'; return; }
   var sorted=_sessions.slice().sort(function(a,c){ var da=(a.date||'')+(a.startTime||''),dc=(c.date||'')+(c.startTime||''); return da<dc?1:da>dc?-1:0; });
   box.innerHTML=sorted.map(function(s){
-    var facts=[(s.courts?s.courts+' courts':''),(s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''),(s.level||''),(s.gender||''),'cap '+(s.capacity||0)].filter(Boolean).join(' · ');
+    var facts=[(s.courts?s.courts+'c':''),(s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''),(s.level||''),(s.gender||''),'cap '+(s.capacity||0)].filter(Boolean).join(' · ');
     var st=String(s.status||'OPEN').toUpperCase();
     var stColor=st==='OPEN'?'var(--green)':(st==='CANCELLED'?'var(--danger)':'var(--txt3)');
+    var canStart=st==='OPEN';
     return '<div style="border:1px solid var(--bdr);border-radius:12px;padding:13px 14px;margin-bottom:10px">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
       '<div><div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(_bkDay(s.date))+(s.startTime?' · '+_escB([s.startTime,s.endTime].filter(Boolean).join(' – ')):'')+'</div>'+
       '<div style="color:var(--txt2);font-size:12px;margin-top:3px">'+_escB(facts)+'</div></div>'+
       '<span style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:'+stColor+';flex:none">'+_escB(st)+'</span></div>'+
-      '<div style="display:flex;gap:6px;margin-top:11px">'+
+      '<div style="display:flex;gap:14px;margin-top:9px;font-size:12.5px">'+
+        '<span style="color:var(--txt2)"><b style="color:var(--green);font-size:14px">'+(s._confirmed||0)+'</b> join</span>'+
+        '<span style="color:var(--txt2)"><b style="color:var(--gold);font-size:14px">'+(s._waiting||0)+'</b> waiting</span>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">'+
+      (canStart?'<button class="btn btn-primary btn-sm" onclick="startPlayrankFromSession(\''+_escB(s.id)+'\')">▶ Start PlayRank</button>':'')+
       '<button class="btn btn-ghost btn-sm" onclick="sessionEdit(\''+_escB(s.id)+'\')">Edit</button>'+
       '<button class="btn btn-danger btn-sm" onclick="sessionDelete(\''+_escB(s.id)+'\')">Delete</button></div></div>';
   }).join('');
 }
 function _sv(id){ return document.getElementById(id).value; }
 function sessionResetForm(){
-  ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice'].forEach(function(i){ document.getElementById(i).value=''; });
+  ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice'].forEach(function(i){ var el=document.getElementById(i); if(el) el.value=''; });
   document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Open'; document.getElementById('sesStatus').value='OPEN';
   document.getElementById('sessionsEditor').dataset.editId='';
   document.getElementById('sesFormTitle').textContent='Add a PlayRank session';
   document.getElementById('sesSaveBtn').textContent='Add session →';
-  document.getElementById('sesCancelBtn').style.display='none';
 }
 function sessionEdit(id){
   var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
+  var el=document.getElementById('sessionsEditor'); el.style.display='block';
   document.getElementById('sesDate').value=String(s.date||'').slice(0,10);
   document.getElementById('sesStart').value=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
   document.getElementById('sesEnd').value=(String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
@@ -1378,11 +1409,10 @@ function sessionEdit(id){
   document.getElementById('sesLevel').value=s.level||'';
   document.getElementById('sesGender').value=s.gender||'Open';
   document.getElementById('sesStatus').value=String(s.status||'OPEN').toUpperCase();
-  document.getElementById('sessionsEditor').dataset.editId=id;
+  el.dataset.editId=id;
   document.getElementById('sesFormTitle').textContent='Edit session';
   document.getElementById('sesSaveBtn').textContent='Save changes →';
-  document.getElementById('sesCancelBtn').style.display='inline-flex';
-  window.scrollTo(0,0);
+  try{ el.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
 }
 async function sessionSave(){
   var st=document.getElementById('sessionStatus');
@@ -1395,7 +1425,7 @@ async function sessionSave(){
   try{
     var r=await fetch(API_BASE+'/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed');
-    tStatus(st,'success','Session saved.'); sessionResetForm(); loadSessions();
+    tStatus(st,'success','Session saved.'); toggleSchedForm(true); loadSessions();
   }catch(e){ tStatus(st,'error',e.message||'Failed to save'); }
   finally{ document.getElementById('sesSaveBtn').disabled=false; }
 }
@@ -1405,6 +1435,20 @@ async function sessionDelete(id){
     var r=await fetch(API_BASE+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:RM.token})});
     var d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed'); loadSessions();
   }catch(e){ alert(e.message||'Failed to delete'); }
+}
+// Launch the engine for a scheduled session: set courts/gender, jump to the
+// player picker, and pre-select everyone confirmed for that session.
+async function startPlayrankFromSession(id){
+  var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
+  var c=parseInt(s.courts,10); if(c>0) RM.courts=c;
+  var g=String(s.gender||'').toUpperCase();
+  RM.gender=(g.charAt(0)==='W'||g.charAt(0)==='F')?'F':(g.charAt(0)==='M'?'M':'MIXED');
+  RM._inited=true;
+  rmGo('players');
+  try{ await rmLoadPlayers(); }catch(e){}
+  (s._confirmedNames||[]).forEach(function(nm){ if(!RM.selectedPlayers.some(function(x){return x.name===nm;})) rmTogglePlayer(nm); });
+  if(typeof rmRenderPlayers==='function') rmRenderPlayers();
+  if(typeof rmRenderChips==='function') rmRenderChips();
 }
 
 /* ---- Bookings (waiting list) ---- */
