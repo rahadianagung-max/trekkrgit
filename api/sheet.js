@@ -580,7 +580,7 @@ async function cached60(key, producer) {
 const SCHEDULE_HEADER = [
   "id", "type", "venue", "area", "date", "startTime", "endTime",
   "courts", "capacity", "booked", "pricePerPlayer", "status", "whatsappUrl", "note",
-  "level", "gender", "prizePool", "freebies", "gameName", "courtName", "mapsUrl",
+  "level", "gender", "prizePool", "freebies", "gameName", "courtName", "mapsUrl", "address",
 ];
 async function ensureScheduleTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -605,7 +605,7 @@ async function getSchedule(params) {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
   const res = await sheets.spreadsheets.values
-    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` })
+    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` })
     .catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const from = params && params.from ? String(params.from).slice(0, 10) : null;
@@ -639,6 +639,7 @@ async function getSchedule(params) {
         gameName: (r[18] || "").trim(),
         courtName: (r[19] || "").trim(),
         mapsUrl: (r[20] || "").trim(),
+        address: (r[21] || "").trim(),
         spotsLeft: Math.max(0, capacity - booked),
       };
     })
@@ -1146,7 +1147,6 @@ const netlifyHandler = async (event) => {
     if (path === "schedule/all" && method === "GET") return await getScheduleAll();
     if (path === "schedule" && method === "POST") return await saveScheduleRow(body);
     if (path === "schedule/delete" && method === "POST") return await deleteScheduleRow(body);
-    if (path === "places/search" && method === "GET") return await placesSearch(params);
 
     // --- VENUE PAGE + SESSION BOOKINGS (waiting list → approval → confirmed) ---
     if (path.startsWith("venue/page/") && method === "GET") return await getVenuePage(decodeURIComponent(path.replace("venue/page/", "")), params);
@@ -5685,7 +5685,7 @@ async function getVenueMonthly(venueName, params) {
 async function getScheduleAll() {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` }).catch(() => ({ data: { values: [] } }));
   const schedule = (res.data.values || []).filter((r) => (r[0] || "").trim()).map((r) => {
     const o = {}; SCHEDULE_HEADER.forEach((h, i) => { o[h] = r[i] || ""; }); return o;
   });
@@ -5699,7 +5699,7 @@ async function saveScheduleRow(body) {
   if (!tok) return respond(401, { error: "Login required" });
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const id = String(b.id || "").trim();
   const existingRi = id ? rows.findIndex((r) => String(r[0] || "").trim() === id) : -1;
@@ -5731,12 +5731,13 @@ async function saveScheduleRow(body) {
     b.gameName != null ? b.gameName : (existing ? (existing[18] || "") : ""),
     b.courtName != null ? b.courtName : (existing ? (existing[19] || "") : ""),
     b.mapsUrl != null ? b.mapsUrl : (existing ? (existing[20] || "") : ""),
+    b.address != null ? b.address : (existing ? (existing[21] || "") : ""),
   ];
   if (existing) {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:U${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:V${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
     return respond(200, { success: true, id });
   }
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:U`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:V`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
   return respond(200, { success: true, id: rowVals[0] });
 }
 async function deleteScheduleRow(body) {
@@ -5754,76 +5755,6 @@ async function deleteScheduleRow(body) {
   const removed = await deleteRowsByKey(sheets, TABS.schedule, 0, new Set([id.toLowerCase()]));
   if (!removed) return respond(404, { error: "Schedule row not found" });
   return respond(200, { success: true, removed });
-}
-
-// GET /api/places/search?q=<text>&token=<adminToken>
-// Court-name lookup for the venue admin. Prefers Google Places (New) when a
-// WORKING key is configured (richer results); otherwise falls back to the free
-// OpenStreetMap / Nominatim geocoder — no key, no billing, no setup. The API key
-// (when used) never reaches the browser (same pattern as imgbb / Anthropic).
-// Token-scoped to any signed-in admin. Returns [{ name, address, placeId, mapsUrl }].
-async function placesSearch(params) {
-  const tok = decodeAdminToken(params && params.token);
-  if (!tok) return respond(401, { error: "admin token required" });
-  const q = String((params && params.q) || "").trim();
-  if (q.length < 3) return respond(200, { results: [] });
-  const key = String(process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "").trim();
-  if (key) {
-    try {
-      const resp = await fetch("https://places.googleapis.com/v1/places:searchText", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": key,
-          "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
-        },
-        body: JSON.stringify({ textQuery: q, regionCode: "ID", languageCode: "id", maxResultCount: 6 }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (resp.ok && Array.isArray(data.places) && data.places.length) {
-        const results = data.places.map((p) => {
-          const name = (p.displayName && p.displayName.text) || "";
-          const address = p.formattedAddress || "";
-          const placeId = p.id || "";
-          const query = encodeURIComponent((name + " " + address).trim());
-          const mapsUrl = placeId
-            ? `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${encodeURIComponent(placeId)}`
-            : `https://www.google.com/maps/search/?api=1&query=${query}`;
-          return { name, address, placeId, mapsUrl };
-        });
-        return respond(200, { results, configured: true, source: "google" });
-      }
-      // Key present but Google returned nothing or an error (not enabled, no
-      // permission, no billing) → silently fall through to the free provider.
-    } catch (e) { /* fall through to OSM */ }
-  }
-  return await placesSearchOSM(q);
-}
-
-// Free fallback: OpenStreetMap / Nominatim. No API key or billing. Usage policy
-// asks for a descriptive User-Agent and light traffic (the client debounces), so
-// this suits occasional admin lookups. mapsUrl points at Google Maps by lat/lng
-// so the venue page's 📍 link still opens Google Maps for navigation.
-async function placesSearchOSM(q) {
-  try {
-    const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=6&countrycodes=id&q=" + encodeURIComponent(q);
-    const resp = await fetch(url, { headers: { "User-Agent": "TrekkrPadel/1.0 (https://trekkr.online; PlayRank court lookup)", "Accept-Language": "id" } });
-    if (!resp.ok) return respond(200, { results: [], configured: true, source: "osm", error: "osm " + resp.status });
-    const arr = await resp.json().catch(() => []);
-    const results = (Array.isArray(arr) ? arr : []).map((it) => {
-      const nd = it.namedetails || {};
-      const name = nd.name || it.name || String(it.display_name || "").split(",")[0].trim();
-      const address = it.display_name || "";
-      const lat = it.lat, lon = it.lon;
-      const mapsUrl = (lat && lon)
-        ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(lat + "," + lon)
-        : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((name + " " + address).trim());
-      return { name, address, placeId: "", mapsUrl };
-    });
-    return respond(200, { results, configured: true, source: "osm" });
-  } catch (e) {
-    return respond(200, { results: [], configured: true, source: "osm", error: e.message || "osm failed" });
-  }
 }
 
 // ── Venue display flags (featured / order / hidden) for the /venues directory ──

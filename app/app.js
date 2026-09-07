@@ -1316,7 +1316,7 @@
       (s.gameName ? '<div class="vp-gname">' + esc(s.gameName) + '</div>' : '') +
       '<div class="vp-ses-top"><div><div class="vp-day">' + esc(day) + '</div><div class="vp-time">' + esc(time) + '</div></div>' +
       '<div class="vp-spots"><span class="vp-dot' + (full ? " full" : "") + '"></span>' + s.confirmedCount + '/' + (s.capacity || 0) + '<small>' + (full ? "full" : "spots") + '</small></div></div>' +
-      (s.courtName ? '<div class="vp-court">📍 ' + (s.mapsUrl ? '<a href="' + esc(s.mapsUrl) + '" target="_blank" rel="noopener">' + esc(s.courtName) + '</a>' : esc(s.courtName)) + '</div>' : '') +
+      ((s.courtName || s.address) ? '<div class="vp-court">📍 ' + (s.mapsUrl ? '<a href="' + esc(s.mapsUrl) + '" target="_blank" rel="noopener">' + esc(s.courtName || s.address) + '</a>' : esc(s.courtName || s.address)) + (s.courtName && s.address ? '<span class="vp-addr">' + esc(s.address) + '</span>' : '') + '</div>' : '') +
       '<div class="vp-facts">' + vFacts(s) + '</div>' +
       ((s.prizePool || s.freebies) ? '<div class="vp-perk">' + (s.prizePool ? '🏆 ' + esc(s.prizePool) : '') + (s.prizePool && s.freebies ? '<br>' : '') + (s.freebies ? '🎁 ' + esc(s.freebies) : '') + '</div>' : '') +
       ((s.joined && s.joined.length) || (s.waiting && s.waiting.length)
