@@ -495,10 +495,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
           <div class="htu-step-title">Venue Info</div>
           <p>Lengkapi informasi venue atau komunitas:</p>
           <ul class="htu-kv">
-            <li><b>Playing Schedule</b> — jadwal Ranked Match reguler.</li>
-            <li><b>Prize Pool</b> — hadiah mingguan (jika ada).</li>
-            <li><b>RECLUB Link</b> — link booking/komunitas RECLUB venue (dipakai di daftar PlayRank aplikasi).</li>
-            <li><b>Location</b> — area komunitas (contoh: Kemang, Jakarta Selatan).</li>
+            <li><b>Location</b> — area/kota venue (contoh: Kemang, Jakarta Selatan). Tampil di daftar PlayRank aplikasi.</li>
+            <li><b>Region</b> — wilayah standar Indonesia (dipakai untuk filter region di aplikasi).</li>
           </ul>
         </div>
       </div>
@@ -646,20 +644,25 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
         </div>
         <div class="form-grid">
           <div class="f-group">
-            <label class="f-label" for="venueSchedule">Playing Schedule</label>
-            <textarea class="f-input" id="venueSchedule" placeholder="e.g. Every Monday 8am–10am" style="min-height:72px;resize:vertical"></textarea>
-          </div>
-          <div class="f-group">
-            <label class="f-label" for="venuePrize">Prize Pool</label>
-            <input class="f-input" id="venuePrize" placeholder="e.g. IDR 2,500,000"/>
-          </div>
-          <div class="f-group">
-            <label class="f-label" for="venueContact">RECLUB Link</label>
-            <input class="f-input" id="venueContact" placeholder="https://reclub.co/… (booking / community link)"/>
-          </div>
-          <div class="f-group">
             <label class="f-label" for="venueLocation">Location</label>
             <input class="f-input" id="venueLocation" placeholder="e.g. Kemang, Jakarta Selatan"/>
+          </div>
+          <div class="f-group">
+            <label class="f-label" for="venueRegion">Region</label>
+            <select class="f-input" id="venueRegion">
+              <option value="Jabodetabek">Jabodetabek</option>
+              <option value="Banten">Banten</option>
+              <option value="Jawa Barat">Jawa Barat</option>
+              <option value="Jawa Tengah">Jawa Tengah</option>
+              <option value="DI Yogyakarta">DI Yogyakarta</option>
+              <option value="Jawa Timur">Jawa Timur</option>
+              <option value="Bali">Bali</option>
+              <option value="Sumatera">Sumatera</option>
+              <option value="Kalimantan">Kalimantan</option>
+              <option value="Sulawesi">Sulawesi</option>
+              <option value="Nusa Tenggara">Nusa Tenggara</option>
+              <option value="Maluku &amp; Papua">Maluku &amp; Papua</option>
+            </select>
           </div>
           <div class="f-group">
             <label class="f-label" for="venueAdminWa">Admin WhatsApp (payment proof)</label>
@@ -1594,10 +1597,10 @@ async function loadVenueInfo() {
     const d = await TrekkrAPI.getVenues();
     const v = (d.venues || []).find(x => x.name.toLowerCase() === RM.venue.toLowerCase());
     if (v) {
-      document.getElementById('venueSchedule').value = v.schedule || '';
-      document.getElementById('venuePrize').value    = v.prizePool || '';
-      document.getElementById('venueContact').value  = v.contact || '';
       document.getElementById('venueLocation').value = v.location || '';
+      var _reg = document.getElementById('venueRegion');
+      _reg.value = v.region || 'Jabodetabek';
+      if (!_reg.value) _reg.value = 'Jabodetabek'; // region not in the standard list → fall back to default
       document.getElementById('venueAdminWa').value = v.adminWa || '';
       document.getElementById('venueBankName').value = v.bankName || '';
       document.getElementById('venueBankAccount').value = v.bankAccount || '';
@@ -1615,10 +1618,8 @@ async function saveVenueInfo() {
   const st = document.getElementById('venueStatus');
   if (!RM.venue) { tStatus(st,'error','No venue assigned.'); return; }
   const updates = {
-    schedule: document.getElementById('venueSchedule').value,
-    prizePool: document.getElementById('venuePrize').value,
-    contact:   document.getElementById('venueContact').value,
     location:  document.getElementById('venueLocation').value,
+    region:    document.getElementById('venueRegion').value,
     adminWa:     document.getElementById('venueAdminWa').value,
     bankName:    document.getElementById('venueBankName').value,
     bankAccount: document.getElementById('venueBankAccount').value,

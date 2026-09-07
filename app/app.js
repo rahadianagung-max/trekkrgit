@@ -1183,9 +1183,7 @@
   }
   function rpRegionOf(v) { return (v.region || "").trim() || "Other"; }
   function rpVenueCard(v) {
-    var link = rpVenueLink(v);
     var loc = (v.location || "").trim();
-    var sched = (v.schedule || "").trim();
     var logo = v.logoUrl
       ? '<span class="rp-logo"><img src="' + esc(v.logoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '\'"/></span>'
       : '<span class="rp-logo">' + esc((v.name || "?").slice(0, 1).toUpperCase()) + '</span>';
@@ -1197,8 +1195,7 @@
     return '<div class="plain rp-card">' +
       '<div class="rp-head">' + logo +
         '<div class="rp-hb"><h3>' + esc(v.name || "Venue") + (v.featured ? ' <span class="rp-star">★</span>' : "") + '</h3>' +
-        (loc ? '<div class="rp-loc">' + esc(loc) + '</div>' : "") + '</div></div>' +
-      '<div class="rp-sched"><span class="rp-ico">🗓️</span><span>' + esc(sched || "Schedule coming soon") + '</span></div>' +
+        (loc ? '<div class="rp-loc">📍 ' + esc(loc) + '</div>' : "") + '</div></div>' +
       btns + '</div>';
   }
   function renderRpList() {
