@@ -323,9 +323,8 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
       </div>
       <nav class="tab-nav" aria-label="Admin sections">
         <button class="tab-btn is-active" onclick="switchAdminTab('venue-info')" id="atab-venue-info">Venue Info</button>
-        <button class="tab-btn" onclick="switchAdminTab('sessions')" id="atab-sessions">Sessions</button>
         <button class="tab-btn" onclick="switchAdminTab('bookings')" id="atab-bookings">Bookings</button>
-        <button class="tab-btn" onclick="switchAdminTab('ranked-match')" id="atab-ranked-match">Ranked Match</button>
+        <button class="tab-btn" onclick="switchAdminTab('ranked-match')" id="atab-ranked-match">PlayRank</button>
       </nav>
     </div>
   </div>
@@ -378,56 +377,6 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     </div>
   </div>
 
-  <!-- ── TAB: SESSIONS (weekly PlayRank schedule editor) ── -->
-  <div class="dash-panel" id="apanel-sessions">
-    <div class="container">
-      <div class="section-card">
-        <div class="section-card-title">
-          <span class="section-card-dot"></span>
-          <span class="section-card-label" id="sesFormTitle">Add a session</span>
-        </div>
-        <p style="color:var(--on-surface-variant,rgba(255,255,255,.6));font-size:13px;margin:8px 0 4px">These are the bookable PlayRank sessions shown on your venue page. Players book, you approve in the Bookings tab.</p>
-        <div class="t-form-grid">
-          <div class="t-field">
-            <label class="t-field-label" for="sesDate">Date</label>
-            <input class="t-field-input" id="sesDate" type="date"/>
-          </div>
-          <div class="t-field" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="t-field-label" for="sesStart">Start</label><input class="t-field-input" id="sesStart" type="time"/></div>
-            <div style="flex:1"><label class="t-field-label" for="sesEnd">End</label><input class="t-field-input" id="sesEnd" type="time"/></div>
-          </div>
-          <div class="t-field" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="t-field-label" for="sesCourts">Courts</label><input class="t-field-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
-            <div style="flex:1"><label class="t-field-label" for="sesCapacity">Capacity</label><input class="t-field-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
-          </div>
-          <div class="t-field">
-            <label class="t-field-label" for="sesPrice">Price per player (Rp)</label>
-            <input class="t-field-input" id="sesPrice" type="number" min="0" placeholder="50000"/>
-          </div>
-          <div class="t-field" style="display:flex;gap:10px">
-            <div style="flex:1"><label class="t-field-label" for="sesLevel">Level</label>
-              <select class="t-field-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
-            <div style="flex:1"><label class="t-field-label" for="sesGender">Gender</label>
-              <select class="t-field-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
-          </div>
-          <div class="t-field">
-            <label class="t-field-label" for="sesStatus">Status</label>
-            <select class="t-field-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn-trekkr btn-trekkr--primary" onclick="sessionSave()" id="sesSaveBtn">Add session &rarr;</button>
-          <button class="btn-trekkr" onclick="sessionResetForm()" id="sesCancelBtn" style="display:none">Cancel edit</button>
-        </div>
-        <div class="t-status" id="sessionStatus"></div>
-      </div>
-      <div class="section-card" style="margin-top:16px">
-        <div class="section-card-title"><span class="section-card-dot"></span><span class="section-card-label">Your sessions</span></div>
-        <div id="sessionsList" style="margin-top:14px">Loading…</div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── TAB: BOOKINGS (session waiting list → approve/reject) ── -->
   <div class="dash-panel" id="apanel-bookings">
     <div class="container">
@@ -442,9 +391,57 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     </div>
   </div>
 
-  <!-- ── TAB: RANKED MATCH ── -->
+  <!-- ── TAB: PLAYRANK (sessions editor + ranked-match engine) ── -->
   <div class="dash-panel" id="apanel-ranked-match">
     <div class="container">
+      <!-- Sessions editor (weekly PlayRank schedule) -->
+      <div id="sessionsEditor" data-edit-id="" style="margin-bottom:18px">
+        <div class="section-card">
+          <div class="section-card-title">
+            <span class="section-card-dot"></span>
+            <span class="section-card-label" id="sesFormTitle">Add a PlayRank session</span>
+          </div>
+          <p style="color:var(--on-surface-variant,rgba(255,255,255,.6));font-size:13px;margin:8px 0 4px">Bookable PlayRank sessions shown on your venue page. Players book, you approve in the Bookings tab, then run the session with the engine below.</p>
+          <div class="t-form-grid">
+            <div class="t-field">
+              <label class="t-field-label" for="sesDate">Date</label>
+              <input class="t-field-input" id="sesDate" type="date"/>
+            </div>
+            <div class="t-field" style="display:flex;gap:10px">
+              <div style="flex:1"><label class="t-field-label" for="sesStart">Start</label><input class="t-field-input" id="sesStart" type="time"/></div>
+              <div style="flex:1"><label class="t-field-label" for="sesEnd">End</label><input class="t-field-input" id="sesEnd" type="time"/></div>
+            </div>
+            <div class="t-field" style="display:flex;gap:10px">
+              <div style="flex:1"><label class="t-field-label" for="sesCourts">Courts</label><input class="t-field-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
+              <div style="flex:1"><label class="t-field-label" for="sesCapacity">Capacity</label><input class="t-field-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
+            </div>
+            <div class="t-field">
+              <label class="t-field-label" for="sesPrice">Price per player (Rp)</label>
+              <input class="t-field-input" id="sesPrice" type="number" min="0" placeholder="50000"/>
+            </div>
+            <div class="t-field" style="display:flex;gap:10px">
+              <div style="flex:1"><label class="t-field-label" for="sesLevel">Level</label>
+                <select class="t-field-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
+              <div style="flex:1"><label class="t-field-label" for="sesGender">Gender</label>
+                <select class="t-field-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
+            </div>
+            <div class="t-field">
+              <label class="t-field-label" for="sesStatus">Status</label>
+              <select class="t-field-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn-trekkr btn-trekkr--primary" onclick="sessionSave()" id="sesSaveBtn">Add session &rarr;</button>
+            <button class="btn-trekkr" onclick="sessionResetForm()" id="sesCancelBtn" style="display:none">Cancel edit</button>
+          </div>
+          <div class="t-status" id="sessionStatus"></div>
+        </div>
+        <div class="section-card" style="margin-top:16px">
+          <div class="section-card-title"><span class="section-card-dot"></span><span class="section-card-label">Your sessions</span></div>
+          <div id="sessionsList" style="margin-top:14px">Loading…</div>
+        </div>
+      </div>
+      <!-- Ranked-match engine -->
       <div id="ranked-match-container">
 <div id="ranked-match-container">
 
@@ -890,13 +887,13 @@ function switchAdminTab(id) {
   document.getElementById('apanel-' + id).classList.add('is-active');
   if (id === 'ranked-match') {
     if (!state.token) return;
+    loadSessions();
     if (!_rankedMatchInited) {
       _rankedMatchInited = true;
       initRankedMatch();
     }
   }
   if (id === 'bookings') loadBookings();
-  if (id === 'sessions') loadSessions();
 }
 
 /* ══════════════════════════════════════════════════
@@ -1031,7 +1028,7 @@ function _sesVal(id){ return document.getElementById(id).value; }
 function sessionResetForm(){
   ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice'].forEach(function(i){ document.getElementById(i).value=''; });
   document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Open'; document.getElementById('sesStatus').value='OPEN';
-  document.getElementById('apanel-sessions').dataset.editId = '';
+  document.getElementById('sessionsEditor').dataset.editId = '';
   document.getElementById('sesFormTitle').textContent = 'Add a session';
   document.getElementById('sesSaveBtn').innerHTML = 'Add session &rarr;';
   document.getElementById('sesCancelBtn').style.display = 'none';
@@ -1047,7 +1044,7 @@ function sessionEdit(id){
   document.getElementById('sesLevel').value = s.level||'';
   document.getElementById('sesGender').value = s.gender||'Open';
   document.getElementById('sesStatus').value = String(s.status||'OPEN').toUpperCase();
-  document.getElementById('apanel-sessions').dataset.editId = id;
+  document.getElementById('sessionsEditor').dataset.editId = id;
   document.getElementById('sesFormTitle').textContent = 'Edit session';
   document.getElementById('sesSaveBtn').innerHTML = 'Save changes &rarr;';
   document.getElementById('sesCancelBtn').style.display = '';
@@ -1059,7 +1056,7 @@ async function sessionSave(){
   const date = _sesVal('sesDate');
   if(!date){ showTStatus(st,'error','Pick a date.'); return; }
   const body = {
-    id: document.getElementById('apanel-sessions').dataset.editId || '',
+    id: document.getElementById('sessionsEditor').dataset.editId || '',
     venue: state.venue, type: 'RANKPLAY', date: date,
     startTime: _sesVal('sesStart'), endTime: _sesVal('sesEnd'),
     courts: _sesVal('sesCourts'), capacity: _sesVal('sesCapacity'), pricePerPlayer: _sesVal('sesPrice'),
