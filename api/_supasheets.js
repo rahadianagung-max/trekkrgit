@@ -48,7 +48,7 @@ const SHEET_MAP = {
   Edit_Requests:      { table: "edit_requests",       cols: ["request_id","player_name","display_name","ig","photo_url","status","created_at","resolved_at","email","gender","type","region"] },
   Venue_Leads:        { table: "venue_leads",         cols: ["lead_id","timestamp","pic_name","venue_community","region","whatsapp","email","status"] },
   Player_Auth:        { table: "player_auth",         cols: ["email","player_name","password_hash","salt","status","token","token_exp","token_type","is_claim","created_at","last_login"] },
-  Schedule:           { table: "schedule",            cols: ["sched_id","type","venue","area","date","start_time","end_time","courts","capacity","booked","price_per_player","status","whatsapp_url","note","level","gender","prize_pool","freebies"] },
+  Schedule:           { table: "schedule",            cols: ["sched_id","type","venue","area","date","start_time","end_time","courts","capacity","booked","price_per_player","status","whatsapp_url","note","level","gender","prize_pool","freebies","game_name","court_name","maps_url"] },
   Session_Bookings:   { table: "session_bookings",    cols: ["booking_id","session_id","venue","player_name","player_display","player_email","gender","status","created_at","decided_at","decided_by"] },
   RE_Events:          { table: "re_events",           cols: ["event_id","name","venue","date","start_time","status","phase","courts","match_minutes","p1_waves","p2_waves","current_wave","created_at","category"] },
   RE_Players:         { table: "re_players",          cols: ["event_id","player_id","name","canonical","start_elo","tier","claimed_at","status","level","gender"] },

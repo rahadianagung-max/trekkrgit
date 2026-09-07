@@ -580,7 +580,7 @@ async function cached60(key, producer) {
 const SCHEDULE_HEADER = [
   "id", "type", "venue", "area", "date", "startTime", "endTime",
   "courts", "capacity", "booked", "pricePerPlayer", "status", "whatsappUrl", "note",
-  "level", "gender", "prizePool", "freebies",
+  "level", "gender", "prizePool", "freebies", "gameName", "courtName", "mapsUrl",
 ];
 async function ensureScheduleTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -605,7 +605,7 @@ async function getSchedule(params) {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
   const res = await sheets.spreadsheets.values
-    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:R` })
+    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` })
     .catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const from = params && params.from ? String(params.from).slice(0, 10) : null;
@@ -636,6 +636,9 @@ async function getSchedule(params) {
         gender: (r[15] || "").trim(),
         prizePool: (r[16] || "").trim(),
         freebies: (r[17] || "").trim(),
+        gameName: (r[18] || "").trim(),
+        courtName: (r[19] || "").trim(),
+        mapsUrl: (r[20] || "").trim(),
         spotsLeft: Math.max(0, capacity - booked),
       };
     })
@@ -5681,7 +5684,7 @@ async function getVenueMonthly(venueName, params) {
 async function getScheduleAll() {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:R` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` }).catch(() => ({ data: { values: [] } }));
   const schedule = (res.data.values || []).filter((r) => (r[0] || "").trim()).map((r) => {
     const o = {}; SCHEDULE_HEADER.forEach((h, i) => { o[h] = r[i] || ""; }); return o;
   });
@@ -5695,7 +5698,7 @@ async function saveScheduleRow(body) {
   if (!tok) return respond(401, { error: "Login required" });
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:R` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const id = String(b.id || "").trim();
   const existingRi = id ? rows.findIndex((r) => String(r[0] || "").trim() === id) : -1;
@@ -5724,12 +5727,15 @@ async function saveScheduleRow(body) {
     level, gender,
     b.prizePool != null ? b.prizePool : (existing ? (existing[16] || "") : ""),
     b.freebies != null ? b.freebies : (existing ? (existing[17] || "") : ""),
+    b.gameName != null ? b.gameName : (existing ? (existing[18] || "") : ""),
+    b.courtName != null ? b.courtName : (existing ? (existing[19] || "") : ""),
+    b.mapsUrl != null ? b.mapsUrl : (existing ? (existing[20] || "") : ""),
   ];
   if (existing) {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:R${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:U${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
     return respond(200, { success: true, id });
   }
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:R`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:U`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
   return respond(200, { success: true, id: rowVals[0] });
 }
 async function deleteScheduleRow(body) {
@@ -5740,7 +5746,7 @@ async function deleteScheduleRow(body) {
   if (!id) return respond(400, { error: "id required" });
   // Verify the row belongs to a venue this admin controls before deleting.
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:R` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:U` }).catch(() => ({ data: { values: [] } }));
   const row = (res.data.values || []).find((r) => String(r[0] || "").trim() === id);
   if (!row) return respond(404, { error: "Schedule row not found" });
   if (!adminCanVenue(tok, row[2] || "")) return respond(403, { error: "Not authorized for this venue" });

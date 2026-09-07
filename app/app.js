@@ -1279,13 +1279,19 @@
   }
   function vWaSession(s) {
     var v = (S.venue && S.venue.venue) || {}, slug = S.venueSlug || "";
-    var day = ""; try { day = new Date(String(s.date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }); } catch (e) { day = String(s.date || "").slice(0, 10); }
-    var time = [s.startTime, s.endTime].filter(Boolean).join("–");
-    var lines = ["🎾 PlayRank · " + (v.name || ""), day + (time ? " · " + time : ""), [s.level, s.gender].filter(Boolean).join(" · ")];
-    if (s.pricePerPlayer) lines.push(rp(s.pricePerPlayer) + "/player");
-    if (s.prizePool) lines.push("🏆 " + s.prizePool);
-    if (s.freebies) lines.push("🎁 " + s.freebies);
-    lines.push("Join & jadwal: https://trekkr.online/app?venue=" + slug);
+    // Short title: 2C2H12P Men Lower Bronze @Court 2 feb start jam 18:00
+    var hrs = 2;
+    try { var st = String(s.startTime).match(/(\d{1,2}):(\d{2})/), et = String(s.endTime).match(/(\d{1,2}):(\d{2})/); if (st && et) { var m = (+et[1] * 60 + +et[2]) - (+st[1] * 60 + +st[2]); if (m > 0) hrs = Math.round(m / 60); } } catch (e) {}
+    var start = ""; try { start = (String(s.startTime).match(/\d{1,2}:\d{2}/) || [""])[0]; } catch (e) {}
+    var day = ""; try { day = new Date(String(s.date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }).toLowerCase(); } catch (e) { day = String(s.date || "").slice(0, 10); }
+    var head = (s.courts || 0) + "C" + hrs + "H" + (s.capacity || 0) + "P";
+    var mid = [s.gender, s.level].filter(Boolean).join(" ");
+    var where = (s.courtName || v.name || "");
+    var title = [head, mid, where ? "@" + where : "", day, start ? "start jam " + start : ""].filter(Boolean).join(" ");
+    var lines = [title];
+    if (s.prizePool) lines.push("Prize: " + s.prizePool);
+    if (s.freebies) lines.push("Freebies: " + s.freebies);
+    lines.push("https://trekkr.online/app?venue=" + slug);
     return "https://wa.me/?text=" + encodeURIComponent(lines.filter(Boolean).join("\n"));
   }
   function vWaVenue() {
@@ -1307,8 +1313,10 @@
     try { day = new Date(String(s.date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (e) { day = String(s.date || "").slice(0, 10); }
     var time = [s.startTime, s.endTime].filter(Boolean).join(" – ");
     return '<div class="vp-ses">' +
+      (s.gameName ? '<div class="vp-gname">' + esc(s.gameName) + '</div>' : '') +
       '<div class="vp-ses-top"><div><div class="vp-day">' + esc(day) + '</div><div class="vp-time">' + esc(time) + '</div></div>' +
       '<div class="vp-spots"><span class="vp-dot' + (full ? " full" : "") + '"></span>' + s.confirmedCount + '/' + (s.capacity || 0) + '<small>' + (full ? "full" : "spots") + '</small></div></div>' +
+      (s.courtName ? '<div class="vp-court">📍 ' + (s.mapsUrl ? '<a href="' + esc(s.mapsUrl) + '" target="_blank" rel="noopener">' + esc(s.courtName) + '</a>' : esc(s.courtName)) + '</div>' : '') +
       '<div class="vp-facts">' + vFacts(s) + '</div>' +
       ((s.prizePool || s.freebies) ? '<div class="vp-perk">' + (s.prizePool ? '🏆 ' + esc(s.prizePool) : '') + (s.prizePool && s.freebies ? '<br>' : '') + (s.freebies ? '🎁 ' + esc(s.freebies) : '') + '</div>' : '') +
       ((s.joined && s.joined.length) || (s.waiting && s.waiting.length)

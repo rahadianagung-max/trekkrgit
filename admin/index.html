@@ -748,10 +748,14 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="sc-title"><span class="sc-dot"></span><span class="sc-label" id="sesFormTitle">Add a PlayRank session</span></div>
               <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then start the session here.</p>
               <div class="form-grid">
+                <div class="f-group"><label class="f-label" for="sesGame">Game name</label><input class="f-input" id="sesGame" placeholder="e.g. Friday Night PlayRank"/></div>
+                <div class="f-group"><label class="f-label" for="sesCourtName">Court name</label><input class="f-input" id="sesCourtName" placeholder="e.g. Pancasona Court 3"/></div>
+                <div class="f-group"><label class="f-label" for="sesMapsUrl">Google Maps link <span style="color:var(--txt3);font-weight:400">(address)</span></label><input class="f-input" id="sesMapsUrl" placeholder="Paste the court's Google Maps link"/></div>
                 <div class="f-group"><label class="f-label" for="sesDate">Date</label><input class="f-input" id="sesDate" type="date"/></div>
                 <div class="f-group" style="display:flex;gap:10px">
-                  <div style="flex:1"><label class="f-label" for="sesStart">Start</label><input class="f-input" id="sesStart" type="time"/></div>
-                  <div style="flex:1"><label class="f-label" for="sesEnd">End</label><input class="f-input" id="sesEnd" type="time"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesStart">Start time</label><input class="f-input" id="sesStart" type="time"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesDuration">Duration</label>
+                    <select class="f-input" id="sesDuration"><option value="1">1 hour</option><option value="2" selected>2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option></select></div>
                 </div>
                 <div class="f-group" style="display:flex;gap:10px">
                   <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
@@ -766,7 +770,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                   <div style="flex:1"><label class="f-label" for="sesLevel">Level</label>
                     <select class="f-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
                   <div style="flex:1"><label class="f-label" for="sesGender">Gender</label>
-                    <select class="f-input" id="sesGender"><option value="Open">Open</option><option value="Men">Men</option><option value="Women">Women</option></select></div>
+                    <select class="f-input" id="sesGender"><option value="Men" selected>Men</option><option value="Women">Women</option></select></div>
                 </div>
                 <div class="f-group"><label class="f-label" for="sesStatus">Status</label>
                   <select class="f-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select></div>
@@ -1380,7 +1384,9 @@ function renderSessions(){
     var canStart=st==='OPEN';
     return '<div style="border:1px solid var(--bdr);border-radius:12px;padding:13px 14px;margin-bottom:10px">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
-      '<div><div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(_bkDay(s.date))+(s.startTime?' · '+_escB([s.startTime,s.endTime].filter(Boolean).join(' – ')):'')+'</div>'+
+      '<div>'+(s.gameName?'<div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(s.gameName)+'</div>':'')+
+      '<div style="font-weight:'+(s.gameName?'600':'800')+';font-size:'+(s.gameName?'12.5px':'14px')+';color:var(--'+(s.gameName?'txt2':'on')+')">'+_escB(_bkDay(s.date))+(s.startTime?' · '+_escB([s.startTime,s.endTime].filter(Boolean).join(' – ')):'')+'</div>'+
+      (s.courtName?'<div style="color:var(--txt2);font-size:12px;margin-top:3px">📍 '+(s.mapsUrl?'<a href="'+_escB(s.mapsUrl)+'" target="_blank" rel="noopener" style="color:var(--txt2)">'+_escB(s.courtName)+'</a>':_escB(s.courtName))+'</div>':'')+
       '<div style="color:var(--txt2);font-size:12px;margin-top:3px">'+_escB(facts)+'</div>'+
       ((s.prizePool||s.freebies)?'<div style="color:var(--txt3);font-size:11.5px;margin-top:3px">'+(s.prizePool?'🏆 '+_escB(s.prizePool):'')+(s.prizePool&&s.freebies?' · ':'')+(s.freebies?'🎁 '+_escB(s.freebies):'')+'</div>':'')+
       '</div>'+
@@ -1397,8 +1403,9 @@ function renderSessions(){
 }
 function _sv(id){ return document.getElementById(id).value; }
 function sessionResetForm(){
-  ['sesDate','sesStart','sesEnd','sesCourts','sesCapacity','sesPrice','sesPrizePool','sesFreebies'].forEach(function(i){ var el=document.getElementById(i); if(el) el.value=''; });
-  document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Open'; document.getElementById('sesStatus').value='OPEN';
+  ['sesGame','sesCourtName','sesMapsUrl','sesDate','sesStart','sesCourts','sesCapacity','sesPrice','sesPrizePool','sesFreebies'].forEach(function(i){ var el=document.getElementById(i); if(el) el.value=''; });
+  document.getElementById('sesDuration').value='2';
+  document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Men'; document.getElementById('sesStatus').value='OPEN';
   document.getElementById('sesRepeat').value='1'; document.getElementById('sesRepeatWrap').style.display='';
   document.getElementById('sessionsEditor').dataset.editId='';
   document.getElementById('sesFormTitle').textContent='Add a PlayRank session';
@@ -1407,14 +1414,18 @@ function sessionResetForm(){
 function sessionEdit(id){
   var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
   var el=document.getElementById('sessionsEditor'); el.style.display='block';
+  document.getElementById('sesGame').value=s.gameName||'';
+  document.getElementById('sesCourtName').value=s.courtName||'';
+  document.getElementById('sesMapsUrl').value=s.mapsUrl||'';
   document.getElementById('sesDate').value=String(s.date||'').slice(0,10);
-  document.getElementById('sesStart').value=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
-  document.getElementById('sesEnd').value=(String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  var _start=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
+  document.getElementById('sesStart').value=_start;
+  document.getElementById('sesDuration').value=String(_durHours(_start, (String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0]));
   document.getElementById('sesCourts').value=s.courts||'';
   document.getElementById('sesCapacity').value=s.capacity||'';
   document.getElementById('sesPrice').value=s.pricePerPlayer||'';
   document.getElementById('sesLevel').value=s.level||'';
-  document.getElementById('sesGender').value=s.gender||'Open';
+  document.getElementById('sesGender').value=(s.gender==='Women'?'Women':'Men');
   document.getElementById('sesStatus').value=String(s.status||'OPEN').toUpperCase();
   document.getElementById('sesPrizePool').value=s.prizePool||'';
   document.getElementById('sesFreebies').value=s.freebies||'';
@@ -1423,6 +1434,19 @@ function sessionEdit(id){
   document.getElementById('sesFormTitle').textContent='Edit session';
   document.getElementById('sesSaveBtn').textContent='Save changes →';
   try{ el.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+}
+function _durHours(start, end){
+  var a=String(start||'').match(/(\d{1,2}):(\d{2})/), b=String(end||'').match(/(\d{1,2}):(\d{2})/);
+  if(!a||!b) return 2;
+  var m=(parseInt(b[1],10)*60+parseInt(b[2],10))-(parseInt(a[1],10)*60+parseInt(a[2],10));
+  if(m<=0) return 2;
+  var h=Math.round(m/60); return Math.max(1, Math.min(4, h));
+}
+function _endFromStart(start, hours){
+  var a=String(start||'').match(/(\d{1,2}):(\d{2})/); if(!a) return '';
+  var tot=(parseInt(a[1],10)*60+parseInt(a[2],10))+(parseInt(hours,10)||2)*60;
+  tot=tot%(24*60);
+  return ('0'+Math.floor(tot/60)).slice(-2)+':'+('0'+(tot%60)).slice(-2);
 }
 function _addDays(dstr, days){
   var d=new Date(String(dstr).slice(0,10)+'T00:00:00'); d.setDate(d.getDate()+days);
@@ -1436,8 +1460,10 @@ async function sessionSave(){
   var editId=document.getElementById('sessionsEditor').dataset.editId||'';
   var repeat=Math.max(1, Math.min(4, parseInt(_sv('sesRepeat'),10)||1));
   if(editId) repeat=1; // editing touches a single session only
+  var start=_sv('sesStart'), dur=_sv('sesDuration')||'2';
   var base={ venue:RM.venue, type:'RANKPLAY',
-    startTime:_sv('sesStart'), endTime:_sv('sesEnd'), courts:_sv('sesCourts'), capacity:_sv('sesCapacity'), pricePerPlayer:_sv('sesPrice'),
+    gameName:_sv('sesGame'), courtName:_sv('sesCourtName'), mapsUrl:_sv('sesMapsUrl'),
+    startTime:start, endTime:_endFromStart(start, dur), courts:_sv('sesCourts'), capacity:_sv('sesCapacity'), pricePerPlayer:_sv('sesPrice'),
     level:_sv('sesLevel'), gender:_sv('sesGender'), status:_sv('sesStatus')||'OPEN',
     prizePool:_sv('sesPrizePool'), freebies:_sv('sesFreebies'), token:RM.token };
   document.getElementById('sesSaveBtn').disabled=true;
