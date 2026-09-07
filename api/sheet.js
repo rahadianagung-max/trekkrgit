@@ -1146,6 +1146,7 @@ const netlifyHandler = async (event) => {
     if (path === "schedule/all" && method === "GET") return await getScheduleAll();
     if (path === "schedule" && method === "POST") return await saveScheduleRow(body);
     if (path === "schedule/delete" && method === "POST") return await deleteScheduleRow(body);
+    if (path === "places/search" && method === "GET") return await placesSearch(params);
 
     // --- VENUE PAGE + SESSION BOOKINGS (waiting list → approval → confirmed) ---
     if (path.startsWith("venue/page/") && method === "GET") return await getVenuePage(decodeURIComponent(path.replace("venue/page/", "")), params);
@@ -5753,6 +5754,47 @@ async function deleteScheduleRow(body) {
   const removed = await deleteRowsByKey(sheets, TABS.schedule, 0, new Set([id.toLowerCase()]));
   if (!removed) return respond(404, { error: "Schedule row not found" });
   return respond(200, { success: true, removed });
+}
+
+// GET /api/places/search?q=<text>&token=<adminToken>
+// Server-side Google Places (New) Text Search so the Maps API key never reaches
+// the browser (same pattern as the imgbb / Anthropic calls). Token-scoped to any
+// signed-in admin because Places is billed per request. Returns
+// [{ name, address, placeId, mapsUrl }]. Degrades to { results:[], configured:false }
+// when no key is set, so the court-name field stays usable (manual link fallback).
+async function placesSearch(params) {
+  const tok = decodeAdminToken(params && params.token);
+  if (!tok) return respond(401, { error: "admin token required" });
+  const q = String((params && params.q) || "").trim();
+  if (q.length < 3) return respond(200, { results: [] });
+  const key = String(process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "").trim();
+  if (!key) return respond(200, { results: [], configured: false });
+  try {
+    const resp = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
+      },
+      body: JSON.stringify({ textQuery: q, regionCode: "ID", languageCode: "id", maxResultCount: 6 }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return respond(200, { results: [], configured: true, error: (data.error && data.error.message) || "places error" });
+    const results = (data.places || []).map((p) => {
+      const name = (p.displayName && p.displayName.text) || "";
+      const address = p.formattedAddress || "";
+      const placeId = p.id || "";
+      const query = encodeURIComponent((name + " " + address).trim());
+      const mapsUrl = placeId
+        ? `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${encodeURIComponent(placeId)}`
+        : `https://www.google.com/maps/search/?api=1&query=${query}`;
+      return { name, address, placeId, mapsUrl };
+    });
+    return respond(200, { results, configured: true });
+  } catch (e) {
+    return respond(200, { results: [], configured: true, error: e.message || "places failed" });
+  }
 }
 
 // ── Venue display flags (featured / order / hidden) for the /venues directory ──

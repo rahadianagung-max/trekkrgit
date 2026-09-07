@@ -752,8 +752,14 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then start the session here.</p>
               <div class="form-grid">
                 <div class="f-group"><label class="f-label" for="sesGame">Game name</label><input class="f-input" id="sesGame" placeholder="e.g. Friday Night PlayRank"/></div>
-                <div class="f-group"><label class="f-label" for="sesCourtName">Court name</label><input class="f-input" id="sesCourtName" placeholder="e.g. Pancasona Court 3"/></div>
-                <div class="f-group"><label class="f-label" for="sesMapsUrl">Google Maps link <span style="color:var(--txt3);font-weight:400">(address)</span></label><input class="f-input" id="sesMapsUrl" placeholder="Paste the court's Google Maps link"/></div>
+                <div class="f-group" style="position:relative">
+                  <label class="f-label" for="sesCourtName">Court name <span style="color:var(--txt3);font-weight:400">(cari di Google Maps)</span></label>
+                  <input class="f-input" id="sesCourtName" placeholder="Ketik nama lapangan… otomatis cari alamat" autocomplete="off" oninput="courtAcInput()" onfocus="courtAcInput()"/>
+                  <div id="sesCourtAc" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:40;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:260px;overflow:auto"></div>
+                  <div id="sesCourtAddr" style="display:none;color:var(--txt2);font-size:12px;margin-top:6px"></div>
+                  <div style="margin-top:6px"><a href="#" id="sesMapsManualToggle" onclick="courtMapsManual(event)" style="color:var(--txt3);font-size:12px;text-decoration:underline">Tidak ketemu? Masukkan link Maps manual</a></div>
+                  <input class="f-input" id="sesMapsUrl" placeholder="Paste the court's Google Maps link" style="display:none;margin-top:6px"/>
+                </div>
                 <div class="f-group"><label class="f-label" for="sesDate">Date</label><input class="f-input" id="sesDate" type="date"/></div>
                 <div class="f-group" style="display:flex;gap:10px">
                   <div style="flex:1"><label class="f-label" for="sesStart">Start time</label><input class="f-input" id="sesStart" type="time"/></div>
@@ -1405,8 +1411,72 @@ function renderSessions(){
   }).join('');
 }
 function _sv(id){ return document.getElementById(id).value; }
+/* ---- Court name → Google Maps autocomplete (server-side Places proxy) ---- */
+var _courtAcTimer=null, _courtAcResults=[], _sesPlaceName='', _courtManual=false;
+function _courtAcHide(){ var b=document.getElementById('sesCourtAc'); if(b){ b.style.display='none'; b.innerHTML=''; } }
+function courtMapsManual(ev){
+  if(ev) ev.preventDefault();
+  _courtManual=true; _courtAcHide();
+  var mu=document.getElementById('sesMapsUrl'); mu.style.display='block'; mu.focus();
+  document.getElementById('sesMapsManualToggle').style.display='none';
+}
+function courtAcInput(){
+  if(_courtManual) return;
+  var q=(document.getElementById('sesCourtName').value||'').trim();
+  // Typing a different name than the picked place invalidates the auto Maps link.
+  if(q!==_sesPlaceName){ document.getElementById('sesMapsUrl').value=''; var ad=document.getElementById('sesCourtAddr'); ad.style.display='none'; ad.textContent=''; }
+  if(_courtAcTimer) clearTimeout(_courtAcTimer);
+  if(q.length<3){ _courtAcHide(); return; }
+  _courtAcTimer=setTimeout(function(){ _courtAcRun(q); }, 320);
+}
+async function _courtAcRun(q){
+  try{
+    var r=await fetch(API_BASE+'/places/search?q='+encodeURIComponent(q)+'&token='+encodeURIComponent(RM.token||''));
+    var d=await r.json();
+    if((document.getElementById('sesCourtName').value||'').trim()!==q) return; // stale
+    if(d.configured===false){ // Places not enabled → offer manual entry
+      var b=document.getElementById('sesCourtAc');
+      b.innerHTML='<div style="padding:10px 11px;font-size:12px;color:var(--txt3)">Pencarian Google Maps belum aktif. <a href="#" onclick="courtMapsManual(event)" style="color:var(--pr);text-decoration:underline">Masukkan link manual</a></div>';
+      b.style.display='block'; return;
+    }
+    _courtAcRender(d.results||[]);
+  }catch(e){ _courtAcHide(); }
+}
+function _courtAcRender(results){
+  var b=document.getElementById('sesCourtAc');
+  _courtAcResults=results||[];
+  if(!_courtAcResults.length){ b.innerHTML='<div style="padding:10px 11px;font-size:12px;color:var(--txt3)">Tidak ada hasil. <a href="#" onclick="courtMapsManual(event)" style="color:var(--pr);text-decoration:underline">Masukkan link manual</a></div>'; b.style.display='block'; return; }
+  b.innerHTML=_courtAcResults.map(function(r,i){
+    return '<div onmousedown="courtAcPick('+i+')" style="padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--bdr)">'+
+      '<div style="font-weight:700;font-size:13px;color:var(--on)">'+_escB(r.name)+'</div>'+
+      (r.address?'<div style="font-size:11.5px;color:var(--txt3);margin-top:2px">'+_escB(r.address)+'</div>':'')+'</div>';
+  }).join('');
+  b.style.display='block';
+}
+function courtAcPick(i){
+  var r=_courtAcResults[i]; if(!r) return;
+  document.getElementById('sesCourtName').value=r.name;
+  document.getElementById('sesMapsUrl').value=r.mapsUrl||'';
+  _sesPlaceName=r.name;
+  var ad=document.getElementById('sesCourtAddr');
+  if(r.address){ ad.textContent='📍 '+r.address; ad.style.display='block'; } else { ad.style.display='none'; }
+  _courtAcHide();
+}
+document.addEventListener('mousedown', function(e){
+  var g=document.getElementById('sesCourtAc'); if(!g||g.style.display==='none') return;
+  var cn=document.getElementById('sesCourtName');
+  if(e.target!==cn && !g.contains(e.target)) _courtAcHide();
+});
+function _courtAcReset(){
+  _courtManual=false; _sesPlaceName='';
+  _courtAcHide();
+  var mu=document.getElementById('sesMapsUrl'); if(mu) mu.style.display='none';
+  var tg=document.getElementById('sesMapsManualToggle'); if(tg) tg.style.display='';
+  var ad=document.getElementById('sesCourtAddr'); if(ad){ ad.style.display='none'; ad.textContent=''; }
+}
 function sessionResetForm(){
   ['sesGame','sesCourtName','sesMapsUrl','sesDate','sesStart','sesCourts','sesCapacity','sesPrice','sesPrizePool','sesFreebies'].forEach(function(i){ var el=document.getElementById(i); if(el) el.value=''; });
+  _courtAcReset();
   document.getElementById('sesDuration').value='2';
   document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Men'; document.getElementById('sesStatus').value='OPEN';
   document.getElementById('sesRepeat').value='1'; document.getElementById('sesRepeatWrap').style.display='';
@@ -1417,9 +1487,12 @@ function sessionResetForm(){
 function sessionEdit(id){
   var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
   var el=document.getElementById('sessionsEditor'); el.style.display='block';
+  _courtAcReset();
   document.getElementById('sesGame').value=s.gameName||'';
   document.getElementById('sesCourtName').value=s.courtName||'';
   document.getElementById('sesMapsUrl').value=s.mapsUrl||'';
+  _sesPlaceName=s.courtName||''; // treat the saved court as an already-picked place
+  if(s.mapsUrl){ var _ad=document.getElementById('sesCourtAddr'); _ad.innerHTML='📍 <a href="'+_escB(s.mapsUrl)+'" target="_blank" rel="noopener" style="color:var(--pr)">Lihat di Google Maps</a> · ketik ulang nama untuk cari lagi'; _ad.style.display='block'; }
   document.getElementById('sesDate').value=String(s.date||'').slice(0,10);
   var _start=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0];
   document.getElementById('sesStart').value=_start;
