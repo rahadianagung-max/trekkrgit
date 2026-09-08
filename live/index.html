@@ -255,6 +255,7 @@ header.hd{padding:18px 2px 6px}
 
     <p class="note"><span class="refresh"><span class="spin"></span> Updating live · standings refresh automatically</span></p>
     <p class="note" style="margin-top:2px">Tap <b style="color:var(--orange)">Claim</b> next to your name to link this to your Trekkr passport.</p>
+    <p class="note" style="margin-top:2px"><a id="tvLink" href="#" style="color:var(--cyan-ink);font-weight:800;text-decoration:none">📺 Open this on a TV →</a></p>
     <p class="footer">Powered by <b>Trekkr</b> · ranked padel for Indonesia</p>
   </div>
 
@@ -631,7 +632,10 @@ $('themeBtn').addEventListener('click',function(){
 // boot
 if(window.TrekkrLoader){ try{ TrekkrLoader.mount(document.getElementById('stateLoading'),'Tuning into the live feed'); }catch(e){} }
 if(!CODE){ showError('No session code','This link is missing its session code. Ask the host for the full link.'); }
-else { fetchState(true).then(function(){ if(STATE && STATE.status!=='final') startPoll(); }); }
+else {
+  var _tv=document.getElementById('tvLink'); if(_tv) _tv.href='/tv/'+encodeURIComponent(CODE);
+  fetchState(true).then(function(){ if(STATE && STATE.status!=='final') startPoll(); });
+}
 })();
 </script>
 </body>
