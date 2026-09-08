@@ -172,6 +172,8 @@ img{max-width:100%}
 .lrow .wl{font-family:var(--display);font-style:italic;font-weight:800;font-size:2.1vh;text-align:right}
 .lrow .wl .w{color:var(--w)}.lrow .wl .s{color:var(--faint);margin:0 .1em}.lrow .wl .l{color:var(--l)}
 .lrow .el{font-family:var(--display);font-style:italic;font-weight:800;font-size:2.5vh;color:var(--orange);text-align:right;min-width:6vw}
+.rulenote{flex-shrink:0;padding:.9vh 1.3vw;font-size:1.15vh;color:var(--faint);border-top:1px solid var(--line-2);line-height:1.4}
+.rulenote b{color:var(--cyan)}
 
 /* ---- PODIUM / champion scene ---- */
 .champ{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.4vh}
@@ -406,7 +408,7 @@ img{max-width:100%}
   function sortStd(a){return a.slice().sort(function(x,y){return (y.w-x.w)||(y.pd-x.pd)||(y.elo-x.elo);});}
   function nm(p){return p.displayName||p.name;}
 
-  // LIVE (single-gender session): on-court predictions + live standings
+  // LIVE (single-gender session): on-court schedule + live standings
   function sceneLive(){
     var d=(LIVE&&LIVE.session)||{}, players=d.players||[];
     var byKey={}; players.forEach(function(p){byKey[p.name]=p;if(p.short)byKey[p.short]=p;});
@@ -414,13 +416,10 @@ img{max-width:100%}
     var now=(d.now||[]).map(function(m){return {court:m.court,a:(m.a||[]).map(look),b:(m.b||[]).map(look)};}).filter(function(m){return m.a.length>=2&&m.b.length>=2;});
     var tgt=d.scoreTarget?('Race to '+d.scoreTarget):'Live';
     var courtsHtml=now.map(function(m){
-      var pa=winPct(m.a,m.b),pA=Math.round(pa*100),pB=100-pA;
       function side(t){return t.map(function(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(first(nm(p)))+'</span></div>';}).join('');}
       return '<div class="court"><div class="court-top"><span class="ct">Court '+esc(m.court||'')+'</span><span class="fm">'+esc(tgt)+'</span></div>'
         +side(m.a)+'<div class="court-vs"><span class="ln"></span><span class="v">VS</span><span class="ln"></span></div>'+side(m.b)
-        +'<div class="probbar"><span class="a" style="width:'+pA+'%"></span><span class="b" style="width:'+pB+'%"></span></div>'
-        +'<div class="problab"><span class="a">'+esc(m.a.map(function(p){return first(nm(p));}).join(' & '))+' · '+pA+'%</span><span class="b">'+pB+'% · '+esc(m.b.map(function(p){return first(nm(p));}).join(' & '))+'</span></div>'
-        +'<div class="take">'+take(m.a,m.b,pa)+'</div></div>';
+        +'</div>';
     }).join('');
     var bye=(d.bye||[]).map(function(k){return esc(first(nm(look(k))));});
     var byeHtml=bye.length?'<div class="byline">⏸ Resting this round: <b>'+bye.join(', ')+'</b></div>':'';
@@ -428,16 +427,18 @@ img{max-width:100%}
     var rowsHtml=std.map(function(p,i){
       var rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
       var strk=(p.streak||0)>=2?'<div class="strk">'+p.streak+'W 🔥</div>':'';
+      var pd=p.pd||0, pdc=pd>0?'var(--w)':pd<0?'var(--l)':'var(--faint)';
       return '<div class="lrow '+(i<3?'top ':'')+rc+'"><span class="rk">'+(i+1)+'</span>'
-        +'<span class="pl"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="who"><div class="pn">'+esc(first(nm(p)))+'</div>'+strk+'</span></span>'
+        +'<span class="pl"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="who"><div class="pn">'+esc(nm(p))+'</div>'+strk+'</span></span>'
         +'<span class="wl"><span class="w">'+(p.w||0)+'</span><span class="s">/</span><span class="l">'+(p.l||0)+'</span></span>'
-        +'<span class="el">'+(p.elo||'')+'</span></div>';
+        +'<span class="el" style="color:'+pdc+'">'+(pd>=0?'+':'')+pd+'</span></div>';
     }).join('');
     return '<div class="livewrap">'
       +'<div class="panel"><div class="panel-h"><span class="t">On Court Now</span><span class="cnt">'+now.length+(now.length===1?' match':' matches')+'</span></div>'
         +'<div class="courts">'+(courtsHtml||'<div class="col-empty">Next round loading…</div>')+'</div>'+byeHtml+'</div>'
-      +'<div class="panel"><div class="panel-h"><span class="t">Live Standings</span><span class="cnt">by wins</span></div>'
-        +'<div class="lrows">'+(rowsHtml||'<div class="col-empty">Waiting for the first scores…</div>')+'</div></div>'
+      +'<div class="panel"><div class="panel-h"><span class="t">Live Standings</span><span class="cnt">W · L · PD</span></div>'
+        +'<div class="lrows">'+(rowsHtml||'<div class="col-empty">Waiting for the first scores…</div>')+'</div>'
+        +'<div class="rulenote"><b>Ranking</b> = most wins → if tied, higher point difference (PD)</div></div>'
       +'</div>';
   }
 
