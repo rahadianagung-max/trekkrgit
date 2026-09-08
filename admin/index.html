@@ -2505,6 +2505,12 @@ function rmUpdateScore(courtIdx) {
   }
   const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
   document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} done`;
+  // Stream the score to the live/TV page as it's entered (debounced), so on-court
+  // scores tick up during play instead of only appearing after the round is submitted.
+  if(!isNaN(s1)&&!isNaN(s2)){
+    clearTimeout(RM._scorePushT);
+    RM._scorePushT=setTimeout(()=>{ rmLivePush(false); }, 1200);
+  }
 }
 
 function rmUpdateFairBar() {
@@ -2843,7 +2849,8 @@ function rmLiveSnapshot(final){
   const cur=RM.rounds[RM.currentRound];
   let now=[], bye=[];
   if(!final && cur && !cur.submitted){
-    now=(cur.matches||[]).map(m=>({court:m.court, a:m.team1.map(p=>p.name), b:m.team2.map(p=>p.name)}));
+    now=(cur.matches||[]).map(m=>({court:m.court, a:m.team1.map(p=>p.name), b:m.team2.map(p=>p.name),
+      sa:(m.score1==null?null:Number(m.score1)), sb:(m.score2==null?null:Number(m.score2))}));
     bye=(cur.byePlayers||[]).slice();
   }
   // Completed match-by-match history (newest last), so the live page can show

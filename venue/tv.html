@@ -142,6 +142,12 @@ img{max-width:100%}
   font-family:var(--display);font-style:italic;font-weight:800;font-size:1.7vh;color:var(--text)}
 .side2 .av img{width:100%;height:100%;object-fit:cover}
 .side2 .nm{font-family:var(--display);font-style:italic;font-weight:700;text-transform:uppercase;font-size:1.9vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* team row: two partners side by side + team score at right */
+.teamrow{display:grid;grid-template-columns:1fr 1fr 7vw;align-items:center;gap:.7vw}
+.teamrow .tsc{font-family:var(--display);font-style:italic;font-weight:800;font-size:4.4vh;line-height:1;text-align:center;color:var(--text)}
+.teamrow.win .tsc{color:var(--w)}
+.teamrow.lose .tsc{color:var(--faint)}
+.teamrow.pend .tsc{color:var(--faint)}
 .court-vs{display:flex;align-items:center;gap:.7vw;margin:.4vh 0}
 .court-vs .ln{flex:1;height:1px;background:var(--line-2)}
 .court-vs .v{font-family:var(--display);font-style:italic;font-weight:800;color:var(--faint);font-size:1.5vh}
@@ -413,12 +419,19 @@ img{max-width:100%}
     var d=(LIVE&&LIVE.session)||{}, players=d.players||[];
     var byKey={}; players.forEach(function(p){byKey[p.name]=p;if(p.short)byKey[p.short]=p;});
     function look(k){return byKey[k]||{name:k,elo:1350,w:0,l:0,streak:0};}
-    var now=(d.now||[]).map(function(m){return {court:m.court,a:(m.a||[]).map(look),b:(m.b||[]).map(look)};}).filter(function(m){return m.a.length>=2&&m.b.length>=2;});
+    var now=(d.now||[]).map(function(m){return {court:m.court,a:(m.a||[]).map(look),b:(m.b||[]).map(look),sa:m.sa,sb:m.sb};}).filter(function(m){return m.a.length>=2&&m.b.length>=2;});
     var tgt=d.scoreTarget?('Race to '+d.scoreTarget):'Live';
     var courtsHtml=now.map(function(m){
-      function side(t){return t.map(function(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(first(nm(p)))+'</span></div>';}).join('');}
+      function pchip(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(first(nm(p)))+'</span></div>';}
+      function team(t,sc,oth){
+        var has=(sc!=null&&oth!=null);
+        var cls=!has?'pend':(sc>oth?'win':(sc<oth?'lose':''));
+        return '<div class="teamrow '+cls+'">'+pchip(t[0])+pchip(t[1])+'<span class="tsc">'+(sc==null?'–':sc)+'</span></div>';
+      }
       return '<div class="court"><div class="court-top"><span class="ct">Court '+esc(m.court||'')+'</span><span class="fm">'+esc(tgt)+'</span></div>'
-        +side(m.a)+'<div class="court-vs"><span class="ln"></span><span class="v">VS</span><span class="ln"></span></div>'+side(m.b)
+        +team(m.a,m.sa,m.sb)
+        +'<div class="court-vs"><span class="ln"></span><span class="v">VS</span><span class="ln"></span></div>'
+        +team(m.b,m.sb,m.sa)
         +'</div>';
     }).join('');
     var bye=(d.bye||[]).map(function(k){return esc(first(nm(look(k))));});
