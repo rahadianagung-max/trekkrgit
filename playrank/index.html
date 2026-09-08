@@ -4,87 +4,172 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PlayRank — Trekkr</title>
-<meta name="description" content="PlayRank turns casual games into structured competition. Weekly PlayRank and PlayRank Combine for venues and communities."/>
+<meta name="description" content="PlayRank turns padel night into a real weekly competition: open a session, take bookings, run balanced games, and climb the ranks. By Trekkr."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <link rel="stylesheet" href="/ecosystem.css"/>
 <style>
-.wrap{padding:30px 0 10px}
-.sec{padding:30px 0;border-top:1px solid var(--border-soft)}
-.sec:first-of-type{border-top:0}
-.band{padding:34px 0}
-.band--warm{background:var(--warm);border-top:1px solid var(--warm-border);border-bottom:1px solid var(--warm-border)}
-.band--dark{background:var(--text);color:#fff}
-.hero{padding:46px 0 26px;text-align:center}
-.hero h1{font-size:clamp(30px,6vw,52px);margin:0}
-.tagline{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(15px,2.4vw,18px);margin-top:6px}
-.lead{color:var(--muted);font-size:14px;line-height:1.65;max-width:600px;margin:14px auto 0}
-.secname{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;color:var(--orange);font-size:clamp(22px,3.4vw,28px);line-height:1.02}
-.secname--dark{color:var(--text)}
-.secsub{font-size:15px;font-weight:600;color:var(--text);margin-top:3px}
-.p{color:var(--muted);font-size:14px;line-height:1.65}
-.card{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.center{text-align:center}
-.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
-.ico{font-size:24px;color:var(--orange)}
-@media(max-width:760px){.grid3{grid-template-columns:1fr}}
-@media(max-width:560px){.grid2{grid-template-columns:1fr}}
-.acard{border:1px solid var(--border);border-radius:14px;padding:18px;background:var(--surface)}
-.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2410C;background:var(--warm);border:1px solid var(--warm-border);border-radius:999px;padding:3px 9px}
-.pcard{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:13px 15px;background:var(--surface)}
-.cpill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;display:inline-block}
-.ty-weekly{background:#FFF4DA;color:#854F0B}.ty-combine{background:#EEF0FF;color:#534AB7}
-.s-live{background:#E7F6EC;color:#15803D}.s-up{background:#EAF0FB;color:#185FA5}
-.lnk{color:var(--orange);font-weight:700;font-size:13px}
-.empty{border:1px dashed var(--border);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13px}
-.pr-list{display:flex;flex-direction:column;gap:8px}
-.pr-av{position:relative;overflow:hidden;width:42px;height:42px;border-radius:10px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:14px;flex-shrink:0}
-.pr-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.pr-info{flex:1;min-width:0}
-.pr-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pr-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.pr-status{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+  /* PlayRank explainer — page-specific styles (tokens come from trekkr-theme.css) */
+  .pr-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);font-weight:600}
+  .pr-kick{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);font-weight:700}
+  .pr-disp{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;line-height:.95;margin:0;text-wrap:balance}
+
+  .pr-hero{padding:58px 0 32px;text-align:center}
+  .pr-hero h1{font-size:clamp(58px,13vw,124px);margin:14px 0 0}
+  .pr-hero h1 .r{-webkit-text-fill-color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .pr-lede{font-size:clamp(17px,2.2vw,22px);color:var(--muted);max-width:30ch;margin:20px auto 0;font-weight:500;line-height:1.5}
+  .pr-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:26px}
+  .pr-chip{font-size:13px;font-weight:600;border-radius:var(--radius-pill);padding:8px 15px;border:1px solid var(--border);background:var(--surface);color:var(--muted)}
+  .pr-chip.o{color:var(--orange);border-color:var(--warm-border);background:var(--warm)}
+
+  .pr-sec{padding:34px 0}
+  .pr-sec-h{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .pr-sec-h h2{font-size:clamp(30px,5vw,46px)}
+  .pr-sub{color:var(--muted);max-width:64ch;margin:0 auto 24px;font-weight:500;text-align:center;font-size:17px;line-height:1.6}
+  .pr-idea{text-align:center}
+  .pr-idea .pr-sec-h{justify-content:center}
+
+  .pr-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:780px){.pr-flow{grid-template-columns:1fr}}
+  .pr-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:0 1px 2px rgba(13,13,13,.04),0 12px 30px -20px rgba(13,13,13,.22)}
+  .pr-step .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .pr-step h3{font-size:17px;font-weight:800;margin:9px 0 6px}
+  .pr-step p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+  .pr-who{display:inline-block;margin-top:12px;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:6px}
+  .pr-who.admin{color:var(--orange);background:var(--warm)}
+  .pr-who.player{color:var(--green);background:#E7F6EC}
+
+  .pr-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.pr-cols{grid-template-columns:1fr}}
+  .pr-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(13,13,13,.04),0 12px 30px -20px rgba(13,13,13,.22)}
+  .pr-badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:var(--radius-pill)}
+  .pr-badge.admin{color:var(--orange);background:var(--warm);border:1px solid var(--warm-border)}
+  .pr-badge.player{color:var(--green);background:#E7F6EC;border:1px solid #BFE6CC}
+  .pr-panel h3{font-size:20px;font-weight:800;margin:13px 0 16px}
+  .pr-feat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .pr-feat li{display:grid;grid-template-columns:22px 1fr;gap:12px;align-items:start}
+  .pr-feat .ic{margin-top:1px;color:var(--orange)}
+  .pr-panel.pl .pr-feat .ic{color:var(--green)}
+  .pr-feat b{font-weight:700;font-size:14.5px}
+  .pr-feat span{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+
+  .pr-ranks{display:grid;grid-template-columns:.9fr 1.1fr;gap:26px;align-items:center}
+  @media(max-width:780px){.pr-ranks{grid-template-columns:1fr;gap:16px}}
+  .pr-ranks .lead p{color:var(--muted);font-size:16px;margin:12px 0 0;max-width:34ch;line-height:1.6}
+  .pr-ladder{display:flex;flex-direction:column;gap:7px}
+  .pr-rung{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:12px;padding:11px 15px;border-radius:10px;border:1px solid var(--border);background:var(--surface)}
+  .pr-rung .p{font-family:var(--display);font-style:italic;font-weight:800;font-size:15px;color:var(--faint);text-align:center}
+  .pr-rung .nm{font-weight:700;font-size:14.5px}
+  .pr-rung .el{font-weight:700;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .pr-rung.top{background:var(--warm);border-color:var(--warm-border)}
+  .pr-rung.top .nm{color:var(--orange)}
+  .pr-rung.top .p{-webkit-text-fill-color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  .pr-cta{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .pr-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:16px;padding:13px 26px;border-radius:var(--radius-pill);text-decoration:none;border:1px solid transparent}
+  .pr-btn.solid{background:var(--grad);color:#fff;box-shadow:0 14px 30px -14px rgba(255,80,0,.6)}
+  .pr-btn.ghost{border-color:var(--border);color:var(--text)}
+  .pr-btn.ghost:hover{background:var(--surface-2)}
+
+  .pr-svg{width:19px;height:19px;display:block;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
-<div id="tk-nav"></div>
-<main>
-  <section class="hero container">
-    <h1 class="display">PlayRank</h1>
-    <div class="tagline">Competitive Play. Meaningful Progress.</div>
-    <p class="lead">PlayRank transforms casual games into structured competitive experiences that keep players engaged, returning, and improving. Whether you're looking for your next ranked session or building a thriving padel community, PlayRank provides flexible competition formats designed for every level of play.</p>
-  </section>
 
-  <section class="sec container" style="border-top:0;padding-top:0">
-    <div class="secname" style="margin-bottom:14px">Active PlayRank</div>
-    <div id="prActive">
-      <div class="empty">Memuat&hellip;</div>
+<div id="tk-nav"></div>
+
+<main>
+  <header class="pr-hero">
+    <div class="container">
+      <div class="pr-eyebrow">Padel · Indonesia</div>
+      <h1 class="pr-disp">Play<span class="r">Rank</span></h1>
+      <p class="pr-lede">Turn padel night into a real competition — one everyone wants to come back and win.</p>
+      <div class="pr-chips">
+        <span class="pr-chip o">Fair games, every round</span>
+        <span class="pr-chip">A rank worth chasing</span>
+        <span class="pr-chip">Book your spot in a tap</span>
+      </div>
+      <div class="pr-cta">
+        <a class="pr-btn solid" href="/app">Play now</a>
+        <a class="pr-btn ghost" href="/get-listed">List your venue</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="pr-sec pr-idea">
+    <div class="container">
+      <div class="pr-sec-h"><h2 class="pr-disp">Every game counts</h2></div>
+      <p class="pr-sub">Show up, get matched into balanced games, and watch your rank move with every point. PlayRank makes casual padel feel like a league — friendly enough for newcomers, competitive enough to keep everyone coming back. Venues fill their courts; players chase the top of the board.</p>
     </div>
   </section>
 
-  <section class="sec container center">
-    <h2 class="display secname--dark" style="font-size:clamp(20px,3vw,26px)">Two Ways to Compete</h2>
+  <section class="pr-sec">
+    <div class="container">
+      <div class="pr-sec-h"><span class="pr-kick">A night in six moments</span><h2 class="pr-disp">How it plays out</h2></div>
+      <div class="pr-flow">
+        <div class="pr-step"><div class="n">01</div><h3>Venue opens a session</h3><p>Pick the date, courts, and price. Add a prize or free drinks to pull a crowd.</p><span class="pr-who admin">Venue</span></div>
+        <div class="pr-step"><div class="n">02</div><h3>Players grab a spot</h3><p>They spot the session in the app and tap to join — no group-chat chaos, no messy sign-up sheet.</p><span class="pr-who player">Player</span></div>
+        <div class="pr-step"><div class="n">03</div><h3>You confirm them</h3><p>Check the payment, tap approve. Each player gets a confirmation with the date already on their calendar.</p><span class="pr-who admin">Venue</span></div>
+        <div class="pr-step"><div class="n">04</div><h3>Balanced games</h3><p>PlayRank pairs everyone into even matches every round — so games stay close and fun, not lopsided.</p><span class="pr-who admin">Venue</span></div>
+        <div class="pr-step"><div class="n">05</div><h3>Score on the big screen</h3><p>Tap in the scores; the live board updates for everyone to watch courtside.</p><span class="pr-who admin">Venue</span></div>
+        <div class="pr-step"><div class="n">06</div><h3>Ranks move</h3><p>Winners of the week and month go up on the board — and everyone's rank shifts, ready for next time.</p><span class="pr-who player">Player</span></div>
+      </div>
+    </div>
   </section>
 
-  <section class="sec container" style="border-top:0;padding-top:0">
-    <div class="secname">Weekly PlayRank</div>
-    <div class="secsub">The Weekly Competition Engine</div>
-    <p class="p mt8" style="max-width:680px">A recurring ranked competition played throughout the week within a single venue or community. Players participate in multiple sessions, earning wins and points along the way. At the end of the week, the player with the strongest overall performance claims the top spot.</p>
-    <a class="btn btn--primary mt12" style="display:inline-flex" href="https://trekkr.online/get-listed">Get Listed</a>
+  <section class="pr-sec">
+    <div class="container">
+      <div class="pr-sec-h"><span class="pr-kick">What you get</span><h2 class="pr-disp">Good for both sides</h2></div>
+      <div class="pr-cols">
+        <div class="pr-panel">
+          <span class="pr-badge admin">For venues</span>
+          <h3>Fuller courts, easier nights</h3>
+          <ul class="pr-feat">
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></span><div><b>Fill the calendar</b><span>Post a session in a minute, add a prize or free drinks, and let it repeat every week.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div><b>Bookings that manage themselves</b><span>See who's in, approve with one tap, and let players confirm their own details.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><div><b>Run the night for you</b><span>Even matchups every round and scores you just tap in — no spreadsheets, no arguments.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><div><b>A show on the big screen</b><span>Put the live board on a TV so the whole club follows along — and share the night to WhatsApp.</span></div></li>
+          </ul>
+        </div>
+        <div class="pr-panel pl">
+          <span class="pr-badge player">For players</span>
+          <h3>Show up, play, climb</h3>
+          <ul class="pr-feat">
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><b>Find games near you</b><span>Browse venues and open sessions by area — see the price, level and prize before you commit.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><div><b>Save your spot in seconds</b><span>Tap to join, pay the venue, and you're in — with the date on your calendar.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M17 7l2 2 3-3"/></svg></span><div><b>See who's playing</b><span>Names and faces of everyone joined — so you know the crowd before you arrive.</span></div></li>
+            <li><span class="ic"><svg class="pr-svg" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><div><b>A rank to chase</b><span>Every match moves your standing; weekly and monthly winners get their moment on the board.</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="band band--warm"><div class="container">
-    <div class="secname">PlayRank Combine</div>
-    <div class="secsub">Discover Your Community's Competitive Landscape</div>
-    <p class="p mt8" style="max-width:680px">A structured PlayRank format designed to accurately identify player levels and create a clear competitive hierarchy within a community. Unlike traditional social events, Community Skill Index focuses on generating a large sample of meaningful matches to reveal true player performance.</p>
-    <a class="btn btn--primary mt12" style="display:inline-flex" href="https://trekkr.online/get-listed">Get Listed</a>
-  </div></section>
+  <section class="pr-sec">
+    <div class="container">
+      <div class="pr-ranks">
+        <div class="lead">
+          <span class="pr-kick">Progress</span>
+          <h2 class="pr-disp" style="font-size:clamp(30px,5vw,46px);margin-top:6px">Ranks to climb</h2>
+          <p>From your first game to the top of the ladder — every win nudges you higher, and the tier by your name shows how far you've come.</p>
+        </div>
+        <div class="pr-ladder">
+          <div class="pr-rung top"><span class="p">1</span><span class="nm">Platinum</span><span class="el">3000+</span></div>
+          <div class="pr-rung"><span class="p">2</span><span class="nm">Gold</span><span class="el">2500</span></div>
+          <div class="pr-rung"><span class="p">3</span><span class="nm">Silver</span><span class="el">2100</span></div>
+          <div class="pr-rung"><span class="p">4</span><span class="nm">Upper Bronze</span><span class="el">1800</span></div>
+          <div class="pr-rung"><span class="p">5</span><span class="nm">Bronze</span><span class="el">1500</span></div>
+          <div class="pr-rung"><span class="p">6</span><span class="nm">Lower Bronze</span><span class="el">1200</span></div>
+          <div class="pr-rung"><span class="p">7</span><span class="nm">Upper Beginner</span><span class="el">900</span></div>
+          <div class="pr-rung"><span class="p">8</span><span class="nm">Beginner</span><span class="el">&lt; 900</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
+
 <div data-eco-footer>
   <a href="/app">Get the App</a>
   <a href="/rankings">Rankings</a>
@@ -94,51 +179,8 @@
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 
-<script>
-(function(){
-  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function inits(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  function gender(g){return g==='M'||g==='Putra'?'Putra':g==='F'||g==='Putri'?'Putri':g||'';}
-  function statusStyle(s){
-    if(s==='live'||s==='active')return['LIVE','background:#E7F6EC;color:#15803D'];
-    if(s==='upcoming')return['Upcoming','background:#EAF0FB;color:#185FA5'];
-    if(s==='completed'||s==='finished')return['Done','background:#F1F1F3;color:#52525B'];
-    return[s||'',''];
-  }
-  var el=document.getElementById('prActive');
-  if(!el)return;
-  fetch(BASE+'/public/feed').then(function(r){return r.json();}).then(function(d){
-    var list=(d&&d.activePlayrank)||[];
-    list=list.filter(function(p){
-      var st=(p.status||'').toLowerCase();
-      var lvl=(p.level||'').toLowerCase();
-      // Hanya tampilkan entri yang kolom level-nya mengandung kata "playrank".
-      return st!=='completed'&&st!=='finished'&&lvl.indexOf('playrank')!==-1;
-    });
-    if(!list.length){
-      el.innerHTML='<div class="empty">Belum ada PlayRank aktif saat ini. Cek kembali nanti.</div>';
-      return;
-    }
-    var html='<div class="pr-list">';
-    list.forEach(function(p){
-      var name=p.title||p.venue||'PlayRank';
-      var meta=[p.venue&&p.title?p.venue:'',p.level,gender(p.gender),p.weekStart||p.weekEnd].filter(Boolean).join(' · ');
-      var st=statusStyle((p.status||'').toLowerCase());
-      var inner='<div class="pr-av">'+esc(inits(p.venue||name))+'</div>'
-        +'<div class="pr-info"><div class="pr-name">'+esc(name)+'</div>'+(meta?'<div class="pr-meta">'+esc(meta)+'</div>':'')+'</div>'
-        +(st[0]?'<span class="pr-status" style="'+st[1]+'">'+esc(st[0])+'</span>':'');
-      if(p.url){html+='<a class="pcard" href="'+esc(p.url)+'">'+inner+'</a>';}
-      else{html+='<div class="pcard">'+inner+'</div>';}
-    });
-    html+='</div>';
-    el.innerHTML=html;
-  }).catch(function(){
-    el.innerHTML='<div class="empty">Gagal memuat data.</div>';
-  });
-})();
-</script>
 <script src="/trekkr-nav.js" defer></script>
-<script src="/ecosystem.js" data-site="trekkr"></script>
+<script src="/trekkr-loader.js"></script>
+<script src="/nav-account.js" defer></script>
 </body>
 </html>
