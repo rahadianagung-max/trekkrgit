@@ -203,9 +203,9 @@ img{max-width:100%}
 .bp.s2 .bphoto{width:18vh;height:18vh;border-color:var(--gold);box-shadow:0 0 0 .7vh rgba(255,194,75,.14)}
 .bp.s1 .bphoto{border-color:var(--silver)}.bp.s3 .bphoto{border-color:var(--bronze)}
 .bp .bphoto img{width:100%;height:100%;object-fit:cover}
-.bp .bnm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:3.4vh;line-height:.92;margin-top:1vh;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.bp.s2 .bnm{font-size:4.2vh;background:linear-gradient(90deg,var(--gold),#FF8A00);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bp .bnm{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:3vh;line-height:.95;margin-top:1vh;
+  max-width:100%;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
+.bp.s2 .bnm{font-size:3.7vh;background:linear-gradient(90deg,var(--gold),#FF8A00);-webkit-background-clip:text;background-clip:text;color:transparent}
 .bp .brec{font-family:var(--display);font-style:italic;font-weight:800;font-size:2.4vh;color:var(--muted);margin-top:.5vh}
 .bp .brec .w{color:var(--w)}.bp .brec .l{color:var(--l)}
 .bp .bdl{font-family:var(--mono);font-weight:700;font-size:1.7vh;margin-top:.6vh;color:var(--w)}
@@ -422,7 +422,7 @@ img{max-width:100%}
     var now=(d.now||[]).map(function(m){return {court:m.court,a:(m.a||[]).map(look),b:(m.b||[]).map(look),sa:m.sa,sb:m.sb};}).filter(function(m){return m.a.length>=2&&m.b.length>=2;});
     var tgt=d.scoreTarget?('Race to '+d.scoreTarget):'Live';
     var courtsHtml=now.map(function(m){
-      function pchip(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(first(nm(p)))+'</span></div>';}
+      function pchip(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(nm(p))+'</span></div>';}
       function team(t,sc,oth){
         var has=(sc!=null&&oth!=null);
         var cls=!has?'pend':(sc>oth?'win':(sc<oth?'lose':''));
@@ -434,7 +434,7 @@ img{max-width:100%}
         +team(m.b,m.sb,m.sa)
         +'</div>';
     }).join('');
-    var bye=(d.bye||[]).map(function(k){return esc(first(nm(look(k))));});
+    var bye=(d.bye||[]).map(function(k){return esc(nm(look(k)));});
     var byeHtml=bye.length?'<div class="byline">⏸ Resting this round: <b>'+bye.join(', ')+'</b></div>':'';
     var std=sortStd(players);
     var rowsHtml=std.map(function(p,i){
@@ -466,13 +466,13 @@ img{max-width:100%}
       var dl=(p.elo||0)-(p.start||p.elo||0);
       return '<div class="bp '+stg[idx]+'"><div class="medal">'+med[idx]+'</div>'
         +'<div class="bphoto">'+photoInner(p.photoUrl,p.name)+'</div>'
-        +'<div class="bnm">'+esc(first(nm(p)))+'</div>'
+        +'<div class="bnm">'+esc(nm(p))+'</div>'
         +'<div class="brec"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></div>'
         +'<div class="bdl '+(dl>=0?'':'dn')+'">'+(dl>=0?'+':'')+dl+' ELO</div>'
         +'<div class="tag">'+tags[idx]+'</div></div>';
     }).join('');
     var rest=s.slice(3,7).map(function(p,i){
-      return '<div class="fchip"><span class="rk">'+(i+4)+'</span><span class="nm">'+esc(first(nm(p)))+'</span><span class="wl"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></span></div>';
+      return '<div class="fchip"><span class="rk">'+(i+4)+'</span><span class="nm">'+esc(nm(p))+'</span><span class="wl"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></span></div>';
     }).join('');
     return '<div class="champ"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
       +'<div class="bigpod">'+pods+'</div>'
@@ -526,7 +526,7 @@ img{max-width:100%}
     }
     var runners=arr.slice(1,4).map(function(p){
       var v=kind==='wins'?(p.wins+'W'):(p.days+'d');
-      return '<div class="runner"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="rn">'+esc(first(nm(p)))+'</span><span class="rv">'+v+'</span></div>';
+      return '<div class="runner"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="rn">'+esc(nm(p))+'</span><span class="rv">'+v+'</span></div>';
     }).join('');
     return '<div class="'+cls+'"><div class="hero-h"><span class="dot"></span><span class="t">'+label+'</span></div>'
       +'<div class="hero-body"><div class="hero-photo">'+photoInner(champ.photoUrl,champ.name)+'</div>'
