@@ -208,8 +208,12 @@ img{max-width:100%}
 .bp.s2 .bnm{font-size:3.7vh;background:linear-gradient(90deg,var(--gold),#FF8A00);-webkit-background-clip:text;background-clip:text;color:transparent}
 .bp .brec{font-family:var(--display);font-style:italic;font-weight:800;font-size:2.4vh;color:var(--muted);margin-top:.5vh}
 .bp .brec .w{color:var(--w)}.bp .brec .l{color:var(--l)}
-.bp .bdl{font-family:var(--mono);font-weight:700;font-size:1.7vh;margin-top:.6vh;color:var(--w)}
-.bp .bdl.dn{color:var(--l)}
+.bp .bdl{font-family:var(--display);font-style:italic;font-weight:800;font-size:2.5vh;margin-top:.8vh;color:var(--w);
+  background:rgba(47,208,122,.15);border-radius:999px;padding:.25vh 1.1vw;line-height:1.35}
+.bp .bdl.dn{color:var(--l);background:rgba(255,90,82,.13)}
+.podnote{flex-shrink:0;text-align:center;font-size:1.45vh;color:var(--faint);line-height:1.4;padding-top:.3vh}
+.podnote b{color:var(--muted)}
+.podnote .up{color:var(--w)}
 .bp .tag{margin-top:.7vh;font-size:1.3vh;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--orange)}
 .bp.s2 .tag{color:var(--gold)}
 .finalstrip{flex-shrink:0;display:flex;gap:.7vw;flex-wrap:nowrap;overflow:hidden}
@@ -468,7 +472,7 @@ img{max-width:100%}
         +'<div class="bphoto">'+photoInner(p.photoUrl,p.name)+'</div>'
         +'<div class="bnm">'+esc(nm(p))+'</div>'
         +'<div class="brec"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></div>'
-        +'<div class="bdl '+(dl>=0?'':'dn')+'">'+(dl>=0?'+':'')+dl+' ELO</div>'
+        +'<div class="bdl '+(dl>=0?'':'dn')+'">'+(dl>=0?'▲ +':'▼ ')+dl+' ELO</div>'
         +'<div class="tag">'+tags[idx]+'</div></div>';
     }).join('');
     var rest=s.slice(3,7).map(function(p,i){
@@ -476,7 +480,9 @@ img{max-width:100%}
     }).join('');
     return '<div class="champ"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
       +'<div class="bigpod">'+pods+'</div>'
-      +(rest?'<div class="finalstrip">'+rest+'</div>':'')+'</div>';
+      +(rest?'<div class="finalstrip">'+rest+'</div>':'')
+      +'<div class="podnote"><b>Champion = most wins today.</b> The <b class="up">+ELO</b> is what each player gained this session — ELO is a career rating carried across sessions, so a higher-rated player can rank below today\'s winner.</div>'
+      +'</div>';
   }
 
   // WEEKLY (Men's / Women's, no tiers)

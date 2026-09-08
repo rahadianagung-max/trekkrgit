@@ -2740,6 +2740,26 @@ async function getVenueWeeklyRanking(venueName, params) {
   const latestElo = {};
   eRows.forEach((r) => { if (r[1]) latestElo[r[1].toLowerCase()] = parseInt(r[2]) || 1350; });
 
+  // Per-player ELO change *within this game week*, so the ranking can show how
+  // much a player moved this week rather than only their carried-over career
+  // ELO (a champion by wins may still sit below a higher-rated runner-up).
+  // ELO_Log rows: [session, player, new_elo, elo_change, w, l, ts]. We attribute
+  // a log entry to the week when its timestamp falls inside the week's match
+  // window (padded a day), since venue matches and their ELO_Log entries are
+  // written together per session.
+  const DAY = 864e5;
+  const weekTs = weekMatches.map((r) => Date.parse(r[1])).filter((n) => !isNaN(n));
+  const wkLo = weekTs.length ? Math.min(...weekTs) - DAY : -Infinity;
+  const wkHi = weekTs.length ? Math.max(...weekTs) + DAY : Infinity;
+  const eloDelta = {};
+  eRows.forEach((r) => {
+    if (!r[1]) return;
+    const t = Date.parse(r[6]);
+    if (isNaN(t) || t < wkLo || t > wkHi) return;
+    const k = r[1].toLowerCase();
+    eloDelta[k] = (eloDelta[k] || 0) + (parseInt(r[3]) || 0);
+  });
+
   // Join the global Players tab so the leaderboard can show photos/display names.
   // Match by normalised name (case/space-insensitive) to survive minor mismatches.
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` }).catch(() => ({ data: { values: [] } }));
@@ -2755,6 +2775,7 @@ async function getVenueWeeklyRanking(venueName, params) {
       name: p, displayName: gi.displayName || p, w: stats[p].w, l: stats[p].l, pd: stats[p].pd, played: stats[p].played,
       // Prefer the gender from the match row; fall back to the player's profile, then "M".
       gender: stats[p].gender || gi.gender || "M", elo: latestElo[p.toLowerCase()] || 1350,
+      eloChange: eloDelta[p.toLowerCase()] || 0,
       photoUrl: gi.photoUrl || "", verified: !!gi.verified, region: gi.region || "",
     };
   });

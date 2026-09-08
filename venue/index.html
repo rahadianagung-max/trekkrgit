@@ -122,6 +122,14 @@
   .champ-stats .cs{font-size:12px;color:var(--muted)}
   .champ-stats .cs b{font-family:var(--display);font-style:italic;font-weight:800;font-size:16px;color:var(--text);margin-right:2px}
   .champ-stats .cs-pd b{color:var(--orange)}
+  .elod{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-style:italic;font-weight:800;font-size:14px;padding:2px 10px;border-radius:999px;line-height:1.4}
+  .elod.up{color:var(--green);background:rgba(34,197,94,.14)}
+  .elod.dn{color:var(--red);background:rgba(239,68,68,.12)}
+  .lb-elod{display:block;font-family:var(--display);font-style:italic;font-weight:800;font-size:12px;margin-top:3px}
+  .lb-elod.up{color:var(--green)} .lb-elod.dn{color:var(--red)}
+  .rank-note{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border-soft);border-radius:12px;padding:11px 13px;margin:12px 0 4px;line-height:1.55}
+  .rank-note i{color:var(--orange);font-size:16px;flex-shrink:0;margin-top:1px}
+  .rank-note b{color:var(--text);font-weight:700}
   .champ .lb-go{color:var(--faint);font-size:20px;flex-shrink:0}
   .champ:hover .lb-go{color:var(--orange)}
   @media(max-width:520px){.champ-photo{width:76px;height:76px;font-size:27px}.champ1 .champ-photo{width:96px;height:96px;font-size:34px}.champ-rk{font-size:26px;width:24px}.champ{gap:12px;padding:14px}}
@@ -313,13 +321,18 @@
   function ppNudge(){return '<div class="pp-nudge"><span class="pp-ic"><i class="ti ti-id-badge-2"></i></span><div class="pp-tx"><b>Found your name? Tap it.</b><span>Every player here has a Player Passport &mdash; rating, tier, match history &amp; badges.</span></div></div>';}
   function bigphoto2(p){if(p.photoUrl)return '<img class="champ-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="champ-photo">'+esc(initials(p.name))+'</span>';}
   function pdText(v){v=(v==null?0:v);return (v>0?'+':'')+v;}
+  // ELO gained/lost this week — emphasised so a "champion by wins" reads clearly
+  // even when their carried-over career ELO sits below a higher-rated runner-up.
+  function eloDeltaChip(p){var d=p.eloChange||0;if(!d)return '';return '<span class="elod '+(d>0?'up':'dn')+'">'+(d>0?'▲':'▼')+' '+(d>0?'+':'')+d+' this week</span>';}
+  function eloDeltaMini(p){var d=p.eloChange||0;if(!d)return '';return '<span class="lb-elod '+(d>0?'up':'dn')+'">'+(d>0?'+':'')+d+'</span>';}
+  function rankNote(){return '<div class="rank-note"><i class="ti ti-info-circle" aria-hidden="true"></i><span><b>Champion = most wins this week.</b> ELO is a career skill rating carried across every session, so a higher-rated runner-up can still show a bigger ELO number. The <b>green/red chip</b> is the ELO each player gained or lost this week.</span></div>';}
   function champCard(p,rank){
     var label=rank===1?'Weekly Champion':(rank===2?'Runner-up':'3rd place');
     return '<a class="champ champ'+rank+'" href="https://trekkr.online/player/'+slug(p.name)+'">'
       +'<div class="champ-rk">'+rank+'</div>'+bigphoto2(p)
       +'<div class="champ-info"><div class="champ-lbl">'+label+'</div>'
       +'<div class="champ-nm">'+esc(p.name)+'</div>'
-      +'<div class="champ-stats"><span class="cs"><b>'+(p.w||0)+'</b>W</span><span class="cs"><b>'+(p.l||0)+'</b>L</span><span class="cs cs-pd"><b>'+pdText(p.pd)+'</b> diff</span><span class="cs"><b>'+(p.elo||'')+'</b> ELO</span></div></div>'
+      +'<div class="champ-stats"><span class="cs"><b>'+(p.w||0)+'</b>W</span><span class="cs"><b>'+(p.l||0)+'</b>L</span><span class="cs cs-pd"><b>'+pdText(p.pd)+'</b> diff</span><span class="cs"><b>'+(p.elo||'')+'</b> ELO</span>'+eloDeltaChip(p)+'</div></div>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
   }
   function podium(list){var top=list.slice(0,3);if(!top.length)return '';return '<div class="champs">'+top.map(function(p,i){return champCard(p,i+1);}).join('')+'</div>';}
@@ -328,7 +341,7 @@
       +'<span class="rk">'+(i+1)+'</span>'+photo(p)
       +'<span class="lb-name">'+esc(p.name)+'<span class="lb-sub">'+(p.gender==='F'?'Women':'Men')+' &middot; '+pdText(p.pd)+' diff</span></span>'
       +'<span class="lb-wl"><span class="n"><span class="w">'+(p.w||0)+'</span><span class="sep">/</span><span class="l">'+(p.l||0)+'</span></span><span class="cap">W / L</span></span>'
-      +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span></span>'
+      +'<span class="lb-elo"><span class="v">'+(p.elo||'')+'</span><span class="cap">ELO</span>'+eloDeltaMini(p)+'</span>'
       +'<span class="lb-go"><i class="ti ti-chevron-right"></i></span></a>';
   }
   function genderBlock(title,list){
@@ -356,7 +369,7 @@
     var rk=d.ranking||[];
     var males=rk.filter(function(p){return p.gender!=='F';});
     var females=rk.filter(function(p){return p.gender==='F';});
-    content.innerHTML=hdr(v)+modeTabs('week')+weekSelect(d.weeks,d.week)+ppNudge()
+    content.innerHTML=hdr(v)+modeTabs('week')+weekSelect(d.weeks,d.week)+ppNudge()+rankNote()
       +genderBlock('Men &middot; '+weekLabel(d.week),males)
       +genderBlock('Women &middot; '+weekLabel(d.week),females)
       +matchHist(d.matches);
