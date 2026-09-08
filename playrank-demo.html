@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PlayRank Simulasi</title>
-<meta name="description" content="Simulasi engine PlayRank Trekkr — sama persis dengan yang dipakai venue admin: pilih format, auto-skor tiap ronde, sampai hasil & ELO. Pemain contoh, tanpa login."/>
+<title>PlayRank Demo</title>
+<meta name="description" content="A public simulation of the Trekkr PlayRank engine — the same one venues use: set the format, auto-score each round, through to results & ELO. Example players, no login."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -408,56 +408,56 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 <div class="sim-top">
   <div class="sim-top-in">
     <span class="sim-brand">PlayRank</span>
-    <span class="sim-tag">Simulasi</span>
+    <span class="sim-tag">Simulation</span>
     <span class="sim-spacer"></span>
-    <select class="sim-speed" id="sim-speed" onchange="simSetSpeed(this.value)" aria-label="Kecepatan">
-      <option value="slow">Pelan</option>
+    <select class="sim-speed" id="sim-speed" onchange="simSetSpeed(this.value)" aria-label="Speed">
+      <option value="slow">Slow</option>
       <option value="normal" selected>Normal</option>
-      <option value="fast">Cepat</option>
+      <option value="fast">Fast</option>
     </select>
-    <button class="sim-btn ghost" id="sim-one" onclick="simOneRound()">⏭ 1 ronde</button>
+    <button class="sim-btn ghost" id="sim-one" onclick="simOneRound()">⏭ 1 round</button>
     <button class="sim-btn" id="sim-play" onclick="simToggle()">▶ Auto-play</button>
   </div>
 </div>
 
 <div class="sim-note">
-  🎾 <b>Simulasi engine PlayRank</b> — persis seperti di venue admin. Atur court, kategori, format skor &amp; level seperti biasa, lalu tekan <b>Auto-play</b>: engine memilih pemain contoh (termasuk beberapa <b>pemain baru</b>), mengisi skor tiap ronde, dan menyusun hasil + ELO. Tidak ada login &amp; tidak ada data yang dikirim. <a class="sim-back" href="/playrank">← Kembali ke PlayRank</a>
+  🎾 <b>PlayRank engine simulation</b> — exactly like the venue admin. Set courts, category, score format &amp; level as usual, then hit <b>Auto-play</b>: the engine picks example players (including a few <b>new players</b>), fills in scores each round, and builds the result + ELO. No login, and no data is sent. <a class="sim-back" href="/playrank">← Back to PlayRank</a>
 </div>
 
 <div id="rm-root">
 <div class="rm-screen" id="rm-setup">
           <div class="rm-setup">
-            <button class="rm-back" onclick="rmGo('intro')">← Kembali</button>
-            <p class="rm-section-title">Konfigurasi Match</p>
+            <button class="rm-back" onclick="rmGo('intro')">← Back</button>
+            <p class="rm-section-title">Match Setup</p>
 
             <div class="rm-card">
-              <div class="rm-card-label">Jumlah Court</div>
+              <div class="rm-card-label">Number of Courts</div>
               <div class="rm-counter">
                 <button class="rm-counter-btn" onclick="rmChangeCourts(-1)">−</button>
                 <div class="rm-counter-val" id="rm-courts-val">2</div>
                 <button class="rm-counter-btn" onclick="rmChangeCourts(1)">+</button>
               </div>
-              <p class="rm-hint" id="rm-courts-hint">Minimal 8 pemain diperlukan</p>
-              <p class="rm-hint" id="rm-courts-system" style="color:var(--blue);font-weight:600">Sistem: Mexicano (2+ court)</p>
+              <p class="rm-hint" id="rm-courts-hint">At least 8 players needed</p>
+              <p class="rm-hint" id="rm-courts-system" style="color:var(--blue);font-weight:600">System: Mexicano (2+ courts)</p>
             </div>
 
             <div class="rm-card">
-              <div class="rm-card-label">Kategori Sesi</div>
+              <div class="rm-card-label">Session Category</div>
               <div class="rm-gender-grid">
                 <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
                   <div class="rm-gender-card-icon">♂</div>
-                  <div class="rm-gender-card-label">Putra</div>
+                  <div class="rm-gender-card-label">Men</div>
                 </div>
                 <div class="rm-gender-card" id="rm-gender-F" onclick="rmSetGender('F')">
                   <div class="rm-gender-card-icon">♀</div>
-                  <div class="rm-gender-card-label">Putri</div>
+                  <div class="rm-gender-card-label">Women</div>
                 </div>
               </div>
-              <p class="rm-hint" id="rm-gender-hint">Putra atau Putri. Satu sesi = satu gender (untuk ranking &amp; kualifikasi T1/T2/T3 yang bersih).</p>
+              <p class="rm-hint" id="rm-gender-hint">Men or Women. One session = one gender (for clean rankings &amp; qualification).</p>
             </div>
 
             <div class="rm-card">
-              <div class="rm-card-label">Format Skor</div>
+              <div class="rm-card-label">Score Format</div>
               <div class="rm-segment" style="margin-bottom:12px">
                 <button class="rm-seg-btn active" id="rm-sfmt-race" onclick="rmSetScoreFormat('race')">Race To</button>
                 <button class="rm-seg-btn" id="rm-sfmt-bestof" onclick="rmSetScoreFormat('bestof')">Best Of</button>
@@ -470,12 +470,12 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   <button class="rm-counter-btn" onclick="rmChangeTarget(1)">+</button>
                 </div>
               </div>
-              <p class="rm-hint" id="rm-score-hint">Race to 4 — menang saat capai angka 4 lebih dulu</p>
+              <p class="rm-hint" id="rm-score-hint">Race to 4 — first to reach 4 wins</p>
             </div>
 
             <div class="rm-card">
-              <div class="rm-card-label">Level Permainan</div>
-              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
+              <div class="rm-card-label">Game Level</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">What level is this match played at?</p>
               <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
                 <option value="beginner">Beginner</option>
                 <option value="upper_beginner">Upper Beginner</option>
@@ -487,38 +487,38 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                 <option value="platinum">Platinum</option>
               </select>
               <div style="margin-top:12px;padding:12px 14px;background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);font-size:12.5px;line-height:1.55;color:var(--txt)">
-                <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
-                Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
+                <strong style="color:var(--blue)">ℹ️ Directly sets the starting level for new players.</strong>
+                A first-time player starts their Trekkr rating at the level you pick, so the first round is already balanced. Players who already have a Trekkr rating are unaffected.
               </div>
-              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
+              <p class="rm-hint" id="rm-level-hint">New players start at Lower Bronze · ±1350 ELO</p>
             </div>
 
-            <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
+            <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pick Players →</button>
           </div>
         </div>
 
         <!-- ── SCREEN: PLAYERS ── -->
         <div class="rm-screen" id="rm-players">
           <div class="rm-players">
-            <button class="rm-back" onclick="rmGo('setup')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Setup</button>
+            <button class="rm-back" onclick="rmGo('setup')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Back to Setup</button>
 
             <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
-              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pilih Pemain</p>
+              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pick Players</p>
               <span style="font-size:13px;color:var(--txt2)"><span id="rm-sel-count" style="font-weight:700;color:var(--blue)">0</span><span id="rm-sel-min"> / min 8</span></span>
             </div>
 
             <div id="rm-sel-chips-wrap" style="display:none;margin-bottom:12px">
-              <div class="rm-chip-label">Dipilih</div>
+              <div class="rm-chip-label">Selected</div>
               <div class="rm-chips" id="rm-sel-chips"></div>
             </div>
 
             <div id="rm-rec-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
-              <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 Rekomendasi</div>
+              <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 Recommendation</div>
               <div style="font-size:13px;color:var(--txt)" id="rm-rec-text">—</div>
             </div>
 
             <div id="rm-anchor-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm)">
-              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⚓ Anchor pool kalibrasi</div>
+              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⚓ Calibration anchor pool</div>
               <div style="font-size:13px;color:var(--txt)" id="rm-anchor-text">—</div>
             </div>
 
@@ -528,12 +528,12 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
               <span class="rm-search-icon">
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
               </span>
-              <input class="rm-search" id="rm-search" placeholder="Ketik nama pemain..." oninput="rmRenderPlayers()" autocomplete="off" autocorrect="off" spellcheck="false"/>
+              <input class="rm-search" id="rm-search" placeholder="Type a player's name..." oninput="rmRenderPlayers()" autocomplete="off" autocorrect="off" spellcheck="false"/>
               <button class="rm-search-clear" id="rm-search-clear" onclick="rmClearSearch()">×</button>
             </div>
 
             <div style="font-size:12px;color:var(--txt2);background:var(--gold-lt);border:1px solid var(--gold);border-radius:9px;padding:9px 11px;margin:-4px 0 14px;line-height:1.5">
-              💡 Untuk mendaftarkan pemain <b>baru</b>, ketik <b>nama lengkap 2 kata</b> (nama depan &amp; belakang) — contoh: <b>Budi Santoso</b>. Nama 1 kata tidak bisa ditambahkan.
+              💡 To register a <b>new</b> player, type a <b>full 2-word name</b> (first &amp; last name) — e.g. <b>Budi Santoso</b>. A single-word name can't be added.
             </div>
 
             <div id="rm-confirmed-quick" style="display:none;margin-bottom:12px"></div>
@@ -541,7 +541,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             <div id="rm-player-list" style="padding-bottom:100px"></div>
 
             <div class="rm-bottom-bar">
-              <button class="rm-btn-full rm-btn-primary" id="rm-start-btn" onclick="rmStartMatch()" disabled>Pilih pemain dahulu</button>
+              <button class="rm-btn-full rm-btn-primary" id="rm-start-btn" onclick="rmStartMatch()" disabled>Pick players first</button>
             </div>
           </div>
         </div>
@@ -549,17 +549,17 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
         <!-- ── SCREEN: TEAMS (manual fixed-partner pairing) ── -->
         <div class="rm-screen" id="rm-teams">
           <div class="rm-players">
-            <button class="rm-back" onclick="rmGo('players')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Pemain</button>
-            <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pasangkan Tim</p>
-            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Ketuk dua pemain untuk membentuk satu tim. Pasangan ini tetap sepanjang sesi (Mexicano antar-tim).</p>
+            <button class="rm-back" onclick="rmGo('players')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Back to Players</button>
+            <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pair Teams</p>
+            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Tap two players to form a team. This pairing stays for the whole session (team Mexicano).</p>
             <div class="rm-alert rm-alert-red hidden" id="rm-teams-error"></div>
             <div id="rm-teams-formed"></div>
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:16px 0 8px">Belum dipasangkan</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:16px 0 8px">Not paired yet</div>
             <div id="rm-teams-pool" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-            <button class="rm-btn-full rm-btn-ghost" style="margin-top:16px" onclick="rmAutoPairRest()">🎲 Pasangkan sisa otomatis (seimbang by ELO)</button>
+            <button class="rm-btn-full rm-btn-ghost" style="margin-top:16px" onclick="rmAutoPairRest()">🎲 Auto-pair the rest (balanced by ELO)</button>
             <div style="height:90px"></div>
             <div class="rm-bottom-bar">
-              <button class="rm-btn-full rm-btn-primary" id="rm-teams-start" onclick="rmConfirmTeams()" disabled>Pasangkan semua dahulu</button>
+              <button class="rm-btn-full rm-btn-primary" id="rm-teams-start" onclick="rmConfirmTeams()" disabled>Pair everyone first</button>
             </div>
           </div>
         </div>
@@ -570,32 +570,32 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             <div class="rm-tabs">
               <button class="rm-tab active" id="rmtab-courts" onclick="rmSwitchTab('courts')">🎾 Courts</button>
               <button class="rm-tab" id="rmtab-leaderboard" onclick="rmSwitchTab('leaderboard')">🏆 Leaderboard</button>
-              <button class="rm-tab" id="rmtab-history" onclick="rmSwitchTab('history')">📋 Riwayat</button>
+              <button class="rm-tab" id="rmtab-history" onclick="rmSwitchTab('history')">📋 History</button>
             </div>
 
             <!-- Courts -->
             <div class="rm-tab-panel active" id="rm-tp-courts" style="padding:16px 0">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
                 <div>
-                  <div class="rm-round-pill" id="rm-round-pill">Ronde 1</div>
+                  <div class="rm-round-pill" id="rm-round-pill">Round 1</div>
                   <div style="font-size:13px;color:var(--txt2);margin-top:4px" id="rm-score-format-label">Race to 4</div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                  <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Kelola Pemain</button>
-                  <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+                  <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Manage Players</button>
+                  <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 done</div>
                 </div>
               </div>
               <div class="rm-live-bar" id="rm-live-bar" style="display:none">
                 <div class="rm-live-bar-top">
                   <span class="rm-live-badge"><span class="rm-live-dot"></span> LIVE</span>
-                  <span class="rm-live-txt">Halaman live untuk pemain — standings & prediksi real-time</span>
+                  <span class="rm-live-txt">Live page for players — real-time standings & predictions</span>
                 </div>
                 <div class="rm-live-linkrow">
                   <span class="rm-live-link" id="rm-live-link"></span>
                 </div>
                 <div class="rm-live-actions">
-                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">🔗 Salin link</button>
-                  <button class="rm-live-btn primary" onclick="rmShareLive()">📣 Bagikan ke pemain</button>
+                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">🔗 Copy link</button>
+                  <button class="rm-live-btn primary" onclick="rmShareLive()">📣 Share with players</button>
                 </div>
               </div>
               <div class="rm-submit-status" id="rm-submit-status"></div>
@@ -603,13 +603,13 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
               <div id="rm-court-cards"></div>
               <div id="rm-bye-section" style="display:none">
                 <div class="rm-bye-card">
-                  <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Istirahat Ronde Ini</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Resting This Round</div>
                   <div id="rm-bye-players"></div>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-                <button class="rm-btn-full rm-btn-primary" id="rm-submit-btn" onclick="rmSubmitRound()">Submit Skor & Lanjut Ronde →</button>
-                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+                <button class="rm-btn-full rm-btn-primary" id="rm-submit-btn" onclick="rmSubmitRound()">Submit Scores & Next Round →</button>
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 End Match</button>
               </div>
             </div>
 
@@ -617,17 +617,17 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             <div class="rm-tab-panel hidden" id="rm-tp-leaderboard" style="padding:16px 0">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
                 <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Live Leaderboard</p>
-                <span class="rm-round-pill" id="rm-lb-badge" style="font-size:11px;padding:4px 10px">Ronde 1</span>
+                <span class="rm-round-pill" id="rm-lb-badge" style="font-size:11px;padding:4px 10px">Round 1</span>
               </div>
               <div id="rm-lb-list"></div>
               <div style="margin-top:20px">
-                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 End Match</button>
               </div>
             </div>
 
             <!-- History -->
             <div class="rm-tab-panel hidden" id="rm-tp-history" style="padding:16px 0">
-              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:16px">Riwayat Ronde</p>
+              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:16px">Round History</p>
               <div id="rm-history-list"></div>
             </div>
           </div>
@@ -638,7 +638,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
           <div class="rm-done">
             <div class="rm-done-hero">
               <div class="rm-done-emoji">🎉</div>
-              <div class="rm-done-title">Trekkr Ranked Match Selesai!</div>
+              <div class="rm-done-title">Trekkr PlayRank Complete!</div>
               <div class="rm-done-sub" id="rm-done-sub"></div>
               <div style="font-size:12px;opacity:.6;margin-top:4px" id="rm-done-meta"></div>
               <div id="rm-done-flags" style="display:none;margin:12px auto 0;max-width:420px;padding:11px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm);text-align:left"></div>
@@ -650,9 +650,9 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             </div>
             <button class="rm-share-btn" onclick="rmShare()">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              Bagikan Leaderboard Venue
+              Share Venue Leaderboard
             </button>
-            <button class="rm-new-match-btn" onclick="rmNewMatch()">+ Mulai Match Baru</button>
+            <button class="rm-new-match-btn" onclick="rmNewMatch()">+ Start New Match</button>
           </div>
         </div>
 </div>
@@ -661,15 +661,15 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 <div class="rm-modal-overlay hidden" id="rm-modal-add" onclick="rmCloseAdd()">
   <div class="rm-modal" onclick="event.stopPropagation()">
     <div class="rm-modal-handle"></div>
-    <div class="rm-modal-title">Tambah Pemain Baru</div>
+    <div class="rm-modal-title">Add New Player</div>
     <div class="rm-alert rm-alert-red hidden" id="rm-add-error"></div>
     <div class="rm-input-group">
       <label class="rm-input-label">First Name *</label>
-      <input class="rm-input" id="rm-fn" placeholder="Contoh: Budi" oninput="rmUpdateAddPreview()"/>
+      <input class="rm-input" id="rm-fn" placeholder="e.g. Budi" oninput="rmUpdateAddPreview()"/>
     </div>
     <div class="rm-input-group">
       <label class="rm-input-label">Last Name *</label>
-      <input class="rm-input" id="rm-ln" placeholder="Contoh: Santoso" oninput="rmUpdateAddPreview()"/>
+      <input class="rm-input" id="rm-ln" placeholder="e.g. Santoso" oninput="rmUpdateAddPreview()"/>
     </div>
     <div class="rm-input-group" style="margin-bottom:0">
       <label class="rm-input-label">Gender</label>
@@ -680,8 +680,8 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
     </div>
     <div class="rm-alert rm-alert-blue hidden" id="rm-add-preview" style="margin-top:10px"></div>
     <div style="margin-top:16px" class="rm-grid2">
-      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Batal</button>
-      <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Tambah</button>
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Cancel</button>
+      <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Add</button>
     </div>
   </div>
 </div>
@@ -690,16 +690,16 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 <div class="rm-modal-overlay hidden" id="rm-modal-manage" onclick="rmCloseManage()">
   <div class="rm-modal" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
     <div class="rm-modal-handle"></div>
-    <div class="rm-modal-title">Kelola Pemain</div>
-    <div style="font-size:12.5px;color:var(--blue);margin:-4px 0 10px" id="rm-manage-hint">Cari nama untuk menambah pemain telat</div>
+    <div class="rm-modal-title">Manage Players</div>
+    <div style="font-size:12.5px;color:var(--blue);margin:-4px 0 10px" id="rm-manage-hint">Search a name to add a late player</div>
     <div class="rm-search-wrap" style="margin-bottom:6px">
       <span class="rm-search-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg></span>
-      <input class="rm-search" id="rm-manage-search" placeholder="Cari pemain di database..." oninput="rmRenderManageSearch()" autocomplete="off"/>
+      <input class="rm-search" id="rm-manage-search" placeholder="Search players in the database..." oninput="rmRenderManageSearch()" autocomplete="off"/>
     </div>
     <div id="rm-manage-results" style="margin-bottom:8px"></div>
     <div id="rm-manage-body"></div>
     <div style="margin-top:14px">
-      <button class="rm-btn-full rm-btn-primary" onclick="rmCloseManage()">Selesai</button>
+      <button class="rm-btn-full rm-btn-primary" onclick="rmCloseManage()">Done</button>
     </div>
   </div>
 </div>
@@ -708,15 +708,15 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 <div class="rm-modal-overlay hidden" id="rm-modal-end" onclick="rmCloseEnd()">
   <div class="rm-modal" onclick="event.stopPropagation()">
     <div class="rm-modal-handle"></div>
-    <div class="rm-modal-title">🏁 Akhiri Match?</div>
-    <p style="font-size:14px;color:var(--txt2);margin-bottom:20px;line-height:1.6">Match akan diakhiri dan hasil final disimpan ke Trekkr. Pemenang ditentukan berdasarkan W/L dan point diff saat ini.</p>
+    <div class="rm-modal-title">🏁 End Match?</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:20px;line-height:1.6">The match will end and the final results are saved to Trekkr. The winner is decided by current W/L and point difference.</p>
     <div style="background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);padding:14px;margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Top 3 Saat Ini</div>
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Current Top 3</div>
       <div id="rm-end-top3"></div>
     </div>
     <div class="rm-grid2">
-      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseEnd()">Kembali</button>
-      <button class="rm-btn-full rm-btn-danger" id="rm-end-btn" onclick="rmEndMatch()">Ya, Akhiri</button>
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseEnd()">Back</button>
+      <button class="rm-btn-full rm-btn-danger" id="rm-end-btn" onclick="rmEndMatch()">Yes, End</button>
     </div>
   </div>
 </div>
@@ -725,10 +725,10 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 <div class="rm-modal-overlay hidden" id="rm-modal-restore">
   <div class="rm-modal" onclick="event.stopPropagation()">
     <div class="rm-modal-handle"></div>
-    <div class="rm-modal-title">🎾 Match Sedang Berjalan</div>
-    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Lanjutkan match yang belum selesai, atau hapus jika sudah tidak dipakai.</p>
+    <div class="rm-modal-title">🎾 Match In Progress</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Resume an unfinished match, or delete it if no longer needed.</p>
     <div id="rm-running-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
-    <button class="rm-btn-full rm-btn-primary" onclick="rmStartFresh()">+ Mulai Match Baru</button>
+    <button class="rm-btn-full rm-btn-primary" onclick="rmStartFresh()">+ Start New Match</button>
   </div>
 </div>
 
@@ -796,12 +796,12 @@ function rmHideErr(elId){document.getElementById(elId).classList.add('hidden');}
 function rmChangeCourts(d) {
   RM.courts = Math.max(1, Math.min(8, RM.courts+d));
   document.getElementById('rm-courts-val').textContent = RM.courts;
-  document.getElementById('rm-courts-hint').textContent = `Minimal ${RM.courts*4} pemain diperlukan`;
+  document.getElementById('rm-courts-hint').textContent = `At least ${RM.courts*4} players needed`;
   document.getElementById('rm-sel-min').textContent = ` / min ${RM.courts*4}`;
   var sysEl = document.getElementById('rm-courts-system');
   if (sysEl) sysEl.textContent = RM.courts === 1
-    ? 'Sistem: Americano (1 court) — semua bergiliran jadi partner'
-    : 'Sistem: Mexicano (2+ court) — court dibagi per ranking';
+    ? 'System: Americano (1 court) — everyone rotates as partners'
+    : 'System: Mexicano (2+ courts) — courts split by ranking';
   if(document.getElementById('rm-start-btn')) rmUpdateStartBtn();
   rmUpdateRec();
 }
@@ -832,8 +832,8 @@ function rmChangeTarget(d) {
 function rmUpdateScoreHint() {
   const t=RM.scoreTarget, sf=RM.scoreFormat;
   document.getElementById('rm-score-hint').textContent = sf==='race'
-    ? `Race to ${t} — menang saat capai angka ${t} lebih dulu`
-    : `Best of ${t} — butuh ${Math.ceil(t/2)} game untuk menang`;
+    ? `Race to ${t} — first to reach ${t} wins`
+    : `Best of ${t} — need ${Math.ceil(t/2)} games to win`;
 }
 function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
 
@@ -852,7 +852,7 @@ function rmSetLevel(lvl) {
   RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
   RM.startElo = m.elo;
   const hint = document.getElementById('rm-level-hint');
-  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
+  if (hint) hint.textContent = `New players start at ${m.label} · ±${m.elo} ELO`;
   rmUpdateAddPreview();
 }
 
@@ -867,11 +867,11 @@ function rmMakeRoster(){
     M('Johnny Pardede', 1488, 41, true),
     M('Anton Wijaya',   1337, 33, true),
     M('Bayu Saputra',   1452, 58, true),
-    M('Budi Santoso',   s,    0,  false),   // pemain baru
+    M('Budi Santoso',   s,    0,  false),   // new player
     M('Nico Tendean',   1334, 22, false),
     M('Gilang Ramadhan',1409, 47, true),
     M('Reza Aditya',    1291, 12, false),
-    M('Eko Prasetyo',   s,    0,  false),   // pemain baru
+    M('Eko Prasetyo',   s,    0,  false),   // new player
     M('Ricky Harjanto', 1361, 29, true),
     M('Dimas Prakoso',  1318, 18, false),
     M('Fajar Nugroho',  1276, 9,  false),
@@ -901,18 +901,18 @@ function rmRenderPlayers() {
     const hasLast = words.length >= 2;
     listEl.innerHTML = `
       <div style="padding:8px 0 16px">
-        <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">Tidak ada pemain "<strong style="color:var(--on)">${q}</strong>"</div>
+        <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">No player "<strong style="color:var(--on)">${q}</strong>"</div>
         ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
           ${rmAva(suggestion,42,16)}
           <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Daftar sebagai pemain baru · ELO awal ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Register as a new player · starting ELO ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-        </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Ketik nama depan dan belakang untuk menambah pemain baru. Contoh: "Budi Santoso"</div>`}
+        </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Type a first and last name to add a new player. Example: "Budi Santoso"</div>`}
       </div>`;
     return;
   }
   if (!filtered.length) {
-    listEl.innerHTML = `<div class="rm-empty"><div style="font-size:40px;margin-bottom:8px">👥</div>Belum ada pemain. Ketik nama untuk mencari atau menambah.</div>`;
+    listEl.innerHTML = `<div class="rm-empty"><div style="font-size:40px;margin-bottom:8px">👥</div>No players yet. Type a name to search or add.</div>`;
     return;
   }
   listEl.innerHTML = filtered.map(p => {
@@ -959,8 +959,8 @@ function rmRenderChips() {
 function rmUpdateStartBtn() {
   const btn = document.getElementById('rm-start-btn');
   const min = RM.courts*4, n = RM.selectedPlayers.length;
-  if (n < min) { btn.textContent=`Kurang ${min-n} pemain lagi`; btn.disabled=true; }
-  else { btn.textContent=`Mulai Match (${n} pemain) →`; btn.disabled=false; }
+  if (n < min) { btn.textContent=`${min-n} more players needed`; btn.disabled=true; }
+  else { btn.textContent=`Start Match (${n} players) →`; btn.disabled=false; }
 }
 function rmUpdateRec() {
   const n = RM.selectedPlayers.length, c = RM.courts;
@@ -970,11 +970,11 @@ function rmUpdateRec() {
   let rec, detail;
   if (byePerRound <= 0) {
     rec = Math.max(6, n-1);
-    detail = `Semua ${n} pemain main tiap ronde. Rekomendasi <strong>${rec} ronde</strong> untuk variasi lawan optimal.`;
+    detail = `All ${n} players play every round. Recommended <strong>${rec} rounds</strong> for the best opponent variety.`;
   } else {
     const cycle = Math.ceil(n/active);
     rec = Math.max(2, Math.ceil(6/cycle))*cycle;
-    detail = `${byePerRound} pemain istirahat per ronde. Rekomendasi <strong>${rec} ronde</strong> (kelipatan ${cycle}) agar semua main sama banyak.`;
+    detail = `${byePerRound} player(s) rest each round. Recommended <strong>${rec} rounds</strong> (multiples of ${cycle}) so everyone plays equally.`;
   }
   banner.style.display='block';
   document.getElementById('rm-rec-text').innerHTML = detail;
@@ -1001,14 +1001,14 @@ function rmSetAddGender(g) {
 function rmUpdateAddPreview() {
   const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
   const prev=document.getElementById('rm-add-preview');
-  if(fn&&ln){prev.innerHTML=`Nama: <strong>${fn} ${ln}</strong> · ELO awal: ${RM.startElo} (${rmTier(RM.startElo)})`;prev.classList.remove('hidden');}
+  if(fn&&ln){prev.innerHTML=`Name: <strong>${fn} ${ln}</strong> · starting ELO: ${RM.startElo} (${rmTier(RM.startElo)})`;prev.classList.remove('hidden');}
   else prev.classList.add('hidden');
 }
 function rmHandleAdd() {
   const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
-  if(!fn||!ln){rmShowErr('rm-add-error','First name dan last name wajib diisi');return;}
+  if(!fn||!ln){rmShowErr('rm-add-error','First and last name are required');return;}
   const fullName = [fn,ln].map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
-  if(RM.allPlayers.find(p=>p.name.toLowerCase()===fullName.toLowerCase())){rmShowErr('rm-add-error',`"${fullName}" sudah ada. Pilih dari daftar.`);return;}
+  if(RM.allPlayers.find(p=>p.name.toLowerCase()===fullName.toLowerCase())){rmShowErr('rm-add-error',`"${fullName}" already exists. Pick from the list.`);return;}
   const np = { name:fullName, displayName:fullName, gender:RM.newGender, elo:RM.startElo, matchCount:0, verified:false };
   RM.allPlayers.push(np);
   RM.selectedPlayers.push({...np});
@@ -1111,7 +1111,7 @@ function rmGenerateRound(isFirst=false) {
 
 function rmStartMatch() {
   const min=RM.courts*4;
-  if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`Minimal ${min} pemain untuk ${RM.courts} court`);return;}
+  if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`At least ${min} players for ${RM.courts} courts`);return;}
   rmHideErr('rm-players-error');
   RM.teams=[];
   rmBeginSession();
@@ -1143,17 +1143,17 @@ function rmSwitchTab(tab) {
 function rmRenderMatchScreen() {
   const round=RM.rounds[RM.currentRound];
   if(!round) return;
-  document.getElementById('rm-round-pill').textContent=`Ronde ${round.roundNum}`;
-  document.getElementById('rm-lb-badge').textContent=`Ronde ${round.roundNum}`;
+  document.getElementById('rm-round-pill').textContent=`Round ${round.roundNum}`;
+  document.getElementById('rm-lb-badge').textContent=`Round ${round.roundNum}`;
   document.getElementById('rm-score-format-label').textContent=
     RM.scoreFormat==='race'?`Race to ${RM.scoreTarget}`:`Best of ${RM.scoreTarget}`;
   const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
-  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} done`;
   document.getElementById('rm-court-cards').innerHTML=round.matches.map((m,i)=>`
     <div class="rm-court-card">
       <div class="rm-court-hdr">
         <span class="rm-court-badge">Court ${m.court}</span>
-        <span id="rm-court-status-${i}" class="${m.score1!==null?'rm-court-status-done':'rm-court-status-pend'}">${m.score1!==null?'✓ Selesai':'Menunggu skor'}</span>
+        <span id="rm-court-status-${i}" class="${m.score1!==null?'rm-court-status-done':'rm-court-status-pend'}">${m.score1!==null?'✓ Done':'Awaiting score'}</span>
       </div>
       <div class="rm-score-row">
         <div class="rm-score-team">
@@ -1190,10 +1190,10 @@ function rmUpdateScore(courtIdx) {
     i1.style.cssText=s1>s2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
     i2.style.cssText=s2>s1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
     document.getElementById(`rm-court-status-${courtIdx}`).className='rm-court-status-done';
-    document.getElementById(`rm-court-status-${courtIdx}`).textContent='✓ Selesai';
+    document.getElementById(`rm-court-status-${courtIdx}`).textContent='✓ Done';
   }
   const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
-  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} done`;
 }
 function rmUpdateFairBar() {
   const bar=document.getElementById('rm-fair-bar');
@@ -1207,9 +1207,9 @@ function rmUpdateFairBar() {
   const vals=Object.values(counts);
   if(!vals.length){bar.className='rm-fair-bar';return;}
   const min=Math.min(...vals),max=Math.max(...vals);
-  if(max-min===0){bar.className='rm-fair-bar ok';bar.innerHTML=`<span>✅</span><span>Semua pemain sudah dapat jatah match yang sama — waktu yang tepat untuk mengakhiri!</span>`;}
-  else if(max-min===1){bar.className='rm-fair-bar info';bar.innerHTML=`<span>🎾</span><span>Hampir merata — ${max-min} ronde lagi agar semua pemain dapat jatah yang sama.</span>`;}
-  else {bar.className='rm-fair-bar warn';bar.innerHTML=`<span>⚠️</span><span>Jatah match belum merata (selisih ${max-min}). Lanjutkan beberapa ronde lagi sebelum mengakhiri.</span>`;}
+  if(max-min===0){bar.className='rm-fair-bar ok';bar.innerHTML=`<span>✅</span><span>Everyone has played the same number of matches — a good time to finish!</span>`;}
+  else if(max-min===1){bar.className='rm-fair-bar info';bar.innerHTML=`<span>🎾</span><span>Almost even — ${max-min} more round(s) so everyone plays the same amount.</span>`;}
+  else {bar.className='rm-fair-bar warn';bar.innerHTML=`<span>⚠️</span><span>Matches not yet even (gap ${max-min}). Play a few more rounds before finishing.</span>`;}
 }
 function rmSetStatus(type, msg) {
   const el=document.getElementById('rm-submit-status');
@@ -1220,7 +1220,7 @@ function rmSetStatus(type, msg) {
 function rmSubmitRound() {
   const round=RM.rounds[RM.currentRound];
   const incomplete=round.matches.filter(m=>m.score1===null||m.score2===null);
-  if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court belum ada skornya.`);return false;}
+  if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court(s) missing a score.`);return false;}
   round.submittedAt=Date.now();
   round.matches.forEach(m=>{
     const ps=name=>RM.playerStats[name];
@@ -1236,7 +1236,7 @@ function rmSubmitRound() {
     [...m.team2].forEach(p=>{const st=RM.playerStats[p.name];if(!st)return;if(!t1Win)st.wins++;else st.losses++;st.pointsFor=(st.pointsFor||0)+m.score2;st.pointsAgainst=(st.pointsAgainst||0)+m.score1;st.pointDiff=st.pointsFor-st.pointsAgainst;});
   });
   round.submitted=true;
-  rmSetStatus('ok','Ronde '+round.roundNum+' tersimpan (simulasi) · ELO diperbarui');
+  rmSetStatus('ok','Round '+round.roundNum+' saved (simulation) · ELO updated');
   setTimeout(function(){rmSetStatus('','');},2500);
   const {matches,byePlayers}=rmGenerateRound(false);
   RM.rounds.push({roundNum:RM.rounds.length+1,matches,byePlayers,submitted:false,startedAt:Date.now()});
@@ -1249,7 +1249,7 @@ function rmGetLeaderboard(){
 }
 function rmRenderLeaderboard(){
   const sorted=rmGetLeaderboard(), el=document.getElementById('rm-lb-list');
-  if(!sorted.length){el.innerHTML='<div class="rm-empty">Belum ada data</div>';return;}
+  if(!sorted.length){el.innerHTML='<div class="rm-empty">No data yet</div>';return;}
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=sorted.map((p,i)=>{
     const diff=p.pointDiff||0;
@@ -1271,10 +1271,10 @@ function rmRenderLeaderboard(){
 function rmRenderHistory(){
   const el=document.getElementById('rm-history-list');
   const done=[...RM.rounds].filter(r=>r.submitted).reverse();
-  if(!done.length){el.innerHTML='<div class="rm-empty">Belum ada ronde selesai</div>';return;}
+  if(!done.length){el.innerHTML='<div class="rm-empty">No completed rounds yet</div>';return;}
   el.innerHTML=done.map(r=>`
     <div style="background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Ronde ${r.roundNum}</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Round ${r.roundNum}</div>
       ${r.matches.map(m=>`
         <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--sur-hi);font-size:12px">
           <div style="flex:1;font-weight:600">${m.team1.map(p=>p.name.split(' ')[0]).join(' / ')}</div>
@@ -1304,8 +1304,8 @@ function rmEndMatch(){
 function rmRenderDoneScreen(standings){
   const doneRounds=RM.rounds.filter(r=>r.submitted).length;
   const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('rm-done-sub').textContent=`${doneRounds} ronde · ${RM.selectedPlayers.length} pemain`;
-  document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue} · simulasi`;
+  document.getElementById('rm-done-sub').textContent=`${doneRounds} rounds · ${RM.selectedPlayers.length} players`;
+  document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue} · simulation`;
   const fl=document.getElementById('rm-done-flags'); if(fl) fl.style.display='none';
   const p1=standings[0],p2=standings[1],p3=standings[2];
   document.getElementById('rm-podium').innerHTML=`
@@ -1343,8 +1343,8 @@ function rmRenderDoneScreen(standings){
     </div>`).join('');
 }
 function rmShare(){
-  try{ if(navigator.clipboard) navigator.clipboard.writeText('Trekkr PlayRank — coba simulasinya: '+location.href); }catch(e){}
-  alert('Ini simulasi. Di venue asli, tombol ini membagikan papan skor & hasil ke pemain lewat halaman live / WhatsApp.');
+  try{ if(navigator.clipboard) navigator.clipboard.writeText('Trekkr PlayRank — try the simulation: '+location.href); }catch(e){}
+  alert('This is a simulation. In a real venue, this button shares the scoreboard & results with players via the live page / WhatsApp.');
 }
 function rmNewMatch(){ simReset(); }
 
@@ -1423,9 +1423,9 @@ function simSetSpeed(v){ SIM.speed=v; }
 function simSyncToolbar(){
   var btn=document.getElementById('sim-play'); if(!btn) return;
   var scr=currentScreen();
-  if(scr==='done'){ btn.textContent='↻ Ulangi simulasi'; }
-  else if(SIM.running){ btn.textContent='⏸ Jeda'; }
-  else { btn.textContent=scr==='match'?'▶ Lanjut auto-play':'▶ Auto-play'; }
+  if(scr==='done'){ btn.textContent='↻ Restart simulation'; }
+  else if(SIM.running){ btn.textContent='⏸ Pause'; }
+  else { btn.textContent=scr==='match'?'▶ Continue auto-play':'▶ Auto-play'; }
   var one=document.getElementById('sim-one');
   if(one) one.style.display=(scr==='done')?'none':'';
 }
