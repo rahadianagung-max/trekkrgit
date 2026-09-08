@@ -25,7 +25,7 @@
       ["Trekkr Series", "/series"],
     ] },
   ];
-  var SOLO = [["Rankings", "/rankings"]];
+  var SOLO = [["PlayRank", "/playrank"], ["Rankings", "/rankings"]];
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   var path = location.pathname.replace(/\/+$/, "") || "/";

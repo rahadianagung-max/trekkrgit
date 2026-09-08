@@ -22,6 +22,7 @@
     { "source": "/venues", "destination": "/venues/index.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
 
+    { "source": "/playrank", "destination": "/playrank.html" },
     { "source": "/liga-trekkr", "destination": "/liga-trekkr.html" },
     { "source": "/season", "destination": "/season.html" },
     { "source": "/sessions", "destination": "/sessions.html" },
