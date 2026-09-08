@@ -23,6 +23,7 @@
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
 
     { "source": "/playrank", "destination": "/playrank.html" },
+    { "source": "/playrank-demo", "destination": "/playrank-demo.html" },
     { "source": "/liga-trekkr", "destination": "/liga-trekkr.html" },
     { "source": "/season", "destination": "/season.html" },
     { "source": "/sessions", "destination": "/sessions.html" },

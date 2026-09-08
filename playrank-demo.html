@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlayRank Simulasi</title>
+<meta name="description" content="Simulasi engine PlayRank Trekkr — sama persis dengan yang dipakai venue admin: pilih format, auto-skor tiap ronde, sampai hasil & ELO. Pemain contoh, tanpa login."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── TREKKR DESIGN TOKENS ─────────────────────────────────────────────── */
+:root {
+  --pr:#FF6A00; --pr2:#FF7D1F; --sec:#FFB000;
+  --sur:#FFFFFF; --sur-lo:#F5F5F7; --sur-ct:#EFEFF1; --sur-hi:#E4E4E7; --sur-0:#fff;
+  --on:#0D0D0D; --on-v:#52525B; --on-pr:#fff;
+  --ok:#22A052; --warn:#FFB000; --danger:#FF3830;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-pill:999px;
+  --sh:0 16px 34px rgba(0,0,0,0.08);
+  --t:220ms; --ease:cubic-bezier(.22,.61,.36,1);
+  /* Ranked match vars */
+  --blue:#FF6A00; --blue-dk:#E55F00; --blue-lt:#FFF1E5; --blue-mid:#FFD9BF;
+  --bg-rm:#F5F5F7; --card-rm:#fff;
+  --txt:#0D0D0D; --txt2:#52525B; --txt3:#9A9AA2;
+  --bdr:#E4E4E7;
+  --green:#22A052; --green-lt:#E7F6EC;
+  --red:#FF2D55; --red-lt:#FFE9EE;
+  --gold:#FFB000; --gold-lt:#FFF6E6;
+  --r-rm:16px; --r-rm-sm:10px;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{color:var(--on);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.45;
+  background:radial-gradient(1200px 500px at 100% -15%,rgba(255,106,0,.11),transparent 58%),
+             radial-gradient(900px 500px at -10% 110%,rgba(255,176,0,.1),transparent 54%),var(--sur)}
+a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
+.container{width:min(1280px,calc(100% - 80px));margin:0 auto}
+
+/* ── HEADER ── */
+.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(115,118,136,.12)}
+.site-header__inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
+.brand{display:inline-block;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;font-size:26px;letter-spacing:0;text-transform:uppercase;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .32em .04em .02em;line-height:1.2;overflow:visible}
+.nav-links{display:flex;gap:4px}
+.nav-link{font-size:13px;font-weight:600;color:var(--on-v);padding:8px 14px;border-radius:var(--r-pill);transition:color .2s,background .2s}
+.nav-link:hover{color:var(--on);background:var(--sur-lo)}
+.nav-link.active{color:var(--pr)}
+.menu-toggle{display:none;background:transparent;border:1px solid var(--sur-hi);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--on);font-size:20px;cursor:pointer}
+.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 16px;border-top:1px solid rgba(115,118,136,.1)}
+.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:600;color:var(--on-v)}
+.mobile-nav a:hover{background:var(--sur-lo);color:var(--on)}
+.mobile-nav.open{display:flex}
+.hdr-actions{display:flex;align-items:center;gap:12px}
+
+/* ── BUTTONS ── */
+.btn{border:0;border-radius:var(--r-pill);padding:10px 22px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all var(--t) var(--ease)}
+.btn-primary{background:var(--pr);color:var(--on-pr)}.btn-primary:hover{background:var(--pr2)}
+.btn-ghost{background:var(--sur-ct);color:var(--pr)}.btn-ghost:hover{background:var(--sur-hi)}
+.btn-danger{background:rgba(255,56,48,.1);color:var(--danger);border:1px solid rgba(255,56,48,.2)}.btn-danger:hover{background:rgba(255,56,48,.18)}
+.btn-sm{padding:8px 16px;font-size:11px}
+
+/* ── LOGIN ── */
+#loginScreen{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.login-card{background:var(--sur-0);border-radius:var(--r-xl);padding:48px 40px;width:100%;max-width:440px;box-shadow:var(--sh);border:1px solid rgba(115,118,136,.12)}
+.login-eyebrow{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--pr);margin-bottom:12px}
+.login-title{font-family:'Saira Condensed',sans-serif;font-size:44px;font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--on);line-height:1;margin-bottom:8px}
+.login-sub{font-size:14px;color:var(--on-v);margin-bottom:32px;line-height:1.6}
+.f-label{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:8px}
+.f-input{width:100%;background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:12px 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--on);outline:none;transition:border-color var(--t)}
+.f-input:focus{border-color:var(--pr);background:var(--sur-0)}
+.f-input::placeholder{color:var(--on-v);opacity:.6}
+.t-status{margin-top:12px;padding:12px 16px;border-radius:var(--r-md);font-size:13px;display:none}
+.t-status.success{display:block;background:rgba(31,157,99,.1);border:1px solid rgba(31,157,99,.3);color:var(--ok)}
+.t-status.error{display:block;background:rgba(255,56,48,.08);border:1px solid rgba(255,56,48,.25);color:var(--danger)}
+
+/* ── HOW-TO-USE (admin guide) ── */
+.htu-btn{display:flex;align-items:center;gap:14px;width:100%;max-width:440px;text-align:left;background:linear-gradient(135deg,var(--blue-lt),var(--gold-lt));border:1.5px solid var(--pr);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:transform .15s,box-shadow .2s}
+.htu-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(255,106,0,.18)}
+.htu-btn-ic{width:46px;height:46px;border-radius:12px;background:var(--pr);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.htu-btn-tx{flex:1;min-width:0}
+.htu-btn-title{font-size:15px;font-weight:800;color:var(--on);line-height:1.2}
+.htu-btn-sub{font-size:12px;color:var(--on-v);margin-top:2px}
+.htu-btn-arrow{font-size:20px;color:var(--pr);flex-shrink:0}
+.htu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.htu-overlay.open{display:flex}
+.htu-modal{background:var(--sur-0);border-radius:var(--r-xl);width:100%;max-width:640px;margin:auto;box-shadow:var(--sh);border:1px solid rgba(115,118,136,.14);overflow:hidden}
+.htu-head{position:sticky;top:0;background:linear-gradient(135deg,var(--pr),var(--sec));color:#fff;padding:24px 26px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.htu-head-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;opacity:.9}
+.htu-head-title{font-family:'Saira Condensed',sans-serif;font-size:30px;font-weight:900;text-transform:uppercase;line-height:1;margin-top:4px}
+.htu-head-sub{font-size:13px;opacity:.95;margin-top:8px;line-height:1.5}
+.htu-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1}
+.htu-close:hover{background:rgba(255,255,255,.32)}
+.htu-body{padding:22px 26px 30px}
+.htu-intro{font-size:14px;color:var(--on-v);line-height:1.7;margin:0 0 10px}
+.htu-sec-label{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;color:var(--pr);font-size:19px;margin:26px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--sur-hi)}
+.htu-step{display:flex;gap:14px;margin-bottom:18px}
+.htu-step-num{width:30px;height:30px;border-radius:50%;background:var(--pr);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.htu-step-bd{flex:1;min-width:0}
+.htu-step-title{font-size:15px;font-weight:800;color:var(--on);margin-bottom:5px}
+.htu-step p{font-size:13.5px;color:var(--on-v);line-height:1.65;margin:0 0 6px}
+.htu-step a{color:var(--pr);font-weight:700;word-break:break-word}
+.htu-kv{margin:4px 0 0;padding:0;list-style:none}
+.htu-kv li{font-size:13px;color:var(--on-v);line-height:1.6;padding-left:16px;position:relative;margin-bottom:5px}
+.htu-kv li::before{content:"•";color:var(--pr);position:absolute;left:2px;font-weight:700}
+.htu-kv li b{color:var(--on)}
+.htu-checks{list-style:none;margin:0;padding:0}
+.htu-checks li{font-size:13.5px;color:var(--on);line-height:1.6;padding:10px 13px;background:var(--sur-lo);border-radius:var(--r-md);margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.htu-checks li::before{content:"✅";flex-shrink:0}
+.htu-note{background:var(--gold-lt);border:1px solid var(--gold);border-radius:var(--r-md);padding:12px 14px;font-size:13px;color:var(--on);line-height:1.6;margin:10px 0 0}
+.htu-note b{color:var(--pr)}
+.htu-eg{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.htu-eg span{font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:99px}
+.htu-eg .ok{background:rgba(34,160,82,.1);color:var(--ok)}
+.htu-eg .no{background:rgba(255,56,48,.08);color:var(--danger)}
+@media(max-width:560px){.htu-head-title{font-size:26px}.htu-body{padding:20px 18px 26px}}
+
+/* ── DASHBOARD ── */
+#adminScreen{display:none}
+.dash-hero{background:linear-gradient(135deg,#001c6f,#FF6A00);color:#fff;padding:40px 0 0}
+.dash-eyebrow{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.75;margin-bottom:8px}
+.dash-title{font-family:'Saira Condensed',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;line-height:.95}
+.dash-venue{color:rgba(255,255,255,.6);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:10px}
+.tab-nav{display:flex;border-bottom:1px solid rgba(255,255,255,.15);margin-top:32px}
+.tab-btn{padding:14px 28px;background:transparent;border:0;border-bottom:3px solid transparent;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all var(--t);margin-bottom:-1px}
+.tab-btn:hover{color:rgba(255,255,255,.85)}
+.tab-btn.is-active{color:#fff;border-bottom-color:#fff}
+.dash-panel{display:none;padding:40px 0 80px}
+.dash-panel.is-active{display:block}
+
+/* ── VENUE INFO FORM ── */
+.section-card{background:var(--sur-0);border-radius:var(--r-xl);padding:28px;margin-bottom:20px;border:1px solid rgba(115,118,136,.1)}
+/* Venue logo uploader */
+.vlogo-uploader{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.vlogo-preview{width:92px;height:92px;border-radius:16px;background:var(--sur-lo);border:1.5px dashed var(--sur-hi);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--on-v);font-size:11px;text-align:center;padding:6px}
+.vlogo-preview img{width:100%;height:100%;object-fit:cover}
+.vlogo-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.vlogo-hint{font-size:11px;color:var(--on-v);margin:0;max-width:280px;line-height:1.5}
+.sc-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.sc-dot{width:8px;height:8px;border-radius:50%;background:var(--pr)}
+.sc-label{font-family:'Saira Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.f-group{margin-bottom:0}
+
+/* ── RANKED MATCH SYSTEM ────────────────────────────────────────────────── */
+/* Scoped inside #rm-root */
+#rm-root{font-family:'Plus Jakarta Sans',sans-serif}
+
+/* SCREENS */
+.rm-screen{display:none;animation:rmFadeUp .2s ease both}
+.rm-screen.active{display:block}
+@keyframes rmFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* INTRO (landing) */
+.rm-intro{max-width:560px;margin:0 auto;padding:32px 0 40px}
+.rm-intro-badge{display:inline-flex;align-items:center;gap:6px;background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;margin-bottom:16px}
+.rm-intro-title{font-family:'Saira Condensed',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--on);margin-bottom:16px;line-height:1}
+.rm-intro-eyebrow{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--pr);margin-bottom:12px}
+.rm-intro-lead{font-size:14px;line-height:1.65;color:var(--on-v);margin-bottom:26px}
+.rm-basic-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--on-v);margin:0 0 14px}
+.rm-blist{display:grid;gap:11px;margin-bottom:28px}
+.rm-bitem{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.55;color:var(--on-v)}
+.rm-bitem .ck{width:20px;height:20px;border-radius:6px;background:var(--blue-lt);color:var(--pr);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rm-bitem b{font-weight:700;color:var(--on)}
+.rm-rules{display:grid;gap:12px;margin-bottom:28px}
+.rm-rule{display:flex;align-items:flex-start;gap:14px;background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px 18px}
+.rm-rule-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rm-rule-body{}
+.rm-rule-title{font-size:14px;font-weight:700;color:var(--on);margin-bottom:3px}
+.rm-rule-desc{font-size:13px;color:var(--on-v);line-height:1.55}
+.rm-rule.highlight{border-color:rgba(0,62,199,.2);background:var(--sur-lo)}
+.rm-rule.highlight .rm-rule-title{color:var(--pr)}
+
+/* SETUP */
+.rm-setup{max-width:520px;margin:0 auto;padding:28px 0}
+.rm-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;margin-bottom:20px;background:none;border:none;padding:0}
+.rm-back:hover{color:var(--on)}
+.rm-section-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--on-v);margin-bottom:16px}
+.rm-card{background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-xl);padding:22px 24px;margin-bottom:16px}
+.rm-card-label{font-size:13px;font-weight:600;color:var(--on-v);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.rm-counter{display:flex;align-items:center;background:var(--sur-lo);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);overflow:hidden;max-width:160px}
+.rm-counter-btn{width:44px;height:44px;border:none;background:transparent;font-size:20px;font-weight:600;color:var(--pr);cursor:pointer;transition:background .1s}
+.rm-counter-btn:hover{background:var(--sur-ct)}
+.rm-counter-val{flex:1;text-align:center;font-size:18px;font-weight:700;color:var(--on)}
+.rm-segment{display:flex;background:var(--sur-lo);border-radius:var(--r-md);padding:4px;gap:4px}
+.rm-seg-btn{flex:1;padding:10px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;border:none;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--txt2);background:transparent}
+.rm-seg-btn.active{background:white;color:var(--pr);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.rm-hint{font-size:12px;color:var(--txt3);margin-top:8px}
+.rm-gender-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rm-gender-card{border:2px solid var(--bdr);border-radius:var(--r-rm);padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--sur-0)}
+.rm-gender-card:hover{border-color:var(--blue-mid)}
+.rm-gender-card.active{border-color:var(--blue);background:var(--blue-lt)}
+.rm-gender-card-icon{font-size:24px;margin-bottom:6px}
+.rm-gender-card-label{font-size:13px;font-weight:700;color:var(--on)}
+.rm-gender-card.active .rm-gender-card-label{color:var(--blue)}
+
+/* PLAYERS */
+.rm-players{max-width:520px;margin:0 auto;padding:20px 0}
+.rm-search-wrap{position:relative;margin-bottom:14px}
+.rm-search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--txt3)}
+.rm-search{width:100%;background:var(--sur-0);border:1.5px solid var(--sur-hi);border-radius:var(--r-md);padding:11px 38px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;color:var(--on);outline:none;transition:border-color var(--t)}
+.rm-search:focus{border-color:var(--pr)}
+.rm-search::placeholder{color:var(--txt3)}
+.rm-search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;padding:0;display:none}
+.rm-chip-wrap{margin-bottom:12px}
+.rm-chip-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--on-v);margin-bottom:6px}
+.rm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rm-chip{display:inline-flex;align-items:center;gap:5px;background:var(--sur-ct);padding:5px 10px;border-radius:99px;font-size:12px;font-weight:600;color:var(--pr)}
+.rm-mini{border:1px solid var(--blue-mid);background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;cursor:pointer;margin-left:4px}
+.rm-manage-sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:4px 0 8px}
+.rm-chip button{background:none;border:none;cursor:pointer;color:var(--pr);padding:0;font-size:14px;line-height:1}
+.rm-player-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;background:var(--sur-0)}
+.rm-player-item:hover{border-color:var(--blue-mid);background:var(--blue-lt)}
+.rm-player-item.selected{border-color:var(--blue);background:var(--blue-lt)}
+.rm-player-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.rm-player-name{font-size:14px;font-weight:600;color:var(--on);flex:1}
+.rm-player-elo{font-size:12px;color:var(--txt3);font-family:'Saira Condensed',monospace}
+.rm-player-check{width:22px;height:22px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rm-player-gender{font-size:10px;color:var(--txt3);background:var(--bdr);padding:1px 6px;border-radius:20px}
+.rm-player-tier{font-size:11px;color:var(--txt3)}
+.rm-add-btn{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-rm-sm);cursor:pointer;background:var(--blue-lt);border:1.5px solid var(--blue);font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;text-align:left;margin-top:4px}
+.rm-add-btn:hover{background:var(--blue-mid)}
+.rm-bottom-bar{position:sticky;bottom:0;background:var(--sur-0);border-top:1px solid var(--bdr);padding:14px 0;margin:0 -24px;padding-left:24px;padding-right:24px}
+
+/* MATCH SCREEN */
+.rm-match{max-width:520px;margin:0 auto}
+.rm-tabs{display:flex;background:var(--sur-0);border-bottom:1px solid var(--bdr);position:sticky;top:80px;z-index:30}
+.rm-tab{flex:1;padding:12px 8px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;border:none;background:transparent;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.rm-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.rm-tab-panel{padding:16px 0;display:none}
+.rm-tab-panel.active{display:block}
+.rm-round-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue);color:white;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:700;margin-bottom:4px}
+.rm-court-card{background:var(--sur-0);border:1.5px solid var(--bdr);border-radius:var(--r-rm);padding:18px;margin-bottom:14px}
+.rm-court-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rm-court-badge{background:var(--blue);color:white;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+.rm-court-status-done{color:var(--green);font-size:12px;font-weight:600}
+.rm-court-status-pend{color:var(--txt3);font-size:12px;font-weight:600}
+.rm-score-row{display:flex;align-items:center;gap:8px}
+.rm-score-team{flex:1}
+.rm-score-team-name{font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:6px;text-align:center;min-height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.4}
+.rm-score-vs{font-size:18px;font-weight:800;color:var(--txt3);padding:0 4px;margin-top:20px}
+.rm-score-input{width:100%;text-align:center;font-size:28px;font-weight:800;font-family:'Saira Condensed',monospace;padding:12px 8px;border:2px solid var(--bdr);border-radius:var(--r-rm-sm);background:var(--bg-rm);color:var(--on);outline:none;transition:all .15s}
+.rm-score-input:focus{border-color:var(--blue);background:white}
+.rm-score-input.win{border-color:var(--green);background:var(--green-lt);color:var(--green)}
+.rm-score-input.lose{border-color:var(--red-lt);background:var(--red-lt);color:var(--red)}
+.rm-bye-card{background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm);padding:14px 16px;margin-bottom:14px}
+.rm-submit-status{font-size:13px;font-weight:500;padding:10px 14px;border-radius:var(--r-rm-sm);margin-bottom:12px;display:none}
+.rm-submit-status.sending{display:block;background:var(--blue-lt);color:var(--blue)}
+.rm-submit-status.ok{display:block;background:var(--green-lt);color:var(--green)}
+.rm-submit-status.failed{display:block;background:var(--red-lt);color:var(--red)}
+.rm-submit-status.queued{display:block;background:var(--gold-lt);color:var(--gold)}
+
+/* FAIRNESS BAR */
+.rm-fair-bar{border-radius:var(--r-rm-sm);padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:500;display:none}
+.rm-fair-bar.ok{display:flex;background:var(--green-lt);color:var(--green);gap:8px;align-items:center}
+.rm-fair-bar.warn{display:flex;background:var(--gold-lt);color:var(--gold);gap:8px;align-items:center}
+.rm-fair-bar.info{display:flex;background:var(--blue-lt);color:var(--blue);gap:8px;align-items:center}
+
+/* LEADERBOARD */
+.rm-lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sur-0);border-radius:var(--r-rm-sm);margin-bottom:8px;border:1.5px solid var(--bdr)}
+.rm-lb-row.rank1{border-color:#FFD700;background:#FFFBEB}
+.rm-lb-row.rank2{border-color:#C0C0C0;background:#F8FAFC}
+.rm-lb-row.rank3{border-color:#CD7F32;background:#FFF8F5}
+.rm-lb-rank{font-size:16px;font-weight:800;width:28px;text-align:center;color:var(--txt3)}
+.rm-lb-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.rm-lb-name{font-size:14px;font-weight:700;color:var(--on)}
+.rm-lb-elo{font-size:11px;color:var(--txt3);font-family:'Saira Condensed',monospace}
+.rm-lb-wl{font-size:14px;font-weight:700;color:var(--on)}
+.rm-lb-diff{font-size:12px;font-weight:600}
+
+/* DONE SCREEN */
+.rm-done{max-width:520px;margin:0 auto;padding:24px 0 60px}
+.rm-done-hero{text-align:center;background:linear-gradient(135deg,#001c6f,#FF6A00);border-radius:var(--r-xl);padding:32px 24px;color:white;margin-bottom:20px}
+.rm-done-emoji{font-size:48px;margin-bottom:12px}
+.rm-done-title{font-family:'Saira Condensed',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:6px}
+.rm-done-sub{font-size:14px;opacity:.75}
+.rm-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:24px 0}
+.rm-podium-slot{display:flex;flex-direction:column;align-items:center}
+.rm-podium-crown{font-size:20px;margin-bottom:6px}
+.rm-podium-av{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;margin-bottom:6px}
+.rm-podium-name{font-size:12px;font-weight:700;text-align:center;max-width:80px;color:rgba(255,255,255,.9)}
+.rm-podium-base{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:white;width:80px;margin-top:8px}
+.rm-done-card{background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-xl);padding:22px 24px;margin-bottom:14px}
+.rm-done-card-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:14px}
+.rm-rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.rm-rank-row:last-child{border-bottom:none}
+.rm-rank-num{font-size:18px;font-weight:800;width:32px;color:var(--txt3)}
+.rm-rank-name{font-size:14px;font-weight:700;color:var(--on);flex:1}
+.rm-rank-meta{font-size:11px;color:var(--txt3)}
+.rm-rank-wl{font-size:13px;font-weight:700;color:var(--on);text-align:right}
+.rm-rank-diff{font-size:11px;font-weight:600;text-align:right}
+.rm-live-bar{background:linear-gradient(135deg,rgba(255,106,0,.1),rgba(15,166,180,.08));border:1.5px solid rgba(255,106,0,.25);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:14px}
+.rm-live-bar-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rm-live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.12em;color:#E14338;flex-shrink:0}
+.rm-live-dot{width:7px;height:7px;border-radius:50%;background:#E14338;animation:rmLivePulse 1.6s infinite}
+@keyframes rmLivePulse{0%{box-shadow:0 0 0 0 rgba(225,67,56,.4)}70%{box-shadow:0 0 0 6px rgba(225,67,56,0)}100%{box-shadow:0 0 0 0 rgba(225,67,56,0)}}
+.rm-live-txt{font-size:11.5px;color:var(--txt2);font-weight:600;line-height:1.3}
+.rm-live-linkrow{background:var(--sur-lo);border:1px solid var(--sur-hi);border-radius:var(--r-md);padding:8px 10px;margin-bottom:8px;overflow:hidden}
+.rm-live-link{font-family:'Space Mono',monospace;font-size:12px;color:var(--pr);word-break:break-all;font-weight:700}
+.rm-live-actions{display:flex;gap:8px}
+.rm-live-btn{flex:1;padding:9px;border-radius:var(--r-md);border:1.5px solid var(--sur-hi);background:var(--sur-0);color:var(--on);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer}
+.rm-live-btn.primary{background:var(--pr);color:#fff;border-color:var(--pr)}
+.rm-share-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:var(--r-xl);background:var(--pr);color:white;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:background .15s;margin-bottom:10px}
+.rm-share-btn:hover{background:var(--pr2)}
+.rm-new-match-btn{width:100%;padding:14px;border-radius:var(--r-xl);background:var(--sur-ct);color:var(--pr);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
+.rm-new-match-btn:hover{background:var(--sur-hi)}
+
+/* UTILS */
+.rm-btn-full{width:100%;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-rm-sm);padding:14px 20px;font-size:15px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all .15s;min-height:48px;gap:8px}
+.rm-btn-primary{background:var(--blue);color:white}.rm-btn-primary:hover{background:var(--blue-dk)}
+.rm-btn-secondary{background:var(--blue-lt);color:var(--blue)}.rm-btn-secondary:hover{background:var(--blue-mid)}
+.rm-btn-danger{background:var(--red-lt);color:var(--red)}
+.rm-btn-ghost{background:transparent;color:var(--txt2);border:1.5px solid var(--bdr)}.rm-btn-ghost:hover{border-color:var(--blue-mid)}
+.rm-btn:disabled{opacity:.4;cursor:not-allowed}
+.rm-alert{padding:12px 14px;border-radius:var(--r-rm-sm);font-size:13px;font-weight:500;margin-bottom:14px}
+.rm-alert-red{background:var(--red-lt);color:var(--red)}
+.rm-alert-blue{background:var(--blue-lt);color:var(--blue)}
+.rm-alert-green{background:var(--green-lt);color:var(--green)}
+.rm-alert-warn{background:var(--gold-lt);color:var(--gold)}
+.rm-empty{text-align:center;padding:32px 0;color:var(--txt3);font-size:14px}
+.rm-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:rmSpin .7s linear infinite;display:inline-block}
+.rm-spinner-blue{border-color:rgba(255,106,0,.2);border-top-color:var(--blue)}
+@keyframes rmSpin{to{transform:rotate(360deg)}}
+.rm-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.rm-modal{background:var(--sur-0);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.rm-modal-handle{width:40px;height:4px;background:var(--bdr);border-radius:2px;margin:0 auto 20px}
+.rm-modal-title{font-size:18px;font-weight:800;color:var(--on);margin-bottom:16px}
+.rm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rm-input{width:100%;background:var(--bg-rm);border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);padding:12px 14px;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--on);outline:none;transition:border-color .15s}
+.rm-input:focus{border-color:var(--blue);background:white}
+.rm-input::placeholder{color:var(--txt3)}
+.rm-input-group{margin-bottom:14px}
+.rm-input-label{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:6px;display:block}
+.hidden{display:none!important}
+
+/* FOOTER */
+.site-footer{border-top:1px solid rgba(115,118,136,.12);padding:32px 0;margin-top:40px}
+.site-footer__inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.footer-brand{font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase}
+.footer-copy{font-size:12px;color:var(--on-v)}
+
+/* RESPONSIVE */
+@media(max-width:1023px){.container{width:min(100%,calc(100% - 48px))}.nav-links{display:none}.menu-toggle{display:flex}.form-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.container{width:min(100%,calc(100% - 32px))}.login-card{padding:32px 24px}.tab-btn{padding:12px 16px;font-size:11px}}
+.brand{font-style:italic!important;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;color:transparent!important;letter-spacing:-.02em!important}
+#apanel-edits .er-card{background:var(--sur-0);border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:12px;color:var(--on)}
+#apanel-edits .er-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#apanel-edits .er-top b{color:var(--on)}
+#apanel-edits .er-pend{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a5a00;background:rgba(255,176,0,.18);border:1px solid rgba(255,176,0,.4);border-radius:99px;padding:4px 10px}
+#apanel-edits .er-body{border-top:1px solid var(--bdr);padding-top:12px}
+#apanel-edits .er-row{display:grid;grid-template-columns:96px 1fr auto 1fr;gap:10px;align-items:center;font-size:13px;padding:5px 0;color:var(--on)}
+#apanel-edits .er-k{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
+#apanel-edits .er-old{color:var(--txt3);text-decoration:line-through;overflow:hidden;text-overflow:ellipsis}
+#apanel-edits .er-new{font-weight:700;color:var(--on);overflow:hidden;text-overflow:ellipsis}
+#apanel-edits .er-ar{color:#FF8A3D}
+#apanel-edits .er-photos{display:flex;align-items:center;gap:12px;padding:10px 0 2px}
+#apanel-edits .er-ph{text-align:center}
+#apanel-edits .er-ph img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:var(--sur-ct);border:1px solid var(--bdr)}
+#apanel-edits .er-ph img.new{width:72px;height:72px;border:3px solid #22A052}
+#apanel-edits .er-ph small{display:block;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--txt3);margin-top:3px}
+#apanel-edits .er-ph small.new{color:#22A052}
+#apanel-edits .er-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+#apanel-edits .er-rej{border:1px solid rgba(255,45,48,.5);color:var(--danger);background:transparent;border-radius:99px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer}
+#apanel-edits .er-app{background:#22A052;color:#fff;border:0;border-radius:99px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer}
+/* Match History tab */
+.mh-tabs{display:inline-flex;background:var(--sur-lo);border:1px solid var(--sur-hi);border-radius:99px;padding:3px;margin-bottom:16px}
+.mh-tab{border:0;background:transparent;color:var(--on-v);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;padding:8px 16px;border-radius:99px;cursor:pointer}
+.mh-tab.is-active{background:var(--pr);color:#fff}
+.mh-list{display:flex;flex-direction:column;gap:6px}
+.mh-row{display:grid;grid-template-columns:64px 1fr auto 1fr 44px;align-items:center;gap:8px;background:var(--sur-0);border:1px solid var(--bdr);border-radius:11px;padding:9px 12px;color:var(--on)}
+.mh-date{font-size:10.5px;color:var(--txt3);white-space:nowrap;font-weight:700}
+.mh-team{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-team.r{text-align:right}
+.mh-team.win{font-weight:800;color:#2FD07A}
+.mh-score{font-family:'Saira Condensed',monospace;font-weight:800;font-size:16px;white-space:nowrap}
+.mh-score span{color:var(--txt3);margin:0 3px}
+.mh-pd{font-size:11px;font-weight:700;color:var(--txt3);text-align:right}
+.mh-sess{background:var(--sur-0);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.mh-sess-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--on-v);margin-bottom:8px}
+.mh-sess-h span{color:var(--txt3);font-weight:700;text-transform:none;letter-spacing:0}
+.mh-erow{display:grid;grid-template-columns:1fr auto 54px 54px;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--sur-hi);font-size:13px;color:var(--on)}
+.mh-erow:first-of-type{border-top:0}
+.mh-erow .nm{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-erow .wl{font-size:11.5px;color:var(--txt3);font-weight:700}
+.mh-erow .el{font-family:'Saira Condensed',monospace;font-weight:800;text-align:right}
+.mh-erow .dl{font-weight:800;text-align:right;font-size:12.5px}
+.mh-erow .dl.up{color:#2FD07A}.mh-erow .dl.dn{color:#FF5A52}
+@media(max-width:600px){.mh-row{grid-template-columns:52px 1fr auto 1fr 36px;gap:6px;padding:8px 9px}.mh-team{font-size:12px}}
+
+/* ── Demo chrome (wraps the admin engine unchanged) ── */
+body{margin:0;background:var(--bg-rm,#F5F5F7)}
+#rm-root{max-width:520px;margin:0 auto;padding:0 14px 60px;font-family:'Plus Jakarta Sans',sans-serif}
+.sim-top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--bdr,#E4E4E7)}
+.sim-top-in{max-width:520px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sim-brand{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;font-size:20px;background:linear-gradient(90deg,#FF3830,#FFB000);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.sim-tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#9A9AA2;border:1px solid #E4E4E7;border-radius:999px;padding:4px 9px}
+.sim-spacer{flex:1}
+.sim-btn{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;border-radius:999px;padding:9px 16px;border:1px solid transparent;cursor:pointer;background:#FF6A00;color:#fff}
+.sim-btn:hover{background:#ff7d1f}
+.sim-btn.ghost{background:#fff;border-color:#E4E4E7;color:#0D0D0D}
+.sim-btn.ghost:hover{background:#F5F5F7}
+.sim-speed{font-size:12px;font-weight:600;color:#52525B;border:1px solid #E4E4E7;border-radius:999px;padding:7px 10px;background:#fff}
+.sim-note{max-width:520px;margin:12px auto 0;padding:11px 14px;background:#FFF4EA;border:1px solid #F0D9C4;border-radius:12px;font-size:12.5px;color:#0D0D0D;line-height:1.55}
+.sim-note b{font-weight:800}
+.sim-back{color:#52525B;text-decoration:none;font-weight:700;font-size:12.5px}
+#rm-setup .rm-back{display:none}   /* no 'intro' screen in the demo */
+</style>
+</head>
+<body>
+
+<div class="sim-top">
+  <div class="sim-top-in">
+    <span class="sim-brand">PlayRank</span>
+    <span class="sim-tag">Simulasi</span>
+    <span class="sim-spacer"></span>
+    <select class="sim-speed" id="sim-speed" onchange="simSetSpeed(this.value)" aria-label="Kecepatan">
+      <option value="slow">Pelan</option>
+      <option value="normal" selected>Normal</option>
+      <option value="fast">Cepat</option>
+    </select>
+    <button class="sim-btn ghost" id="sim-one" onclick="simOneRound()">⏭ 1 ronde</button>
+    <button class="sim-btn" id="sim-play" onclick="simToggle()">▶ Auto-play</button>
+  </div>
+</div>
+
+<div class="sim-note">
+  🎾 <b>Simulasi engine PlayRank</b> — persis seperti di venue admin. Atur court, kategori, format skor &amp; level seperti biasa, lalu tekan <b>Auto-play</b>: engine memilih pemain contoh (termasuk beberapa <b>pemain baru</b>), mengisi skor tiap ronde, dan menyusun hasil + ELO. Tidak ada login &amp; tidak ada data yang dikirim. <a class="sim-back" href="/playrank">← Kembali ke PlayRank</a>
+</div>
+
+<div id="rm-root">
+<div class="rm-screen" id="rm-setup">
+          <div class="rm-setup">
+            <button class="rm-back" onclick="rmGo('intro')">← Kembali</button>
+            <p class="rm-section-title">Konfigurasi Match</p>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Jumlah Court</div>
+              <div class="rm-counter">
+                <button class="rm-counter-btn" onclick="rmChangeCourts(-1)">−</button>
+                <div class="rm-counter-val" id="rm-courts-val">2</div>
+                <button class="rm-counter-btn" onclick="rmChangeCourts(1)">+</button>
+              </div>
+              <p class="rm-hint" id="rm-courts-hint">Minimal 8 pemain diperlukan</p>
+              <p class="rm-hint" id="rm-courts-system" style="color:var(--blue);font-weight:600">Sistem: Mexicano (2+ court)</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Kategori Sesi</div>
+              <div class="rm-gender-grid">
+                <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
+                  <div class="rm-gender-card-icon">♂</div>
+                  <div class="rm-gender-card-label">Putra</div>
+                </div>
+                <div class="rm-gender-card" id="rm-gender-F" onclick="rmSetGender('F')">
+                  <div class="rm-gender-card-icon">♀</div>
+                  <div class="rm-gender-card-label">Putri</div>
+                </div>
+              </div>
+              <p class="rm-hint" id="rm-gender-hint">Putra atau Putri. Satu sesi = satu gender (untuk ranking &amp; kualifikasi T1/T2/T3 yang bersih).</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Format Skor</div>
+              <div class="rm-segment" style="margin-bottom:12px">
+                <button class="rm-seg-btn active" id="rm-sfmt-race" onclick="rmSetScoreFormat('race')">Race To</button>
+                <button class="rm-seg-btn" id="rm-sfmt-bestof" onclick="rmSetScoreFormat('bestof')">Best Of</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:13px;font-weight:600;color:var(--txt2);min-width:60px" id="rm-score-label">Race to</span>
+                <div class="rm-counter" style="flex:1;max-width:none">
+                  <button class="rm-counter-btn" onclick="rmChangeTarget(-1)">−</button>
+                  <div class="rm-counter-val" id="rm-score-target">4</div>
+                  <button class="rm-counter-btn" onclick="rmChangeTarget(1)">+</button>
+                </div>
+              </div>
+              <p class="rm-hint" id="rm-score-hint">Race to 4 — menang saat capai angka 4 lebih dulu</p>
+            </div>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Level Permainan</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Match ini akan dimainkan di level apa?</p>
+              <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
+                <option value="beginner">Beginner</option>
+                <option value="upper_beginner">Upper Beginner</option>
+                <option value="lower_bronze" selected>Lower Bronze</option>
+                <option value="bronze">Bronze</option>
+                <option value="upper_bronze">Upper Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
+                <option value="platinum">Platinum</option>
+              </select>
+              <div style="margin-top:12px;padding:12px 14px;background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);font-size:12.5px;line-height:1.55;color:var(--txt)">
+                <strong style="color:var(--blue)">ℹ️ Berdampak langsung pada starting level pemain baru.</strong>
+                Pemain yang baru pertama kali didaftarkan akan memulai rating Trekkr sesuai level yang dipilih, supaya matchup ronde pertama langsung sepadan. Pemain yang sudah punya rating Trekkr tidak terpengaruh.
+              </div>
+              <p class="rm-hint" id="rm-level-hint">Pemain baru mulai di Lower Bronze · ±1350 ELO</p>
+            </div>
+
+            <button class="rm-btn-full rm-btn-primary" onclick="rmGoToPlayers()">Pilih Pemain →</button>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: PLAYERS ── -->
+        <div class="rm-screen" id="rm-players">
+          <div class="rm-players">
+            <button class="rm-back" onclick="rmGo('setup')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Setup</button>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pilih Pemain</p>
+              <span style="font-size:13px;color:var(--txt2)"><span id="rm-sel-count" style="font-weight:700;color:var(--blue)">0</span><span id="rm-sel-min"> / min 8</span></span>
+            </div>
+
+            <div id="rm-sel-chips-wrap" style="display:none;margin-bottom:12px">
+              <div class="rm-chip-label">Dipilih</div>
+              <div class="rm-chips" id="rm-sel-chips"></div>
+            </div>
+
+            <div id="rm-rec-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
+              <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 Rekomendasi</div>
+              <div style="font-size:13px;color:var(--txt)" id="rm-rec-text">—</div>
+            </div>
+
+            <div id="rm-anchor-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm)">
+              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⚓ Anchor pool kalibrasi</div>
+              <div style="font-size:13px;color:var(--txt)" id="rm-anchor-text">—</div>
+            </div>
+
+            <div class="rm-alert rm-alert-red hidden" id="rm-players-error"></div>
+
+            <div class="rm-search-wrap">
+              <span class="rm-search-icon">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+              </span>
+              <input class="rm-search" id="rm-search" placeholder="Ketik nama pemain..." oninput="rmRenderPlayers()" autocomplete="off" autocorrect="off" spellcheck="false"/>
+              <button class="rm-search-clear" id="rm-search-clear" onclick="rmClearSearch()">×</button>
+            </div>
+
+            <div style="font-size:12px;color:var(--txt2);background:var(--gold-lt);border:1px solid var(--gold);border-radius:9px;padding:9px 11px;margin:-4px 0 14px;line-height:1.5">
+              💡 Untuk mendaftarkan pemain <b>baru</b>, ketik <b>nama lengkap 2 kata</b> (nama depan &amp; belakang) — contoh: <b>Budi Santoso</b>. Nama 1 kata tidak bisa ditambahkan.
+            </div>
+
+            <div id="rm-confirmed-quick" style="display:none;margin-bottom:12px"></div>
+
+            <div id="rm-player-list" style="padding-bottom:100px"></div>
+
+            <div class="rm-bottom-bar">
+              <button class="rm-btn-full rm-btn-primary" id="rm-start-btn" onclick="rmStartMatch()" disabled>Pilih pemain dahulu</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: TEAMS (manual fixed-partner pairing) ── -->
+        <div class="rm-screen" id="rm-teams">
+          <div class="rm-players">
+            <button class="rm-back" onclick="rmGo('players')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Kembali ke Pemain</button>
+            <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pasangkan Tim</p>
+            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Ketuk dua pemain untuk membentuk satu tim. Pasangan ini tetap sepanjang sesi (Mexicano antar-tim).</p>
+            <div class="rm-alert rm-alert-red hidden" id="rm-teams-error"></div>
+            <div id="rm-teams-formed"></div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:16px 0 8px">Belum dipasangkan</div>
+            <div id="rm-teams-pool" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <button class="rm-btn-full rm-btn-ghost" style="margin-top:16px" onclick="rmAutoPairRest()">🎲 Pasangkan sisa otomatis (seimbang by ELO)</button>
+            <div style="height:90px"></div>
+            <div class="rm-bottom-bar">
+              <button class="rm-btn-full rm-btn-primary" id="rm-teams-start" onclick="rmConfirmTeams()" disabled>Pasangkan semua dahulu</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: MATCH ── -->
+        <div class="rm-screen" id="rm-match">
+          <div class="rm-match">
+            <div class="rm-tabs">
+              <button class="rm-tab active" id="rmtab-courts" onclick="rmSwitchTab('courts')">🎾 Courts</button>
+              <button class="rm-tab" id="rmtab-leaderboard" onclick="rmSwitchTab('leaderboard')">🏆 Leaderboard</button>
+              <button class="rm-tab" id="rmtab-history" onclick="rmSwitchTab('history')">📋 Riwayat</button>
+            </div>
+
+            <!-- Courts -->
+            <div class="rm-tab-panel active" id="rm-tp-courts" style="padding:16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                  <div class="rm-round-pill" id="rm-round-pill">Ronde 1</div>
+                  <div style="font-size:13px;color:var(--txt2);margin-top:4px" id="rm-score-format-label">Race to 4</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Kelola Pemain</button>
+                  <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 selesai</div>
+                </div>
+              </div>
+              <div class="rm-live-bar" id="rm-live-bar" style="display:none">
+                <div class="rm-live-bar-top">
+                  <span class="rm-live-badge"><span class="rm-live-dot"></span> LIVE</span>
+                  <span class="rm-live-txt">Halaman live untuk pemain — standings & prediksi real-time</span>
+                </div>
+                <div class="rm-live-linkrow">
+                  <span class="rm-live-link" id="rm-live-link"></span>
+                </div>
+                <div class="rm-live-actions">
+                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">🔗 Salin link</button>
+                  <button class="rm-live-btn primary" onclick="rmShareLive()">📣 Bagikan ke pemain</button>
+                </div>
+              </div>
+              <div class="rm-submit-status" id="rm-submit-status"></div>
+              <div class="rm-fair-bar" id="rm-fair-bar"></div>
+              <div id="rm-court-cards"></div>
+              <div id="rm-bye-section" style="display:none">
+                <div class="rm-bye-card">
+                  <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">⏸ Istirahat Ronde Ini</div>
+                  <div id="rm-bye-players"></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+                <button class="rm-btn-full rm-btn-primary" id="rm-submit-btn" onclick="rmSubmitRound()">Submit Skor & Lanjut Ronde →</button>
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+              </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="rm-tab-panel hidden" id="rm-tp-leaderboard" style="padding:16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Live Leaderboard</p>
+                <span class="rm-round-pill" id="rm-lb-badge" style="font-size:11px;padding:4px 10px">Ronde 1</span>
+              </div>
+              <div id="rm-lb-list"></div>
+              <div style="margin-top:20px">
+                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 Akhiri Match</button>
+              </div>
+            </div>
+
+            <!-- History -->
+            <div class="rm-tab-panel hidden" id="rm-tp-history" style="padding:16px 0">
+              <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:16px">Riwayat Ronde</p>
+              <div id="rm-history-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SCREEN: DONE ── -->
+        <div class="rm-screen" id="rm-done">
+          <div class="rm-done">
+            <div class="rm-done-hero">
+              <div class="rm-done-emoji">🎉</div>
+              <div class="rm-done-title">Trekkr Ranked Match Selesai!</div>
+              <div class="rm-done-sub" id="rm-done-sub"></div>
+              <div style="font-size:12px;opacity:.6;margin-top:4px" id="rm-done-meta"></div>
+              <div id="rm-done-flags" style="display:none;margin:12px auto 0;max-width:420px;padding:11px 14px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r-rm-sm);text-align:left"></div>
+              <div class="rm-podium" id="rm-podium"></div>
+            </div>
+            <div class="rm-done-card">
+              <div class="rm-done-card-title">Final Standings</div>
+              <div id="rm-final-standings"></div>
+            </div>
+            <button class="rm-share-btn" onclick="rmShare()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Bagikan Leaderboard Venue
+            </button>
+            <button class="rm-new-match-btn" onclick="rmNewMatch()">+ Mulai Match Baru</button>
+          </div>
+        </div>
+</div>
+
+<!-- MODAL: ADD PLAYER -->
+<div class="rm-modal-overlay hidden" id="rm-modal-add" onclick="rmCloseAdd()">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">Tambah Pemain Baru</div>
+    <div class="rm-alert rm-alert-red hidden" id="rm-add-error"></div>
+    <div class="rm-input-group">
+      <label class="rm-input-label">First Name *</label>
+      <input class="rm-input" id="rm-fn" placeholder="Contoh: Budi" oninput="rmUpdateAddPreview()"/>
+    </div>
+    <div class="rm-input-group">
+      <label class="rm-input-label">Last Name *</label>
+      <input class="rm-input" id="rm-ln" placeholder="Contoh: Santoso" oninput="rmUpdateAddPreview()"/>
+    </div>
+    <div class="rm-input-group" style="margin-bottom:0">
+      <label class="rm-input-label">Gender</label>
+      <div class="rm-segment">
+        <button class="rm-seg-btn active" id="rm-add-gM" onclick="rmSetAddGender('M')">♂ Male</button>
+        <button class="rm-seg-btn" id="rm-add-gF" onclick="rmSetAddGender('F')">♀ Female</button>
+      </div>
+    </div>
+    <div class="rm-alert rm-alert-blue hidden" id="rm-add-preview" style="margin-top:10px"></div>
+    <div style="margin-top:16px" class="rm-grid2">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Batal</button>
+      <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANAGE PLAYERS (add / drop / swap during match) -->
+<div class="rm-modal-overlay hidden" id="rm-modal-manage" onclick="rmCloseManage()">
+  <div class="rm-modal" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">Kelola Pemain</div>
+    <div style="font-size:12.5px;color:var(--blue);margin:-4px 0 10px" id="rm-manage-hint">Cari nama untuk menambah pemain telat</div>
+    <div class="rm-search-wrap" style="margin-bottom:6px">
+      <span class="rm-search-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg></span>
+      <input class="rm-search" id="rm-manage-search" placeholder="Cari pemain di database..." oninput="rmRenderManageSearch()" autocomplete="off"/>
+    </div>
+    <div id="rm-manage-results" style="margin-bottom:8px"></div>
+    <div id="rm-manage-body"></div>
+    <div style="margin-top:14px">
+      <button class="rm-btn-full rm-btn-primary" onclick="rmCloseManage()">Selesai</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: END CONFIRM -->
+<div class="rm-modal-overlay hidden" id="rm-modal-end" onclick="rmCloseEnd()">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">🏁 Akhiri Match?</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:20px;line-height:1.6">Match akan diakhiri dan hasil final disimpan ke Trekkr. Pemenang ditentukan berdasarkan W/L dan point diff saat ini.</p>
+    <div style="background:var(--blue-lt);border:1px solid var(--blue-mid);border-radius:var(--r-rm-sm);padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Top 3 Saat Ini</div>
+      <div id="rm-end-top3"></div>
+    </div>
+    <div class="rm-grid2">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseEnd()">Kembali</button>
+      <button class="rm-btn-full rm-btn-danger" id="rm-end-btn" onclick="rmEndMatch()">Ya, Akhiri</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RESTORE (list of running matches) -->
+<div class="rm-modal-overlay hidden" id="rm-modal-restore">
+  <div class="rm-modal" onclick="event.stopPropagation()">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">🎾 Match Sedang Berjalan</div>
+    <p style="font-size:14px;color:var(--txt2);margin-bottom:16px">Lanjutkan match yang belum selesai, atau hapus jika sudah tidak dipakai.</p>
+    <div id="rm-running-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+    <button class="rm-btn-full rm-btn-primary" onclick="rmStartFresh()">+ Mulai Match Baru</button>
+  </div>
+</div>
+
+<script src="https://trekkr.online/trekkr-api.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   PlayRank ENGINE — PUBLIC SIMULATION
+   Same engine as the venue admin (admin.trekkr.online): identical screens,
+   ELO math, Mexicano/Americano round generation and result flow. The only
+   differences vs admin: players come from a fake local roster, nothing is
+   written to any server, and an auto-player fills scores so the whole
+   session can play itself. No login, no network, no data leaves the page.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const RM = {
+  courts: 2, gender: 'M', format: 'individual',
+  scoreFormat: 'race', scoreTarget: 4,
+  level: 'lower_bronze', startElo: 1350,
+  allPlayers: [], selectedPlayers: [],
+  teams: [], _teamPick: null,
+  playerStats: {}, rounds: [], currentRound: 0,
+  newGender: 'M', matchId: '', activeTab: 'courts',
+  venue: 'Demo Court', lastFlags: [], flagged: null,
+};
+var RM_LIVE = { code: '', key: '', busy: false };
+
+/* ── ELO ENGINE (verbatim from admin) ── */
+function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
+  const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
+  const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
+  const margin = 1 + Math.min(Math.abs(s1-s2)*.04, .3);
+  const exp1 = 1/(1+Math.pow(10,(t2a-t1a)/400)), exp2 = 1-exp1;
+  const upd = (p, r, e) => {
+    const k = rmKFactor(p.matchCount||0)*margin;
+    return {name:p.name, newElo:p.elo+Math.round(k*(r-e)), delta:Math.round(k*(r-e)), w:r===1?1:0, l:r===0?1:0};
+  };
+  return [upd(p1t1,t1r,exp1),upd(p2t1,t1r,exp1),upd(p1t2,t2r,exp2),upd(p2t2,t2r,exp2)];
+}
+function rmTier(elo) {
+  if(elo>=3000)return'Platinum';if(elo>=2500)return'Gold';if(elo>=2100)return'Silver';
+  if(elo>=1800)return'Upper Bronze';if(elo>=1500)return'Bronze';if(elo>=1200)return'Lower Bronze';
+  if(elo>=900)return'Upper Beginner';return'Beginner';
+}
+
+/* ── AVATAR (verbatim) ── */
+const RM_COLORS=['#FF6A00','#E55F00','#7C3AED','#DB2777','#059669','#D97706','#FF2D55','#0891B2'];
+function rmAvaColor(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))%RM_COLORS.length;return RM_COLORS[h];}
+function rmInitials(name){const p=name.trim().split(' ');return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():name.slice(0,2).toUpperCase();}
+function rmAva(name,size=36,fs=13){return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${rmAvaColor(name)};display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;color:white;flex-shrink:0">${rmInitials(name)}</div>`;}
+
+/* ── NAV (verbatim) ── */
+function rmGo(id) {
+  var el = document.getElementById('rm-' + id);
+  if (!el) return; // the demo has no 'intro' screen; ignore stray navigations
+  document.querySelectorAll('.rm-screen').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  simSyncToolbar();
+}
+function rmShowErr(elId, msg){const el=document.getElementById(elId);el.textContent=msg;el.classList.remove('hidden');}
+function rmHideErr(elId){document.getElementById(elId).classList.add('hidden');}
+
+/* ── SETUP (verbatim) ── */
+function rmChangeCourts(d) {
+  RM.courts = Math.max(1, Math.min(8, RM.courts+d));
+  document.getElementById('rm-courts-val').textContent = RM.courts;
+  document.getElementById('rm-courts-hint').textContent = `Minimal ${RM.courts*4} pemain diperlukan`;
+  document.getElementById('rm-sel-min').textContent = ` / min ${RM.courts*4}`;
+  var sysEl = document.getElementById('rm-courts-system');
+  if (sysEl) sysEl.textContent = RM.courts === 1
+    ? 'Sistem: Americano (1 court) — semua bergiliran jadi partner'
+    : 'Sistem: Mexicano (2+ court) — court dibagi per ranking';
+  if(document.getElementById('rm-start-btn')) rmUpdateStartBtn();
+  rmUpdateRec();
+}
+function rmSetGender(g) {
+  if (g === 'MIXED') g = 'M';
+  RM.gender = g;
+  ['M','F'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
+  if (document.getElementById('rm-player-list')) rmRenderPlayers();
+}
+function rmMatchGender(players){
+  const gs = players.map(p => (p.gender||'M').toUpperCase());
+  if (gs.every(x=>x==='M')) return 'M';
+  if (gs.every(x=>x==='F')) return 'F';
+  return 'MIXED';
+}
+function rmSetFormat(f) { RM.format = 'individual'; }
+function rmSetScoreFormat(sf) {
+  RM.scoreFormat = sf;
+  ['race','bestof'].forEach(x => document.getElementById('rm-sfmt-'+x).classList.toggle('active', x===sf));
+  document.getElementById('rm-score-label').textContent = sf==='race' ? 'Race to' : 'Best of';
+  rmUpdateScoreHint();
+}
+function rmChangeTarget(d) {
+  RM.scoreTarget = Math.max(4, Math.min(10, RM.scoreTarget+d));
+  document.getElementById('rm-score-target').textContent = RM.scoreTarget;
+  rmUpdateScoreHint();
+}
+function rmUpdateScoreHint() {
+  const t=RM.scoreTarget, sf=RM.scoreFormat;
+  document.getElementById('rm-score-hint').textContent = sf==='race'
+    ? `Race to ${t} — menang saat capai angka ${t} lebih dulu`
+    : `Best of ${t} — butuh ${Math.ceil(t/2)} game untuk menang`;
+}
+function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
+
+const RM_LEVELS = {
+  beginner:       { label:'Beginner',       elo:750  },
+  upper_beginner: { label:'Upper Beginner', elo:1050 },
+  lower_bronze:   { label:'Lower Bronze',   elo:1350 },
+  bronze:         { label:'Bronze',         elo:1650 },
+  upper_bronze:   { label:'Upper Bronze',   elo:1950 },
+  silver:         { label:'Silver',         elo:2300 },
+  gold:           { label:'Gold',           elo:2750 },
+  platinum:       { label:'Platinum',       elo:3100 },
+};
+function rmSetLevel(lvl) {
+  const m = RM_LEVELS[lvl] || RM_LEVELS.lower_bronze;
+  RM.level = RM_LEVELS[lvl] ? lvl : 'lower_bronze';
+  RM.startElo = m.elo;
+  const hint = document.getElementById('rm-level-hint');
+  if (hint) hint.textContent = `Pemain baru mulai di ${m.label} · ±${m.elo} ELO`;
+  rmUpdateAddPreview();
+}
+
+/* ── PLAYERS — fake roster instead of the API ── */
+function rmMakeRoster(){
+  // A believable local roster. Some are "new" (matchCount 0 → seeded at the
+  // session's starting ELO, big early swings) to show new players climbing.
+  const M = (name, elo, mc, verified) => ({ name, displayName:name, gender:'M', elo, matchCount:mc, verified:!!verified });
+  const F = (name, elo, mc, verified) => ({ name, displayName:name, gender:'F', elo, matchCount:mc, verified:!!verified });
+  const s = RM.startElo;
+  return [
+    M('Johnny Pardede', 1488, 41, true),
+    M('Anton Wijaya',   1337, 33, true),
+    M('Bayu Saputra',   1452, 58, true),
+    M('Budi Santoso',   s,    0,  false),   // pemain baru
+    M('Nico Tendean',   1334, 22, false),
+    M('Gilang Ramadhan',1409, 47, true),
+    M('Reza Aditya',    1291, 12, false),
+    M('Eko Prasetyo',   s,    0,  false),   // pemain baru
+    M('Ricky Harjanto', 1361, 29, true),
+    M('Dimas Prakoso',  1318, 18, false),
+    M('Fajar Nugroho',  1276, 9,  false),
+    M('Andre Kusuma',   1402, 36, true),
+    M('Yoga Pratama',   1345, 15, false),
+    M('Kevin Wongso',   1298, 7,  false),
+    F('Sinta Dewi',     1330, 20, true),
+    F('Rani Putri',     1288, 11, false),
+  ];
+}
+function rmLoadPlayers() {
+  RM.allPlayers = rmMakeRoster();
+  rmRenderPlayers();
+}
+function rmRenderPlayers() {
+  const q = document.getElementById('rm-search').value.toLowerCase().trim();
+  document.getElementById('rm-search-clear').style.display = q ? 'flex' : 'none';
+  const filtered = RM.allPlayers.filter(p =>
+    (RM.gender==='MIXED' || (p.gender||'M').toUpperCase()===RM.gender) &&
+    (!q || p.name.toLowerCase().includes(q) || (p.displayName||'').toLowerCase().includes(q))
+  );
+  const listEl = document.getElementById('rm-player-list');
+  if (!filtered.length && q) {
+    const cap = w => w ? w[0].toUpperCase()+w.slice(1) : '';
+    const words = q.trim().split(/\s+/);
+    const suggestion = words.map(cap).join(' ');
+    const hasLast = words.length >= 2;
+    listEl.innerHTML = `
+      <div style="padding:8px 0 16px">
+        <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">Tidak ada pemain "<strong style="color:var(--on)">${q}</strong>"</div>
+        ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
+          ${rmAva(suggestion,42,16)}
+          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">Daftar sebagai pemain baru · ELO awal ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+        </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Ketik nama depan dan belakang untuk menambah pemain baru. Contoh: "Budi Santoso"</div>`}
+      </div>`;
+    return;
+  }
+  if (!filtered.length) {
+    listEl.innerHTML = `<div class="rm-empty"><div style="font-size:40px;margin-bottom:8px">👥</div>Belum ada pemain. Ketik nama untuk mencari atau menambah.</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(p => {
+    const sel = RM.selectedPlayers.some(s => s.name===p.name);
+    const isNew = (Number(p.matchCount)||0)===0;
+    return `<div class="rm-player-item ${sel?'selected':''}" onclick="rmTogglePlayer('${p.name.replace(/'/g,"\\'")}')">
+      ${rmAva(p.name,38,13)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-player-name">${p.displayName||p.name}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+          <span class="rm-player-gender">${p.gender==='F'?'♀ F':'♂ M'}</span>
+          <span class="rm-player-tier">${rmTier(p.elo)}</span>
+          ${isNew?`<span style="font-size:10.5px;font-weight:700;color:var(--blue);background:var(--blue-lt);border-radius:5px;padding:1px 5px">baru</span>`:''}
+        </div>
+      </div>
+      <span class="rm-player-elo">${p.elo}</span>
+      ${sel?`<div class="rm-player-check"><svg width="12" height="12" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>`:''}
+    </div>`;
+  }).join('');
+}
+function rmClearSearch() {
+  document.getElementById('rm-search').value='';
+  document.getElementById('rm-search-clear').style.display='none';
+  rmRenderPlayers();
+}
+function rmTogglePlayer(name) {
+  const p = RM.allPlayers.find(x => x.name===name);
+  if (!p) return;
+  const idx = RM.selectedPlayers.findIndex(x => x.name===name);
+  if (idx >= 0) RM.selectedPlayers.splice(idx,1);
+  else RM.selectedPlayers.push({...p});
+  rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+}
+function rmRenderChips() {
+  const wrap = document.getElementById('rm-sel-chips-wrap');
+  const chips = document.getElementById('rm-sel-chips');
+  document.getElementById('rm-sel-count').textContent = RM.selectedPlayers.length;
+  if (!RM.selectedPlayers.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  chips.innerHTML = RM.selectedPlayers.map(p =>
+    `<span class="rm-chip">${p.name.split(' ')[0]}<button onclick="rmTogglePlayer('${p.name.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join('');
+}
+function rmUpdateStartBtn() {
+  const btn = document.getElementById('rm-start-btn');
+  const min = RM.courts*4, n = RM.selectedPlayers.length;
+  if (n < min) { btn.textContent=`Kurang ${min-n} pemain lagi`; btn.disabled=true; }
+  else { btn.textContent=`Mulai Match (${n} pemain) →`; btn.disabled=false; }
+}
+function rmUpdateRec() {
+  const n = RM.selectedPlayers.length, c = RM.courts;
+  const banner = document.getElementById('rm-rec-banner');
+  if (n < 4) { banner.style.display='none'; return; }
+  const active = c*4, byePerRound = n-active;
+  let rec, detail;
+  if (byePerRound <= 0) {
+    rec = Math.max(6, n-1);
+    detail = `Semua ${n} pemain main tiap ronde. Rekomendasi <strong>${rec} ronde</strong> untuk variasi lawan optimal.`;
+  } else {
+    const cycle = Math.ceil(n/active);
+    rec = Math.max(2, Math.ceil(6/cycle))*cycle;
+    detail = `${byePerRound} pemain istirahat per ronde. Rekomendasi <strong>${rec} ronde</strong> (kelipatan ${cycle}) agar semua main sama banyak.`;
+  }
+  banner.style.display='block';
+  document.getElementById('rm-rec-text').innerHTML = detail;
+}
+
+/* ── ADD PLAYER (local, no API) ── */
+function rmOpenAdd(rawName) {
+  const words = (rawName||'').trim().split(/\s+/);
+  const cap = s => s ? s[0].toUpperCase()+s.slice(1).toLowerCase() : '';
+  document.getElementById('rm-fn').value = cap(words[0]||'');
+  document.getElementById('rm-ln').value = words.slice(1).map(cap).join(' ');
+  document.getElementById('rm-add-error').classList.add('hidden');
+  document.getElementById('rm-add-preview').classList.add('hidden');
+  rmSetAddGender('M');
+  document.getElementById('rm-modal-add').classList.remove('hidden');
+  setTimeout(()=>document.getElementById(words.length>1?'rm-ln':'rm-fn').focus(),100);
+}
+function rmCloseAdd() { document.getElementById('rm-modal-add').classList.add('hidden'); }
+function rmSetAddGender(g) {
+  RM.newGender=g;
+  document.getElementById('rm-add-gM').classList.toggle('active',g==='M');
+  document.getElementById('rm-add-gF').classList.toggle('active',g==='F');
+}
+function rmUpdateAddPreview() {
+  const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
+  const prev=document.getElementById('rm-add-preview');
+  if(fn&&ln){prev.innerHTML=`Nama: <strong>${fn} ${ln}</strong> · ELO awal: ${RM.startElo} (${rmTier(RM.startElo)})`;prev.classList.remove('hidden');}
+  else prev.classList.add('hidden');
+}
+function rmHandleAdd() {
+  const fn=document.getElementById('rm-fn').value.trim(), ln=document.getElementById('rm-ln').value.trim();
+  if(!fn||!ln){rmShowErr('rm-add-error','First name dan last name wajib diisi');return;}
+  const fullName = [fn,ln].map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  if(RM.allPlayers.find(p=>p.name.toLowerCase()===fullName.toLowerCase())){rmShowErr('rm-add-error',`"${fullName}" sudah ada. Pilih dari daftar.`);return;}
+  const np = { name:fullName, displayName:fullName, gender:RM.newGender, elo:RM.startElo, matchCount:0, verified:false };
+  RM.allPlayers.push(np);
+  RM.selectedPlayers.push({...np});
+  document.getElementById('rm-search').value='';
+  rmCloseAdd(); rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+}
+
+/* ── MATCH ALGORITHM (verbatim) ── */
+function rmBuildHistory() {
+  const pCount={},oCount={},byeCount={};
+  Object.keys(RM.playerStats).forEach(n=>{pCount[n]={};oCount[n]={};byeCount[n]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    const bye=r.byePlayers||[];
+    bye.forEach(n=>{if(byeCount[n]!==undefined)byeCount[n]++;});
+    r.matches.forEach(m=>{
+      const t1=m.team1.map(p=>p.name),t2=m.team2.map(p=>p.name);
+      t1.forEach(a=>{t1.forEach(b=>{if(a!==b){if(!pCount[a])pCount[a]={};pCount[a][b]=(pCount[a][b]||0)+1;}});
+        t2.forEach(b=>{if(!oCount[a])oCount[a]={};oCount[a][b]=(oCount[a][b]||0)+1;});});
+      t2.forEach(a=>{t2.forEach(b=>{if(a!==b){if(!pCount[a])pCount[a]={};pCount[a][b]=(pCount[a][b]||0)+1;}});
+        t1.forEach(b=>{if(!oCount[a])oCount[a]={};oCount[a][b]=(oCount[a][b]||0)+1;});});
+    });
+  });
+  return {partnerCount:pCount,opponentCount:oCount,byeCount};
+}
+function rmGenerateAmericanoRound(isFirst=false) {
+  const players=[...RM.selectedPlayers]
+    .map(p=>({...p,...(RM.playerStats[p.name]||{})}))
+    .filter(p=> RM.playerStats[p.name] ? RM.playerStats[p.name].active!==false : true);
+  const {byeCount,partnerCount,opponentCount}=rmBuildHistory();
+  const played={}; players.forEach(p=>played[p.name]=0);
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>[...m.team1,...m.team2].forEach(p=>{ if(played[p.name]!==undefined) played[p.name]++; }));
+  });
+  const order=[...players].sort((a,b)=>
+    (played[a.name]-played[b.name])
+    || ((byeCount[b.name]||0)-(byeCount[a.name]||0))
+    || ((b.elo||0)-(a.elo||0)));
+  const four=order.slice(0,4);
+  const byePlayers=order.slice(4).map(p=>p.name);
+  if(four.length<4) return {matches:[], byePlayers: players.map(p=>p.name)};
+  const partnered=(a,b)=>((partnerCount[a]&&partnerCount[a][b])||0);
+  const opposed=(a,b)=>((opponentCount[a]&&opponentCount[a][b])||0);
+  const nm=x=>x.name;
+  const splitCost=(t1,t2)=>{
+    let cost=3*(partnered(nm(t1[0]),nm(t1[1]))+partnered(nm(t2[0]),nm(t2[1])));
+    cost+=opposed(nm(t1[0]),nm(t2[0]))+opposed(nm(t1[0]),nm(t2[1]))+opposed(nm(t1[1]),nm(t2[0]))+opposed(nm(t1[1]),nm(t2[1]));
+    return cost;
+  };
+  const g=four;
+  const opts=[
+    {t1:[g[0],g[1]],t2:[g[2],g[3]]},
+    {t1:[g[0],g[2]],t2:[g[1],g[3]]},
+    {t1:[g[0],g[3]],t2:[g[1],g[2]]},
+  ].map(o=>({...o,cost:splitCost(o.t1,o.t2)}));
+  opts.sort((a,b)=>a.cost-b.cost);
+  return {matches:[{court:1,team1:opts[0].t1,team2:opts[0].t2,score1:null,score2:null}], byePlayers};
+}
+function rmGenerateRound(isFirst=false) {
+  if (RM.courts === 1) return rmGenerateAmericanoRound(isFirst);
+  const courts=RM.courts, maxPlay=courts*4;
+  const players=[...RM.selectedPlayers]
+    .map(p=>({...p,...(RM.playerStats[p.name]||{})}))
+    .filter(p=> RM.playerStats[p.name] ? RM.playerStats[p.name].active!==false : true);
+  const sorted = isFirst
+    ? players.sort((a,b)=>b.elo-a.elo)
+    : players.sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.pointDiff||0)-(a.pointDiff||0)||b.elo-a.elo);
+  const {byeCount,partnerCount,opponentCount}=rmBuildHistory();
+  const n=sorted.length;
+  const playCount=Math.min(maxPlay, Math.floor(n/4)*4);
+  const extra=n-playCount;
+  let byePlayers=[], activePlayers=sorted;
+  if(extra>0){
+    const byeSorted=[...sorted].sort((a,b)=>(byeCount[a.name]||0)-(byeCount[b.name]||0)||(b.wins||0)-(a.wins||0));
+    byePlayers=byeSorted.slice(0,extra).map(p=>p.name);
+    activePlayers=sorted.filter(p=>!byePlayers.includes(p.name));
+  }
+  const ap=[...activePlayers];
+  const partnered=(a,b)=>((partnerCount[a]&&partnerCount[a][b])||0);
+  const opposed=(a,b)=>((opponentCount[a]&&opponentCount[a][b])||0);
+  const splitCost=(t1,t2)=>{
+    const nm=x=>x.name;
+    let cost=3*(partnered(nm(t1[0]),nm(t1[1]))+partnered(nm(t2[0]),nm(t2[1])));
+    cost+=opposed(nm(t1[0]),nm(t2[0]))+opposed(nm(t1[0]),nm(t2[1]))+opposed(nm(t1[1]),nm(t2[0]))+opposed(nm(t1[1]),nm(t2[1]));
+    return cost;
+  };
+  const matches=[];
+  for(let c=0;c<ap.length/4;c++){
+    const g=ap.slice(c*4,c*4+4);
+    if(g.length<4) break;
+    const opts=[
+      {t1:[g[0],g[3]],t2:[g[1],g[2]],bal:0},
+      {t1:[g[0],g[2]],t2:[g[1],g[3]],bal:1},
+      {t1:[g[0],g[1]],t2:[g[2],g[3]],bal:2},
+    ].map(o=>({...o,cost:splitCost(o.t1,o.t2)}));
+    opts.sort((a,b)=>a.cost-b.cost||a.bal-b.bal);
+    matches.push({court:c+1, team1:opts[0].t1, team2:opts[0].t2, score1:null, score2:null});
+  }
+  return {matches,byePlayers};
+}
+
+function rmStartMatch() {
+  const min=RM.courts*4;
+  if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`Minimal ${min} pemain untuk ${RM.courts} court`);return;}
+  rmHideErr('rm-players-error');
+  RM.teams=[];
+  rmBeginSession();
+}
+function rmBeginSession() {
+  RM.playerStats={};
+  RM.selectedPlayers.forEach(p=>{RM.playerStats[p.name]={...p,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0,active:true};});
+  RM.matchId='rm_'+Date.now().toString(36);
+  const {matches,byePlayers}=rmGenerateRound(true);
+  RM.rounds=[{roundNum:1,matches,byePlayers,submitted:false,startedAt:Date.now()}];
+  RM.currentRound=0;
+  rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen(); rmUpdateLiveBar();
+}
+function rmUpdateLiveBar(){ var b=document.getElementById('rm-live-bar'); if(b) b.style.display='none'; }
+function rmOpenManage(){ /* manage-players is admin-only; no-op in the demo */ }
+function rmCloseManage(){ var m=document.getElementById('rm-modal-manage'); if(m) m.classList.add('hidden'); }
+function rmCopyLive(){} function rmShareLive(){}
+
+function rmSwitchTab(tab) {
+  RM.activeTab=tab;
+  ['courts','leaderboard','history'].forEach(t=>{
+    document.getElementById('rmtab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('rm-tp-'+t).classList.toggle('active',t===tab);
+    document.getElementById('rm-tp-'+t).classList.toggle('hidden',t!==tab);
+  });
+  if(tab==='leaderboard') rmRenderLeaderboard();
+  if(tab==='history') rmRenderHistory();
+}
+function rmRenderMatchScreen() {
+  const round=RM.rounds[RM.currentRound];
+  if(!round) return;
+  document.getElementById('rm-round-pill').textContent=`Ronde ${round.roundNum}`;
+  document.getElementById('rm-lb-badge').textContent=`Ronde ${round.roundNum}`;
+  document.getElementById('rm-score-format-label').textContent=
+    RM.scoreFormat==='race'?`Race to ${RM.scoreTarget}`:`Best of ${RM.scoreTarget}`;
+  const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+  document.getElementById('rm-court-cards').innerHTML=round.matches.map((m,i)=>`
+    <div class="rm-court-card">
+      <div class="rm-court-hdr">
+        <span class="rm-court-badge">Court ${m.court}</span>
+        <span id="rm-court-status-${i}" class="${m.score1!==null?'rm-court-status-done':'rm-court-status-pend'}">${m.score1!==null?'✓ Selesai':'Menunggu skor'}</span>
+      </div>
+      <div class="rm-score-row">
+        <div class="rm-score-team">
+          <div class="rm-score-team-name">${m.team1.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
+          <input class="rm-score-input" id="rm-s1-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+            value="${m.score1!==null?m.score1:''}" oninput="rmUpdateScore(${i})"
+            style="${m.score1!==null&&m.score1>m.score2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score1!==null&&m.score1<m.score2?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+        </div>
+        <div class="rm-score-vs">VS</div>
+        <div class="rm-score-team">
+          <div class="rm-score-team-name">${m.team2.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
+          <input class="rm-score-input" id="rm-s2-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+            value="${m.score2!==null?m.score2:''}" oninput="rmUpdateScore(${i})"
+            style="${m.score2!==null&&m.score2>m.score1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score2!==null&&m.score2<m.score1?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+        </div>
+      </div>
+    </div>`).join('');
+  const byeSec=document.getElementById('rm-bye-section');
+  if(round.byePlayers&&round.byePlayers.length){
+    byeSec.style.display='block';
+    document.getElementById('rm-bye-players').innerHTML=round.byePlayers.map(n=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0">${rmAva(n,28,10)}<span style="font-size:13px;font-weight:600">${n}</span></div>`).join('');
+  } else byeSec.style.display='none';
+  rmUpdateFairBar();
+}
+function rmUpdateScore(courtIdx) {
+  const round=RM.rounds[RM.currentRound];
+  const s1=parseInt(document.getElementById(`rm-s1-${courtIdx}`).value);
+  const s2=parseInt(document.getElementById(`rm-s2-${courtIdx}`).value);
+  if(!isNaN(s1)) round.matches[courtIdx].score1=s1;
+  if(!isNaN(s2)) round.matches[courtIdx].score2=s2;
+  const i1=document.getElementById(`rm-s1-${courtIdx}`), i2=document.getElementById(`rm-s2-${courtIdx}`);
+  if(!isNaN(s1)&&!isNaN(s2)){
+    i1.style.cssText=s1>s2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
+    i2.style.cssText=s2>s1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
+    document.getElementById(`rm-court-status-${courtIdx}`).className='rm-court-status-done';
+    document.getElementById(`rm-court-status-${courtIdx}`).textContent='✓ Selesai';
+  }
+  const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
+  document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} selesai`;
+}
+function rmUpdateFairBar() {
+  const bar=document.getElementById('rm-fair-bar');
+  const submitted=RM.rounds.filter(r=>r.submitted).length;
+  if(submitted===0){bar.className='rm-fair-bar';return;}
+  const counts={};
+  Object.keys(RM.playerStats).filter(p=>RM.playerStats[p].active!==false).forEach(p=>{counts[p]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>{[...m.team1,...m.team2].forEach(p=>{if(counts[p.name]!==undefined)counts[p.name]=(counts[p.name]||0)+1;});});
+  });
+  const vals=Object.values(counts);
+  if(!vals.length){bar.className='rm-fair-bar';return;}
+  const min=Math.min(...vals),max=Math.max(...vals);
+  if(max-min===0){bar.className='rm-fair-bar ok';bar.innerHTML=`<span>✅</span><span>Semua pemain sudah dapat jatah match yang sama — waktu yang tepat untuk mengakhiri!</span>`;}
+  else if(max-min===1){bar.className='rm-fair-bar info';bar.innerHTML=`<span>🎾</span><span>Hampir merata — ${max-min} ronde lagi agar semua pemain dapat jatah yang sama.</span>`;}
+  else {bar.className='rm-fair-bar warn';bar.innerHTML=`<span>⚠️</span><span>Jatah match belum merata (selisih ${max-min}). Lanjutkan beberapa ronde lagi sebelum mengakhiri.</span>`;}
+}
+function rmSetStatus(type, msg) {
+  const el=document.getElementById('rm-submit-status');
+  el.className='rm-submit-status '+(type||'');
+  el.innerHTML=msg||'';
+  if(!type) el.style.display='none'; else el.style.display='block';
+}
+function rmSubmitRound() {
+  const round=RM.rounds[RM.currentRound];
+  const incomplete=round.matches.filter(m=>m.score1===null||m.score2===null);
+  if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court belum ada skornya.`);return false;}
+  round.submittedAt=Date.now();
+  round.matches.forEach(m=>{
+    const ps=name=>RM.playerStats[name];
+    const res=rmCalcElo(ps(m.team1[0].name),ps(m.team1[1].name),ps(m.team2[0].name),ps(m.team2[1].name),m.score1,m.score2);
+    res.forEach(r=>{
+      if(RM.playerStats[r.name]){
+        RM.playerStats[r.name].elo=r.newElo;
+        RM.playerStats[r.name].matchCount=(RM.playerStats[r.name].matchCount||0)+1;
+      }
+    });
+    const t1Win=m.score1>m.score2;
+    [...m.team1].forEach(p=>{const st=RM.playerStats[p.name];if(!st)return;if(t1Win)st.wins++;else st.losses++;st.pointsFor=(st.pointsFor||0)+m.score1;st.pointsAgainst=(st.pointsAgainst||0)+m.score2;st.pointDiff=st.pointsFor-st.pointsAgainst;});
+    [...m.team2].forEach(p=>{const st=RM.playerStats[p.name];if(!st)return;if(!t1Win)st.wins++;else st.losses++;st.pointsFor=(st.pointsFor||0)+m.score2;st.pointsAgainst=(st.pointsAgainst||0)+m.score1;st.pointDiff=st.pointsFor-st.pointsAgainst;});
+  });
+  round.submitted=true;
+  rmSetStatus('ok','Ronde '+round.roundNum+' tersimpan (simulasi) · ELO diperbarui');
+  setTimeout(function(){rmSetStatus('','');},2500);
+  const {matches,byePlayers}=rmGenerateRound(false);
+  RM.rounds.push({roundNum:RM.rounds.length+1,matches,byePlayers,submitted:false,startedAt:Date.now()});
+  RM.currentRound++;
+  rmRenderMatchScreen(); rmSwitchTab('courts'); rmUpdateFairBar(); window.scrollTo(0,0);
+  return true;
+}
+function rmGetLeaderboard(){
+  return Object.values(RM.playerStats).sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
+}
+function rmRenderLeaderboard(){
+  const sorted=rmGetLeaderboard(), el=document.getElementById('rm-lb-list');
+  if(!sorted.length){el.innerHTML='<div class="rm-empty">Belum ada data</div>';return;}
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=sorted.map((p,i)=>{
+    const diff=p.pointDiff||0;
+    const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
+    return `<div class="rm-lb-row ${rankClass}">
+      <div class="rm-lb-rank">${medals[i]||i+1}</div>
+      ${rmAva(p.name,38,13)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-lb-name">${p.name}</div>
+        <div class="rm-lb-elo">${p.elo} ELO · ${rmTier(p.elo)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-lb-wl">${p.wins}W – ${p.losses}L</div>
+        <div class="rm-lb-diff" style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function rmRenderHistory(){
+  const el=document.getElementById('rm-history-list');
+  const done=[...RM.rounds].filter(r=>r.submitted).reverse();
+  if(!done.length){el.innerHTML='<div class="rm-empty">Belum ada ronde selesai</div>';return;}
+  el.innerHTML=done.map(r=>`
+    <div style="background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Ronde ${r.roundNum}</div>
+      ${r.matches.map(m=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--sur-hi);font-size:12px">
+          <div style="flex:1;font-weight:600">${m.team1.map(p=>p.name.split(' ')[0]).join(' / ')}</div>
+          <div style="font-family:'Saira Condensed',monospace;font-weight:700;font-size:14px;color:${m.score1>m.score2?'var(--green)':m.score1<m.score2?'var(--red)':'var(--on)'}">${m.score1} – ${m.score2}</div>
+          <div style="flex:1;font-weight:600;text-align:right">${m.team2.map(p=>p.name.split(' ')[0]).join(' / ')}</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+function rmShowEndConfirm(){
+  const top3=rmGetLeaderboard().slice(0,3);
+  document.getElementById('rm-end-top3').innerHTML=top3.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span>${['🥇','🥈','🥉'][i]}</span>${rmAva(p.name,26,10)}
+      <span style="font-size:13px;font-weight:700;flex:1">${p.name}</span>
+      <span style="font-size:12px;font-family:'Saira Condensed',monospace;color:var(--blue)">${p.wins}W ${p.losses}L</span>
+    </div>`).join('');
+  document.getElementById('rm-modal-end').classList.remove('hidden');
+}
+function rmCloseEnd(){document.getElementById('rm-modal-end').classList.add('hidden');}
+function rmEndMatch(){
+  const standings=rmGetLeaderboard();
+  RM.lastFlags=[];
+  rmCloseEnd();
+  rmRenderDoneScreen(standings);
+  rmGo('done');
+}
+function rmRenderDoneScreen(standings){
+  const doneRounds=RM.rounds.filter(r=>r.submitted).length;
+  const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('rm-done-sub').textContent=`${doneRounds} ronde · ${RM.selectedPlayers.length} pemain`;
+  document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue} · simulasi`;
+  const fl=document.getElementById('rm-done-flags'); if(fl) fl.style.display='none';
+  const p1=standings[0],p2=standings[1],p3=standings[2];
+  document.getElementById('rm-podium').innerHTML=`
+    ${p2?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">🥈</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p2.name)}">${rmInitials(p2.name)}</div>
+      <div class="rm-podium-name">${p2.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:52px;background:rgba(148,163,184,.25);width:80px"></div>
+    </div>`:''}
+    ${p1?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">👑</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p1.name)};width:68px;height:68px;font-size:24px;border:3px solid #FFB000">${rmInitials(p1.name)}</div>
+      <div class="rm-podium-name" style="font-weight:800">${p1.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:68px;background:rgba(245,158,11,.25);width:80px">🥇</div>
+    </div>`:''}
+    ${p3?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">🥉</div>
+      <div class="rm-podium-av" style="background:${rmAvaColor(p3.name)}">${rmInitials(p3.name)}</div>
+      <div class="rm-podium-name">${p3.name.split(' ')[0]}</div>
+      <div class="rm-podium-base" style="height:40px;background:rgba(180,131,80,.25);width:80px"></div>
+    </div>`:''}`;
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('rm-final-standings').innerHTML=standings.map((p,i)=>`
+    <div class="rm-rank-row">
+      <div class="rm-rank-num" style="color:${i===0?'#FFB000':i===1?'#9A9AA2':i===2?'#CD7F32':'rgba(148,163,184,.5)'}">${medals[i]||i+1}</div>
+      ${rmAva(p.name,32,11)}
+      <div style="flex:1;min-width:0">
+        <div class="rm-rank-name">${p.name}</div>
+        <div class="rm-rank-meta">${rmTier(p.elo)} · ${p.elo} ELO</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-rank-wl">${p.wins}W ${p.losses}L</div>
+        <div class="rm-rank-diff" style="color:${p.pointDiff>=0?'var(--green)':'var(--red)'}">${p.pointDiff>=0?'+':''}${p.pointDiff} pts</div>
+      </div>
+    </div>`).join('');
+}
+function rmShare(){
+  try{ if(navigator.clipboard) navigator.clipboard.writeText('Trekkr PlayRank — coba simulasinya: '+location.href); }catch(e){}
+  alert('Ini simulasi. Di venue asli, tombol ini membagikan papan skor & hasil ke pemain lewat halaman live / WhatsApp.');
+}
+function rmNewMatch(){ simReset(); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIMULATION DRIVER — setup like admin, then auto-play the scores
+   ══════════════════════════════════════════════════════════════════════ */
+var SIM = { running:false, target:6, speed:'normal' };
+function simDelay(){ return SIM.speed==='slow'?1500:SIM.speed==='fast'?300:800; }
+function currentScreen(){ var el=document.querySelector('.rm-screen.active'); return el?el.id.replace('rm-',''):'setup'; }
+
+function simAutoPick(){
+  // Pick a clean field from the fake roster: courts*4 + 2 (so a couple rotate
+  // through byes), matching the session gender. New players are in the pool.
+  RM.selectedPlayers=[];
+  const want=RM.courts*4+2;
+  const pool=RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===RM.gender);
+  pool.slice(0,want).forEach(p=>RM.selectedPlayers.push({...p}));
+  rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+}
+function simComputeTarget(){
+  const n=RM.selectedPlayers.length, active=RM.courts*4, bye=n-active;
+  let t = bye<=0 ? Math.max(5,n-1) : Math.max(2,Math.ceil(6/Math.ceil(n/active)))*Math.ceil(n/active);
+  SIM.target=Math.min(6, Math.max(4, t));
+}
+function simFillRound(){
+  const round=RM.rounds[RM.currentRound]; if(!round) return;
+  round.matches.forEach(m=>{
+    const t1=(m.team1[0].elo+m.team1[1].elo)/2, t2=(m.team2[0].elo+m.team2[1].elo)/2;
+    const exp1=1/(1+Math.pow(10,(t2-t1)/400));
+    const t1win=Math.random()<exp1;
+    const T=RM.scoreTarget, loser=Math.floor(Math.random()*T);
+    if(t1win){m.score1=T;m.score2=loser;}else{m.score2=T;m.score1=loser;}
+  });
+  rmRenderMatchScreen();
+}
+function simStep(){
+  if(!SIM.running) return;
+  const scr=currentScreen();
+  if(scr==='setup'){ rmGoToPlayers(); setTimeout(simStep, 450); return; }
+  if(scr==='players'){ if(RM.selectedPlayers.length<RM.courts*4) simAutoPick(); simComputeTarget(); rmStartMatch(); setTimeout(simStep, simDelay()); return; }
+  if(scr==='match'){
+    if(RM.rounds.filter(r=>r.submitted).length >= SIM.target){ SIM.running=false; simSyncToolbar(); rmEndMatch(); return; }
+    simFillRound();
+    setTimeout(function(){ if(!SIM.running) return; rmSubmitRound(); setTimeout(simStep, simDelay()); }, simDelay());
+    return;
+  }
+  SIM.running=false; simSyncToolbar();
+}
+function simToggle(){
+  if(currentScreen()==='done'){ simReset(); return; }
+  SIM.running=!SIM.running; simSyncToolbar();
+  if(SIM.running) simStep();
+}
+function simOneRound(){
+  const scr=currentScreen();
+  if(scr==='setup'){ rmGoToPlayers(); return; }
+  if(scr==='players'){ if(RM.selectedPlayers.length<RM.courts*4) simAutoPick(); simComputeTarget(); rmStartMatch(); return; }
+  if(scr==='match'){ simFillRound(); setTimeout(rmSubmitRound, 350); return; }
+}
+function simReset(){
+  SIM.running=false;
+  RM.selectedPlayers=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
+  RM.courts=2; RM.gender='M'; RM.scoreFormat='race'; RM.scoreTarget=4; RM.level='lower_bronze'; RM.startElo=1350;
+  // reset setup UI
+  document.getElementById('rm-courts-val').textContent='2';
+  document.getElementById('rm-score-target').textContent='4';
+  var lv=document.getElementById('rm-level'); if(lv) lv.value='lower_bronze';
+  ['M','F'].forEach(x=>{var el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active',x==='M');});
+  ['race','bestof'].forEach(x=>document.getElementById('rm-sfmt-'+x).classList.toggle('active',x==='race'));
+  rmChangeCourts(0); rmSetScoreFormat('race'); rmSetLevel('lower_bronze');
+  var s=document.getElementById('rm-search'); if(s) s.value='';
+  var chips=document.getElementById('rm-sel-chips-wrap'); if(chips) chips.style.display='none';
+  rmGo('setup'); simSyncToolbar();
+}
+function simSetSpeed(v){ SIM.speed=v; }
+function simSyncToolbar(){
+  var btn=document.getElementById('sim-play'); if(!btn) return;
+  var scr=currentScreen();
+  if(scr==='done'){ btn.textContent='↻ Ulangi simulasi'; }
+  else if(SIM.running){ btn.textContent='⏸ Jeda'; }
+  else { btn.textContent=scr==='match'?'▶ Lanjut auto-play':'▶ Auto-play'; }
+  var one=document.getElementById('sim-one');
+  if(one) one.style.display=(scr==='done')?'none':'';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  rmSetLevel('lower_bronze');
+  rmChangeCourts(0);
+  rmSetScoreFormat('race');
+  rmGo('setup');
+  simSyncToolbar();
+});
+
+</script>
+</body>
+</html>
