@@ -1119,9 +1119,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <div style="border-radius:14px;overflow:hidden;border:1px solid var(--sur-hi);background:#08080b">
       <canvas id="rm-story-canvas" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
     </div>
-    <div class="rm-grid2" style="margin-top:16px">
+    <button class="rm-btn-full" id="rm-story-share" style="display:none;margin-top:16px;background:linear-gradient(90deg,#FF3830,#FFB000);color:#fff;font-weight:800" onclick="rmShareStoryNative()">📲 Share to Instagram / apps</button>
+    <div class="rm-grid2" style="margin-top:12px">
       <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseStory()">Close</button>
-      <button class="rm-btn-full" id="rm-story-dl" style="background:linear-gradient(90deg,#FF3830,#FFB000);color:#fff;font-weight:800" onclick="rmDownloadStory()">⬇ Download image</button>
+      <button class="rm-btn-full rm-btn-ghost" id="rm-story-dl" onclick="rmDownloadStory()">⬇ Download</button>
     </div>
   </div>
 </div>
@@ -2830,18 +2831,39 @@ async function rmShareStory(){
     document.fonts.load('600 34px "Plus Jakarta Sans"'),
   ]); }catch(e){}
   try{ rmDrawStoryCard(cv.getContext('2d')); }catch(e){ console.warn('story draw:',e.message); }
+  // Show the native Share button only when this device can share image files.
+  let canFileShare=false;
+  try{ canFileShare=!!(navigator.canShare && navigator.canShare({files:[new File([new Blob([''],{type:'image/png'})],'x.png',{type:'image/png'})]})); }catch(e){}
+  const sb=document.getElementById('rm-story-share'); if(sb) sb.style.display=canFileShare?'':'none';
 }
 function rmCloseStory(){ document.getElementById('rm-modal-story').classList.add('hidden'); }
-function rmDownloadStory(){
+function rmStoryFile(cb){
   const cv=document.getElementById('rm-story-canvas');
   cv.toBlob(function(blob){
-    if(!blob){ alert('Could not create the image — please screenshot the card instead.'); return; }
-    const url=URL.createObjectURL(blob);
+    if(!blob){ cb(null); return; }
+    cb(new File([blob],'trekkr-playrank-'+((RM.venue||'result').toLowerCase().replace(/[^a-z0-9]+/g,'-'))+'.png',{type:'image/png'}));
+  },'image/png');
+}
+function rmDownloadStory(){
+  rmStoryFile(function(file){
+    if(!file){ alert('Could not create the image — please screenshot the card instead.'); return; }
+    const url=URL.createObjectURL(file);
     const a=document.createElement('a');
-    a.href=url; a.download='trekkr-playrank-'+((RM.venue||'result').toLowerCase().replace(/[^a-z0-9]+/g,'-'))+'.png';
+    a.href=url; a.download=file.name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-  },'image/png');
+  });
+}
+function rmShareStoryNative(){
+  rmStoryFile(function(file){
+    if(!file){ alert('Could not create the image.'); return; }
+    const data={ files:[file], title:'Trekkr PlayRank', text:(RM.venue||'PlayRank')+' — PlayRank result · ranked on Trekkr → trekkr.online' };
+    if(navigator.canShare && navigator.canShare(data)){
+      navigator.share(data).catch(function(e){ if(e&&e.name!=='AbortError') console.warn('share:',e.message); });
+    } else {
+      rmDownloadStory();   // fallback for devices without file sharing
+    }
+  });
 }
 function rmDrawStoryCard(ctx){
   const W=1080,H=1920,M=80;
