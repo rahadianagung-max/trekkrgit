@@ -5604,9 +5604,28 @@ async function liveVenueList(params) {
   return respond(200, { venue, sessions }, { "Cache-Control": "no-store" });
 }
 
+// Standard tournament category → ELO cap (max eligible rating), aligned to Trekkr
+// tiers. `null` = an open category with no cap; a category not listed here has no
+// default (falls back to body.cap_elo). Organizers always override per player via
+// cap_elo. Grace buffer keeps borderline-over-cap players as "review" not "reject".
+const CATEGORY_ELO_CAP = {
+  beginner: 1350, pemula: 1350,
+  amateur: 1550, am: 1550, "am-d": 1550, d: 1550, rekreasional: 1550,
+  intermediate: 1800, menengah: 1800, "am-c": 1800, c: 1800,
+  advanced: 2100, mahir: 2100, "am-b": 2100, b: 2100,
+  open: null, pro: null, elite: null, elit: null, "am-a": null, a: null,
+};
+const ELIG_CAP_BUFFER = 100;
+function capForCategory(cat) {
+  if (cat == null || String(cat).trim() === "") return undefined;
+  const k = String(cat).toLowerCase().trim().replace(/[_/]+/g, "-").replace(/\s+/g, " ").replace(/\s*-\s*/g, "-");
+  return (k in CATEGORY_ELO_CAP) ? CATEGORY_ELO_CAP[k] : undefined;
+}
+
 // ── ELIGIBILITY / ANTI-RINGER CHECK ─────────────────────────────────────────
 // POST /api/eligibility
 //   body: { players: [{name, category?, cap_elo?, ig?}], cap_elo? }  (or { names: [...] })
+//   cap resolution per player: cap_elo (explicit) > category default > body.cap_elo
 // Cross-references each entrant against Trekkr ratings (elo_log), tournament
 // history & winner flags (players), and calibration flags, via the fuzzy-match
 // RPC `eligibility_match`. Returns a per-player risk verdict for the organizer to
@@ -5639,7 +5658,12 @@ async function eligibilityCheck(body) {
   const CONF = 0.85, MAYBE = 0.62, WEAK = 0.48;   // trigram thresholds
   const results = items.map((pin) => {
     const name = String(pin.name).trim();
-    const cap = Number(pin.cap_elo) > 0 ? Number(pin.cap_elo) : defaultCap;
+    // cap precedence: explicit cap_elo → category default → body-level cap_elo.
+    const catCap = capForCategory(pin.category);   // number | null(open) | undefined(unknown)
+    const openCategory = catCap === null;           // explicit open → high ELO is expected
+    let cap;
+    if (Number(pin.cap_elo) > 0) cap = Number(pin.cap_elo);
+    else cap = catCap === undefined ? defaultCap : catCap;
     const m = byInput[normName(name)];
     const reasons = [];
     let status = "green", score = 0, match = null;
@@ -5659,12 +5683,17 @@ async function eligibilityCheck(body) {
         elo, tier, wins: m.wins, losses: m.losses, sessions: m.sessions,
         winner_at: winner, tournaments: tourneys, calibration: calib };
 
+      const provisional = m.sessions != null && Number(m.sessions) < 5;
       if (sim >= CONF) {
-        if (cap && elo != null && elo > cap) { score += 60; reasons.push(`ELO ${elo} (${tier}) melebihi batas kategori ${cap} (${getTierName(cap)})`); }
+        if (cap && elo != null && elo > cap) {
+          if (provisional) { score += 30; reasons.push(`ELO ${elo} (${tier}) di atas batas ${cap}, tapi masih provisional (<5 sesi) — tinjau manual`); }
+          else if (elo > cap + ELIG_CAP_BUFFER) { score += 60; reasons.push(`ELO ${elo} (${tier}) melebihi batas kategori ${cap} (${getTierName(cap)})`); }
+          else { score += 30; reasons.push(`ELO ${elo} (${tier}) borderline di atas batas ${cap} — tinjau manual`); }
+        }
         if (calib) { score += 30; reasons.push(`Flag kalibrasi: ${calib}`); }
         if (winner) { score += 25; reasons.push(`Riwayat juara/peringkat: ${winner}`); }
-        if (!cap && elo != null && elo >= 1800) { score += 35; reasons.push(`ELO tinggi (${elo}, ${tier})`); }
-        else if (!cap && elo != null && elo >= 1500) { score += 15; reasons.push(`ELO di atas rata-rata (${elo}, ${tier})`); }
+        if (!cap && !openCategory && elo != null && elo >= 1800) { score += 35; reasons.push(`ELO tinggi (${elo}, ${tier})`); }
+        else if (!cap && !openCategory && elo != null && elo >= 1500) { score += 15; reasons.push(`ELO di atas rata-rata (${elo}, ${tier})`); }
         if (tourneys) { score += 10; reasons.push(`Pernah bermain turnamen: ${tourneys}`); }
         if (!reasons.length) reasons.push(`Terdaftar di Trekkr (${tier || "—"}) — tidak ada tanda bahaya`);
       } else if (sim >= MAYBE) {
@@ -5680,7 +5709,7 @@ async function eligibilityCheck(body) {
     }
 
     status = score >= 55 ? "red" : score > 0 ? "amber" : "green";
-    return { name, category: pin.category || null, ig: pin.ig || null, status, risk_score: score, reasons, match };
+    return { name, category: pin.category || null, cap_applied: cap != null ? cap : null, ig: pin.ig || null, status, risk_score: score, reasons, match };
   });
 
   const summary = {
