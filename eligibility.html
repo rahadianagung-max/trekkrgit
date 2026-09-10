@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Player Eligibility Check — Trekkr</title>
+<meta name="description" content="Cross-check a tournament entry list against Trekkr ratings and tournament history to flag over-level players before the draw."/>
+<meta name="robots" content="noindex"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<style>
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 60px}
+.page-head{padding:30px 0 6px}
+.page-h{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:clamp(28px,5.5vw,44px);line-height:1;letter-spacing:-.02em}
+.page-sub{color:var(--muted);font-size:14px;line-height:1.6;margin:10px 0 0;max-width:64ch}
+.card{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-top:18px}
+.card h2{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;font-size:18px;margin:0 0 12px}
+label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);margin:0 0 6px}
+textarea,select,input{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px 13px;font:inherit;font-size:14px;background:var(--surface);color:var(--text)}
+textarea{min-height:180px;resize:vertical;line-height:1.6;font-variant-numeric:tabular-nums}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.hint code{background:var(--surface-3);padding:1px 6px;border-radius:5px;font-size:11.5px}
+.btn{margin-top:14px;background:var(--orange);color:#fff;font-weight:800;font-size:14px;border:0;border-radius:12px;padding:13px 22px;cursor:pointer;font-family:inherit;letter-spacing:.02em}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.ghost{background:transparent;color:var(--orange);border:1px solid var(--border)}
+.state{color:var(--muted);font-size:14px;padding:18px 0}
+/* summary chips */
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 14px}
+.chip{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface)}
+.chip .n{font-family:var(--display);font-style:italic;font-weight:800;font-size:24px;line-height:1}
+.chip .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.chip.red .n{color:var(--red)} .chip.amber .n{color:#C77700} .chip.green .n{color:var(--green)}
+/* results table */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.red{background:rgba(239,68,68,.05)} tr.amber{background:rgba(255,150,0,.06)}
+.pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.pill.red{background:rgba(239,68,68,.14);color:var(--red)} .pill.amber{background:rgba(255,150,0,.16);color:#B36B00} .pill.green{background:rgba(34,197,94,.14);color:var(--green)}
+.pname{font-weight:700}
+.pmatch{font-size:12px;color:var(--muted);margin-top:2px}
+.preasons{font-size:12px;color:var(--text);line-height:1.5}
+.preasons li{margin:0 0 3px}
+.elo{font-family:var(--display);font-style:italic;font-weight:800;color:var(--orange);font-size:15px}
+.note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;border-top:1px solid var(--border-soft);padding-top:12px}
+.err{color:var(--red);font-size:14px;padding:14px 0}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.toolbar h2{margin:0;flex:1}
+</style>
+</head>
+<body>
+<div id="tk-nav"></div>
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-h">Player Eligibility Check</h1>
+    <p class="page-sub">Tempel daftar peserta, pilih level kategori, dan Trekkr akan menandai pemain yang <b>ELO / riwayat turnamennya di atas level kategori</b> — untuk ditinjau panitia sebelum drawing. Sistem memberi bukti &amp; rekomendasi; keputusan tetap di panitia.</p>
+  </div>
+
+  <div class="card">
+    <h2>1 · Daftar peserta</h2>
+    <label for="names">Satu pemain per baris — opsional <code>Nama | Kategori</code> untuk menimpa kategori default</label>
+    <textarea id="names" placeholder="Contoh:
+Jordi Fatah
+Budi Santoso
+Vincent | Open
+Sarah Wijaya | Intermediate"></textarea>
+    <div class="row">
+      <div>
+        <label for="defcat">Kategori default</label>
+        <select id="defcat">
+          <option value="Beginner">Beginner / Pemula — cap 1350</option>
+          <option value="Amateur">Amateur / Am-D — cap 1550</option>
+          <option value="Intermediate">Intermediate / Am-C — cap 1800</option>
+          <option value="Advanced">Advanced / Am-B — cap 2100</option>
+          <option value="Open">Open / Pro — tanpa cap</option>
+          <option value="">— (tanpa kategori)</option>
+        </select>
+      </div>
+      <div>
+        <label for="capoverride">Override cap ELO (opsional)</label>
+        <input id="capoverride" type="number" inputmode="numeric" placeholder="mis. 1600"/>
+      </div>
+      <div>
+        <label for="apikey">API key (bila di-set)</label>
+        <input id="apikey" type="password" placeholder="kosongkan bila belum di-set" autocomplete="off"/>
+      </div>
+    </div>
+    <button class="btn" id="go" onclick="runCheck()">Cek Eligibility</button>
+    <div class="hint">Cap mengikuti tier Trekkr; toleransi +100 → status “borderline” (kuning) sebelum merah. Pemain baru (&lt;5 sesi) tak langsung dimerahkan.</div>
+  </div>
+
+  <div id="out"></div>
+</main>
+
+<script src="/trekkr-nav.js" defer></script>
+<script>
+(function(){
+  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+  var out=document.getElementById('out');
+  var LAST=[];
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function parseLines(){
+    var def=document.getElementById('defcat').value;
+    return document.getElementById('names').value.split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){
+      var m=l.split('|'); var name=(m[0]||'').trim();
+      var cat=m.length>1?(m[1]||'').trim():def;
+      var p={name:name}; if(cat) p.category=cat; return p;
+    }).filter(function(p){return p.name;});
+  }
+
+  window.runCheck=function(){
+    var players=parseLines();
+    if(!players.length){ out.innerHTML='<div class="err">Masukkan minimal satu nama.</div>'; return; }
+    var body={players:players};
+    var cap=parseInt(document.getElementById('capoverride').value,10); if(!isNaN(cap)&&cap>0) body.cap_elo=cap;
+    var key=document.getElementById('apikey').value.trim(); if(key) body.key=key;
+    var btn=document.getElementById('go'); btn.disabled=true; btn.textContent='Mengecek…';
+    out.innerHTML='<div class="state">Mengecek '+players.length+' pemain ke database Trekkr…</div>';
+    fetch(BASE+'/eligibility',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+      .then(function(res){
+        btn.disabled=false; btn.textContent='Cek Eligibility';
+        if(!res.ok){ out.innerHTML='<div class="err">'+esc((res.d&&res.d.error)||'Gagal mengecek. Coba lagi.')+'</div>'; return; }
+        LAST=res.d.results||[]; render(res.d);
+      })
+      .catch(function(){ btn.disabled=false; btn.textContent='Cek Eligibility'; out.innerHTML='<div class="err">Tidak bisa menghubungi server. Coba lagi.</div>'; });
+  };
+
+  function order(s){return s==='red'?0:s==='amber'?1:2;}
+  function render(d){
+    var s=d.summary||{}, rows=(d.results||[]).slice().sort(function(a,b){return order(a.status)-order(b.status)||(b.risk_score||0)-(a.risk_score||0);});
+    var chips='<div class="chips">'
+      +'<div class="chip"><span class="n">'+(s.total||0)+'</span><span class="k">Total</span></div>'
+      +'<div class="chip red"><span class="n">'+(s.red||0)+'</span><span class="k">🔴 Merah</span></div>'
+      +'<div class="chip amber"><span class="n">'+(s.amber||0)+'</span><span class="k">🟡 Kuning</span></div>'
+      +'<div class="chip green"><span class="n">'+(s.green||0)+'</span><span class="k">🟢 Hijau</span></div></div>';
+    var body=rows.map(function(r){
+      var m=r.match||null;
+      var matchHtml=m?('<div class="pmatch">↳ '+esc(m.trekkr_name)+' · '+Math.round((m.similarity||0)*100)+'% cocok</div>'):'';
+      var eloHtml=m&&m.elo!=null?('<span class="elo">'+m.elo+'</span><div class="pmatch">'+esc(m.tier||'')+(m.sessions!=null?' · '+m.sessions+' sesi':'')+'</div>'):'<span style="color:var(--subtle)">—</span>';
+      var reasons='<ul class="preasons" style="margin:0;padding-left:16px">'+(r.reasons||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+      return '<tr class="'+r.status+'">'
+        +'<td><span class="pill '+r.status+'">'+(r.status==='red'?'Tinjau/Tolak':r.status==='amber'?'Tinjau':'OK')+'</span></td>'
+        +'<td><span class="pname">'+esc(r.name)+'</span>'+matchHtml+'</td>'
+        +'<td>'+esc(r.category||'—')+(r.cap_applied!=null?'<div class="pmatch">cap '+r.cap_applied+'</div>':'')+'</td>'
+        +'<td>'+eloHtml+'</td>'
+        +'<td>'+reasons+'</td></tr>';
+    }).join('');
+    out.innerHTML='<div class="card">'
+      +'<div class="toolbar"><h2>Hasil</h2><button class="btn ghost" style="margin:0;padding:9px 16px" onclick="exportCsv()">⬇ Export CSV</button></div>'
+      +chips
+      +'<div class="tbl-wrap"><table><thead><tr><th>Status</th><th>Pemain</th><th>Kategori</th><th>ELO Trekkr</th><th>Alasan</th></tr></thead><tbody>'+body+'</tbody></table></div>'
+      +'<div class="note"><b>Cara baca:</b> 🔴 = ELO/level jelas di atas kategori → tinjau/tolak · 🟡 = mepet batas / kemungkinan cocok / pemain baru → verifikasi manual · 🟢 = aman atau tak ada rekam di Trekkr (tak bisa dinilai otomatis). Dicek terhadap: '+esc(s.checked_against||'data Trekkr')+'.</div>'
+      +'</div>';
+  }
+
+  window.exportCsv=function(){
+    if(!LAST.length) return;
+    var head=['name','category','cap_applied','status','risk_score','trekkr_match','similarity','elo','tier','sessions','winner_at','tournaments','reasons'];
+    var lines=[head.join(',')];
+    LAST.forEach(function(r){var m=r.match||{};
+      var row=[r.name,r.category||'',r.cap_applied!=null?r.cap_applied:'',r.status,r.risk_score,m.trekkr_name||'',m.similarity!=null?m.similarity:'',m.elo!=null?m.elo:'',m.tier||'',m.sessions!=null?m.sessions:'',m.winner_at||'',m.tournaments||'',(r.reasons||[]).join('; ')];
+      lines.push(row.map(function(v){v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));
+    });
+    var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+    var url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url; a.download='eligibility-check.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  };
+})();
+</script>
+</body>
+</html>
