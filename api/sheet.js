@@ -1056,6 +1056,9 @@ const netlifyHandler = async (event) => {
     if (path === "live/venue" && method === "GET") return await liveVenue(params);
     // Admin cross-device: list a venue's running sessions (token-scoped, no write_key).
     if (path === "live/venue-list" && method === "GET") return await liveVenueList(params);
+    // Eligibility / anti-ringer check: cross-reference an entry list against Trekkr
+    // ratings, tournament history and calibration flags → risk score per player.
+    if (path === "eligibility" && method === "POST") return await eligibilityCheck(body);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
     if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
@@ -5599,6 +5602,95 @@ async function liveVenueList(params) {
     };
   }).filter((s) => s.status === "live" || (s.status === "final" && (now - new Date(s.updatedAt || 0).getTime()) < LIVE_CELEBRATE_MS));
   return respond(200, { venue, sessions }, { "Cache-Control": "no-store" });
+}
+
+// ── ELIGIBILITY / ANTI-RINGER CHECK ─────────────────────────────────────────
+// POST /api/eligibility
+//   body: { players: [{name, category?, cap_elo?, ig?}], cap_elo? }  (or { names: [...] })
+// Cross-references each entrant against Trekkr ratings (elo_log), tournament
+// history & winner flags (players), and calibration flags, via the fuzzy-match
+// RPC `eligibility_match`. Returns a per-player risk verdict for the organizer to
+// review. It surfaces evidence and a traffic-light status — it never bans anyone.
+// Read-only; no schema or ELO changes.
+async function eligibilityCheck(body) {
+  // Optional shared-secret gate: when ELIGIBILITY_API_KEY is set, callers (e.g.
+  // turnamenpadel.com, server-to-server) must pass it as body.key. If the env var
+  // is unset the endpoint stays open so it works out of the box in preview.
+  const apiKey = process.env.ELIGIBILITY_API_KEY || "";
+  if (apiKey && String((body && body.key) || "") !== apiKey) return respond(401, { error: "invalid or missing key" });
+  const rawPlayers = Array.isArray(body && body.players) ? body.players
+    : Array.isArray(body && body.names) ? body.names.map((n) => ({ name: n }))
+    : [];
+  const items = rawPlayers
+    .map((p) => (typeof p === "string" ? { name: p } : (p || {})))
+    .filter((p) => p && String(p.name || "").trim());
+  if (!items.length) return respond(400, { error: "players[] or names[] required" });
+  if (items.length > 400) return respond(400, { error: "max 400 players per request" });
+  const defaultCap = Number(body && body.cap_elo) > 0 ? Number(body.cap_elo) : null;
+
+  const names = [...new Set(items.map((p) => String(p.name).trim()))];
+  let rows = [];
+  try { rows = await supaRest("POST", "rpc/eligibility_match", { p_names: names }) || []; }
+  catch (e) { console.error("[eligibility]", e.message); return respond(500, { error: "match failed" }); }
+
+  const byInput = {};
+  rows.forEach((r) => { byInput[normName(r.input)] = r; });
+
+  const CONF = 0.85, MAYBE = 0.62, WEAK = 0.48;   // trigram thresholds
+  const results = items.map((pin) => {
+    const name = String(pin.name).trim();
+    const cap = Number(pin.cap_elo) > 0 ? Number(pin.cap_elo) : defaultCap;
+    const m = byInput[normName(name)];
+    const reasons = [];
+    let status = "green", score = 0, match = null;
+
+    const sim = m ? Number(m.sim) || 0 : 0;
+    const elo = m && m.elo != null ? Number(m.elo) : null;
+    const winner = m && m.winner_at && m.winner_at !== "N/A" ? m.winner_at : null;
+    const calib = m ? m.calibration || null : null;
+    const tourneys = m ? m.tournaments || null : null;
+    // A weak-similarity match is still worth surfacing when it carries a strong
+    // ringer signal (very high rating, a real placement, or a calibration flag).
+    const strongSignal = (elo != null && elo >= 1700) || !!winner || !!calib;
+
+    if (m && m.trekkr_name && (sim >= MAYBE || (sim >= WEAK && strongSignal))) {
+      const tier = elo != null ? getTierName(elo) : null;
+      match = { trekkr_name: m.trekkr_name, similarity: Math.round(sim * 100) / 100,
+        elo, tier, wins: m.wins, losses: m.losses, sessions: m.sessions,
+        winner_at: winner, tournaments: tourneys, calibration: calib };
+
+      if (sim >= CONF) {
+        if (cap && elo != null && elo > cap) { score += 60; reasons.push(`ELO ${elo} (${tier}) melebihi batas kategori ${cap} (${getTierName(cap)})`); }
+        if (calib) { score += 30; reasons.push(`Flag kalibrasi: ${calib}`); }
+        if (winner) { score += 25; reasons.push(`Riwayat juara/peringkat: ${winner}`); }
+        if (!cap && elo != null && elo >= 1800) { score += 35; reasons.push(`ELO tinggi (${elo}, ${tier})`); }
+        else if (!cap && elo != null && elo >= 1500) { score += 15; reasons.push(`ELO di atas rata-rata (${elo}, ${tier})`); }
+        if (tourneys) { score += 10; reasons.push(`Pernah bermain turnamen: ${tourneys}`); }
+        if (!reasons.length) reasons.push(`Terdaftar di Trekkr (${tier || "—"}) — tidak ada tanda bahaya`);
+      } else if (sim >= MAYBE) {
+        score = Math.max(score, 30);
+        reasons.push(`Mungkin sama dengan "${m.trekkr_name}"${tier ? ` (${tier}${elo ? ", ELO " + elo : ""})` : ""}${winner ? ` — ${winner}` : ""} — verifikasi manual`);
+      } else {
+        // weak name match but a strong ringer signal → flag for manual verify
+        score = Math.max(score, 35);
+        reasons.push(`Kemungkinan cocok (keyakinan rendah) dengan "${m.trekkr_name}"${tier ? ` (${tier}${elo ? ", ELO " + elo : ""})` : ""}${winner ? ` — ${winner}` : ""} — level tinggi, WAJIB verifikasi manual`);
+      }
+    } else {
+      reasons.push("Tidak ada rekam di Trekkr (tidak dapat dinilai otomatis)");
+    }
+
+    status = score >= 55 ? "red" : score > 0 ? "amber" : "green";
+    return { name, category: pin.category || null, ig: pin.ig || null, status, risk_score: score, reasons, match };
+  });
+
+  const summary = {
+    total: results.length,
+    red: results.filter((r) => r.status === "red").length,
+    amber: results.filter((r) => r.status === "amber").length,
+    green: results.filter((r) => r.status === "green").length,
+    checked_against: "Trekkr ratings + tournament history + calibration flags",
+  };
+  return respond(200, { summary, results }, { "Cache-Control": "no-store" });
 }
 
 // Monthly awards for a venue TV: "Most Wins of the Month" and "Most Loyal Player
