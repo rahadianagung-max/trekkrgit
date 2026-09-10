@@ -2295,7 +2295,7 @@ function rmEnsurePlayer(name){
   return RM.playerStats[name];
 }
 function rmOpenManage(){ RM._manageAction={type:'add'}; RM._manageBuf=[]; document.getElementById('rm-modal-manage').classList.remove('hidden'); rmRenderManage(); rmRenderManageSearch(''); }
-function rmCloseManage(){ document.getElementById('rm-modal-manage').classList.add('hidden'); rmRenderMatchScreen(); }
+function rmCloseManage(){ document.getElementById('rm-modal-manage').classList.add('hidden'); rmRenderMatchScreen(); rmLivePush(false); }
 function rmManageHint(){
   const a=RM._manageAction||{type:'add'};
   if(a.type==='replacePlayer') return `Pick a replacement for <strong>${a.name.split(' ')[0]}</strong>`;
@@ -2867,6 +2867,7 @@ function rmLiveSnapshot(final){
   });
   return {
     venue:RM.venue||'', gender:RM.gender, courts:RM.courts, scoreTarget:RM.scoreTarget,
+    scoreFormat:RM.scoreFormat||'race',
     round: final ? doneRounds : (RM.currentRound+1),
     now, bye, players, history,
   };

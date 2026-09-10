@@ -424,7 +424,7 @@ img{max-width:100%}
     var byKey={}; players.forEach(function(p){byKey[p.name]=p;if(p.short)byKey[p.short]=p;});
     function look(k){return byKey[k]||{name:k,elo:1350,w:0,l:0,streak:0};}
     var now=(d.now||[]).map(function(m){return {court:m.court,a:(m.a||[]).map(look),b:(m.b||[]).map(look),sa:m.sa,sb:m.sb};}).filter(function(m){return m.a.length>=2&&m.b.length>=2;});
-    var tgt=d.scoreTarget?('Race to '+d.scoreTarget):'Live';
+    var tgt=d.scoreTarget?((d.scoreFormat==='bestof'?'Best of ':'Race to ')+d.scoreTarget):'Live';
     var courtsHtml=now.map(function(m){
       function pchip(p){return '<div class="side2"><span class="av">'+photoInner(p.photoUrl,p.name)+'</span><span class="nm">'+esc(nm(p))+'</span></div>';}
       function team(t,sc,oth){

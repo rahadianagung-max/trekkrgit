@@ -401,7 +401,7 @@ function renderCourts(d){
   else{
     wrap.hidden=false;
     $('nowN').textContent=now.length+(now.length===1?' match':' matches');
-    var tgt = d.scoreTarget ? ('Race to '+d.scoreTarget+' · live') : 'Live';
+    var tgt = d.scoreTarget ? ((d.scoreFormat==='bestof'?'Best of ':'Race to ')+d.scoreTarget+' · live') : 'Live';
     $('courts').innerHTML=now.map(function(m){
       var A=(m.a||[]).map(look), B=(m.b||[]).map(look);
       if(A.length<2||B.length<2) return '';
