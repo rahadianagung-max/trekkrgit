@@ -1022,6 +1022,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="rm-done-card-title">Final Standings</div>
               <div id="rm-final-standings"></div>
             </div>
+            <button class="rm-share-btn" style="background:linear-gradient(90deg,#FF3830,#FFB000)" onclick="rmShareStory()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+              Share to Instagram Story
+            </button>
             <button class="rm-share-btn" onclick="rmShare()">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               Share Venue Leaderboard
@@ -1102,6 +1106,22 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <div class="rm-grid2">
       <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseEnd()">Back</button>
       <button class="rm-btn-full rm-btn-danger" id="rm-end-btn" onclick="rmEndMatch()">Yes, End</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SHARE TO INSTAGRAM STORY ── -->
+<div class="rm-modal-overlay hidden" id="rm-modal-story" onclick="rmCloseStory()">
+  <div class="rm-modal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title">📸 Share to Story</div>
+    <p style="font-size:13px;color:var(--txt2);margin:-4px 0 14px;line-height:1.55">Download the image (1080×1920) and post it to your Instagram Story — or just screenshot the card below.</p>
+    <div style="border-radius:14px;overflow:hidden;border:1px solid var(--sur-hi);background:#08080b">
+      <canvas id="rm-story-canvas" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+    </div>
+    <div class="rm-grid2" style="margin-top:16px">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseStory()">Close</button>
+      <button class="rm-btn-full" id="rm-story-dl" style="background:linear-gradient(90deg,#FF3830,#FFB000);color:#fff;font-weight:800" onclick="rmDownloadStory()">⬇ Download image</button>
     </div>
   </div>
 </div>
@@ -2789,6 +2809,140 @@ function rmRenderDoneScreen(standings){
         <div class="rm-rank-diff" style="color:${p.pointDiff>=0?'var(--green)':'var(--red)'}">${p.pointDiff>=0?'+':''}${p.pointDiff} pts</div>
       </div>
     </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RANKED MATCH — SHARE TO INSTAGRAM STORY (1080×1920, drawn on <canvas>)
+   No external deps — pure Canvas 2D so the static site stays dependency-free.
+   ══════════════════════════════════════════════════════════════════════ */
+function rmStoryStart(name){
+  const ps=RM.playerStats[name];
+  if(ps&&ps._serverStart!=null) return ps._serverStart;
+  const s=RM.selectedPlayers.find(p=>p.name===name);
+  return s?(s.elo||RM.startElo):RM.startElo;
+}
+async function rmShareStory(){
+  document.getElementById('rm-modal-story').classList.remove('hidden');
+  const cv=document.getElementById('rm-story-canvas');
+  try{ await Promise.all([
+    document.fonts.load('italic 800 100px "Saira Condensed"'),
+    document.fonts.load('italic 700 40px "Saira Condensed"'),
+    document.fonts.load('600 34px "Plus Jakarta Sans"'),
+  ]); }catch(e){}
+  try{ rmDrawStoryCard(cv.getContext('2d')); }catch(e){ console.warn('story draw:',e.message); }
+}
+function rmCloseStory(){ document.getElementById('rm-modal-story').classList.add('hidden'); }
+function rmDownloadStory(){
+  const cv=document.getElementById('rm-story-canvas');
+  cv.toBlob(function(blob){
+    if(!blob){ alert('Could not create the image — please screenshot the card instead.'); return; }
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='trekkr-playrank-'+((RM.venue||'result').toLowerCase().replace(/[^a-z0-9]+/g,'-'))+'.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+  },'image/png');
+}
+function rmDrawStoryCard(ctx){
+  const W=1080,H=1920,M=80;
+  const st=rmGetLeaderboard();
+  const champ=st[0]||{name:'—',elo:RM.startElo,wins:0,losses:0};
+  const genderLabel=RM.gender==='F'?"Women's":(RM.gender==='mixed'?'Mixed':"Men's");
+  const fmt=(RM.scoreFormat==='bestof'?'Best of ':'Race to ')+RM.scoreTarget;
+  const meta=(genderLabel+' · '+fmt+' · '+RM.selectedPlayers.length+' players').toUpperCase();
+  const dt=new Date().toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
+  const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();};
+  const fit=(txt,max,start,style)=>{let s=start;ctx.font=style(s);while(ctx.measureText(txt).width>max&&s>18){s-=2;ctx.font=style(s);}return s;};
+  const clip=(txt,max)=>{if(ctx.measureText(txt).width<=max)return txt;let t=txt;while(t.length>1&&ctx.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…';};
+  const SA=s=>'italic 800 '+s+'px "Saira Condensed", sans-serif';
+  const SA7=s=>'italic 700 '+s+'px "Saira Condensed", sans-serif';
+  const PJ=s=>'600 '+s+'px "Plus Jakarta Sans", sans-serif';
+
+  // background
+  let bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#101015');bg.addColorStop(.55,'#08080b');bg.addColorStop(1,'#101015');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  let glow=ctx.createRadialGradient(W/2,-120,80,W/2,-120,760); glow.addColorStop(0,'rgba(255,106,0,.20)');glow.addColorStop(1,'rgba(255,106,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,700);
+
+  ctx.textBaseline='alphabetic';
+  // wordmark
+  ctx.font=SA(76); const wm=ctx.createLinearGradient(M,0,M+340,0); wm.addColorStop(0,'#FF3830');wm.addColorStop(1,'#FFB000');
+  ctx.fillStyle=wm; ctx.textAlign='left'; ctx.fillText('Trekkr',M,168);
+  // eyebrow right
+  ctx.textAlign='right'; ctx.fillStyle='#12C8D6'; ctx.font=SA(30);
+  ctx.fillText('PLAYRANK RESULT',W-M,128); ctx.fillStyle='#7ED9E2'; ctx.fillText(dt.toUpperCase(),W-M,168);
+
+  // venue + meta
+  ctx.textAlign='left'; ctx.fillStyle='#F4F4F6';
+  const vs=fit((RM.venue||'Trekkr PlayRank').toUpperCase(),W-2*M,104,SA);
+  ctx.font=SA(vs); ctx.fillText((RM.venue||'Trekkr PlayRank').toUpperCase(),M,300);
+  ctx.fillStyle='#9A9AA4'; ctx.font=PJ(30); ctx.fillText(meta,M,344);
+
+  // champion card
+  const cy=400,ch=250;
+  rr(M,cy,W-2*M,ch,28);
+  let cg=ctx.createLinearGradient(M,cy,W-M,cy); cg.addColorStop(0,'rgba(255,194,75,.20)');cg.addColorStop(.6,'rgba(255,106,0,.05)');cg.addColorStop(1,'rgba(255,106,0,0)');
+  ctx.fillStyle=cg; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,194,75,.45)'; ctx.stroke();
+  // champ avatar
+  const ax=M+58+82, ayc=cy+ch/2, ar=82;
+  ctx.beginPath(); ctx.arc(ax,ayc,ar,0,7); ctx.fillStyle=rmAvaColor(champ.name); ctx.fill();
+  ctx.lineWidth=6; ctx.strokeStyle='#FFC24B'; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font=SA(60); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(rmInitials(champ.name),ax,ayc+4);
+  ctx.font='72px "Segoe UI Emoji","Noto Color Emoji",sans-serif'; ctx.fillText('👑',ax,cy+2);
+  // champ text
+  ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+  const tx=ax+ar+42, tw=W-M-40-tx;
+  ctx.fillStyle='#FFC24B'; ctx.font=SA(28); ctx.fillText('CHAMPION',tx,cy+72);
+  ctx.fillStyle='#F4F4F6'; const ns=fit(champ.name.toUpperCase(),tw,64,SA); ctx.font=SA(ns);
+  ctx.fillText(clip(champ.name.toUpperCase(),tw),tx,cy+142);
+  const cd=Math.round((champ.elo||0)-rmStoryStart(champ.name));
+  ctx.font=SA(38); ctx.fillStyle='#F4F4F6';
+  const wlTxt=(champ.wins||0)+'W '+(champ.losses||0)+'L'; ctx.fillText(wlTxt,tx,cy+205);
+  const wlW=ctx.measureText(wlTxt).width;
+  const pillTxt=(cd>=0?'▲ +':'▼ ')+cd+' ELO', px=tx+wlW+26, py=cy+172;
+  ctx.font=SA(30); const pw=ctx.measureText(pillTxt).width+44;
+  rr(px,py,pw,48,24); ctx.fillStyle=cd>=0?'rgba(47,208,122,.18)':'rgba(255,90,82,.18)'; ctx.fill();
+  ctx.fillStyle=cd>=0?'#2FD07A':'#FF5A52'; ctx.fillText(pillTxt,px+22,py+34);
+
+  // standings title
+  let ty=760;
+  ctx.fillStyle='#63636D'; ctx.font=SA(30); ctx.textAlign='left'; ctx.fillText('FINAL STANDINGS',M,ty);
+  ctx.textAlign='right'; ctx.fillText('W·L   ΔELO',W-M,ty);
+
+  // rows
+  const rows=st.slice(0,8), rowH=104; let y=ty+52;
+  const medalC=['#FFC24B','#CDD2DA','#E08A4B'];
+  rows.forEach((p,i)=>{
+    if(i>0){ ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(M,y-4); ctx.lineTo(W-M,y-4); ctx.stroke(); }
+    const midY=y+rowH/2-6;
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle=medalC[i]||'#63636D'; ctx.font=SA(44); ctx.fillText(String(i+1),M+6,midY);
+    ctx.fillStyle='#F4F4F6'; ctx.font=SA7(42);
+    const d=Math.round((p.elo||0)-rmStoryStart(p.name));
+    const nameMax=W-2*M-380;
+    ctx.fillText(clip(p.name.toUpperCase(),nameMax),M+86,midY);
+    // ΔELO far right
+    ctx.textAlign='right'; ctx.font=SA(38);
+    ctx.fillStyle=d>0?'#2FD07A':(d<0?'#FF5A52':'#63636D');
+    ctx.fillText((d>=0?'+':'−')+Math.abs(d),W-M,midY);
+    // W/L left of ΔELO
+    const wl=(p.wins||0)+'/'+(p.losses||0);
+    ctx.fillStyle='#C9C9CF'; ctx.fillText(wl,W-M-150,midY);
+    y+=rowH;
+  });
+
+  // footer
+  ctx.textBaseline='alphabetic';
+  const fy=H-150;
+  ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(M,fy); ctx.lineTo(W-M,fy); ctx.stroke();
+  ctx.textAlign='left'; ctx.fillStyle='#63636D'; ctx.font=PJ(24);
+  ctx.fillText('Ranked by most wins → ties broken by point difference.',M,fy+42);
+  ctx.fillStyle='#8B8B95'; ctx.font=PJ(24); ctx.fillText('ELO is a career skill rating carried across sessions.',M,fy+78);
+  ctx.textAlign='center'; ctx.fillStyle='#FF8A00'; ctx.font=SA(30);
+  ctx.fillText('T R E K K R . O N L I N E',W/2,H-40);
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
 }
 
 async function rmShare(){
