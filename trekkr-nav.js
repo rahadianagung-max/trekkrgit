@@ -65,32 +65,32 @@
 
   function css() {
     return '<style id="tk-nav-css">' +
-      '.tk-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft,#EDEDF0)}' +
-      '.tk-in{display:flex;align-items:center;gap:16px;min-height:66px;width:min(1180px,calc(100% - 40px));margin:0 auto}' +
+      '.tk-header{position:sticky;top:0;z-index:60;background:#fff;border-bottom:3px solid #090D14}' +
+      '.tk-in{display:flex;align-items:center;gap:18px;min-height:64px;width:min(1180px,calc(100% - 40px));margin:0 auto}' +
       '.tk-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}' +
-      '.tk-brand{display:inline-block;font-family:var(--display),sans-serif;font-style:italic;font-weight:800;font-size:25px;text-transform:uppercase;background:var(--grad,linear-gradient(90deg,#FF3830,#FFB000));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .3em .04em .02em;text-decoration:none;flex:0 0 auto}' +
+      '.tk-brand{display:inline-flex;align-items:center;font:900 italic 25px/1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:-.04em;text-transform:uppercase;color:#090D14;text-decoration:none;flex:0 0 auto}' +
+      '.tk-brand i{font-style:normal;background:#FF5900;color:#fff;padding:1px 7px;margin-left:3px}' +
       '.tk-nav{display:flex;align-items:center;gap:2px;flex:1}' +
       '.tk-drop{position:relative}' +
-      '.tk-dt{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted,#52525B);background:none;border:none;padding:8px 12px;border-radius:999px;cursor:pointer}' +
-      '.tk-dt:hover{color:var(--text,#0D0D0D);background:var(--surface-2,#F5F5F7)}' +
-      '.tk-drop.on .tk-dt{color:var(--orange,#FF6A00)}' +
-      '.tk-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:230px;background:#fff;border:1px solid var(--border,#E4E4E7);border-radius:14px;box-shadow:0 18px 40px -14px rgba(0,0,0,.22);padding:7px;display:none;flex-direction:column;gap:2px}' +
+      '.tk-dt,.tk-solo{display:inline-flex;align-items:center;gap:5px;font:800 11.5px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:#090D14;background:none;border:none;padding:10px 11px;cursor:pointer;text-decoration:none}' +
+      '.tk-dt:hover,.tk-solo:hover{background:#F4F6F9}' +
+      '.tk-drop.on .tk-dt,.tk-solo.on{box-shadow:inset 0 -3px 0 #FF5900}' +
+      '.tk-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:240px;background:#fff;border:2px solid #090D14;box-shadow:5px 5px 0 #090D14;padding:4px;display:none;flex-direction:column;gap:0}' +
       '.tk-drop:hover .tk-menu,.tk-drop:focus-within .tk-menu,.tk-drop.open .tk-menu{display:flex}' +
-      '.tk-mi{display:block;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted,#52525B);text-decoration:none}' +
-      '.tk-mi:hover{background:var(--surface-2,#F5F5F7);color:var(--text,#0D0D0D)}' +
-      '.tk-mi.on{color:var(--orange,#FF6A00)}' +
-      '.tk-mi.cta{background:var(--orange,#FF6A00);color:#fff;margin-top:3px;font-weight:800}.tk-mi.cta:hover{background:#e85f00;color:#fff}' +
-      '.tk-solo{font-size:13px;font-weight:600;color:var(--muted,#52525B);padding:8px 12px;border-radius:999px;text-decoration:none}' +
-      '.tk-solo:hover{color:var(--text,#0D0D0D);background:var(--surface-2,#F5F5F7)}.tk-solo.on{color:var(--orange,#FF6A00)}' +
+      '.tk-mi{display:block;padding:11px 12px;font:800 11.5px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.05em;text-transform:uppercase;color:#090D14;text-decoration:none;border-bottom:1px solid #E2E8F0}' +
+      '.tk-mi:last-child{border-bottom:0}' +
+      '.tk-mi:hover{background:#F4F6F9}' +
+      '.tk-mi.on{color:#FF5900}' +
+      '.tk-mi.cta{background:#D2F802;border:2px solid #090D14;margin-top:4px}.tk-mi.cta:hover{background:#c4e800}' +
       '.tk-act{display:flex;align-items:center;gap:9px;flex:0 0 auto}' +
-      '.tk-getapp{background:var(--grad,linear-gradient(90deg,#FF3830,#FFB000));color:#fff;font-weight:800;font-size:13px;padding:9px 16px;border-radius:999px;text-decoration:none;white-space:nowrap;box-shadow:0 10px 22px -12px rgba(255,80,0,.6)}' +
-      '.tk-login{font-size:13px;font-weight:700;color:var(--text,#0D0D0D);border:1px solid var(--border,#E4E4E7);padding:8px 15px;border-radius:999px;text-decoration:none;white-space:nowrap}' +
-      '.tk-login:hover{background:var(--surface-2,#F5F5F7)}' +
-      '.tk-burger{display:none;background:none;border:1px solid var(--border,#E4E4E7);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--text,#0D0D0D);font-size:20px;cursor:pointer}' +
-      '.tk-msheet{display:none;flex-direction:column;gap:6px;padding:8px 0 18px;border-top:1px solid var(--border-soft,#EDEDF0)}' +
+      '.tk-getapp,.tk-login{font:800 11px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border:2px solid #090D14;box-shadow:3px 3px 0 #090D14;text-decoration:none;white-space:nowrap;color:#090D14}' +
+      '.tk-getapp{background:#D2F802}.tk-login{background:#fff}' +
+      '.tk-getapp:active,.tk-login:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #090D14}' +
+      '.tk-burger{display:none;background:#D2F802;border:2px solid #090D14;width:40px;height:40px;align-items:center;justify-content:center;color:#090D14;font-size:19px;font-weight:900;cursor:pointer}' +
+      '.tk-msheet{display:none;flex-direction:column;gap:0;padding:6px 0 16px;border-top:2px solid #090D14}' +
       '.tk-msheet.open{display:flex}' +
-      '.tk-mgroup{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--border-soft,#EDEDF0)}.tk-mgroup:last-child{border-bottom:none}' +
-      '.tk-mlabel{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle,#9A9AA2);padding:6px 12px 2px}' +
+      '.tk-mgroup{display:flex;flex-direction:column;padding:6px 0;border-bottom:2px solid #090D14}.tk-mgroup:last-child{border-bottom:none}' +
+      '.tk-mlabel{font:800 10px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF5900;padding:8px 12px 4px}' +
       '@media(max-width:900px){.tk-nav,.tk-login{display:none}.tk-burger{display:flex}}' +
       '@media(max-width:560px){.tk-getapp{display:none}}' +
       "</style>";
@@ -101,7 +101,7 @@
     if (!el) return;
     el.innerHTML = css() +
       '<header class="tk-header"><div class="tk-in">' +
-        '<a class="tk-brand" href="/">Trekkr</a>' +
+        '<a class="tk-brand" href="/" aria-label="Trekkr home">Trekkr<i>//</i></a>' +
         desktopNav() +
         '<div class="tk-act">' +
           '<a class="tk-getapp" href="/app">Get the App</a>' +

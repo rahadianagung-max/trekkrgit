@@ -3471,7 +3471,11 @@ async function getHomeSummary() {
   const topActive = leaderboard.slice()
     .sort((a, b) => (b.totalMatches || 0) - (a.totalMatches || 0))
     .slice(0, 5)
-    .map((p) => ({ name: p.name, display: p.display || publicName(p.name, p.displayName), photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0 }));
+    .map((p) => ({ name: p.name, display: p.display || publicName(p.name, p.displayName), photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0, elo: p.elo || 0, level: p.level || "", region: p.region || "" }));
+
+  // Homepage hero passport card: highest-rated calibrated player (additive field).
+  const tr = leaderboard.find((p) => (p.totalMatches || 0) >= 15) || null;
+  const topRated = tr ? { name: tr.name, display: tr.display || publicName(tr.name, tr.displayName), photoUrl: tr.photoUrl || "", elo: tr.elo || 0, level: tr.level || "", region: tr.region || "", gender: tr.gender || "M", totalMatches: tr.totalMatches || 0 } : null;
 
   const lbMap = {};
   leaderboard.forEach((p) => { lbMap[String(p.name || "").trim().toLowerCase()] = p; });
@@ -3480,7 +3484,7 @@ async function getHomeSummary() {
     return { name: p.name, display: publicName(p.name, p.displayName || p.display_name || lb.displayName), photoUrl: p.photoUrl || "", region: p.region || lb.region || "", level: lb.level || "Unrated" };
   });
 
-  return respond(200, { playerCount, totalMatches, avg, topActive, newPlayers });
+  return respond(200, { playerCount, totalMatches, avg, topActive, newPlayers, topRated });
 }
 
 // ── PARSE AMERICANO-PADEL.COM (FETCH FIX) ──

@@ -138,9 +138,13 @@ cd analytics && npm install && npm run build   # esbuild → self-contained bund
 - **No frameworks / no build on the main site.** Keep pages as static
   HTML/CSS/JS. Do not add a bundler, a framework, or new runtime dependencies to
   the root or to any page outside `analytics/`.
-- **Design tokens live in `trekkr-theme.css`** (`--orange #FF6A00`, `--grad`,
-  the `--display`/`--body` font roles, radii). Reuse tokens; don't hard-code
-  brand colors inline. Page-specific CSS stays in the page's `<style>` block.
+- **Design tokens live in `trekkr-theme.css`** — PlayRank League theme:
+  `--ink #090D14`, `--orange #FF5900`, `--volt #D2F802`, `--mono` (JetBrains
+  Mono), `--disp`/`--display` (Space Grotesk), `--body` (Plus Jakarta Sans),
+  square corners, hard offset shadows, grid paper background, plus `.tk-*`
+  primitives (card, chip, section label, square photo). Reuse tokens; don't
+  hard-code brand colors inline. Page-specific CSS stays in the page's
+  `<style>` block. `playrank-league.css` is the League engine's own skin.
 - **Shared JS is duplicated across app folders** (`trekkr-api.js` copies). If
   you change the API client, update every copy (`./`, `admin/`, `player/`,
   `superadmin/`, `venue/`) so subdomains don't drift.
@@ -165,13 +169,16 @@ cd analytics && npm install && npm run build   # esbuild → self-contained bund
 ## Project Instructions — Ecosystem Revamp
 
 This repo is part of the **SportsActvd ecosystem** (Trekkr + TurnamenPadel +
-Stellar Squad Academy + SportsActvd). An in-progress **frontend/IA revamp** is
-governed by [`docs/ecosystem-revamp-brief.md`](docs/ecosystem-revamp-brief.md) —
-that brief is the **single source of truth** for design tokens, components,
-copy, and build order for all UI work. Read it fully before any revamp work.
+Stellar Squad Academy + SportsActvd).
 
-- All UI/frontend revamp work must follow `docs/ecosystem-revamp-brief.md`
-  exactly. This is a **frontend/IA revamp ONLY**.
+- **Visual direction (owner decision, Sep 2026): the PlayRank League theme** —
+  brutalist-athletic (ink / orange / volt, Space Grotesk + JetBrains Mono,
+  square corners, hard shadows, square player photos). It is being rolled out
+  site-wide via `trekkr-theme.css`, `ecosystem.css` and `trekkr-nav.js`.
+- `docs/ecosystem-revamp-brief.md` is **superseded** for visual design (its
+  palette/type rules no longer apply). Its IA ideas — Ecosystem Bar, Player
+  Passport card, Play/Prove/Progress journey, orange-mono ELO — are kept as
+  reference only.
 
 ### Hard rules (never violate)
 - **NEVER** change any backend endpoint, API contract, or data field names. In
@@ -190,5 +197,5 @@ copy, and build order for all UI work. Read it fully before any revamp work.
 - Work in small commits with clear messages.
 - After visual changes, describe what changed and list the files touched before
   committing.
-- If a change appears to violate the brief, stop and re-read
-  `docs/ecosystem-revamp-brief.md` and this file before continuing.
+- New or restyled pages follow the PlayRank League theme (see the home page and
+  `rankings.html` for reference implementations).

@@ -12,79 +12,78 @@
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <link rel="stylesheet" href="/ecosystem.css"/>
 <style>
-/* Header */
-.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
-
-/* Page head */
-.page-head{padding:28px 0 0}
-.page-head h1{font-size:clamp(30px,5vw,44px);margin:8px 0 0}
-.page-head p{color:var(--muted);font-size:14px;margin:10px 0 0;max-width:560px}
+/* ── Rankings (PlayRank League theme) ── */
+.page-head{padding:34px 0 0}
+.page-head .eyebrow{display:block}
+.page-head h1{font-size:clamp(40px,7vw,68px);margin:8px 0 0}
+.page-head h1 span{color:var(--orange)}
+.page-head p{color:#334155;font-size:15px;margin:12px 0 0;max-width:600px}
 
 /* Find bar */
-.findbar{margin-top:18px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
-.findbar__row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.findbar__input{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 12px}
-.findbar__input i{color:var(--orange);font-size:16px}
-.findbar__input input{flex:1;border:0;outline:0;background:transparent;font-family:inherit;font-size:14px;color:var(--text);padding:11px 0}
-.findbar__hint{font-size:11px;color:var(--subtle);margin:8px 2px 0}
-.findbar__results{margin-top:10px;display:none;flex-direction:column;gap:5px}
+.findbar{margin-top:22px}
+.findbar__row{display:flex;align-items:stretch;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:var(--paper);max-width:640px}
+.findbar__input{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:0 14px}
+.findbar__input i{color:var(--orange);font-size:18px}
+.findbar__input input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:700 15px var(--body);color:var(--text);padding:14px 0}
+.findbar__row .btn{border:0;border-left:3px solid var(--ink);box-shadow:none}
+.findbar__hint{font:700 10.5px var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--subtle);margin:12px 2px 0}
+.findbar__results{margin-top:10px;display:none;flex-direction:column;max-width:640px}
 .findbar__results.show{display:flex}
-.fr-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border-soft);border-radius:9px;padding:8px 12px;transition:border-color .2s}
-.fr-item:hover{border-color:var(--orange)}
-.fr-item .name{flex:1;font-size:13px;font-weight:600}
-.fr-item .meta{font-size:11px;color:var(--subtle)}
-.fr-empty{font-size:12px;color:var(--subtle);padding:6px 2px}
+.fr-item{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--ink);border-top-width:0;padding:8px 12px}
+.fr-item:first-child{border-top-width:2px}
+.fr-item:hover{background:var(--warm)}
+.fr-item .name{flex:1;font:800 13.5px var(--body)}
+.fr-item .meta{font:700 10px var(--mono);color:var(--subtle);text-transform:uppercase}
+.fr-empty{font:700 11px var(--mono);color:var(--subtle);padding:10px 12px;border:2px dashed var(--ink);text-transform:uppercase}
 
 /* Filters */
-.filters{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:3px}
-.seg button{font-size:11px;font-weight:600;padding:6px 14px;border-radius:6px;border:0;background:transparent;color:var(--muted)}
-.seg button.active{background:var(--orange);color:#fff}
-.select select{font-family:inherit;font-size:11px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.filters{margin-top:26px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;background:#F1F5F9;border:2px solid var(--ink);padding:3px;gap:3px}
+.seg button{font:800 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:9px 16px;border:0;background:transparent;color:#475569}
+.seg button.active{background:var(--ink);color:var(--volt)}
+.select select{font:800 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:0;padding:11px 10px}
 .select.hidden{display:none}
 
 /* Columns */
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-.col-head{display:flex;align-items:center;gap:7px;margin:0 2px 10px}
-.col-head .dot{width:7px;height:7px;border-radius:50%}
-.col-head .label{font-size:11px;letter-spacing:.16em;font-weight:700}
-.col-head .count{font-size:10px;color:var(--subtle);margin-left:auto}
-.col-list{display:flex;flex-direction:column;gap:5px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:24px}
+.col-head{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.col-head .dot{width:14px;height:14px;border:2px solid var(--ink);border-radius:0}
+.col-head .label{font:800 13px var(--mono);letter-spacing:.12em}
+.col-head .count{font:700 10.5px var(--mono);color:var(--subtle);margin-left:auto;text-transform:uppercase}
+.col-list{display:flex;flex-direction:column;border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);background:#fff}
 
-.avatar{border-radius:50%;flex-shrink:0;object-fit:cover;background:var(--border-soft);color:var(--muted);display:flex;align-items:center;justify-content:center;font-weight:600;overflow:hidden}
-.champion{position:relative;background:var(--warm);border:1px solid var(--warm-border);border-radius:12px;padding:13px 14px;display:flex;align-items:center;gap:10px;overflow:hidden}
-.champion::before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:var(--grad)}
-.champion .rank{font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;color:var(--orange);width:14px;text-align:center}
-.champion .avatar{width:38px;height:38px;font-size:15px;color:var(--orange);background:#FFE3CC;border:2px solid var(--orange)}
+.avatar{width:36px;height:36px;flex-shrink:0;object-fit:cover;background:#E2E8F0;color:var(--ink);display:flex;align-items:center;justify-content:center;font:800 11px var(--mono);overflow:hidden;border:2px solid var(--ink)}
+.champion{position:relative;background:var(--warm);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--orange);padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.champion .rank{width:34px;height:34px;display:grid;place-items:center;flex:none;background:var(--orange);color:#fff;border:2px solid var(--ink);font:800 13px var(--mono)}
+.champion .avatar{width:52px;height:52px;font-size:15px}
 .champion .who{flex:1;min-width:0}
-.champion .who .name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.champion .who .meta{font-size:10px;color:var(--muted)}
+.champion .who .name{display:block;font:900 17px/1.15 var(--body);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.champion .who .meta{display:block;font:700 10px var(--mono);color:var(--muted);text-transform:uppercase;margin-top:3px}
 .champion .elo{text-align:right}
-.champion .elo .cap{font-size:9px;color:var(--subtle)}
-.champion .elo .val{font-size:17px;font-weight:800;font-style:italic}
+.champion .elo .cap{display:block;font:800 9px var(--mono);letter-spacing:.1em;color:var(--subtle)}
+.champion .elo .val{display:block;font:800 28px/1 var(--mono);color:var(--orange);font-variant-numeric:tabular-nums}
 
-.rrow{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border-soft);border-radius:9px;padding:8px 12px;transition:border-color .2s}
-.rrow:hover{border-color:var(--orange)}
-.rrow .rank{font-family:var(--display);font-style:italic;font-weight:800;font-size:13px;color:var(--subtle);width:16px;text-align:center}
-.rrow .avatar{width:28px;height:28px;font-size:11px}
+.rrow{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--border-soft);padding:9px 12px}
+.rrow:last-child{border-bottom:0}
+.rrow:hover{background:var(--warm)}
+.rrow .rank{width:28px;height:28px;display:grid;place-items:center;flex:none;font:800 11px var(--mono);border:2px solid #CBD5E1;color:#475569}
+.rrow.r2 .rank{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rrow.r3 .rank{background:var(--volt);color:var(--ink);border-color:var(--ink)}
 .rrow .who{flex:1;min-width:0}
-.rrow .who .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrow .who .meta{font-size:9px;color:var(--subtle)}
-.rrow .elo{font-size:12px;font-weight:700;color:var(--orange)}
+.rrow .who .name{display:block;font:800 13.5px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow .who .meta{display:block;font:700 10px var(--mono);color:var(--subtle);text-transform:uppercase}
+.rrow .elo{font:800 15px var(--mono);color:var(--orange);font-variant-numeric:tabular-nums}
 
-.see-full{margin-top:8px;background:transparent;border:0;font-size:11px;font-weight:600;color:var(--orange);display:inline-flex;align-items:center;gap:5px;padding:2px}
-.state{font-size:13px;color:var(--subtle);padding:18px 4px}
-.calib-head{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);margin:16px 2px 7px}
-.prov-pill{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a5d00;background:rgba(255,176,0,.14);border:1px solid rgba(255,176,0,.42);border-radius:5px;padding:1px 5px;vertical-align:middle;margin-left:4px}
-.skeleton{height:52px;border-radius:10px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite}
-@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.see-full{margin-top:14px;width:100%;justify-content:center;background:#fff;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);display:inline-flex;align-items:center;gap:6px;padding:11px}
+.state{font:700 11.5px var(--mono);color:var(--subtle);padding:18px;border:2px dashed var(--ink);text-transform:uppercase}
+.calib-head{font:800 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin:20px 0 8px}
+.prov-pill{display:inline-block;font:800 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--volt);border:1.5px solid var(--ink);padding:1px 5px;vertical-align:middle;margin-left:4px}
+.skeleton{height:52px;border:2px solid var(--ink);background:repeating-linear-gradient(90deg,#F4F6F9 0 12px,#fff 12px 24px)}
 
-/* Footer */
-.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:32px}
+/* How rankings work */
+.hrw ol li{margin-bottom:2px}
 
-@media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}}
-@media(max-width:680px){.cols{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.skeleton{animation:none}}
+@media(max-width:680px){.cols{grid-template-columns:1fr}.findbar__row .btn{padding:0 14px}}
 </style>
 </head>
 <body>
@@ -95,7 +94,7 @@
 
   <div class="page-head">
     <span class="eyebrow">National Ranking</span>
-    <h1 class="display">Trekkr Rankings</h1>
+    <h1 class="display">Trekkr <span>Rankings</span></h1>
     <p>One Rating. One Journey. Men's and women's ELO rankings across Indonesia, side by side — updated after every match.</p>
   </div>
 
@@ -130,17 +129,17 @@
       <button class="see-full" id="moreM" hidden>See full men's ranking <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
     </div>
     <div>
-      <div class="col-head"><span class="dot" style="background:var(--red)"></span><span class="label">WOMEN</span><span class="count" id="countF"></span></div>
+      <div class="col-head"><span class="dot" style="background:var(--volt)"></span><span class="label">WOMEN</span><span class="count" id="countF"></span></div>
       <div id="colF"><div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div></div>
       <button class="see-full" id="moreF" hidden>See full women's ranking <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
     </div>
   </div>
 
 
-  <section class="hrw" style="border-top:1px solid var(--border-soft);margin-top:30px;padding-top:26px">
+  <section class="hrw tk-card" style="margin-top:40px;padding:22px 24px">
     <div class="eyebrow">How Rankings Work</div>
     <h2 class="display" style="font-size:clamp(20px,3vw,24px);margin:6px 0 14px">From Match To Board In Five Steps</h2>
-    <ol style="margin:0;padding-left:20px;color:var(--muted);font-size:13.5px;line-height:1.9;max-width:680px">
+    <ol style="margin:0;padding-left:20px;color:#334155;font-size:14px;line-height:1.9;max-width:720px">
       <li>Play a recorded match at any Trekkr venue or community.</li>
       <li>The engine compares the result to each pair's expected outcome.</li>
       <li>Your ELO rating moves — more for upsets and dominant wins.</li>
@@ -205,14 +204,14 @@
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
 
   function rowHTML(p,rank){
-    return '<a class="rrow" href="'+passportUrl(p)+'">'
-      +'<span class="rank">'+rank+'</span>'+avatar(p)
+    return '<a class="rrow'+(rank===2?' r2':rank===3?' r3':'')+'" href="'+passportUrl(p)+'">'
+      +'<span class="rank">'+String(rank).padStart(2,'0')+'</span>'+avatar(p)
       +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
       +'<span class="elo">'+p.elo+'</span></a>';
   }
   function championHTML(p){
     return '<a class="champion" href="'+passportUrl(p)+'">'
-      +'<span class="rank">1</span>'+avatar(p,true)
+      +'<span class="rank">01</span>'+avatar(p,true)
       +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
       +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
   }
@@ -240,7 +239,7 @@
     if(rated.length){
       var show=expanded[g]?rated:rated.slice(0,5);
       html+=championHTML(show[0]);
-      if(show.length>1){html+='<div class="col-list" style="margin-top:6px">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
+      if(show.length>1){html+='<div class="col-list">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
     }
     if(showCalib){
       html+='<div class="calib-head">Still calibrating</div>';
@@ -286,8 +285,8 @@
 
   /* Provisional note: rankings only list calibrated players; tiers firm up after the replay. */
   (function(){var n=document.getElementById('tierNote');if(!n)return;
-    n.innerHTML='<div style="margin:0 0 14px;padding:11px 14px;border:1px solid rgba(255,176,0,0.42);'
-      +'background:rgba(255,176,0,0.12);border-radius:12px;font-size:12.5px;line-height:1.5;color:#8a5d00">'
+    n.innerHTML='<div style="margin:14px 0 0;padding:10px 14px;border:2px dashed var(--ink);'
+      +'background:var(--warm);font-size:12.5px;line-height:1.5;color:#334155">'
       +'Ranked players are calibrated (15+ matches); those still calibrating are listed below each column as <strong>provisional</strong>.'
       +(REPLAY_COMPLETE?'':' Tiers firm up after the season ELO replay is complete.')
       +'</div>';})();
