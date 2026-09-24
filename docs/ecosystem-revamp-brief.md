@@ -1,5 +1,9 @@
 # SportsActvd Ecosystem Revamp — Design Brief for Claude Code
 
+> **Superseded for visual design (Sep 2026).** The site now uses the PlayRank
+> League theme (see `trekkr-theme.css` and CLAUDE.md). The palette/type rules
+> below no longer apply; the IA ideas are kept for reference only.
+
 **Scope:** Revamp of `trekkr.online` and `turnamenpadel.com` so the SportsActvd ecosystem synergy is visible in the interface itself. Both sites are static HTML deployed on Vercel with a Supabase / Google Sheets serverless backend. Do not change backend endpoints or data contracts — this is a frontend/IA revamp only.
 
 ---
