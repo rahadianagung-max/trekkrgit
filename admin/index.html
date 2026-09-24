@@ -840,6 +840,17 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                   <input class="rm-input" id="rm-lg-start" type="time" value="19:00" onchange="rmLeagueSetStart(this.value)" style="text-align:center"/>
                 </div>
               </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+                <div style="flex:1">
+                  <div class="rm-input-label" style="margin-bottom:2px">Jumlah juara</div>
+                  <div style="font-size:11.5px;color:var(--txt3)" id="rm-lg-winners-hint">Top 3 pairs are named winners in the final result</div>
+                </div>
+                <div class="rm-counter" style="max-width:160px">
+                  <button class="rm-counter-btn" onclick="rmLeagueChange('winners',-1)">−</button>
+                  <div class="rm-counter-val" id="rm-lg-winners">3</div>
+                  <button class="rm-counter-btn" onclick="rmLeagueChange('winners',1)">+</button>
+                </div>
+              </div>
               <div style="margin-top:14px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
                 <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">💡 Rekomendasi engine</div>
                 <div style="display:flex;align-items:center;gap:12px">
@@ -1210,7 +1221,7 @@ const RM = { // shared state for ranked match
   newGender: 'M', matchId: '', activeTab: 'courts',
   _inited: false, _savedToRestore: null, _serverLive: [],
   // PlayRank League (fixed partner): planner inputs + the pre-built schedule.
-  league: { pairs: 14, hours: 4, mins: 17, start: '19:00', k: 4, kAuto: true, schedule: [] },
+  league: { pairs: 14, hours: 4, mins: 17, start: '19:00', k: 4, kAuto: true, winners: 3, schedule: [] },
 };
 const API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 
@@ -2370,6 +2381,9 @@ function rmLeagueRenderSetup(){
   if(L.kAuto) L.k=plan.k;
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
   set('rm-lg-pairs',L.pairs); set('rm-lg-hours',L.hours); set('rm-lg-mins',L.mins); set('rm-lg-k',plan.k);
+  L.winners=rmLeagueWinners(L.pairs);
+  set('rm-lg-winners',L.winners);
+  set('rm-lg-winners-hint',L.winners===1?'Only the champion pair is named in the final result':`Top ${L.winners} pairs are named winners (Juara 1–${L.winners}) in the final result`);
   const st=document.getElementById('rm-lg-start'); if(st&&st.value!==L.start) st.value=L.start;
   const rec=document.getElementById('rm-lg-rec'); if(rec) rec.innerHTML=rmLeaguePlanText(plan);
 }
@@ -2378,6 +2392,7 @@ function rmLeagueChange(field,d){
   if(field==='pairs') L.pairs=Math.max(2,Math.min(40,L.pairs+d));
   else if(field==='hours') L.hours=Math.max(0.5,Math.min(12,L.hours+d));
   else if(field==='mins') L.mins=Math.max(6,Math.min(60,L.mins+d));
+  else if(field==='winners') L.winners=Math.max(1,Math.min(5,(L.winners||3)+d));
   else if(field==='k'){
     const plan=rmLeaguePlan(L.pairs), step=(L.pairs%2)?2:1;
     L.k=Math.max(step,Math.min(plan.kMax,plan.k+d*step));
@@ -2393,6 +2408,10 @@ function rmLeagueTeamsPlan(){
   box.style.display='block';
   box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 League plan</div>'+rmLeaguePlanText(rmLeaguePlan(T));
 }
+// Number of winner places (Juara 1..N): 1–5, never more than the pairs playing.
+function rmLeagueWinners(T){ return Math.max(1,Math.min(5,RM.league.winners||3,T||RM.league.pairs||5)); }
+const RM_MEDALS=['🥇','🥈','🥉','🏅','🏅'];
+function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">JUARA ${i+1}</span>`:''; }
 function rmTeamName(t){ return (t&&t.players?t.players:[]).map(n=>String(n).split(' ')[0]).join(' & '); }
 function rmTeamElo(t){ return t.players.reduce((s,n)=>s+(((RM.playerStats[n]||RM.selectedPlayers.find(p=>p.name===n)||{}).elo)||RM.startElo),0); }
 
@@ -3004,14 +3023,14 @@ function rmGetLeaderboard(){
   return Object.values(RM.playerStats).sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
 }
 function rmRenderLeagueLeaderboard(el){
-  const rows=rmLeagueTable(), medals=['🥇','🥈','🥉'];
-  el.innerHTML=`<div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Ranked by wins → point diff → points for → head-to-head</div>`+rows.map((t,i)=>{
+  const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
+  el.innerHTML=`<div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Ranked by wins → point diff → points for → head-to-head · top ${W} = Juara</div>`+rows.map((t,i)=>{
     const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
-    return `<div class="rm-lb-row ${rankClass}">
-      <div class="rm-lb-rank">${medals[i]||i+1}</div>
+    return `<div class="rm-lb-row ${rankClass}" style="${i===W-1&&i<rows.length-1?'border-bottom:2px dashed var(--gold);':''}">
+      <div class="rm-lb-rank">${i<W?RM_MEDALS[i]:i+1}</div>
       <div style="display:flex">${rmAva(t.players[0],30,11)}<div style="margin-left:-8px">${rmAva(t.players[1]||'?',30,11)}</div></div>
       <div style="flex:1;min-width:0">
-        <div class="rm-lb-name">${t.name}</div>
+        <div class="rm-lb-name">${t.name}${rmWinnerBadge(i,W)}</div>
         <div class="rm-lb-elo">${t.played} played · PF ${t.pf} · PA ${t.pa}</div>
       </div>
       <div style="text-align:right">
@@ -3085,9 +3104,10 @@ function rmRenderHistory(){
 function rmShowEndConfirm(){
   if(RM.format==='league'){
     if(!rmLeagueCanEnd()){ rmSetStatus('failed','End Match unlocks when every pair has played the same number of matches.'); return; }
-    document.getElementById('rm-end-top3').innerHTML=rmLeagueTable().slice(0,3).map((t,i)=>`
+    const tbl=rmLeagueTable(), W=rmLeagueWinners(tbl.length);
+    document.getElementById('rm-end-top3').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${W===1?'Champion':'Juara 1–'+W}</div>`+tbl.slice(0,W).map((t,i)=>`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <span>${['🥇','🥈','🥉'][i]}</span>
+        <span>${RM_MEDALS[i]}</span>
         <span style="font-size:13px;font-weight:700;flex:1">${t.name}</span>
         <span style="font-size:12px;font-family:'Saira Condensed',monospace;color:var(--blue)">${t.w}W ${t.l}L · ${t.pd>=0?'+':''}${t.pd}</span>
       </div>`).join('');
@@ -3254,13 +3274,17 @@ function rmRenderLeagueDone(standings){
       <div class="rm-podium-name" style="${big?'font-weight:800':''}">${t.name}</div>
       <div class="rm-podium-base" style="height:${h}px;background:${bg};width:96px">${big?'🥇':''}</div>
     </div>`:'';
-  document.getElementById('rm-podium').innerHTML=pod(table[1],'🥈',52,'rgba(148,163,184,.25)')+pod(table[0],'👑',68,'rgba(245,158,11,.25)',true)+pod(table[2],'🥉',40,'rgba(180,131,80,.25)');
-  const medals=['🥇','🥈','🥉'];
+  // Podium shows as many places as there are winners (max 3); Juara 4–5 are
+  // flagged in the standings below.
+  const W=rmLeagueWinners(table.length);
+  document.getElementById('rm-podium').innerHTML=(W>=2?pod(table[1],'🥈',52,'rgba(148,163,184,.25)'):'')+pod(table[0],'👑',68,'rgba(245,158,11,.25)',true)+(W>=3?pod(table[2],'🥉',40,'rgba(180,131,80,.25)'):'');
+  const sub=document.getElementById('rm-done-sub');
+  if(sub) sub.textContent+=` · ${W===1?'1 champion':W+' winners'}`;
   document.getElementById('rm-final-standings').innerHTML=table.map((t,i)=>`
-    <div class="rm-rank-row">
-      <div class="rm-rank-num" style="color:${i===0?'#FFB000':i===1?'#9A9AA2':i===2?'#CD7F32':'rgba(148,163,184,.5)'}">${medals[i]||i+1}</div>
+    <div class="rm-rank-row" style="${i<W?'background:var(--gold-lt);border-radius:10px;padding-left:8px;padding-right:8px;':''}${i===W-1&&i<table.length-1?'border-bottom:2px dashed var(--gold);':''}">
+      <div class="rm-rank-num" style="color:${i===0?'#FFB000':i===1?'#9A9AA2':i===2?'#CD7F32':i<W?'var(--gold)':'rgba(148,163,184,.5)'}">${i<W?RM_MEDALS[i]:i+1}</div>
       <div style="flex:1;min-width:0">
-        <div class="rm-rank-name">${t.name}</div>
+        <div class="rm-rank-name">${t.name}${rmWinnerBadge(i,W)}</div>
         <div class="rm-rank-meta">${t.players.map(eloLine).join(' · ')}</div>
       </div>
       <div style="text-align:right">
@@ -3529,7 +3553,7 @@ function rmLeagueLiveFields(final){
           sa: rm&&rm.score1!=null?Number(rm.score1):null, sb: rm&&rm.score2!=null?Number(rm.score2):null }; }) };
   });
   const table=rmLeagueTable().map(t=>({name:t.name, players:t.players, w:t.w, l:t.l, pf:t.pf, pa:t.pa, pd:t.pd, played:t.played}));
-  return { mode:'league', league:{ pairs:(RM.teams||[]).length, matchesPerPair:RM.league.kPlayed||0,
+  return { mode:'league', league:{ pairs:(RM.teams||[]).length, matchesPerPair:RM.league.kPlayed||0, winners:rmLeagueWinners((RM.teams||[]).length),
     minsPerMatch:RM.league.mins, start:RM.league.start, slots:sched.length }, teams:table, schedule:sched };
 }
 async function rmLivePush(final){

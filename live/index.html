@@ -174,6 +174,10 @@ header.hd{padding:18px 2px 6px}
 .upnext{background:var(--card2);border:1px dashed var(--line);border-radius:14px;padding:11px 14px;margin-top:4px;font-size:12.5px;color:var(--mute)}
 .upnext .h{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-ink);margin-bottom:5px}
 .upnext .m{padding:2px 0;color:var(--ink)}
+.lgrow.win{background:color-mix(in srgb,var(--gold) 9%,transparent)}
+.lgrow.cut{border-bottom:2px dashed color-mix(in srgb,var(--gold) 60%,transparent)}
+.lgrow .jb{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:6px;
+  background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold)}
 .lgrow .pmeta .ed{font-family:'Space Mono',monospace;font-weight:700}
 .lgrow .pmeta .ed.up{color:var(--grn)} .lgrow .pmeta .ed.dn{color:var(--red)}
 /* PlayRank League: pair table + order of play */
@@ -512,12 +516,16 @@ function pairEloDelta(names){
   var d=Math.round(ds.reduce(function(a,b){return a+b;},0)/ds.length);
   return ' · ELO <span class="ed '+(d>0?'up':d<0?'dn':'')+'">'+(d>0?'▲+':d<0?'▼':'±')+(d<0?-d:d)+'</span>';
 }
+// Number of winner places set by the organiser (1–5; older sessions → 3).
+function leagueWinners(d){ var w=d&&d.league&&parseInt(d.league.winners,10); return Math.max(1,Math.min(5,w||3)); }
+var MEDALS=['🥇','🥈','🥉','🏅','🏅'];
 function leagueRow(t,i){
   var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
-  var pd=t.pd||0;
-  return '<div class="row lgrow'+(hitsFind(t.players)?' me':'')+'">'+
-    '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
-    '<div class="pl"><div class="pn">'+pairName(t.players)+'</div>'+
+  var pd=t.pd||0, W=leagueWinners(STATE&&STATE.data), win=i<W;
+  var n=((STATE&&STATE.data&&STATE.data.teams)||[]).length;
+  return '<div class="row lgrow'+(hitsFind(t.players)?' me':'')+(win?' win':'')+(i===W-1&&i<n-1?' cut':'')+'">'+
+    '<span class="rk '+rkc+'">'+(win?MEDALS[i]:(i+1))+'</span>'+
+    '<div class="pl"><div class="pn">'+pairName(t.players)+(win?' <span class="jb">Juara '+(i+1)+'</span>':'')+'</div>'+
       '<div class="pmeta">'+(t.played||0)+' played · PF '+(t.pf||0)+' · PA '+(t.pa||0)+pairEloDelta(t.players)+'</div></div>'+
     '<span class="wl">'+(t.w||0)+'<span class="l">–'+(t.l||0)+'</span></span>'+
     '<span class="pd '+(pd>0?'up':pd<0?'dn':'')+'">'+(pd>=0?'+':'')+pd+'</span>'+
@@ -567,7 +575,7 @@ function renderLive(d){
   if(lg){
     $('nowTitle').textContent='Now playing';
     $('stdTitle').textContent='League table';
-    $('stdSub').textContent='W → PD → PF → H2H';
+    $('stdSub').textContent='W → PD → PF → H2H · top '+leagueWinners(d)+' = Juara';
     $('liveBoard').innerHTML=d.teams.length?d.teams.map(leagueRow).join(''):'';
     renderOrder(d);
     renderUpNext(d);
@@ -706,7 +714,8 @@ function renderLeagueFinal(d){
   var t=d.teams||[];
   $('lgFinalWrap').hidden=!t.length;
   $('lgFinalBoard').innerHTML=t.map(leagueRow).join('');
-  var pods=[t[1],t[0],t[2]], meds=['🥈','🥇','🥉'];
+  var W=leagueWinners(d);
+  var pods=[W>=2?t[1]:null,t[0],W>=3?t[2]:null], meds=['🥈','🥇','🥉'];
   $('podium').innerHTML=pods.map(function(x,idx){
     if(!x) return '<div></div>';
     var ps=(x.players||[]).map(look);
@@ -721,7 +730,8 @@ function renderLeagueFinal(d){
   }
   $('finalSub').innerHTML='<span>'+esc(d.venue||'Trekkr session')+'</span><span class="chip">League · Fixed Partner</span>'+
     (d.gender?'<span class="chip">'+esc(d.gender==='MIXED'?'Mixed':genderLabel(d.gender))+'</span>':'')+
-    '<span class="chip cy">'+t.length+' pairs</span>';
+    '<span class="chip cy">'+t.length+' pairs</span>'+
+    '<span class="chip">'+(W===1?'1 champion':W+' winners')+'</span>';
 }
 
 function render(){

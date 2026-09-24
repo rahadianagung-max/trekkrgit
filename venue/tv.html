@@ -518,7 +518,9 @@ img{max-width:100%}
     var rh=recap&&recap.headline?esc(recap.headline):'Champions Crowned';
     var rl=recap&&recap.line?esc(recap.line):'That\'s a wrap on today\'s PlayRank session.';
     var med=['🥈','🥇','🥉'], stg=['s1','s2','s3'], tags=['Runner-up','Champion','Third'];
-    var pods=[s[1],s[0],s[2]].map(function(p,idx){
+    // League: only as many podium places as the organiser's winners (max 3).
+    var LW=isLeague(d)?Math.max(1,Math.min(5,parseInt((d.league||{}).winners,10)||3)):3;
+    var pods=[LW>=2?s[1]:null,s[0],LW>=3?s[2]:null].map(function(p,idx){
       if(!p)return '<div class="bp '+stg[idx]+'" style="visibility:hidden"></div>';
       var dl=(p.elo||0)-(p.start||p.elo||0);
       return '<div class="bp '+stg[idx]+'"><div class="medal">'+med[idx]+'</div>'
@@ -528,8 +530,10 @@ img{max-width:100%}
         +'<div class="bdl '+(dl>=0?'':'dn')+'">'+(dl>=0?'▲ +':'▼ ')+dl+' ELO</div>'
         +'<div class="tag">'+tags[idx]+'</div></div>';
     }).join('');
-    var rest=s.slice(3,7).map(function(p,i){
-      return '<div class="fchip"><span class="rk">'+(i+4)+'</span><span class="nm">'+esc(nm(p))+'</span><span class="wl"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></span></div>';
+    var PC=Math.min(LW,3);   // places shown on the podium; the strip continues from there
+    var rest=s.slice(PC,PC+4).map(function(p,i){
+      var rk=PC+i+1;
+      return '<div class="fchip"'+(rk<=LW?' style="border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset"':'')+'><span class="rk">'+(rk<=LW?'🏅':rk)+'</span><span class="nm">'+esc(nm(p))+'</span><span class="wl"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></span></div>';
     }).join('');
     return '<div class="champ"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
       +'<div class="bigpod">'+pods+'</div>'
