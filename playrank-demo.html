@@ -573,6 +573,8 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
               <div class="rm-chips" id="rm-sel-chips"></div>
             </div>
 
+            <button class="rm-btn-full rm-btn-primary" id="rm-autofill-btn" onclick="rmDemoAutofill()" style="margin-bottom:12px">🎲 Auto-fill players</button>
+
             <div id="rm-rec-banner" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
               <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 Recommendation</div>
               <div style="font-size:13px;color:var(--txt)" id="rm-rec-text">—</div>
@@ -988,6 +990,52 @@ function rmMakeRoster(){
 function rmLoadPlayers() {
   RM.allPlayers = rmMakeRoster();
   rmRenderPlayers();
+  rmDemoAutofillLabel();
+}
+
+/* ── DEMO: auto-fill the player list to match the setup ──
+   Weekly: courts×4 + 2 (so a couple rotate through byes).
+   League: exactly pairs×2 of the chosen category (Mixed → half men, half
+   women). If the sample roster is too small, extra demo players are
+   generated so any setup (up to 40 pairs) can be filled. */
+function rmDemoNeed(){
+  if(RM.format==='league'){
+    const n=RM.league.pairs;
+    return RM.gender==='MIXED'?{M:n,F:n}:{[RM.gender]:n*2};
+  }
+  return {[RM.gender]:RM.courts*4+2};
+}
+function rmDemoAutofillLabel(){
+  const b=document.getElementById('rm-autofill-btn'); if(!b) return;
+  const need=rmDemoNeed(), total=Object.values(need).reduce((a,c)=>a+c,0);
+  const cat=RM.gender==='MIXED'?'Mixed':RM.gender==='F'?'Women':'Men';
+  b.textContent=RM.format==='league'
+    ?`🎲 Auto-fill ${total} players (${RM.league.pairs} pairs · ${cat})`
+    :`🎲 Auto-fill ${total} players (${RM.courts} courts · ${cat})`;
+}
+const RM_DEMO_FIRST={M:['Aditya','Bagas','Cahyo','Daffa','Erlangga','Farhan','Gibran','Hafiz','Ilham','Jonathan','Kevin','Lutfi','Malik','Naufal','Oscar','Pandu','Raka','Satria','Taufik','Umar','Vino','Wahyu','Yusuf','Zaki'],
+                   F:['Alya','Bella','Cinta','Dara','Elsa','Fira','Gita','Hani','Icha','Jihan','Kiara','Lala','Mira','Nabila','Olivia','Prita','Qonita','Rara','Sheila','Tasya','Vania','Winda','Yasmin','Zara']};
+const RM_DEMO_LAST=['Hartono','Siregar','Nasution','Wibisono','Halim','Kusnadi','Setiawan','Lubis','Pohan','Tanjung','Sembiring','Gunadi'];
+function rmDemoEnsure(g,count){
+  let pool=RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===g);
+  let i=0;
+  while(pool.length<count && i<2000){
+    const f=RM_DEMO_FIRST[g][i%RM_DEMO_FIRST[g].length], l=RM_DEMO_LAST[Math.floor(i/RM_DEMO_FIRST[g].length)%RM_DEMO_LAST.length];
+    const name=f+' '+l; i++;
+    if(RM.allPlayers.some(p=>p.name===name)) continue;
+    const mc=(i*7)%40, elo=mc?1250+((i*97)%260):RM.startElo;
+    const p={name,displayName:name,gender:g,elo,matchCount:mc,verified:mc>=30};
+    RM.allPlayers.push(p); pool.push(p);
+  }
+  return pool.slice(0,count);
+}
+function rmDemoAutofill(){
+  const need=rmDemoNeed();
+  RM.selectedPlayers=[];
+  Object.keys(need).forEach(g=>rmDemoEnsure(g,need[g]).forEach(p=>RM.selectedPlayers.push({...p})));
+  const q=document.getElementById('rm-search'); if(q) q.value='';
+  rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+  rmHideErr('rm-players-error');
 }
 function rmRenderPlayers() {
   const q = document.getElementById('rm-search').value.toLowerCase().trim();
@@ -1889,24 +1937,7 @@ var SIM = { running:false, target:6, speed:'normal' };
 function simDelay(){ return SIM.speed==='slow'?1500:SIM.speed==='fast'?300:800; }
 function currentScreen(){ var el=document.querySelector('.rm-screen.active'); return el?el.id.replace('rm-',''):'setup'; }
 
-function simAutoPick(){
-  // Pick a clean field from the fake roster: courts*4 + 2 (so a couple rotate
-  // through byes), matching the session gender. New players are in the pool.
-  RM.selectedPlayers=[];
-  if(RM.format==='league'){
-    // League: exactly the planned pairs (Mixed → half men, half women).
-    const n=RM.league.pairs;
-    const pick=g=>RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===g);
-    const list=RM.gender==='MIXED'?[...pick('M').slice(0,n),...pick('F').slice(0,n)]:pick(RM.gender).slice(0,n*2);
-    list.forEach(p=>RM.selectedPlayers.push({...p}));
-    rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
-    return;
-  }
-  const want=RM.courts*4+2;
-  const pool=RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===RM.gender);
-  pool.slice(0,want).forEach(p=>RM.selectedPlayers.push({...p}));
-  rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
-}
+function simAutoPick(){ rmDemoAutofill(); }
 function simComputeTarget(){
   const n=RM.selectedPlayers.length, active=RM.courts*4, bye=n-active;
   let t = bye<=0 ? Math.max(5,n-1) : Math.max(2,Math.ceil(6/Math.ceil(n/active)))*Math.ceil(n/active);
