@@ -680,9 +680,9 @@ function render(){
   var isFinal = STATE.status==='final';
   $('view-live').hidden=isFinal;
   $('view-final').hidden=!isFinal;
-  if(isFinal){ renderFinal(d); stopPoll(); }
+  if(isFinal){ renderFinal(d); if(!IS_DEMO) stopPoll(); }
   else renderLive(d);
-  document.title=(d.venue?d.venue+' · ':'')+'PlayRank Live · Trekkr';
+  document.title=(d.venue?d.venue+' · ':'')+'PlayRank Live · Trekkr'+(IS_DEMO?' (demo)':'');
 }
 
 function showError(title,msg){
@@ -693,7 +693,23 @@ function showError(title,msg){
 }
 
 var lastStamp=null;
+// /live/demo: the PlayRank simulation (/playrank-demo) keeps its session in this
+// browser's localStorage (no server), in the same shape GET /api/live returns.
+var IS_DEMO = CODE==='demo';
+function demoState(){
+  var raw=null; try{ raw=localStorage.getItem('tk_demo_live'); }catch(e){}
+  if(!raw) return Promise.reject({kind:'nodemo'});
+  try{ return Promise.resolve(JSON.parse(raw)); }catch(e){ return Promise.reject({kind:'nodemo'}); }
+}
 function fetchState(initial){
+  if(IS_DEMO){
+    return demoState().then(function(j){
+      var stamp=(j.updatedAt||'')+'|'+(j.status||'');
+      if(stamp!==lastStamp || initial){ lastStamp=stamp; STATE=j; render(); }
+    }).catch(function(){
+      if(initial||!STATE) showError('No demo running','Start a session in the PlayRank simulation first — trekkr.online/playrank-demo — then open the player link from there.');
+    });
+  }
   return fetch(API_BASE+'/live?code='+encodeURIComponent(CODE),{headers:{'Accept':'application/json'}})
     .then(function(r){
       if(r.status===404) throw {kind:'notfound'};
@@ -713,7 +729,12 @@ function fetchState(initial){
       // On a background poll failure, keep showing the last good state silently.
     });
 }
-function startPoll(){ stopPoll(); POLL=setInterval(function(){ if(!document.hidden) fetchState(false); },5000); }
+function startPoll(){ stopPoll(); POLL=setInterval(function(){ if(!document.hidden) fetchState(false); },IS_DEMO?1500:5000); }
+// demo: react instantly when the simulation tab writes a new snapshot
+window.addEventListener('storage',function(e){
+  if(!IS_DEMO||e.key!=='tk_demo_live') return;
+  fetchState(!STATE).then(function(){ if(STATE&&STATE.status!=='final') startPoll(); });
+});
 function stopPoll(){ if(POLL){ clearInterval(POLL); POLL=null; } }
 document.addEventListener('visibilitychange',function(){ if(!document.hidden && STATE && STATE.status!=='final') fetchState(false); });
 
@@ -749,7 +770,7 @@ $('themeBtn').addEventListener('click',function(){
 if(window.TrekkrLoader){ try{ TrekkrLoader.mount(document.getElementById('stateLoading'),'Tuning into the live feed'); }catch(e){} }
 if(!CODE){ showError('No session code','This link is missing its session code. Ask the host for the full link.'); }
 else {
-  fetchState(true).then(function(){ if(STATE && STATE.status!=='final') startPoll(); });
+  fetchState(true).then(function(){ if(IS_DEMO || (STATE && STATE.status!=='final')) startPoll(); });
 }
 })();
 </script>

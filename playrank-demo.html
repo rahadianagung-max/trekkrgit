@@ -652,15 +652,16 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
               <div class="rm-live-bar" id="rm-live-bar" style="display:none">
                 <div class="rm-live-bar-top">
                   <span class="rm-live-badge"><span class="rm-live-dot"></span> LIVE</span>
-                  <span class="rm-live-txt">Live page for players — real-time standings & predictions</span>
+                  <span class="rm-live-txt">Player link &amp; venue TV — demo (this browser only)</span>
                 </div>
                 <div class="rm-live-linkrow">
-                  <span class="rm-live-link" id="rm-live-link"></span>
+                  <span class="rm-live-link" id="rm-live-link">trekkr.online/live/demo</span>
                 </div>
                 <div class="rm-live-actions">
-                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">🔗 Copy link</button>
-                  <button class="rm-live-btn primary" onclick="rmShareLive()">📣 Share with players</button>
+                  <button class="rm-live-btn" id="rm-live-copy" onclick="rmCopyLive()">📱 Open player link</button>
+                  <button class="rm-live-btn primary" onclick="rmShareLive()">📺 Open TV</button>
                 </div>
+                <div style="font-size:11.5px;color:var(--txt3);margin-top:8px;line-height:1.45">Opens in a new tab and updates as you score. In a real session this is a shareable link for every player's phone and the venue TV.</div>
               </div>
               <div class="rm-submit-status" id="rm-submit-status"></div>
               <div class="rm-fair-bar" id="rm-fair-bar"></div>
@@ -715,7 +716,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             </div>
             <button class="rm-share-btn" onclick="rmShare()">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              Share Venue Leaderboard
+              Open player results page
             </button>
             <button class="rm-new-match-btn" onclick="rmNewMatch()">+ Start New Match</button>
           </div>
@@ -1574,10 +1575,96 @@ function rmBeginSession() {
   RM.currentRound=0;
   rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen(); rmUpdateLiveBar();
 }
-function rmUpdateLiveBar(){ var b=document.getElementById('rm-live-bar'); if(b) b.style.display='none'; }
+function rmUpdateLiveBar(){ var b=document.getElementById('rm-live-bar'); if(b) b.style.display=RM.rounds.length?'block':'none'; }
 function rmOpenManage(){ /* manage-players is admin-only; no-op in the demo */ }
 function rmCloseManage(){ var m=document.getElementById('rm-modal-manage'); if(m) m.classList.add('hidden'); }
-function rmCopyLive(){} function rmShareLive(){}
+// Demo player link + TV: no server — the session snapshot (same shape the admin
+// pushes to /api/live) is stored in this browser; /live/demo and
+// /playrank-demo/tv read it from localStorage and refresh on every change.
+function rmCopyLive(){ window.open('/live/demo','_blank'); }
+function rmShareLive(){ window.open('/playrank-demo/tv','_blank'); }
+var RM_DEMO_LIVE_KEY='tk_demo_live';
+function rmLiveStreak(name){
+  let s=0;
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    r.matches.forEach(m=>{
+      const in1=m.team1.some(p=>p.name===name), in2=m.team2.some(p=>p.name===name);
+      if(!in1&&!in2) return;
+      const t1win=m.score1>m.score2;
+      s = ((in1&&t1win)||(in2&&!t1win)) ? s+1 : 0;
+    });
+  });
+  return s;
+}
+function rmLiveSnapshot(final){
+  const startOf=name=>{
+    const ps=RM.playerStats[name];
+    if(ps&&ps._serverStart!=null) return ps._serverStart;   // server-authoritative baseline (set at End Match)
+    const s=RM.selectedPlayers.find(p=>p.name===name);return s?(s.elo||RM.startElo):RM.startElo;
+  };
+  const players=Object.values(RM.playerStats)
+    .filter(p=>p.active!==false)
+    .map(p=>({
+      name:p.name, short:(p.name||'').split(' ')[0],
+      displayName:p.displayName||p.name, photoUrl:p.photoUrl||'',
+      elo:p.elo, start:startOf(p.name),
+      w:p.wins||0, l:p.losses||0, pd:p.pointDiff||0,
+      streak:rmLiveStreak(p.name), gender:(p.gender||'M').toUpperCase(),
+    }));
+  const doneRounds=RM.rounds.filter(r=>r.submitted).length;
+  const cur=RM.rounds[RM.currentRound];
+  let now=[], bye=[];
+  if(!final && cur && !cur.submitted){
+    now=(cur.matches||[]).map(m=>({court:m.court, a:m.team1.map(p=>p.name), b:m.team2.map(p=>p.name),
+      sa:(m.score1==null?null:Number(m.score1)), sb:(m.score2==null?null:Number(m.score2))}));
+    bye=(cur.byePlayers||[]).slice();
+  }
+  // Completed match-by-match history (newest last), so the live page can show
+  // every game's teams, score and point difference — not just aggregate standings.
+  let rnum=0; const history=[];
+  RM.rounds.filter(r=>r.submitted).forEach(r=>{
+    rnum++;
+    (r.matches||[]).forEach(m=>{
+      if(m.score1==null||m.score2==null) return;
+      history.push({ round:rnum, court:m.court,
+        a:(m.team1||[]).map(p=>p.name), b:(m.team2||[]).map(p=>p.name),
+        sa:Number(m.score1), sb:Number(m.score2) });
+    });
+  });
+  const snap={
+    venue:RM.venue||'', gender:RM.gender, courts:RM.courts, scoreTarget:RM.scoreTarget,
+    scoreFormat:RM.scoreFormat||'race',
+    round: final ? doneRounds : (RM.currentRound+1),
+    now, bye, players, history,
+  };
+  if(RM.format==='league') Object.assign(snap, rmLeagueLiveFields(final));
+  return snap;
+}
+function rmLeagueLiveFields(final){
+  const tn=id=>{const t=RM.teams.find(x=>x.id===id); return t?t.players.slice():[];};
+  const sched=(RM.league.schedule||[]).map((slot,si)=>{
+    const r=RM.rounds[si];
+    return { slot:si+1, time:rmLeagueClock(si),
+      status: r&&r.submitted?'done':(!final&&si===RM.currentRound?'now':'next'),
+      matches: slot.map((m,mi)=>{ const rm=r&&r.matches[mi];
+        return { court:m.court, a:tn(m.a), b:tn(m.b),
+          sa: rm&&rm.score1!=null?Number(rm.score1):null, sb: rm&&rm.score2!=null?Number(rm.score2):null }; }) };
+  });
+  const table=rmLeagueTable().map(t=>({name:t.name, players:t.players, w:t.w, l:t.l, pf:t.pf, pa:t.pa, pd:t.pd, played:t.played}));
+  return { mode:'league', league:{ pairs:(RM.teams||[]).length, matchesPerPair:RM.league.kPlayed||0,
+    minsPerMatch:RM.league.mins, start:RM.league.start, slots:sched.length }, teams:table, schedule:sched };
+}
+function rmDemoPublish(final){
+  if(!RM.rounds.length) return;
+  try{
+    const snap=rmLiveSnapshot(!!final);
+    const lg=RM.format==='league', top=lg?rmLeagueTable()[0]:rmGetLeaderboard()[0];
+    const recap=final&&top?{headline:(lg?top.name:String(top.name).split(' ')[0])+' take the night',
+      line:lg?`Won ${top.w} of ${top.played}, point diff ${top.pd>=0?'+':''}${top.pd}. Simulation result — nothing was recorded.`
+             :`${top.wins}W ${top.losses}L. Simulation result — nothing was recorded.`, ai:false}:null;
+    localStorage.setItem(RM_DEMO_LIVE_KEY, JSON.stringify({code:'demo',status:final?'final':'live',data:snap,recap,updatedAt:new Date().toISOString()}));
+  }catch(e){}
+}
 
 function rmSwitchTab(tab) {
   RM.activeTab=tab;
@@ -1607,6 +1694,7 @@ function rmRenderMatchScreen() {
     document.getElementById('rm-league-next').style.display='none';
     if(sub) sub.style.display='none';
     rmUpdateFairBar();
+    rmDemoPublish(false);
     return;
   }
   if(sub) sub.style.display='';
@@ -1655,6 +1743,8 @@ function rmRenderMatchScreen() {
   } else nx.style.display='none';
 
   rmUpdateFairBar();
+  rmUpdateLiveBar();
+  rmDemoPublish(false);
 }
 function rmUpdateScore(courtIdx) {
   const round=RM.rounds[RM.currentRound];
@@ -1671,6 +1761,7 @@ function rmUpdateScore(courtIdx) {
   }
   const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
   document.getElementById('rm-courts-progress').textContent=`${done}/${round.matches.length} done`;
+  if(!isNaN(s1)&&!isNaN(s2)) rmDemoPublish(false);
 }
 function rmUpdateFairBar() {
   const bar=document.getElementById('rm-fair-bar');
@@ -1877,6 +1968,7 @@ function rmEndMatch(){
   const standings=rmGetLeaderboard();
   RM.lastFlags=[];
   rmCloseEnd();
+  rmDemoPublish(true);
   rmRenderDoneScreen(standings);
   rmGo('done');
 }
@@ -1924,10 +2016,7 @@ function rmRenderDoneScreen(standings){
       </div>
     </div>`).join('');
 }
-function rmShare(){
-  try{ if(navigator.clipboard) navigator.clipboard.writeText('Trekkr PlayRank — try the simulation: '+location.href); }catch(e){}
-  alert('This is a simulation. In a real venue, this button shares the scoreboard & results with players via the live page / WhatsApp.');
-}
+function rmShare(){ window.open('/live/demo','_blank'); }  // demo: the final results page for players
 function rmNewMatch(){ simReset(); }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1993,6 +2082,7 @@ function simOneRound(){
 }
 function simReset(){
   SIM.running=false;
+  try{ localStorage.removeItem(RM_DEMO_LIVE_KEY); }catch(e){}
   RM.selectedPlayers=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0; RM.teams=[];
   RM.league.schedule=[]; RM.league.kPlayed=0;
   RM.courts=2; RM.gender='M'; RM.scoreFormat='race'; RM.scoreTarget=4; RM.level='lower_bronze'; RM.startElo=1350;
