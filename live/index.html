@@ -495,7 +495,7 @@ function prlCourts(d){
     var pa=teamWinPct(A,B), pctA=Math.round(pa*100);
     function side(names,ps,sc,oth){ var e=prlPairElo(names), w=sc!=null&&oth!=null&&sc>oth;
       return '<div class="prl-side'+(w?' w':'')+'"><div class="nm"><b>'+pairName(names)+'</b><span>'+ps.map(function(p){return esc(firstName(p.displayName||p.name))+' '+(p.elo||'');}).join(' · ')+'</span></div>'+
-        '<span class="el">'+(sc!=null?sc:e.elo)+'</span></div>'; }
+        (sc!=null&&oth!=null?'<span class="el">'+sc+'</span>':'<span class="pl-tag">Playing</span>')+'</div>'; }
     return '<div class="prl-ct"><div class="prl-ct-h"><span>Court '+esc(m.court||'')+(time?' · '+esc(time):'')+'</span><span class="v">● '+esc(tgt||'Live')+'</span></div>'+
       side(m.a,A,m.sa,m.sb)+side(m.b,B,m.sb,m.sa)+
       '<div class="prl-prob"><div class="l"><span>'+pairName(m.a)+' '+pctA+'%</span><span>'+(100-pctA)+'% '+pairName(m.b)+'</span></div>'+
