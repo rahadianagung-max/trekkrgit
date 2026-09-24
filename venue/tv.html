@@ -373,6 +373,14 @@ img{max-width:100%}
     return new URLSearchParams(location.search).get('v')||'';
   })();
   var LIVE=null, WEEKLY=null, MONTHLY=null;
+  // Demo TV (/playrank-demo/tv or ?demo=1): reads the PlayRank simulation's
+  // session from this browser's localStorage instead of the venue API.
+  var DEMO = SLUG==='playrank-demo' || /[?&]demo=1\b/.test(location.search);
+  function demoLive(){
+    var d=null; try{ d=JSON.parse(localStorage.getItem('tk_demo_live')||'null'); }catch(e){}
+    if(!d||!d.data) return {active:false};
+    return {active:true, phase:d.status==='final'?'celebrate':'live', session:d.data, recap:d.recap||null};
+  }
   var DAY_ORDER=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
   var DAY_ABBR={Senin:'Mon',Selasa:'Tue',Rabu:'Wed',Kamis:'Thu',Jumat:'Fri',Sabtu:'Sat',Minggu:'Sun'};
   var DAY_ALIAS={sen:'Senin',senin:'Senin',mon:'Senin',monday:'Senin',
@@ -652,6 +660,11 @@ img{max-width:100%}
 
   /* ---------- data loaders ---------- */
   function loadVenue(){
+    if(DEMO){
+      VENUE.name='Demo Court'; $('vname').textContent=VENUE.name; document.title='PlayRank Demo · Trekkr TV';
+      renderSchedule(); renderRegister();
+      return Promise.resolve();
+    }
     return fetchJSON(BASE+'/venues').then(function(res){
       var venues=(res&&res.venues)||[], key=slug(SLUG);
       var v=venues.filter(function(x){return slug(x.name)===key||String(x.name||'').toLowerCase()===String(SLUG).toLowerCase();})[0]||venues.filter(function(x){return x.name;})[0];
@@ -669,16 +682,19 @@ img{max-width:100%}
     return out;
   }
   function loadWeekly(){
+    if(DEMO) return Promise.resolve();
     return fetchJSON(BASE+'/venues/'+encodeURIComponent(VENUE.name||SLUG)+'/ranking').then(function(d){
       var w=buildWeekly((d&&d.ranking)||[]); w.week=(d&&d.week)||''; WEEKLY=w;
     }).catch(function(){});
   }
   function loadMonthly(){
+    if(DEMO) return Promise.resolve();
     return fetchJSON(BASE+'/venues/'+encodeURIComponent(VENUE.name||SLUG)+'/monthly').then(function(d){ MONTHLY=d||null; }).catch(function(){});
   }
   var liveStamp='';
   function loadLive(){
-    return fetchJSON(BASE+'/live/venue?venue='+encodeURIComponent(VENUE.name||SLUG)).then(function(d){
+    var src = DEMO ? Promise.resolve(demoLive()) : fetchJSON(BASE+'/live/venue?venue='+encodeURIComponent(VENUE.name||SLUG));
+    return src.then(function(d){
       LIVE=d||{active:false};
       // The scene controller only re-renders on a queue change, so refresh the
       // live/podium scene in place whenever the session data itself changed.
@@ -692,7 +708,8 @@ img{max-width:100%}
     loadVenue().then(function(){ return Promise.all([loadLive(),loadWeekly(),loadMonthly()]); }).then(function(){
       $('boot').classList.add('hide');
       requestAnimationFrame(tick);
-      setInterval(loadLive, 8000);              // live is the priority signal
+      setInterval(loadLive, DEMO?1500:8000);    // live is the priority signal
+      if(DEMO) window.addEventListener('storage',function(e){ if(e.key==='tk_demo_live') loadLive(); });
       setInterval(function(){ loadWeekly(); loadMonthly(); }, 60000);
     }).catch(function(){
       $('boot').textContent='Could not load venue data. Retrying…';
