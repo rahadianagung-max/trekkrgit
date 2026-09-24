@@ -443,10 +443,10 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             <!-- PlayRank League (fixed partner) — only visible in league mode -->
             <div class="rm-card rm-league-only" id="rm-league-card" style="display:none">
               <div class="rm-card-label">PlayRank League · Fixed Partner</div>
-              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Pasangan tetap sepanjang sesi. Jadwal dibuat di awal supaya setiap pasangan main dengan jumlah match yang sama (bukan Mexicano).</p>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Partners stay together all session. The schedule is built up front so every pair plays the same number of matches (not Mexicano).</p>
               <div class="rm-grid2" style="gap:12px">
                 <div>
-                  <div class="rm-input-label">Jumlah pasangan</div>
+                  <div class="rm-input-label">Pairs</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('pairs',-1)">−</button>
                     <div class="rm-counter-val" id="rm-lg-pairs">14</div>
@@ -454,7 +454,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Durasi (jam)</div>
+                  <div class="rm-input-label">Duration (hours)</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('hours',-0.5)">−</button>
                     <div class="rm-counter-val" id="rm-lg-hours">4</div>
@@ -462,7 +462,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Menit per match</div>
+                  <div class="rm-input-label">Minutes per match</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('mins',-1)">−</button>
                     <div class="rm-counter-val" id="rm-lg-mins">17</div>
@@ -470,22 +470,22 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Jam mulai</div>
+                  <div class="rm-input-label">Start time</div>
                   <input class="rm-input" id="rm-lg-start" type="time" value="19:00" onchange="rmLeagueSetStart(this.value)" style="text-align:center"/>
                 </div>
               </div>
               <div class="prl-rec">
-                <span class="prl-lbl" style="color:var(--prl-ink)">// Rekomendasi engine</span>
+                <span class="prl-lbl" style="color:var(--prl-ink)">// Engine recommendation</span>
                 <div class="row">
-                  <div><span class="big" id="rm-lg-k">4</span> <span class="u">match / pasangan</span></div>
+                  <div><span class="big" id="rm-lg-k">4</span> <span class="u">matches / pair</span></div>
                   <div class="rm-counter" style="max-width:112px;background:#fff">
-                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',-1)" aria-label="Kurangi match per pasangan">−</button>
-                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',1)" aria-label="Tambah match per pasangan">+</button>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',-1)" aria-label="Fewer matches per pair">−</button>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',1)" aria-label="More matches per pair">+</button>
                   </div>
                 </div>
                 <div class="meta" id="rm-lg-rec">—</div>
               </div>
-              <div class="prl-sec" style="margin-top:16px"><span class="t"><span class="prl-sq"></span>Jumlah juara</span><span class="prl-chip g" id="rm-lg-winners">3</span></div>
+              <div class="prl-sec" style="margin-top:16px"><span class="t"><span class="prl-sq"></span>Number of winners</span><span class="prl-chip g" id="rm-lg-winners">3</span></div>
               <div class="prl-win" id="rm-lg-winbtns">
                 <button onclick="rmLeagueSetWinners(1)">1</button><button onclick="rmLeagueSetWinners(2)">2</button><button onclick="rmLeagueSetWinners(3)">3</button><button onclick="rmLeagueSetWinners(4)">4</button><button onclick="rmLeagueSetWinners(5)">5</button>
               </div>
@@ -1070,7 +1070,7 @@ function rmRenderPlayers() {
         <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">No player "<strong style="color:var(--on)">${q}</strong>"</div>
         ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
           ${rmAva(suggestion,42,16)}
-          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Add "${suggestion}"</div>
           <div style="font-size:11px;color:var(--txt3);margin-top:2px">Register as a new player · starting ELO ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
         </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Type a first and last name to add a new player. Example: "Budi Santoso"</div>`}
@@ -1336,9 +1336,9 @@ function rmLeagueRenderSetup(){
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
   set('rm-lg-pairs',L.pairs); set('rm-lg-hours',L.hours); set('rm-lg-mins',L.mins); set('rm-lg-k',plan.k);
   L.winners=rmLeagueWinners(L.pairs);
-  set('rm-lg-winners',L.winners+(L.winners===1?' juara':' juara'));
+  set('rm-lg-winners',L.winners+(L.winners===1?' winner':' winners'));
   document.querySelectorAll('#rm-lg-winbtns button').forEach((b,i)=>b.classList.toggle('on',i+1===L.winners));
-  set('rm-lg-winners-hint',L.winners===1?'Only the champion pair is named in the final result':`Top ${L.winners} pairs are named winners (Juara 1–${L.winners}) in the final result`);
+  set('rm-lg-winners-hint',L.winners===1?'Only the champion pair is named in the final result':`Top ${L.winners} pairs are named winners (1st–${rmOrdinal(L.winners)} place) in the final result`);
   const st=document.getElementById('rm-lg-start'); if(st&&st.value!==L.start) st.value=L.start;
   const rec=document.getElementById('rm-lg-rec'); if(rec) rec.innerHTML=rmLeaguePlanText(plan);
 }
@@ -1364,10 +1364,13 @@ function rmLeagueTeamsPlan(){
   box.style.display='block';
   box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 League plan</div>'+rmLeaguePlanText(rmLeaguePlan(T));
 }
-// Number of winner places (Juara 1..N): 1–5, never more than the pairs playing.
+// Number of winner places (1st..Nth): 1–5, never more than the pairs playing.
 function rmLeagueWinners(T){ return Math.max(1,Math.min(5,RM.league.winners||3,T||RM.league.pairs||5)); }
 const RM_MEDALS=['🥇','🥈','🥉','🏅','🏅'];
-function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">JUARA ${i+1}</span>`:''; }
+function rmOrdinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+// Place label for winner index i (0-based): Champion, Runner-up, 3rd place, 4th place, 5th place.
+function rmPlaceName(i){ return i===0?'Champion':i===1?'Runner-up':rmOrdinal(i+1)+' place'; }
+function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">${rmPlaceName(i).toUpperCase()}</span>`:''; }
 function rmTeamName(t){ return (t&&t.players?t.players:[]).map(n=>String(n).split(' ')[0]).join(' & '); }
 function rmTeamElo(t){ return t.players.reduce((s,n)=>s+(((RM.playerStats[n]||RM.selectedPlayers.find(p=>p.name===n)||{}).elo)||RM.startElo),0); }
 
@@ -1886,9 +1889,9 @@ function rmGetLeaderboard(){
 }
 function rmRenderLeagueLeaderboard(el){
   const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
-  el.innerHTML=`<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Klasemen</span><span class="prl-chip g">W → PD → PF → H2H</span></div>`
+  el.innerHTML=`<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Standings</span><span class="prl-chip g">W → PD → PF → H2H</span></div>`
     +rmPrlTable(rows,W,rows.length)
-    +`<p class="prl-note">Garis oranye = batas zona juara (top ${W}) · ELO = rata-rata pasangan, Δ sesi ini</p>`;
+    +`<p class="prl-note">Orange line = winners cut-off (top ${W}) · ELO = pair average, Δ this session</p>`;
 }
 function rmLeagueOrderHtml(){
   const sched=RM.league.schedule||[], tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
@@ -1919,22 +1922,22 @@ function rmPrlDelta(d){ return d>0?`<span class="up">+${d}</span>`:d<0?`<span cl
 function rmPrlTable(rows,W,visible,byName){
   const tr=(t,i)=>{ const e=rmPairElo(t.players,byName);
     const cls='prl-tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+(i<W?' wz':'')+(i===W-1&&i<rows.length-1?' cut':'')+(i>=visible?' prl-more':'');
-    return `<div class="${cls}"><span class="p">${String(i+1).padStart(2,'0')}</span><div class="n"><b>${rmPairShort(t.players)}</b><span>${i<W?'Juara '+(i+1):t.played+' played'}</span></div>`
+    return `<div class="${cls}"><span class="p">${String(i+1).padStart(2,'0')}</span><div class="n"><b>${rmPairShort(t.players)}</b><span>${i<W?rmPlaceName(i):t.played+' played'}</span></div>`
       +`<span class="c">${t.w}-${t.l}</span><span class="c" style="color:${t.pd>0?'var(--prl-orange)':'var(--prl-muted)'}">${t.pd>0?'+':''}${t.pd}</span>`
       +`<div class="e"><b>${e.elo}</b>${rmPrlDelta(e.d)}</div></div>`; };
-  return `<div class="prl-tbl" id="prl-tbl"><div class="prl-th"><span>Pos</span><span>Pasangan</span><span>W-L</span><span>PD</span><span>ELO</span></div>${rows.map(tr).join('')}</div>`;
+  return `<div class="prl-tbl" id="prl-tbl"><div class="prl-th"><span>Pos</span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>${rows.map(tr).join('')}</div>`;
 }
 function rmPrlUrl(){ return location.origin+'/live/demo'; }  // demo: local player link
 function rmPrlTvUrl(){ return '/playrank-demo/tv'; }  // demo: local venue TV
-function rmPrlCopy(btn){ const u=rmPrlUrl(); if(!u) return; const ok=()=>{btn.textContent='Tersalin ✓';setTimeout(()=>btn.textContent='Salin',1600);};
-  if(navigator.clipboard) navigator.clipboard.writeText(u).then(ok).catch(()=>window.prompt('Salin link:',u)); else window.prompt('Salin link:',u); }
+function rmPrlCopy(btn){ const u=rmPrlUrl(); if(!u) return; const ok=()=>{btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1600);};
+  if(navigator.clipboard) navigator.clipboard.writeText(u).then(ok).catch(()=>window.prompt('Copy link:',u)); else window.prompt('Copy link:',u); }
 function rmPrlWA(){
   const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
-  const txt='🏆 Hasil PlayRank League'+(RM.venue?' · '+RM.venue:'')+'\n'+rows.slice(0,W).map((t,i)=>`${i+1}. ${t.name} (${t.w}W-${t.l}L, ${t.pd>=0?'+':''}${t.pd})`).join('\n')+(rmPrlUrl()?'\n\nRekap lengkap: '+rmPrlUrl():'');
+  const txt='🏆 PlayRank League results'+(RM.venue?' · '+RM.venue:'')+'\n'+rows.slice(0,W).map((t,i)=>`${i+1}. ${t.name} (${t.w}W-${t.l}L, ${t.pd>=0?'+':''}${t.pd})`).join('\n')+(rmPrlUrl()?'\n\nFull recap: '+rmPrlUrl():'');
   window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
 }
 function rmPrlTV(){ window.open(rmPrlTvUrl(),'_blank'); }
-function rmPrlMore(btn){ const t=document.getElementById('prl-tbl'); if(!t) return; t.classList.toggle('open'); btn.firstChild.textContent=t.classList.contains('open')?'Tutup ':'Lihat semua pasangan '; }
+function rmPrlMore(btn){ const t=document.getElementById('prl-tbl'); if(!t) return; t.classList.toggle('open'); btn.firstChild.textContent=t.classList.contains('open')?'Show less ':'Show all pairs '; }
 function rmRenderLeagueDone(standings){
   const table=rmLeagueTable(), T=table.length, W=rmLeagueWinners(T);
   const byName={}; (standings||[]).forEach(p=>{byName[p.name]=p;});
@@ -1951,7 +1954,7 @@ function rmRenderLeagueDone(standings){
   const c=table[0], ce=c?rmPairElo(c.players,byName):{elo:0,d:0};
   const tile=(t,i)=>{ if(!t) return ''; const e=rmPairElo(t.players,byName);
     return `<div class="prl-tile"><div class="top"><span class="no${i===1?'':' b'}">${String(i+1).padStart(2,'0')}</span><span class="prl-chip ${i===1?'v':'g'}">${e.d>=0?'+':''}${e.d} ELO</span></div>`
-      +`<span class="prl-lbl" style="color:${i===1?'var(--prl-orange)':'var(--prl-muted)'}">Juara ${i+1}</span><h5>${t.name}</h5>`
+      +`<span class="prl-lbl" style="color:${i===1?'var(--prl-orange)':'var(--prl-muted)'}">${rmPlaceName(i)}</span><h5>${t.name}</h5>`
       +`<div class="ft"><span>${t.w}W - ${t.l}L</span><span>${t.pd>=0?'+':''}${t.pd} diff</span></div></div>`; };
   const url=rmPrlUrl();
   document.getElementById('rm-done-league').innerHTML=`<div class="prl" style="padding:4px 2px 8px">
@@ -1959,34 +1962,34 @@ function rmRenderLeagueDone(standings){
     <div class="prl-card">
       <div class="prl-chips"><span class="prl-chip v">League finished · ${k} match/pair</span><span class="prl-chip k">${T} pairs · ${RM.courts} courts</span></div>
       <span class="prl-lbl">// Official league classification</span>
-      <h2 class="prl-h1">Champions<br><span>Juara ${W===1?'1':'1–'+W}</span></h2>
-      <p class="prl-sub">🎉 Selamat kepada ${W===1?'juara':'para juara'}! PlayRank League · Fixed Partner (${cat})${RM.venue?' · '+RM.venue:''}</p>
+      <h2 class="prl-h1">${W===1?'Champion':'Champions'}<br><span>${W===1?'League winner':'Top '+W}</span></h2>
+      <p class="prl-sub">🎉 Congratulations to the ${W===1?'champion':'winners'}! PlayRank League · Fixed Partner (${cat})${RM.venue?' · '+RM.venue:''}</p>
       <div class="prl-foot"><span>● Trekkr ELO ratings updated</span><span>${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</span></div>
     </div>
-    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Podium kejuaraan</span><span class="prl-chip g">${W} juara</span></div>
+    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Championship podium</span><span class="prl-chip g">${W} ${W===1?'winner':'winners'}</span></div>
     ${c?`<div class="prl-card o" style="overflow:hidden"><div class="prl-wm">01</div><div class="prl-champ">
-      <div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Juara 1</span><span class="prl-chip k" style="color:var(--prl-volt)">${c.l===0?'Undefeated':'Record'} // ${c.w}-${c.l}</span></div>
+      <div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Champion</span><span class="prl-chip k" style="color:var(--prl-volt)">${c.l===0?'Undefeated':'Record'} // ${c.w}-${c.l}</span></div>
       <span class="prl-chip v" style="border-width:2px;box-shadow:2px 2px 0 var(--prl-ink)">${ce.d>=0?'↗ +':'↘ '}${ce.d} ELO</span></div>
-      <h4>${c.players.join(' &amp; ')}</h4><p class="tag">■ ${c.played} match · ${c.played} lawan berbeda</p>
-      <div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>${ce.elo}</b></div><div><span class="prl-lbl">Rekor</span><b style="color:var(--prl-orange)">${c.w}-${c.l}</b></div><div><span class="prl-lbl">Selisih</span><b>${c.pd>=0?'+':''}${c.pd}</b></div><div><span class="prl-lbl">Poin</span><b>${c.pf}-${c.pa}</b></div></div>
+      <h4>${c.players.join(' &amp; ')}</h4><p class="tag">■ ${c.played} matches · ${c.played} different opponents</p>
+      <div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>${ce.elo}</b></div><div><span class="prl-lbl">Record</span><b style="color:var(--prl-orange)">${c.w}-${c.l}</b></div><div><span class="prl-lbl">Point diff</span><b>${c.pd>=0?'+':''}${c.pd}</b></div><div><span class="prl-lbl">Points</span><b>${c.pf}-${c.pa}</b></div></div>
     </div></div>`:''}
     ${W>=2?`<div class="prl-2" style="margin-bottom:14px">${tile(table[1],1)}${W>=3?tile(table[2],2):''}</div>`:''}
-    <div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Sorotan statistik</span><span class="prl-lbl">// Telemetry</span></div>
+    <div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Stat highlights</span><span class="prl-lbl">// Telemetry</span></div>
       <div class="prl-tele">
-        <div><span class="prl-lbl">Total match</span><b>${matches.length}</b><span class="s">${played.length} slot · ${RM.courts} court</span></div>
-        <div><span class="prl-lbl">Selesai</span><b style="color:var(--prl-orange)">${fin}</b><span class="s">Mulai ${RM.league.start||''}</span></div>
+        <div><span class="prl-lbl">Total matches</span><b>${matches.length}</b><span class="s">${played.length} slots · ${RM.courts} courts</span></div>
+        <div><span class="prl-lbl">Finished</span><b style="color:var(--prl-orange)">${fin}</b><span class="s">Started ${RM.league.start||''}</span></div>
         <div><span class="prl-lbl">ELO gainer</span><b class="nm">${gain?gain.n:'—'}</b>${gain?`<span class="prl-chip v" style="margin-top:3px">${gain.d>=0?'+':''}${gain.d} ELO</span>`:''}</div>
-        <div><span class="prl-lbl">Laga terketat</span><b>${tight?tight.score1+' - '+tight.score2:'—'}</b><span class="s">${tight?nm(tight.team1)+' vs '+nm(tight.team2):''}</span></div>
+        <div><span class="prl-lbl">Closest match</span><b>${tight?tight.score1+' - '+tight.score2:'—'}</b><span class="s">${tight?nm(tight.team1)+' vs '+nm(tight.team2):''}</span></div>
       </div></div>
-    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Klasemen akhir</span><span class="prl-chip g">${T} pasangan</span></div>
+    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Final standings</span><span class="prl-chip g">${T} pairs</span></div>
     ${rmPrlTable(table,W,8,byName)}
-    ${T>8?`<button class="prl-btn w sm" style="margin:10px 0 14px" onclick="rmPrlMore(this)">Lihat semua pasangan <span>▾</span></button>`:'<div style="height:14px"></div>'}
-    <div class="prl-card"><span class="prl-lbl" style="color:var(--prl-orange)">// Link pemain &amp; TV</span>
-      <h4 style="margin:2px 0 0;font:900 14px var(--prl-sans);text-transform:uppercase">Bagikan hasil</h4>
-      ${url?`<div class="prl-url"><span>🔗 ${url.replace(/^https?:\/\//,'')}</span><button onclick="rmPrlCopy(this)">Salin</button></div>`:'<div style="height:10px"></div>'}
-      <div class="prl-2"><button class="prl-btn wa sm" onclick="rmPrlWA()">➤ WhatsApp</button><button class="prl-btn v sm" onclick="rmPrlTV()">📺 TV lapangan</button></div></div>
-    <button class="prl-btn" onclick="rmNewMatch()">＋ Mulai league baru →</button>
-    <div class="prl-links"><button onclick="rmShareStory()">📸 IG Story</button><span>/ /</span><button onclick="window.open('https://trekkr.online/rankings','_blank')">🏅 Profil rating pemain</button></div>
+    ${T>8?`<button class="prl-btn w sm" style="margin:10px 0 14px" onclick="rmPrlMore(this)">Show all pairs <span>▾</span></button>`:'<div style="height:14px"></div>'}
+    <div class="prl-card"><span class="prl-lbl" style="color:var(--prl-orange)">// Player link &amp; TV</span>
+      <h4 style="margin:2px 0 0;font:900 14px var(--prl-sans);text-transform:uppercase">Share results</h4>
+      ${url?`<div class="prl-url"><span>🔗 ${url.replace(/^https?:\/\//,'')}</span><button onclick="rmPrlCopy(this)">Copy</button></div>`:'<div style="height:10px"></div>'}
+      <div class="prl-2"><button class="prl-btn wa sm" onclick="rmPrlWA()">➤ WhatsApp</button><button class="prl-btn v sm" onclick="rmPrlTV()">📺 Venue TV</button></div></div>
+    <button class="prl-btn" onclick="rmNewMatch()">＋ Start new league →</button>
+    <div class="prl-links"><button onclick="rmShareStory()">📸 IG Story</button><span>/ /</span><button onclick="window.open('https://trekkr.online/rankings','_blank')">🏅 Player ratings</button></div>
   </div>`;
 }
 function rmRenderLeaderboard(){
@@ -2032,7 +2035,7 @@ function rmShowEndConfirm(){
   if(RM.format==='league'){
     if(!rmLeagueCanEnd()){ rmSetStatus('failed','End Match unlocks when every pair has played the same number of matches.'); return; }
     const tbl=rmLeagueTable(), W=rmLeagueWinners(tbl.length);
-    document.getElementById('rm-end-top3').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${W===1?'Champion':'Juara 1–'+W}</div>`+tbl.slice(0,W).map((t,i)=>`
+    document.getElementById('rm-end-top3').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${W===1?'Champion':'Top '+W}</div>`+tbl.slice(0,W).map((t,i)=>`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <span>${RM_MEDALS[i]}</span>
         <span style="font-size:13px;font-weight:700;flex:1">${t.name}</span>

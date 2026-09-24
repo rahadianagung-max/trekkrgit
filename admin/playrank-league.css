@@ -177,6 +177,7 @@
 #rm-root.prl .rm-segment{background:#F1F5F9;border:2px solid var(--prl-ink);border-radius:0;padding:3px;gap:3px}
 #rm-root.prl .rm-seg-btn{border-radius:0;font:800 11px var(--prl-mono);text-transform:uppercase;letter-spacing:.05em;color:#475569}
 #rm-root.prl .rm-seg-btn.active{background:var(--prl-ink);color:#fff;box-shadow:none}
+#rm-root.prl .rm-seg-btn,#rm-root.prl .rm-gender-card,#rm-root.prl .rm-tab,#rm-root.prl .rm-player-item{transition:none}
 #rm-root.prl .rm-btn-full{border-radius:0;border:2px solid var(--prl-ink);font:800 12.5px var(--prl-mono);text-transform:uppercase;letter-spacing:.06em;box-shadow:4px 4px 0 var(--prl-ink)}
 #rm-root.prl .rm-btn-full:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--prl-ink)}
 #rm-root.prl .rm-btn-primary{background:var(--prl-orange);color:#fff}
