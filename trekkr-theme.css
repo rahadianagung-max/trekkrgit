@@ -1,72 +1,110 @@
 /* ==========================================================================
-   trekkr-theme.css — shared TREKKR brand system
-   Tokens + chrome (header, nav, buttons, footer, base utilities).
+   trekkr-theme.css — shared TREKKR brand system (PlayRank League theme)
+   Brutalist-athletic: ink #090D14 · orange #FF5900 · volt #D2F802, square
+   corners, 2–3px ink borders, hard offset shadows, grid paper background.
+   Type: Space Grotesk (display) · Plus Jakarta Sans (body) · JetBrains Mono
+   (labels, data, every ELO number).
    Link this once per page: <link rel="stylesheet" href="/trekkr-theme.css"/>
-   Page-specific styles live in each page's own <style> block.
+   Page-specific styles live in each page's own <style> block. The legacy token
+   names below are kept (re-valued) so existing pages pick the theme up.
    ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&display=swap');
 
 :root{
-  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F5F7; --surface-3:#EFEFF1;
-  --border:#E4E4E7; --border-soft:#EDEDF0;
-  --text:#0D0D0D; --muted:#52525B; --subtle:#9A9AA2; --faint:#C4C4C8;
-  --orange:#FF6A00; --red:#FF3830; --amber:#FFB000; --green:#22A052; --alert:#FF2D55; --focus:#885CF6;
-  --warm:#FFF4EA; --warm-border:#F0D9C4;
-  --grad:linear-gradient(90deg,#FF3830,#FFB000);
-  --radius:12px; --radius-pill:999px;
-  --display:'Saira Condensed',system-ui,sans-serif;
+  /* theme tokens */
+  --ink:#090D14; --volt:#D2F802; --paper:#FFFFFF;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
+  --shadow:4px 4px 0 var(--ink); --shadow-o:5px 5px 0 #FF5900; --shadow-v:6px 6px 0 #D2F802;
+  --grid-bg:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px);
+
+  /* legacy names, re-valued for the new theme */
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F4F6F9; --surface-3:#E2E8F0;
+  --border:#090D14; --border-soft:#E2E8F0;
+  --text:#090D14; --muted:#475569; --subtle:#64748B; --faint:#94A3B8;
+  --orange:#FF5900; --red:#DC2626; --amber:#F59E0B; --green:#059669; --alert:#DC2626; --focus:#FF5900;
+  --warm:#FFF7EE; --warm-border:#090D14;
+  --grad:linear-gradient(90deg,#FF5900,#FF5900);
+  --radius:0px; --radius-pill:0px;
+  --display:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
   --body:'Plus Jakarta Sans',system-ui,sans-serif;
 }
 
 /* Reset / base */
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;font-synthesis-style:none}  /* display face has no italic: render upright, never slanted */
+body{background-color:var(--bg);background-image:var(--grid-bg);background-size:24px 24px;color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
 button{font-family:inherit;cursor:pointer}
-:focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:4px}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+::selection{background:var(--volt);color:var(--ink)}
+
+/* Square corners everywhere (theme rule; overrides page-level radii).
+   Opt out with .tk-round (e.g. live status dots). */
+*:not(.tk-round),*::before,*::after{border-radius:0 !important}
 
 /* Layout / type utilities */
 .container{width:min(1180px,calc(100% - 40px));margin:0 auto}
-.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);font-weight:600}
-.display{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;line-height:.95}
-.sec-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);font-weight:600;margin:24px 4px 12px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);font-weight:800}
+.display{font-family:var(--display);font-style:normal;font-weight:700;text-transform:uppercase;letter-spacing:-.035em;line-height:.95}
+.sec-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle);font-weight:800;margin:24px 4px 12px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
-/* Header / navigation */
-.site-header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
-.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
-.brand{display:inline-block;font-family:var(--display);font-style:italic;font-weight:800;font-size:26px;letter-spacing:0;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding:.04em .32em .04em .02em;line-height:1.2;overflow:visible}
+/* Theme primitives (use on new/restyled markup) */
+.tk-card{background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow);padding:16px}
+.tk-card--o{box-shadow:var(--shadow-o)} .tk-card--v{box-shadow:var(--shadow-v)}
+.tk-chip{display:inline-block;font:800 9.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:3px 7px;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);white-space:nowrap}
+.tk-chip--v{background:var(--volt)} .tk-chip--k{background:var(--ink);color:#fff} .tk-chip--kv{background:var(--ink);color:var(--volt)}
+.tk-chip--o{background:var(--orange);color:#fff} .tk-chip--g{background:#F1F5F9;color:var(--subtle);border-color:#CBD5E1}
+.tk-chip--ok{background:#DCFCE7;color:#065F46;border-color:#065F46}
+.tk-lbl{font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle)}
+.tk-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.tk-sec__t{display:flex;align-items:center;gap:8px;font:800 13px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink)}
+.tk-sec__t::before{content:'';width:12px;height:12px;background:var(--orange);border:2px solid var(--ink);flex:none}
+.tk-sec__more{font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--orange)}
+.tk-elo{font-family:var(--mono);font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums}
+.tk-up{color:var(--green);font:800 10.5px var(--mono)} .tk-dn{color:var(--subtle);font:800 10.5px var(--mono)}
+.tk-ph{flex:none;width:40px;height:40px;border:2px solid var(--ink);background:#E2E8F0;display:grid;place-items:center;overflow:hidden;font:800 12px var(--mono);color:var(--ink)}
+.tk-ph img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Header / navigation (pages that don't use trekkr-nav.js) */
+.site-header{position:sticky;top:0;z-index:60;background:var(--paper);border-bottom:3px solid var(--ink)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px}
+.brand{display:inline-block;font:900 italic 26px/1 var(--body);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink);background:none;-webkit-text-fill-color:currentColor;padding:0}
+.brand::after{content:'//';font-style:normal;background:var(--orange);color:#fff;padding:1px 7px;margin-left:3px}
 .nav{display:flex;gap:2px}
-.nav a{font-size:13px;font-weight:600;color:var(--muted);padding:8px 14px;border-radius:var(--radius-pill);transition:color .2s,background .2s}
-.nav a:hover{color:var(--text);background:var(--surface-2)}
-.nav a.active{color:var(--orange)}
+.nav a{font:800 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);padding:10px 12px}
+.nav a:hover{background:var(--surface-2)}
+.nav a.active{box-shadow:inset 0 -3px 0 var(--orange)}
 .header-actions{display:flex;align-items:center;gap:10px}
-.menu-toggle{display:none;background:transparent;border:1px solid var(--border);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--text);font-size:20px}
-.mobile-nav{display:none;flex-direction:column;gap:4px;padding:10px 0 16px;border-top:1px solid var(--border-soft)}
-.mobile-nav a{padding:11px 14px;border-radius:10px;font-weight:600;color:var(--muted)}
-.mobile-nav a:hover{background:var(--surface-2);color:var(--text)}
+.menu-toggle{display:none;background:var(--volt);border:2px solid var(--ink);width:40px;height:40px;align-items:center;justify-content:center;color:var(--ink);font-size:20px}
+.mobile-nav{display:none;flex-direction:column;gap:0;padding:8px 0 16px;border-top:2px solid var(--ink)}
+.mobile-nav a{padding:12px 6px;font:800 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink);border-bottom:1px solid var(--border-soft)}
+.mobile-nav a:hover{background:var(--surface-2)}
 .mobile-nav.open{display:flex}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;padding:9px 18px;border-radius:var(--radius-pill);border:1px solid transparent;transition:transform .15s,background .2s,border-color .2s}
-.btn:active{transform:scale(.97)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:800 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:11px 16px;border-radius:0;border:2px solid var(--ink);box-shadow:var(--shadow);background:var(--paper);color:var(--ink);white-space:nowrap;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
 .btn:disabled{opacity:.45;cursor:default}
 .btn--primary{background:var(--orange);color:#fff}
-.btn--primary:hover:not(:disabled){background:#ff7d1f}
-.btn--outline{border-color:var(--orange);color:var(--orange);background:transparent}
-.btn--outline:hover:not(:disabled){background:rgba(255,106,0,.08)}
-.btn--ghost{border-color:var(--border);color:var(--text);background:transparent}
+.btn--primary:hover:not(:disabled){background:#ff6a1a}
+.btn--outline{background:var(--paper);color:var(--ink)}
+.btn--outline:hover:not(:disabled){background:var(--surface-2)}
+.btn--ghost{background:var(--paper);color:var(--ink)}
 .btn--ghost:hover:not(:disabled){background:var(--surface-2)}
+.btn--volt{background:var(--volt);color:var(--ink)}
+.btn--ink{background:var(--ink);color:#fff}
 
-/* Footer */
-.site-footer{border-top:1px solid var(--border-soft);padding:28px 0;margin-top:32px}
+/* Footer (pages without the ecosystem footer) */
+.site-footer{border-top:3px solid var(--ink);padding:28px 0;margin-top:32px;background:var(--paper)}
 .footer-inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.footer-brand{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;color:var(--faint);text-transform:uppercase}
-.footer-links{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--subtle)}
-.footer-links a:hover{color:var(--text)}
-.footer-copy{font-size:12px;color:var(--faint)}
+.footer-brand{font:900 italic 18px var(--body);color:var(--ink);text-transform:uppercase}
+.footer-links{display:flex;flex-wrap:wrap;gap:18px;font:800 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.footer-links a:hover{color:var(--orange)}
+.footer-copy{font:700 10.5px var(--mono);color:var(--subtle);text-transform:uppercase}
 
 /* Base responsive: collapse nav to hamburger */
 @media(max-width:860px){
@@ -75,4 +113,5 @@ button{font-family:inherit;cursor:pointer}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
+  .btn{transition:none}
 }
