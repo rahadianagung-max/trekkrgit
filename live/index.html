@@ -18,6 +18,8 @@
 <meta name="twitter:image" content="https://trekkr.online/live/og-cover.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,800;0,900;1,900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="/playrank-league.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <style>
 :root{
@@ -282,6 +284,7 @@ header.hd{padding:18px 2px 6px}
       <div class="sub" id="liveSub"></div>
     </header>
 
+    <div id="prlHead"></div>
     <!-- PlayRank League: tabs (Now Playing · Order of Play · League Table) -->
     <div class="ltabs" id="lgTabs" hidden role="tablist">
       <button class="ltab" data-tab="now" role="tab">Now Playing</button>
@@ -313,6 +316,7 @@ header.hd{padding:18px 2px 6px}
 
   <!-- ============ FINAL ============ -->
   <div id="view-final" hidden>
+    <div id="prlFinal"></div>
     <header class="hd">
       <span class="live" style="color:var(--gold)">★ Final results</span>
       <div class="title">Play<b>Rank</b> · Wrapped</div>
@@ -452,9 +456,62 @@ function teamBlock(names,noTier){
       (noTier?'':'<div class="nm2">'+tierName(p.elo)+'</div>')+'</div><span class="elo">'+(p.elo||'')+'</span></div>';
   }).join('<div style="height:8px"></div>');
 }
+// ── PlayRank League skin (brutalist; playrank-league.css scoped by body.prl) ──
+function prlDelta(v){ return v>0?'<span class="up">+'+v+'</span>':v<0?'<span class="dn">'+v+'</span>':'<span style="color:var(--prl-muted)">0</span>'; }
+function prlPairElo(names){
+  var ps=(names||[]).map(look), n=Math.max(1,ps.length);
+  var elo=Math.round(ps.reduce(function(a,p){return a+(p.elo||1350);},0)/n);
+  var dd=ps.filter(function(p){return p.start!=null&&p.elo!=null;});
+  var d=dd.length?Math.round(dd.reduce(function(a,p){return a+(p.elo-p.start);},0)/dd.length):0;
+  return {elo:elo,d:d};
+}
+function prlShort(names){ return (names||[]).map(function(n){var w=String(look(n).displayName||n).split(' ');return esc(w[0]+(w[1]?' '+w[1][0]+'.':''));}).join(' / '); }
+function prlTable(d,visible){
+  var t=d.teams||[], W=leagueWinners(d);
+  return '<div class="prl-tbl" id="prlTbl"><div class="prl-th"><span>Pos</span><span>Pasangan</span><span>W-L</span><span>PD</span><span>ELO</span></div>'+
+    t.map(function(x,i){ var e=prlPairElo(x.players);
+      var cls='prl-tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+(i<W?' wz':'')+(i===W-1&&i<t.length-1?' cut':'')+(hitsFind(x.players)?' me':'')+(i>=visible?' prl-more':'');
+      return '<div class="'+cls+'"><span class="p">'+String(i+1).padStart(2,'0')+'</span><div class="n"><b>'+prlShort(x.players)+'</b><span>'+(i<W?'Juara '+(i+1):(x.played||0)+' played')+'</span></div>'+
+        '<span class="c">'+(x.w||0)+'-'+(x.l||0)+'</span><span class="c" style="color:'+((x.pd||0)>0?'var(--prl-orange)':'var(--prl-muted)')+'">'+((x.pd||0)>0?'+':'')+(x.pd||0)+'</span>'+
+        '<div class="e"><b>'+e.elo+'</b>'+prlDelta(e.d)+'</div></div>';
+    }).join('')+'</div>';
+}
+function prlHeadHtml(d){
+  var cat=d.gender==='F'?'Women':d.gender==='MIXED'?'Mixed':'Men';
+  var fin=STATE&&STATE.status==='final';
+  return '<div class="prl-tick"><span class="l">'+(fin?'':'<span class="prl-dot"></span>')+'<span class="v">'+(fin?'League finished':'Live now')+'</span> <span class="d">// '+(fin?'final recap':'updating')+'</span></span>'+
+    '<span class="r">'+(d.round?(fin?d.round+' slots':'Slot '+d.round+(d.league?'/'+d.league.slots:'')):'')+'</span></div>'+
+    '<div class="prl-card"><div class="prl-chips"><span class="prl-chip v">League</span><span class="prl-chip k">'+cat+'</span>'+
+    (d.league&&d.league.matchesPerPair?'<span class="prl-chip g">'+d.league.matchesPerPair+' match / pair</span>':'')+'</div>'+
+    '<span class="prl-lbl">// '+esc(d.venue||'Trekkr')+'</span><h2 class="prl-h1" style="font-size:22px">PlayRank <span>Live</span></h2></div>';
+}
+function prlCourts(d){
+  var now=d.now||[];
+  var tgt=d.scoreTarget?((d.scoreFormat==='bestof'?'Best of ':'Race to ')+d.scoreTarget):'';
+  var time=''; (d.schedule||[]).forEach(function(s){ if(s.status==='now') time=s.time||''; });
+  return now.map(function(m){
+    var A=(m.a||[]).map(look), B=(m.b||[]).map(look);
+    if(A.length<2||B.length<2) return '';
+    var pa=teamWinPct(A,B), pctA=Math.round(pa*100);
+    function side(names,ps,sc,oth){ var e=prlPairElo(names), w=sc!=null&&oth!=null&&sc>oth;
+      return '<div class="prl-side'+(w?' w':'')+'"><div class="nm"><b>'+pairName(names)+'</b><span>'+ps.map(function(p){return esc(firstName(p.displayName||p.name))+' '+(p.elo||'');}).join(' · ')+'</span></div>'+
+        '<span class="el">'+(sc!=null?sc:e.elo)+'</span></div>'; }
+    return '<div class="prl-ct"><div class="prl-ct-h"><span>Court '+esc(m.court||'')+(time?' · '+esc(time):'')+'</span><span class="v">● '+esc(tgt||'Live')+'</span></div>'+
+      side(m.a,A,m.sa,m.sb)+side(m.b,B,m.sb,m.sa)+
+      '<div class="prl-prob"><div class="l"><span>'+pairName(m.a)+' '+pctA+'%</span><span>'+(100-pctA)+'% '+pairName(m.b)+'</span></div>'+
+      '<div class="trk"><span class="a" style="width:'+pctA+'%"></span><span class="b" style="width:'+(100-pctA)+'%"></span></div>'+
+      '<div class="tk">'+take(A,B,pa)+'</div></div></div>';
+  }).join('');
+}
 function renderCourts(d){
   var now=d.now||[];
   var wrap=$('nowWrap');
+  if(isLeague(d)){
+    wrap.hidden=false;
+    $('nowN').textContent=now.length?(now.length+(now.length===1?' match':' matches')):'';
+    $('courts').innerHTML=prlCourts(d);
+    return;
+  }
   if(!now.length){ wrap.hidden=true; $('courts').innerHTML=''; }
   else{
     wrap.hidden=false;
@@ -541,12 +598,12 @@ function renderOrder(d){
     var any=false;
     var rows=(sl.matches||[]).map(function(m){
       var me=hitsFind(m.a)||hitsFind(m.b); if(me){any=true;mine++;}
-      var sc=(sl.status==='done'||sl.status==='now')&&m.sa!=null&&m.sb!=null?'<span class="sc">'+m.sa+'–'+m.sb+'</span>':'';
-      return '<div class="om'+(me?' me':'')+'"><span class="c">C'+esc(m.court)+'</span> '+pairName(m.a)+' <span class="vs">vs</span> '+pairName(m.b)+' '+sc+'</div>';
+      var sc=(sl.status==='done'||sl.status==='now')&&m.sa!=null&&m.sb!=null?'<span class="s">'+m.sa+'–'+m.sb+'</span>':'';
+      return '<div class="mm'+(me?' me':'')+'"><span class="c">C'+esc(m.court)+'</span>'+pairName(m.a)+' <span class="x">vs</span> '+pairName(m.b)+sc+'</div>';
     }).join('');
     var st=sl.status==='done'?'Done':sl.status==='now'?'On court':'';
     var hide=FIND&&!any;
-    return '<div class="oslot '+esc(sl.status||'')+(hide?' hide':'')+'"><div><div class="tm">'+esc(sl.time||'')+'</div><div class="st">'+st+'</div></div><div>'+rows+'</div></div>';
+    return '<div class="prl-slot '+esc(sl.status||'')+(hide?' hide':'')+'"><div class="tm"><b>'+esc(sl.time||'')+'</b><span>'+st+'</span></div><div class="ms">'+rows+'</div></div>';
   }).join('') + (FIND&&!mine?'<div class="byecard">No matches found for “'+esc(FIND)+'”.</div>':'');
 }
 var LTAB='now';
@@ -560,8 +617,8 @@ function renderUpNext(d){
   var sched=d.schedule||[], i=0;
   for(;i<sched.length;i++){ if(sched[i].status==='now') break; }
   var nx=sched[i+1];
-  $('upNext').innerHTML=nx?'<div class="upnext"><div class="h">Up next · '+esc(nx.time||'')+'</div>'+
-    (nx.matches||[]).map(function(m){return '<div class="m"><b>C'+esc(m.court)+'</b> · '+pairName(m.a)+' <span style="color:var(--dim)">vs</span> '+pairName(m.b)+'</div>';}).join('')+'</div>':'';
+  $('upNext').innerHTML=nx?'<div class="prl-next"><div class="h">⏭ Up next · '+esc(nx.time||'')+'</div>'+
+    (nx.matches||[]).map(function(m){return '<div class="m"><i>C'+esc(m.court)+'</i> · '+pairName(m.a)+' <span style="color:var(--prl-muted)">vs</span> '+pairName(m.b)+'</div>';}).join('')+'</div>':'';
 }
 function renderLive(d){
   var lg=isLeague(d);
@@ -576,7 +633,8 @@ function renderLive(d){
     $('nowTitle').textContent='Now playing';
     $('stdTitle').textContent='League table';
     $('stdSub').textContent='W → PD → PF → H2H · top '+leagueWinners(d)+' = Juara';
-    $('liveBoard').innerHTML=d.teams.length?d.teams.map(leagueRow).join(''):'';
+    $('liveBoard').innerHTML=d.teams.length?prlTable(d,99):'';
+    $('prlHead').innerHTML=prlHeadHtml(d);
     renderOrder(d);
     renderUpNext(d);
     if(!(d.now||[]).length){
@@ -709,8 +767,58 @@ function renderFinal(d){
   $('weeklyBtn').href = vslug ? ('https://venue.trekkr.online/'+vslug) : 'https://trekkr.online/venues';
 }
 
+// League final recap (brutalist) — built only from the session snapshot.
+function prlFinalHtml(d){
+  var t=d.teams||[], T=t.length, W=leagueWinners(d), k=(d.league&&d.league.matchesPerPair)||(t[0]?t[0].played:0);
+  var cat=d.gender==='F'?'Women':d.gender==='MIXED'?'Mixed':'Men';
+  var hist=d.history||[], sched=d.schedule||[];
+  var last=sched.length?sched[sched.length-1].time:'';
+  var gain=(d.players||[]).map(function(p){return {n:p.displayName||p.name,d:(p.elo||0)-(p.start!=null?p.start:(p.elo||0))};}).sort(function(a,b){return b.d-a.d;})[0];
+  var tight=hist.slice().sort(function(a,b){return Math.abs(a.sa-a.sb)-Math.abs(b.sa-b.sb)||(b.sa+b.sb)-(a.sa+a.sb);})[0];
+  var nm=function(ns){return (ns||[]).map(function(n){return esc(firstName(look(n).displayName||n));}).join('/');};
+  var c=t[0], ce=c?prlPairElo(c.players):{elo:0,d:0};
+  function tile(x,i){ if(!x) return ''; var e=prlPairElo(x.players);
+    return '<div class="prl-tile"><div class="top"><span class="no'+(i===1?'':' b')+'">'+String(i+1).padStart(2,'0')+'</span><span class="prl-chip '+(i===1?'v':'g')+'">'+(e.d>=0?'+':'')+e.d+' ELO</span></div>'+
+      '<span class="prl-lbl" style="color:'+(i===1?'var(--prl-orange)':'var(--prl-muted)')+'">Juara '+(i+1)+'</span><h5>'+pairName(x.players)+'</h5>'+
+      '<div class="ft"><span>'+(x.w||0)+'W - '+(x.l||0)+'L</span><span>'+((x.pd||0)>=0?'+':'')+(x.pd||0)+' diff</span></div></div>'; }
+  var vslug=String(d.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+  var tv=IS_DEMO?'/playrank-demo/tv':('https://venue.trekkr.online/'+vslug+'/tv');
+  return '<div class="prl-card"><div class="prl-chips"><span class="prl-chip v">League finished · '+k+' match/pair</span><span class="prl-chip k">'+T+' pairs'+(d.courts?' · '+d.courts+' courts':'')+'</span></div>'+
+      '<span class="prl-lbl">// Official league classification</span><h2 class="prl-h1">Champions<br><span>Juara '+(W===1?'1':'1–'+W)+'</span></h2>'+
+      '<p class="prl-sub">🎉 Selamat kepada '+(W===1?'juara':'para juara')+'! PlayRank League · Fixed Partner ('+cat+')'+(d.venue?' · '+esc(d.venue):'')+'</p>'+
+      '<div class="prl-foot"><span>● Trekkr ELO ratings updated</span><span>'+(IS_DEMO?'simulation':'#playrankleague')+'</span></div></div>'+
+    '<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Podium kejuaraan</span><span class="prl-chip g">'+W+' juara</span></div>'+
+    (c?'<div class="prl-card o" style="overflow:hidden"><div class="prl-wm">01</div><div class="prl-champ">'+
+      '<div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Juara 1</span><span class="prl-chip k" style="color:var(--prl-volt)">'+((c.l||0)===0?'Undefeated':'Record')+' // '+(c.w||0)+'-'+(c.l||0)+'</span></div>'+
+      '<span class="prl-chip v" style="border-width:2px;box-shadow:2px 2px 0 var(--prl-ink)">'+(ce.d>=0?'↗ +':'↘ ')+ce.d+' ELO</span></div>'+
+      '<h4>'+(c.players||[]).map(function(n){return esc(look(n).displayName||n);}).join(' &amp; ')+'</h4><p class="tag">■ '+(c.played||0)+' match · '+(c.played||0)+' lawan berbeda</p>'+
+      '<div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>'+ce.elo+'</b></div><div><span class="prl-lbl">Rekor</span><b style="color:var(--prl-orange)">'+(c.w||0)+'-'+(c.l||0)+'</b></div>'+
+      '<div><span class="prl-lbl">Selisih</span><b>'+((c.pd||0)>=0?'+':'')+(c.pd||0)+'</b></div><div><span class="prl-lbl">Poin</span><b>'+(c.pf||0)+'-'+(c.pa||0)+'</b></div></div></div></div>':'')+
+    (W>=2?'<div class="prl-2" style="margin-bottom:14px">'+tile(t[1],1)+(W>=3?tile(t[2],2):'')+'</div>':'')+
+    '<div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Sorotan statistik</span><span class="prl-lbl">// Telemetry</span></div><div class="prl-tele">'+
+      '<div><span class="prl-lbl">Total match</span><b>'+hist.length+'</b><span class="s">'+sched.length+' slot'+(d.courts?' · '+d.courts+' court':'')+'</span></div>'+
+      '<div><span class="prl-lbl">Slot terakhir</span><b style="color:var(--prl-orange)">'+esc(last||'—')+'</b><span class="s">Mulai '+esc((d.league&&d.league.start)||'')+'</span></div>'+
+      '<div><span class="prl-lbl">ELO gainer</span><b class="nm">'+(gain?esc(gain.n):'—')+'</b>'+(gain?'<span class="prl-chip v" style="margin-top:3px">'+(gain.d>=0?'+':'')+gain.d+' ELO</span>':'')+'</div>'+
+      '<div><span class="prl-lbl">Laga terketat</span><b>'+(tight?tight.sa+' - '+tight.sb:'—')+'</b><span class="s">'+(tight?nm(tight.a)+' vs '+nm(tight.b):'')+'</span></div></div></div>'+
+    '<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Klasemen akhir</span><span class="prl-chip g">'+T+' pasangan</span></div>'+prlTable(d,8)+
+    (T>8?'<button class="prl-btn w sm" style="margin:10px 0 14px" onclick="document.getElementById(\'prlTbl\').classList.toggle(\'open\')">Lihat semua pasangan ▾</button>':'<div style="height:14px"></div>')+
+    '<div class="prl-card"><span class="prl-lbl" style="color:var(--prl-orange)">// Link pemain &amp; TV</span><h4 style="margin:2px 0 0;font:900 14px var(--prl-sans);text-transform:uppercase">Bagikan hasil</h4>'+
+      '<div class="prl-url"><span>🔗 '+esc(location.host+location.pathname)+'</span><button id="prlCopy">Salin</button></div>'+
+      '<div class="prl-2"><button class="prl-btn wa sm" id="prlWA">➤ WhatsApp</button><a class="prl-btn v sm" href="'+tv+'" target="_blank" rel="noopener">📺 TV lapangan</a></div></div>'+
+    '<a class="prl-btn" href="'+(IS_DEMO?'/playrank-demo':'https://trekkr.online/rankings')+'">'+(IS_DEMO?'↻ Kembali ke simulasi':'🏅 Profil rating pemain →')+'</a>'+
+    '<p class="note">Powered by <b style="color:var(--prl-orange)">Trekkr</b> · ranked padel for Indonesia</p>';
+}
+function prlWireFinal(d){
+  var cp=$('prlCopy'); if(cp) cp.onclick=function(){ var u=location.href; if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){cp.textContent='Tersalin ✓';setTimeout(function(){cp.textContent='Salin';},1600);}); };
+  var wa=$('prlWA'); if(wa) wa.onclick=function(){
+    var t=d.teams||[], W=leagueWinners(d);
+    var txt='🏆 Hasil PlayRank League'+(d.venue?' · '+d.venue:'')+'\n'+t.slice(0,W).map(function(x,i){return (i+1)+'. '+(x.players||[]).map(function(n){return firstName(look(n).displayName||n);}).join(' & ')+' ('+(x.w||0)+'W-'+(x.l||0)+'L)';}).join('\n')+'\n\nRekap lengkap: '+location.href;
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank'); };
+}
 // League final: pair podium + pair table; player ELO table stays below.
 function renderLeagueFinal(d){
+  $('prlFinal').innerHTML='<div style="padding-top:14px">'+prlHeadHtml(d).replace('PlayRank <span>Live</span>','PlayRank <span>League</span>')+'</div>'+prlFinalHtml(d);
+  prlWireFinal(d);
   var t=d.teams||[];
   $('lgFinalWrap').hidden=!t.length;
   $('lgFinalBoard').innerHTML=t.map(leagueRow).join('');
@@ -736,6 +844,7 @@ function renderLeagueFinal(d){
 
 function render(){
   var d=STATE.data||{};
+  document.body.classList.toggle('prl',isLeague(d));
   indexPlayers(d.players);
   $('stateLoading').hidden=true; $('stateError').hidden=true; $('app').hidden=false;
   var isFinal = STATE.status==='final';
@@ -827,7 +936,7 @@ $('shareBtn').addEventListener('click',function(){
   f.addEventListener('input',function(){
     FIND=f.value.trim();
     try{ localStorage.setItem('tk_live_find',FIND); }catch(e){}
-    if(STATE&&STATE.data&&isLeague(STATE.data)&&STATE.status!=='final'){ $('liveBoard').innerHTML=STATE.data.teams.map(leagueRow).join(''); renderOrder(STATE.data); }
+    if(STATE&&STATE.data&&isLeague(STATE.data)&&STATE.status!=='final'){ $('liveBoard').innerHTML=prlTable(STATE.data,99); renderOrder(STATE.data); }
   });
 })();
 

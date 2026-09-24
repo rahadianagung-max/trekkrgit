@@ -7,6 +7,8 @@
 <meta name="description" content="Trekkr venue big-screen: live PlayRank standings, weekly leaderboard and monthly champions."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/playrank-league.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -468,15 +470,16 @@ img{max-width:100%}
     var byeHtml=bye.length?'<div class="byline">⏸ Resting this round: <b>'+bye.join(', ')+'</b></div>':'';
     if(isLeague(d)){
       var pn=function(ns){return (ns||[]).map(function(n){return esc(first(nm(look(n))));}).join(' & ');};
+      var LWc=Math.max(1,Math.min(5,parseInt((d.league||{}).winners,10)||3));
       var lrows=d.teams.map(function(t,i){
         var rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
         var pd=t.pd||0, pdc=pd>0?'var(--w)':pd<0?'var(--l)':'var(--faint)';
-        return '<div class="lrow '+(i<3?'top ':'')+rc+'"><span class="rk">'+(i+1)+'</span>'
+        return '<div class="lrow '+(i<3?'top ':'')+rc+(i===LWc-1&&i<d.teams.length-1?' prl-cut':'')+'"><span class="rk">'+(i+1)+'</span>'
           +'<span class="pl"><span class="who"><div class="pn">'+pn(t.players)+'</div></span></span>'
           +'<span class="wl"><span class="w">'+(t.w||0)+'</span><span class="s">/</span><span class="l">'+(t.l||0)+'</span></span>'
           +'<span class="el" style="color:'+pdc+'">'+(pd>=0?'+':'')+pd+'</span></div>';
       }).join('');
-      return '<div class="livewrap">'
+      return '<div class="livewrap tv-prl">'
         +'<div class="panel"><div class="panel-h"><span class="t">On Court Now</span><span class="cnt">'+now.length+(now.length===1?' match':' matches')+'</span></div>'
           +'<div class="courts">'+(courtsHtml||'<div class="col-empty">'+((d.schedule||[]).length&&(d.schedule||[]).every(function(x){return x.status==='done';})?'🏁 All league matches played':'Next slot loading…')+'</div>')+'</div>'+leagueNext(d)+'</div>'
         +'<div class="panel"><div class="panel-h"><span class="t">League Table</span><span class="cnt">Pairs · W · L · PD</span></div>'
@@ -535,7 +538,7 @@ img{max-width:100%}
       var rk=PC+i+1;
       return '<div class="fchip"'+(rk<=LW?' style="border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset"':'')+'><span class="rk">'+(rk<=LW?'🏅':rk)+'</span><span class="nm">'+esc(nm(p))+'</span><span class="wl"><span class="w">'+(p.w||0)+'</span>–<span class="l">'+(p.l||0)+'</span></span></div>';
     }).join('');
-    return '<div class="champ"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
+    return '<div class="champ'+(isLeague(d)?' tv-prl':'')+'"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
       +'<div class="bigpod">'+pods+'</div>'
       +(rest?'<div class="finalstrip">'+rest+'</div>':'')
       +'<div class="podnote"><b>Champion = most wins today.</b> The <b class="up">+ELO</b> is what each player gained this session — ELO is a career rating carried across sessions, so a higher-rated player can rank below today\'s winner.</div>'
