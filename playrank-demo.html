@@ -184,6 +184,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-seg-btn.active{background:white;color:var(--pr);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .rm-hint{font-size:12px;color:var(--txt3);margin-top:8px}
 .rm-gender-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rm-gender-grid.three{grid-template-columns:repeat(3,1fr)}
 .rm-gender-card{border:2px solid var(--bdr);border-radius:var(--r-rm);padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--sur-0)}
 .rm-gender-card:hover{border-color:var(--blue-mid)}
 .rm-gender-card.active{border-color:var(--blue);background:var(--blue-lt)}
@@ -421,14 +422,70 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 </div>
 
 <div class="sim-note">
-  🎾 <b>PlayRank engine simulation</b> — exactly like the venue admin. Set courts, category, score format &amp; level as usual, then hit <b>Auto-play</b>: the engine picks example players (including a few <b>new players</b>), fills in scores each round, and builds the result + ELO. No login, and no data is sent. <a class="sim-back" href="/playrank">← Back to PlayRank</a>
+  🎾 <b>PlayRank engine simulation</b> — exactly like the venue admin. Pick <b>Weekly PlayRank</b> or <b>League · Fixed Partner</b>, set courts, category, score format &amp; level as usual, then hit <b>Auto-play</b>: the engine picks example players (including a few <b>new players</b>), fills in scores each round, and builds the result + ELO. No login, and no data is sent. <a class="sim-back" href="/playrank">← Back to PlayRank</a>
 </div>
 
 <div id="rm-root">
 <div class="rm-screen" id="rm-setup">
           <div class="rm-setup">
-            <button class="rm-back" onclick="rmGo('intro')">← Back</button>
-            <p class="rm-section-title">Match Setup</p>
+            <p class="rm-section-title" id="rm-setup-title">Match Setup</p>
+
+            <div class="rm-card">
+              <div class="rm-card-label">Session Type</div>
+              <div class="rm-segment">
+                <button class="rm-seg-btn active" id="rm-mode-individual" onclick="rmStartSetup('individual')">Weekly PlayRank</button>
+                <button class="rm-seg-btn" id="rm-mode-league" onclick="rmStartSetup('league')">🏆 League · Fixed Partner</button>
+              </div>
+            </div>
+
+            <!-- PlayRank League (fixed partner) — only visible in league mode -->
+            <div class="rm-card rm-league-only" id="rm-league-card" style="display:none">
+              <div class="rm-card-label">PlayRank League · Fixed Partner</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Pasangan tetap sepanjang sesi. Jadwal dibuat di awal supaya setiap pasangan main dengan jumlah match yang sama (bukan Mexicano).</p>
+              <div class="rm-grid2" style="gap:12px">
+                <div>
+                  <div class="rm-input-label">Jumlah pasangan</div>
+                  <div class="rm-counter" style="max-width:none">
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('pairs',-1)">−</button>
+                    <div class="rm-counter-val" id="rm-lg-pairs">14</div>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('pairs',1)">+</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="rm-input-label">Durasi (jam)</div>
+                  <div class="rm-counter" style="max-width:none">
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('hours',-0.5)">−</button>
+                    <div class="rm-counter-val" id="rm-lg-hours">4</div>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('hours',0.5)">+</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="rm-input-label">Menit per match</div>
+                  <div class="rm-counter" style="max-width:none">
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('mins',-1)">−</button>
+                    <div class="rm-counter-val" id="rm-lg-mins">17</div>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('mins',1)">+</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="rm-input-label">Jam mulai</div>
+                  <input class="rm-input" id="rm-lg-start" type="time" value="19:00" onchange="rmLeagueSetStart(this.value)" style="text-align:center"/>
+                </div>
+              </div>
+              <div style="margin-top:14px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
+                <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">💡 Rekomendasi engine</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font-size:13px;font-weight:600;color:var(--txt2);flex:1">Match per pasangan</span>
+                  <div class="rm-counter" style="max-width:160px">
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',-1)">−</button>
+                    <div class="rm-counter-val" id="rm-lg-k">4</div>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',1)">+</button>
+                  </div>
+                </div>
+                <div style="font-size:12.5px;color:var(--txt);margin-top:8px;line-height:1.55" id="rm-lg-rec">—</div>
+              </div>
+            </div>
+
 
             <div class="rm-card">
               <div class="rm-card-label">Number of Courts</div>
@@ -443,7 +500,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
 
             <div class="rm-card">
               <div class="rm-card-label">Session Category</div>
-              <div class="rm-gender-grid">
+              <div class="rm-gender-grid" id="rm-gender-grid">
                 <div class="rm-gender-card active" id="rm-gender-M" onclick="rmSetGender('M')">
                   <div class="rm-gender-card-icon">♂</div>
                   <div class="rm-gender-card-label">Men</div>
@@ -451,6 +508,10 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                 <div class="rm-gender-card" id="rm-gender-F" onclick="rmSetGender('F')">
                   <div class="rm-gender-card-icon">♀</div>
                   <div class="rm-gender-card-label">Women</div>
+                </div>
+                <div class="rm-gender-card" id="rm-gender-MIXED" onclick="rmSetGender('MIXED')" style="display:none">
+                  <div class="rm-gender-card-icon">⚥</div>
+                  <div class="rm-gender-card-label">Mixed</div>
                 </div>
               </div>
               <p class="rm-hint" id="rm-gender-hint">Men or Women. One session = one gender (for clean rankings &amp; qualification).</p>
@@ -551,7 +612,8 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
           <div class="rm-players">
             <button class="rm-back" onclick="rmGo('players')" style="background:none;border:none;padding:0;font-size:13px;font-weight:600;color:var(--on-v);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">← Back to Players</button>
             <p style="font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase">Pair Teams</p>
-            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Tap two players to form a team. This pairing stays for the whole session (team Mexicano).</p>
+            <p style="font-size:13px;color:var(--txt2);margin:6px 0 14px">Tap two players to form a pair. The pairing stays for the whole league session.</p>
+            <div id="rm-teams-plan" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm);font-size:12.5px;line-height:1.55;color:var(--txt)"></div>
             <div class="rm-alert rm-alert-red hidden" id="rm-teams-error"></div>
             <div id="rm-teams-formed"></div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt3);margin:16px 0 8px">Not paired yet</div>
@@ -607,9 +669,10 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   <div id="rm-bye-players"></div>
                 </div>
               </div>
+              <div id="rm-league-next" style="display:none"></div>
               <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
                 <button class="rm-btn-full rm-btn-primary" id="rm-submit-btn" onclick="rmSubmitRound()">Submit Scores & Next Round →</button>
-                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 End Match</button>
+                <button class="rm-btn-full rm-btn-danger rm-end-btn" onclick="rmShowEndConfirm()">🏁 End Match</button>
               </div>
             </div>
 
@@ -621,7 +684,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
               </div>
               <div id="rm-lb-list"></div>
               <div style="margin-top:20px">
-                <button class="rm-btn-full rm-btn-danger" onclick="rmShowEndConfirm()">🏁 End Match</button>
+                <button class="rm-btn-full rm-btn-danger rm-end-btn" onclick="rmShowEndConfirm()">🏁 End Match</button>
               </div>
             </div>
 
@@ -753,6 +816,7 @@ const RM = {
   playerStats: {}, rounds: [], currentRound: 0,
   newGender: 'M', matchId: '', activeTab: 'courts',
   venue: 'Demo Court', lastFlags: [], flagged: null,
+  league: { pairs: 14, hours: 4, mins: 17, start: '19:00', k: 4, kAuto: true, schedule: [] },
 };
 var RM_LIVE = { code: '', key: '', busy: false };
 
@@ -799,16 +863,23 @@ function rmChangeCourts(d) {
   document.getElementById('rm-courts-hint').textContent = `At least ${RM.courts*4} players needed`;
   document.getElementById('rm-sel-min').textContent = ` / min ${RM.courts*4}`;
   var sysEl = document.getElementById('rm-courts-system');
-  if (sysEl) sysEl.textContent = RM.courts === 1
+  if (sysEl) sysEl.textContent = RM.format === 'league'
+    ? 'System: League — fixed pairs, fair pre-built schedule'
+    : RM.courts === 1
     ? 'System: Americano (1 court) — everyone rotates as partners'
     : 'System: Mexicano (2+ courts) — courts split by ranking';
-  if(document.getElementById('rm-start-btn')) rmUpdateStartBtn();
+  if (RM.format === 'league') {
+    document.getElementById('rm-courts-hint').textContent = `At least ${RM.courts*2} pairs needed`;
+    rmLeagueRenderSetup();
+  }
+  rmUpdateStartBtn();
   rmUpdateRec();
 }
 function rmSetGender(g) {
-  if (g === 'MIXED') g = 'M';
+  // Individual sessions are single-gender; Fixed Mixed only exists in League.
+  if (g === 'MIXED' && RM.format !== 'league') g = 'M';
   RM.gender = g;
-  ['M','F'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
+  ['M','F','MIXED'].forEach(x => { const el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active', x===g); });
   if (document.getElementById('rm-player-list')) rmRenderPlayers();
 }
 function rmMatchGender(players){
@@ -817,7 +888,27 @@ function rmMatchGender(players){
   if (gs.every(x=>x==='F')) return 'F';
   return 'MIXED';
 }
-function rmSetFormat(f) { RM.format = 'individual'; }
+function rmStartSetup(f) {
+  rmSetFormat(f);
+  if (f === 'league') rmLeagueRenderSetup();
+}
+function rmIsTeamMode() { return RM.format === 'league'; }
+function rmSetFormat(f) {
+  RM.format = f === 'league' ? 'league' : 'individual';
+  const lg = RM.format === 'league';
+  document.querySelectorAll('.rm-league-only').forEach(el => { el.style.display = lg ? '' : 'none'; });
+  const mx = document.getElementById('rm-gender-MIXED'); if (mx) mx.style.display = lg ? '' : 'none';
+  const gg = document.getElementById('rm-gender-grid'); if (gg) gg.classList.toggle('three', lg);
+  const title = document.getElementById('rm-setup-title'); if (title) title.textContent = lg ? 'League Setup' : 'Match Setup';
+  const gh = document.getElementById('rm-gender-hint');
+  if (gh) gh.innerHTML = lg
+    ? 'Men, Women, or Mixed (every pair = 1 man + 1 woman). Mixed results go to the Mixed ranking.'
+    : 'Men or Women. One session = one gender (for clean rankings &amp; qualification).';
+  if (!lg && RM.gender === 'MIXED') rmSetGender('M');
+  if (lg) { if (RM.scoreFormat === 'bestof' && RM.scoreTarget !== 5) { RM.scoreTarget = 5; } }
+  ['individual','league'].forEach(x=>{const b=document.getElementById('rm-mode-'+x); if(b) b.classList.toggle('active',x===RM.format);});
+  rmChangeCourts(0);
+}
 function rmSetScoreFormat(sf) {
   RM.scoreFormat = sf;
   ['race','bestof'].forEach(x => document.getElementById('rm-sfmt-'+x).classList.toggle('active', x===sf));
@@ -880,6 +971,18 @@ function rmMakeRoster(){
     M('Kevin Wongso',   1298, 7,  false),
     F('Sinta Dewi',     1330, 20, true),
     F('Rani Putri',     1288, 11, false),
+    ...[['Hendra Gunawan',1380,24],['Arief Rahman',1266,6],['Teguh Wibowo',1425,40],['Rahmat Hidayat',1310,14],
+        ['Joko Susilo',s,0],['Agus Salim',1355,27],['Bima Sakti',1297,10],['Candra Wijaya',1441,51],
+        ['Doni Firmansyah',1322,17],['Evan Dimas',1390,31],['Galih Pratama',1284,8],['Hadi Kurniawan',1372,23],
+        ['Irfan Hakim',s,0],['Jefri Nichol',1348,19],['Kurnia Sandi',1416,44],['Lukas Tan',1303,13]]
+      .map(x=>M(x[0],x[1],x[2],x[2]>=30)),
+    ...[['Putri Ayu',1352,25],['Maya Sari',1401,38],['Dewi Lestari',1275,9],['Intan Permata',1318,16],
+        ['Nadia Putri',s,0],['Citra Kirana',1444,52],['Laras Ati',1296,12],['Wulan Sari',1367,28],
+        ['Fitri Handayani',1339,21],['Ayu Lestari',1283,7],['Rina Marlina',1410,42],['Tari Anggraini',1308,14],
+        ['Salsa Bella',s,0],['Vina Oktavia',1376,30],['Yuni Shara',1325,18],['Zahra Amalia',1391,34],
+        ['Anisa Rahma',1345,22],['Bunga Citra',1287,9],['Dinda Kirana',s,0],['Eka Rahmawati',1412,39],['Gita Savitri',1330,19],
+        ['Hana Pertiwi',1301,11],['Indah Permatasari',1368,26],['Kartika Sari',1395,35],['Lia Amelia',1279,6],['Mega Utami',1359,24]]
+      .map(x=>F(x[0],x[1],x[2],x[2]>=30)),
   ];
 }
 function rmLoadPlayers() {
@@ -958,6 +1061,14 @@ function rmRenderChips() {
 }
 function rmUpdateStartBtn() {
   const btn = document.getElementById('rm-start-btn');
+  if (RM.format === 'league') {
+    const want = RM.league.pairs*2, n = RM.selectedPlayers.length;
+    const minEl = document.getElementById('rm-sel-min'); if (minEl) minEl.textContent = ` / ${want}`;
+    if (n < RM.courts*4) { btn.textContent=`${RM.courts*4-n} more players needed`; btn.disabled=true; }
+    else if (n % 2) { btn.textContent='Odd number of players — pairs need 2 each'; btn.disabled=true; }
+    else { btn.textContent=`Pair ${n/2} teams →`; btn.disabled=false; }
+    return;
+  }
   const min = RM.courts*4, n = RM.selectedPlayers.length;
   if (n < min) { btn.textContent=`${min-n} more players needed`; btn.disabled=true; }
   else { btn.textContent=`Start Match (${n} players) →`; btn.disabled=false; }
@@ -965,10 +1076,19 @@ function rmUpdateStartBtn() {
 function rmUpdateRec() {
   const n = RM.selectedPlayers.length, c = RM.courts;
   const banner = document.getElementById('rm-rec-banner');
+  if (RM.format === 'league') {
+    const want = RM.league.pairs*2;
+    banner.style.display='block';
+    document.getElementById('rm-rec-text').innerHTML = n === want
+      ? `✓ ${n} players = <strong>${want/2} pairs</strong>, as planned. Next: form the pairs.`
+      : `Planned <strong>${want/2} pairs (${want} players)</strong> — ${n} selected. `
+        + (n > 0 && n % 2 === 0 && n >= RM.courts*4 ? `The schedule is recalculated for <strong>${n/2} pairs</strong> when you continue.` : '');
+    return;
+  }
   if (n < 4) { banner.style.display='none'; return; }
   const active = c*4, byePerRound = n-active;
   let rec, detail;
-  if (byePerRound <= 0) {
+  if (byePerRound === 0) {
     rec = Math.max(6, n-1);
     detail = `All ${n} players play every round. Recommended <strong>${rec} rounds</strong> for the best opponent variety.`;
   } else {
@@ -1067,6 +1187,7 @@ function rmGenerateAmericanoRound(isFirst=false) {
   return {matches:[{court:1,team1:opts[0].t1,team2:opts[0].t2,score1:null,score2:null}], byePlayers};
 }
 function rmGenerateRound(isFirst=false) {
+  if (RM.format === 'league') return rmGenerateLeagueRound(RM.rounds.filter(r=>r.submitted).length);
   if (RM.courts === 1) return rmGenerateAmericanoRound(isFirst);
   const courts=RM.courts, maxPlay=courts*4;
   const players=[...RM.selectedPlayers]
@@ -1109,15 +1230,295 @@ function rmGenerateRound(isFirst=false) {
   return {matches,byePlayers};
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PLAYRANK LEAGUE — FIXED PARTNER (planner · fair schedule · pair table)
+   Not Mexicano: the whole schedule is built before the first ball, so every
+   pair plays exactly k matches against k different opponents. Slots are
+   ordered "fewest-played first", so at any point the pairs are at most one
+   match apart, and the order of play (with clock times) is known up-front.
+   ══════════════════════════════════════════════════════════════════════ */
+function rmLeaguePlan(T){
+  const L=RM.league;
+  const courts=Math.max(1,Math.min(RM.courts,Math.floor(T/2)));
+  const slots=Math.max(0,Math.floor(L.hours*60/L.mins));        // slots per court
+  let kMax=Math.min(T-1,Math.floor(2*courts*slots/Math.max(1,T)));
+  if(T%2&&kMax%2) kMax--;                                         // odd pairs → even k
+  let k=L.kAuto?kMax:Math.min(L.k,kMax);
+  if(T%2&&k%2) k--;
+  k=Math.max(0,k);
+  const matches=T*k/2;
+  return {T,courts,slots,kMax,k,matches,slotsNeeded:Math.ceil(matches/courts)};
+}
+function rmLeagueClock(slotIdx){
+  const [h,m]=String(RM.league.start||'19:00').split(':').map(x=>parseInt(x,10)||0);
+  const t=h*60+m+slotIdx*RM.league.mins;
+  return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+}
+function rmLeaguePlanText(plan){
+  const L=RM.league;
+  if(plan.T<RM.courts*2) return `Need at least <strong>${RM.courts*2} pairs</strong> for ${RM.courts} courts.`;
+  if(plan.k<1) return `Not enough time: ${L.hours} h fits only ${plan.slots} slots per court. Add time or courts.`;
+  const end=rmLeagueClock(plan.slotsNeeded);
+  let t=`<strong>${plan.T} pairs · ${plan.courts} courts · ${L.hours} h</strong> → ${plan.slots} slots per court (${L.mins} min each).<br>`
+    +`Every pair plays <strong>${plan.k} matches</strong> against ${plan.k} different opponents — <strong>${plan.matches} matches</strong> total, `
+    +`${L.start}–±${end}.`;
+  if(plan.k<plan.kMax) t+=`<br><span style="color:var(--txt2)">Max that fits: ${plan.kMax} per pair.</span>`;
+  if(plan.T%2) t+=`<br><span style="color:var(--txt2)">Odd number of pairs → matches per pair must be even.</span>`;
+  if(RM.courts>plan.courts) t+=`<br><span style="color:var(--txt2)">Only ${plan.courts} courts can be used with ${plan.T} pairs.</span>`;
+  return t;
+}
+function rmLeagueRenderSetup(){
+  const L=RM.league, plan=rmLeaguePlan(L.pairs);
+  if(L.kAuto) L.k=plan.k;
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+  set('rm-lg-pairs',L.pairs); set('rm-lg-hours',L.hours); set('rm-lg-mins',L.mins); set('rm-lg-k',plan.k);
+  const st=document.getElementById('rm-lg-start'); if(st&&st.value!==L.start) st.value=L.start;
+  const rec=document.getElementById('rm-lg-rec'); if(rec) rec.innerHTML=rmLeaguePlanText(plan);
+}
+function rmLeagueChange(field,d){
+  const L=RM.league;
+  if(field==='pairs') L.pairs=Math.max(2,Math.min(40,L.pairs+d));
+  else if(field==='hours') L.hours=Math.max(0.5,Math.min(12,L.hours+d));
+  else if(field==='mins') L.mins=Math.max(6,Math.min(60,L.mins+d));
+  else if(field==='k'){
+    const plan=rmLeaguePlan(L.pairs), step=(L.pairs%2)?2:1;
+    L.k=Math.max(step,Math.min(plan.kMax,plan.k+d*step));
+    L.kAuto=(L.k>=plan.kMax);
+  }
+  rmLeagueRenderSetup(); rmUpdateStartBtn(); rmUpdateRec();
+}
+function rmLeagueSetStart(v){ if(/^\d{1,2}:\d{2}$/.test(v)) RM.league.start=v; rmLeagueRenderSetup(); }
+function rmLeagueTeamsPlan(){
+  const box=document.getElementById('rm-teams-plan'); if(!box) return;
+  if(RM.format!=='league'){ box.style.display='none'; return; }
+  const T=(RM.teams||[]).length+Math.floor(RM.selectedPlayers.filter(p=>!rmPairedSet().has(p.name)).length/2);
+  box.style.display='block';
+  box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 League plan</div>'+rmLeaguePlanText(rmLeaguePlan(T));
+}
+function rmTeamName(t){ return (t&&t.players?t.players:[]).map(n=>String(n).split(' ')[0]).join(' & '); }
+function rmTeamElo(t){ return t.players.reduce((s,n)=>s+(((RM.playerStats[n]||RM.selectedPlayers.find(p=>p.name===n)||{}).elo)||RM.startElo),0); }
+
+// Matches for T pairs, k each, all opponents distinct.
+//  even T → the first k rounds of a round-robin (circle method): every round
+//           is a perfect matching, so each pair gets exactly one match per round;
+//  odd T  → circulant pairing (i vs i+1 … i+k/2): each pair plays exactly k.
+function rmLeagueMatchesFor(order,k){
+  const T=order.length, out=[];
+  if(T%2===0){
+    let rot=order.slice(1);
+    for(let r=0;r<k;r++){
+      const cur=[order[0],...rot];
+      for(let i=0;i<T/2;i++) out.push({a:cur[i],b:cur[T-1-i]});
+      rot=[rot[rot.length-1],...rot.slice(0,-1)];
+    }
+  } else {
+    for(let d=1;d<=k/2;d++) for(let i=0;i<T;i++) out.push({a:order[i],b:order[(i+d)%T]});
+  }
+  return out;
+}
+// Order the matches into time slots of `courts` parallel matches. Fewest-played
+// pairs first (keeps everyone within one match of each other), then avoid a
+// pair playing two slots in a row, then longest rest.
+function rmLeagueSequence(list,courts,rnd){
+  const rem=list.slice(), slots=[], played={}, last={};
+  list.forEach(m=>{played[m.a]=played[m.b]=0; last[m.a]=last[m.b]=-99;});
+  let s=0, backs=0;
+  while(rem.length){
+    const scored=rem.map((m,i)=>({m,i,
+      p:Math.max(played[m.a],played[m.b])*100+played[m.a]+played[m.b],
+      back:(last[m.a]===s-1?1:0)+(last[m.b]===s-1?1:0),
+      rest:Math.min(s-last[m.a],s-last[m.b]), r:rnd()}));
+    scored.sort((x,y)=>x.p-y.p||x.back-y.back||y.rest-x.rest||x.r-y.r);
+    const used=new Set(), pick=[];
+    for(const c of scored){
+      if(pick.length>=courts) break;
+      if(used.has(c.m.a)||used.has(c.m.b)) continue;
+      pick.push(c); used.add(c.m.a); used.add(c.m.b);
+    }
+    pick.forEach(c=>{ backs+=c.back; played[c.m.a]++; played[c.m.b]++; last[c.m.a]=last[c.m.b]=s; });
+    pick.map(c=>c.i).sort((x,y)=>y-x).forEach(i=>rem.splice(i,1));
+    slots.push(pick.map((c,ci)=>({court:ci+1,a:c.m.a,b:c.m.b})));
+    s++;
+  }
+  return {slots,backs};
+}
+// Try many pair orders and keep the best schedule: fewest slots, then the most
+// "even checkpoints" (slots after which every pair has played the same number —
+// the points where End unlocks early), then fewest back-to-back matches, then
+// the most even opponent strength across pairs.
+function rmLeagueBuildSchedule(teams,k,courts){
+  const ids=teams.filter(t=>t.active!==false).map(t=>t.id);
+  const elo={}; teams.forEach(t=>{elo[t.id]=rmTeamElo(t);});
+  let seed=ids.length*7919+k*104729+Date.now()%100000;
+  const rnd=()=>{seed=(seed*16807)%2147483647; return seed/2147483647;};
+  let best=null;
+  for(let tries=0;tries<600;tries++){
+    const order=ids.slice();
+    for(let i=order.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+    const {slots,backs}=rmLeagueSequence(rmLeagueMatchesFor(order,k),courts,rnd);
+    const opp={}; ids.forEach(id=>opp[id]=0);
+    slots.flat().forEach(m=>{opp[m.a]+=elo[m.b]; opp[m.b]+=elo[m.a];});
+    const v=Object.values(opp), mean=v.reduce((a,b)=>a+b,0)/v.length;
+    const sd=Math.sqrt(v.reduce((a,b)=>a+(b-mean)*(b-mean),0)/v.length)/Math.max(1,k);
+    const cnt={}; ids.forEach(id=>cnt[id]=0); let even=0;
+    slots.forEach(sl=>{ sl.forEach(m=>{cnt[m.a]++;cnt[m.b]++;}); const c=Object.values(cnt); if(Math.min(...c)===Math.max(...c)) even++; });
+    const cost=slots.length*1e8-even*1e5+backs*1e3+sd;
+    if(!best||cost<best.cost) best={cost,slots};
+  }
+  return best?best.slots:[];
+}
+function rmGenerateLeagueRound(idx){
+  const slot=(RM.league.schedule||[])[idx];
+  if(!slot) return {matches:[],byePlayers:[],leagueDone:true};
+  const pobj=name=>({...(RM.selectedPlayers.find(p=>p.name===name)||{name}),...(RM.playerStats[name]||{})});
+  const team=id=>RM.teams.find(t=>t.id===id)||{players:[]};
+  const matches=slot.map(m=>({court:m.court,teamIdA:m.a,teamIdB:m.b,
+    team1:team(m.a).players.map(pobj), team2:team(m.b).players.map(pobj), score1:null,score2:null}));
+  return {matches,byePlayers:[]};
+}
+// Pair table: Wins → Point diff → Points for → head-to-head among the tied → ELO.
+function rmLeagueTable(){
+  const rows={};
+  (RM.teams||[]).forEach(t=>{rows[t.id]={id:t.id,players:t.players.slice(),name:rmTeamName(t),w:0,l:0,pf:0,pa:0,pd:0,played:0,h2h:{}};});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>r.matches.forEach(m=>{
+    const A=rows[m.teamIdA],B=rows[m.teamIdB];
+    if(!A||!B||m.score1==null||m.score2==null) return;
+    const s1=Number(m.score1),s2=Number(m.score2);
+    A.played++; B.played++; A.pf+=s1; A.pa+=s2; B.pf+=s2; B.pa+=s1;
+    if(s1>s2){A.w++;B.l++;A.h2h[B.id]=(A.h2h[B.id]||0)+1;}
+    else if(s2>s1){B.w++;A.l++;B.h2h[A.id]=(B.h2h[A.id]||0)+1;}
+  }));
+  const list=Object.values(rows);
+  list.forEach(t=>{t.pd=t.pf-t.pa; t.elo=rmTeamElo(t);});
+  list.sort((a,b)=>b.w-a.w||b.pd-a.pd||b.pf-a.pf);
+  const out=[]; let i=0;
+  while(i<list.length){
+    let j=i+1;
+    while(j<list.length&&list[j].w===list[i].w&&list[j].pd===list[i].pd&&list[j].pf===list[i].pf) j++;
+    const g=list.slice(i,j);
+    if(g.length>1){
+      const ids=new Set(g.map(t=>t.id));
+      g.forEach(t=>{t._h2h=Object.keys(t.h2h).filter(x=>ids.has(x)).reduce((s,x)=>s+t.h2h[x],0);});
+      g.sort((a,b)=>b._h2h-a._h2h||b.elo-a.elo);
+    }
+    out.push(...g); i=j;
+  }
+  return out;
+}
+function rmLeaguePlayedCounts(){
+  const c={}; (RM.teams||[]).filter(t=>t.active!==false).forEach(t=>{c[t.id]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>r.matches.forEach(m=>{
+    if(c[m.teamIdA]!==undefined) c[m.teamIdA]++; if(c[m.teamIdB]!==undefined) c[m.teamIdB]++;
+  }));
+  return c;
+}
+// End unlocks only when every pair has played the same number of matches.
+function rmLeagueCanEnd(){
+  const v=Object.values(rmLeaguePlayedCounts());
+  return v.length>0 && Math.min(...v)>0 && Math.min(...v)===Math.max(...v);
+}
+function rmLeagueDone(){ return RM.rounds.filter(r=>r.submitted).length>=(RM.league.schedule||[]).length; }
+// A valid league score: no draws; Race to N → winner has exactly N;
+// Best of N → winner has ⌈N/2⌉ and the games don't exceed N.
+function rmLeagueScoreError(s1,s2){
+  const t=RM.scoreTarget;
+  if(s1===s2) return 'no draws';
+  const w=Math.max(s1,s2), l=Math.min(s1,s2);
+  if(RM.scoreFormat==='bestof'){ const need=Math.ceil(t/2); if(w!==need||w+l>t) return `best of ${t} → winner needs ${need}`; }
+  else if(w!==t) return `race to ${t} → winner needs ${t}`;
+  return '';
+}
+
+/* ── TEAM SETUP (fixed-partner pairing, as in admin) ── */
+function rmRenderTeamSetup(){
+  if(!RM.teams) RM.teams=[];
+  const names=new Set(RM.selectedPlayers.map(p=>p.name));
+  RM.teams=RM.teams.filter(t=>t.players.every(n=>names.has(n)));
+  RM._teamPick=null;
+  rmDrawTeams();
+}
+function rmPairedSet(){const s=new Set();(RM.teams||[]).forEach(t=>t.players.forEach(n=>s.add(n)));return s;}
+function rmTeamId(){return 'tm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function rmDrawTeams(){
+  const paired=rmPairedSet();
+  document.getElementById('rm-teams-formed').innerHTML=(RM.teams||[]).length?RM.teams.map((t,i)=>`
+    <div class="rm-court-card" style="display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:8px">
+      <span class="rm-court-badge" style="background:var(--blue);color:#fff">Team ${i+1}</span>
+      <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${rmAva(t.players[0],24,9)}<span style="font-size:13px;font-weight:600">${t.players[0].split(' ')[0]}</span>
+        <span style="color:var(--txt3)">＋</span>
+        ${rmAva(t.players[1],24,9)}<span style="font-size:13px;font-weight:600">${t.players[1].split(' ')[0]}</span>
+      </div>
+      <button class="rm-chip" style="background:var(--red-lt);color:var(--red)" onclick="rmRemoveTeam('${t.id}')">Unpair</button>
+    </div>`).join(''):'<div class="rm-empty" style="padding:14px">No teams yet. Tap two players below to form a team.</div>';
+  const pool=RM.selectedPlayers.filter(p=>!paired.has(p.name));
+  document.getElementById('rm-teams-pool').innerHTML=pool.length?pool.map(p=>{
+    const picked=RM._teamPick===p.name;
+    return `<button class="rm-chip" style="display:inline-flex;align-items:center;gap:6px;${picked?'background:var(--blue);color:#fff':''}" onclick="rmTeamPick('${p.name.replace(/'/g,"\\'")}')">${rmAva(p.name,20,8)}${p.name.split(' ')[0]}</button>`;
+  }).join(''):'<div style="font-size:13px;color:var(--green);font-weight:600">✓ All players are paired</div>';
+  const start=document.getElementById('rm-teams-start');
+  const enough=(RM.teams||[]).length>=RM.courts*2;
+  rmLeagueTeamsPlan();
+  if(pool.length===0 && enough){ start.disabled=false; start.textContent=`Start Match (${RM.teams.length} teams) →`; }
+  else { start.disabled=true; start.textContent=pool.length?`${pool.length} player(s) still unpaired`:`At least ${RM.courts*2} teams for ${RM.courts} courts`; }
+}
+function rmTeamPick(name){
+  if(RM._teamPick===name){RM._teamPick=null;return rmDrawTeams();}
+  if(!RM._teamPick){RM._teamPick=name;return rmDrawTeams();}
+  if(RM.gender==='MIXED'){
+    const g=n=>((RM.selectedPlayers.find(p=>p.name===n)||{}).gender||'M').toUpperCase()==='F'?'F':'M';
+    if(g(RM._teamPick)===g(name)){rmShowErr('rm-teams-error','Mixed: each pair must be 1 man + 1 woman.');return;}
+    rmHideErr('rm-teams-error');
+  }
+  RM.teams.push({id:rmTeamId(),players:[RM._teamPick,name],active:true});
+  RM._teamPick=null; rmDrawTeams();
+}
+function rmRemoveTeam(id){RM.teams=RM.teams.filter(t=>t.id!==id);rmDrawTeams();}
+function rmAutoPairRest(){
+  const paired=rmPairedSet();
+  let pool=RM.selectedPlayers.filter(p=>!paired.has(p.name)).map(p=>({...p}));
+  const byElo=(a,b)=>(b.elo||RM.startElo)-(a.elo||RM.startElo);
+  if(RM.gender==='MIXED'){
+    // Mixed: strongest man with the weakest woman, and so on down the list.
+    const men=pool.filter(p=>(p.gender||'M').toUpperCase()!=='F').sort(byElo);
+    const women=pool.filter(p=>(p.gender||'M').toUpperCase()==='F').sort(byElo).reverse();
+    while(men.length&&women.length){const a=men.shift(),b=women.shift();RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
+  } else {
+    pool.sort(byElo); // balance: strongest with weakest
+    while(pool.length>=2){const a=pool.shift(),b=pool.pop();RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
+  }
+  RM._teamPick=null; rmDrawTeams();
+}
+function rmConfirmTeams(){
+  const paired=rmPairedSet();
+  if(RM.selectedPlayers.some(p=>!paired.has(p.name))){rmShowErr('rm-teams-error','Some players are still unpaired.');return;}
+  if(RM.teams.length<RM.courts*2){rmShowErr('rm-teams-error',`At least ${RM.courts*2} teams for ${RM.courts} courts.`);return;}
+  if(RM.format==='league'){
+    const plan=rmLeaguePlan(RM.teams.length);
+    if(plan.k<1){rmShowErr('rm-teams-error','Not enough time for every pair to play at least once. Add time or courts.');return;}
+    RM.league.schedule=rmLeagueBuildSchedule(RM.teams, plan.k, plan.courts);
+    RM.league.kPlayed=plan.k;
+  }
+  rmHideErr('rm-teams-error'); rmBeginSession();
+}
+
 function rmStartMatch() {
   const min=RM.courts*4;
   if(RM.selectedPlayers.length<min){rmShowErr('rm-players-error',`At least ${min} players for ${RM.courts} courts`);return;}
   rmHideErr('rm-players-error');
+  if(rmIsTeamMode()){
+    if(RM.selectedPlayers.length%2!==0){rmShowErr('rm-players-error','Team format needs an even number of players to pair.');return;}
+    if(RM.gender==='MIXED'){
+      const m=RM.selectedPlayers.filter(p=>(p.gender||'M').toUpperCase()!=='F').length, f=RM.selectedPlayers.length-m;
+      if(m!==f){rmShowErr('rm-players-error',`Mixed needs the same number of men and women (now ${m} men, ${f} women).`);return;}
+    }
+    rmGo('teams'); rmRenderTeamSetup(); return;
+  }
   RM.teams=[];
   rmBeginSession();
 }
 function rmBeginSession() {
-  RM.playerStats={};
+  RM.playerStats={}; RM.rounds=[];
   RM.selectedPlayers.forEach(p=>{RM.playerStats[p.name]={...p,wins:0,losses:0,pointsFor:0,pointsAgainst:0,pointDiff:0,active:true};});
   RM.matchId='rm_'+Date.now().toString(36);
   const {matches,byePlayers}=rmGenerateRound(true);
@@ -1143,8 +1544,24 @@ function rmSwitchTab(tab) {
 function rmRenderMatchScreen() {
   const round=RM.rounds[RM.currentRound];
   if(!round) return;
-  document.getElementById('rm-round-pill').textContent=`Round ${round.roundNum}`;
-  document.getElementById('rm-lb-badge').textContent=`Round ${round.roundNum}`;
+  const lg=RM.format==='league', total=lg?(RM.league.schedule||[]).length:0;
+  document.getElementById('rm-round-pill').textContent=lg?`Slot ${round.roundNum}/${total} · ${rmLeagueClock(round.roundNum-1)}`:`Round ${round.roundNum}`;
+  document.getElementById('rm-lb-badge').textContent=lg?`Slot ${round.roundNum}/${total}`:`Round ${round.roundNum}`;
+  const sub=document.getElementById('rm-submit-btn');
+  if(lg && round.submitted){
+    // Whole schedule played: nothing left to score — show the finish panel.
+    document.getElementById('rm-courts-progress').textContent=`${total}/${total} slots`;
+    document.getElementById('rm-court-cards').innerHTML=`<div class="rm-court-card" style="text-align:center;padding:22px 16px">
+      <div style="font-size:34px">🏁</div>
+      <div style="font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;margin-top:4px">All league matches played</div>
+      <div style="font-size:13px;color:var(--txt2);margin-top:6px">Every pair played ${RM.league.kPlayed||''} matches. Tap <b>End Match</b> to record results &amp; ELO.</div></div>`;
+    document.getElementById('rm-bye-section').style.display='none';
+    document.getElementById('rm-league-next').style.display='none';
+    if(sub) sub.style.display='none';
+    rmUpdateFairBar();
+    return;
+  }
+  if(sub) sub.style.display='';
   document.getElementById('rm-score-format-label').textContent=
     RM.scoreFormat==='race'?`Race to ${RM.scoreTarget}`:`Best of ${RM.scoreTarget}`;
   const done=round.matches.filter(m=>m.score1!==null&&m.score2!==null).length;
@@ -1152,7 +1569,7 @@ function rmRenderMatchScreen() {
   document.getElementById('rm-court-cards').innerHTML=round.matches.map((m,i)=>`
     <div class="rm-court-card">
       <div class="rm-court-hdr">
-        <span class="rm-court-badge">Court ${m.court}</span>
+        <span class="rm-court-badge">Court ${m.court}${lg?` · ${rmLeagueClock(round.roundNum-1)}`:''}</span>
         <span id="rm-court-status-${i}" class="${m.score1!==null?'rm-court-status-done':'rm-court-status-pend'}">${m.score1!==null?'✓ Done':'Awaiting score'}</span>
       </div>
       <div class="rm-score-row">
@@ -1177,6 +1594,18 @@ function rmRenderMatchScreen() {
     document.getElementById('rm-bye-players').innerHTML=round.byePlayers.map(n=>`
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0">${rmAva(n,28,10)}<span style="font-size:13px;font-weight:600">${n}</span></div>`).join('');
   } else byeSec.style.display='none';
+  // League: preview who's up next so pairs can warm up.
+  const nx=document.getElementById('rm-league-next');
+  if(lg){
+    const next=(RM.league.schedule||[])[round.roundNum];
+    const tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
+    nx.style.display='block';
+    nx.innerHTML=next?`<div class="rm-bye-card" style="border-color:var(--blue-mid);background:var(--blue-lt)">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">⏭ Up next · ${rmLeagueClock(round.roundNum)}</div>
+        ${next.map(m=>`<div style="font-size:13px;padding:3px 0"><b>Court ${m.court}</b> · ${tn(m.a)} <span style="color:var(--txt3)">vs</span> ${tn(m.b)}</div>`).join('')}
+      </div>`:`<div class="rm-bye-card"><div style="font-size:12px;font-weight:700;color:var(--gold)">🏁 Last slot of the league</div></div>`;
+  } else nx.style.display='none';
+
   rmUpdateFairBar();
 }
 function rmUpdateScore(courtIdx) {
@@ -1197,6 +1626,16 @@ function rmUpdateScore(courtIdx) {
 }
 function rmUpdateFairBar() {
   const bar=document.getElementById('rm-fair-bar');
+  const lg=RM.format==='league', canEnd=!lg||rmLeagueCanEnd();
+  document.querySelectorAll('.rm-end-btn').forEach(b=>{ b.disabled=!canEnd; b.style.opacity=canEnd?'':'.45'; });
+  if(lg){
+    const v=Object.values(rmLeaguePlayedCounts()), mn=v.length?Math.min(...v):0, mx=v.length?Math.max(...v):0;
+    const k=RM.league.kPlayed||0;
+    if(rmLeagueDone()){ bar.className='rm-fair-bar ok'; bar.innerHTML=`<span>✅</span><span>Schedule complete — every pair played ${mx} of ${k}. End Match is unlocked.</span>`; }
+    else if(mn>0&&mn===mx){ bar.className='rm-fair-bar ok'; bar.innerHTML=`<span>✅</span><span>Every pair has played ${mx} of ${k} — even. You may end here (End unlocked) or keep playing.</span>`; }
+    else { bar.className='rm-fair-bar info'; bar.innerHTML=`<span>🎾</span><span>Pairs have played ${mn}–${mx} of ${k} matches. End Match unlocks when every pair has played the same number.</span>`; }
+    return;
+  }
   const submitted=RM.rounds.filter(r=>r.submitted).length;
   if(submitted===0){bar.className='rm-fair-bar';return;}
   const counts={};
@@ -1207,9 +1646,16 @@ function rmUpdateFairBar() {
   const vals=Object.values(counts);
   if(!vals.length){bar.className='rm-fair-bar';return;}
   const min=Math.min(...vals),max=Math.max(...vals);
-  if(max-min===0){bar.className='rm-fair-bar ok';bar.innerHTML=`<span>✅</span><span>Everyone has played the same number of matches — a good time to finish!</span>`;}
-  else if(max-min===1){bar.className='rm-fair-bar info';bar.innerHTML=`<span>🎾</span><span>Almost even — ${max-min} more round(s) so everyone plays the same amount.</span>`;}
-  else {bar.className='rm-fair-bar warn';bar.innerHTML=`<span>⚠️</span><span>Matches not yet even (gap ${max-min}). Play a few more rounds before finishing.</span>`;}
+  if(max-min===0){
+    bar.className='rm-fair-bar ok';
+    bar.innerHTML=`<span>✅</span><span>Everyone has played the same number of matches — a good time to finish!</span>`;
+  } else if(max-min===1){
+    bar.className='rm-fair-bar info';
+    bar.innerHTML=`<span>🎾</span><span>Almost even — ${max-min} more round(s) so everyone plays the same amount.</span>`;
+  } else {
+    bar.className='rm-fair-bar warn';
+    bar.innerHTML=`<span>⚠️</span><span>Matches not yet even (gap ${max-min}). Play a few more rounds before finishing.</span>`;
+  }
 }
 function rmSetStatus(type, msg) {
   const el=document.getElementById('rm-submit-status');
@@ -1219,8 +1665,13 @@ function rmSetStatus(type, msg) {
 }
 function rmSubmitRound() {
   const round=RM.rounds[RM.currentRound];
+  if(!round||round.submitted) return false;
   const incomplete=round.matches.filter(m=>m.score1===null||m.score2===null);
   if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court(s) missing a score.`);return false;}
+  if(RM.format==='league'){
+    const bad=round.matches.map(m=>({m,e:rmLeagueScoreError(Number(m.score1),Number(m.score2))})).filter(x=>x.e);
+    if(bad.length){rmSetStatus('failed',bad.map(x=>`Court ${x.m.court}: ${x.m.score1}–${x.m.score2} (${x.e})`).join('<br>'));return false;}
+  }
   round.submittedAt=Date.now();
   round.matches.forEach(m=>{
     const ps=name=>RM.playerStats[name];
@@ -1238,17 +1689,85 @@ function rmSubmitRound() {
   round.submitted=true;
   rmSetStatus('ok','Round '+round.roundNum+' saved (simulation) · ELO updated');
   setTimeout(function(){rmSetStatus('','');},2500);
-  const {matches,byePlayers}=rmGenerateRound(false);
-  RM.rounds.push({roundNum:RM.rounds.length+1,matches,byePlayers,submitted:false,startedAt:Date.now()});
-  RM.currentRound++;
+  const {matches,byePlayers,leagueDone}=rmGenerateRound(false);
+  if(!leagueDone){
+    RM.rounds.push({roundNum:RM.rounds.length+1,matches,byePlayers,submitted:false,startedAt:Date.now()});
+    RM.currentRound++;
+  }
   rmRenderMatchScreen(); rmSwitchTab('courts'); rmUpdateFairBar(); window.scrollTo(0,0);
   return true;
 }
 function rmGetLeaderboard(){
   return Object.values(RM.playerStats).sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
 }
+function rmRenderLeagueLeaderboard(el){
+  const rows=rmLeagueTable(), medals=['🥇','🥈','🥉'];
+  el.innerHTML=`<div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Ranked by wins → point diff → points for → head-to-head</div>`+rows.map((t,i)=>{
+    const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
+    return `<div class="rm-lb-row ${rankClass}">
+      <div class="rm-lb-rank">${medals[i]||i+1}</div>
+      <div style="display:flex">${rmAva(t.players[0],30,11)}<div style="margin-left:-8px">${rmAva(t.players[1]||'?',30,11)}</div></div>
+      <div style="flex:1;min-width:0">
+        <div class="rm-lb-name">${t.name}</div>
+        <div class="rm-lb-elo">${t.played} played · PF ${t.pf} · PA ${t.pa}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-lb-wl">${t.w}W – ${t.l}L</div>
+        <div class="rm-lb-diff" style="color:${t.pd>=0?'var(--green)':'var(--red)'}">${t.pd>=0?'+':''}${t.pd}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function rmLeagueOrderHtml(){
+  const sched=RM.league.schedule||[], tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
+  return `<div style="background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Order of play · ${sched.length} slots</div>
+    ${sched.map((slot,si)=>{
+      const r=RM.rounds[si], st=r&&r.submitted?'done':(si===RM.currentRound?'now':'');
+      return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--sur-hi);font-size:12px;${st==='done'?'opacity:.6':''}">
+        <div style="width:48px;flex:none;font-weight:800;color:${st==='now'?'var(--blue)':'var(--on)'}">${rmLeagueClock(si)}${st==='now'?'<div style="font-size:9.5px">NOW</div>':''}</div>
+        <div style="flex:1">${slot.map((m,mi)=>{
+          const rm=r&&r.matches[mi], sc=rm&&rm.score1!=null&&r.submitted?` <b>${rm.score1}–${rm.score2}</b>`:'';
+          return `<div>C${m.court} · ${tn(m.a)} <span style="color:var(--txt3)">vs</span> ${tn(m.b)}${sc}</div>`;}).join('')}</div>
+      </div>`;}).join('')}
+  </div>`;
+}
+function rmStoryStart(name){
+  const ps=RM.playerStats[name];
+  if(ps&&ps._serverStart!=null) return ps._serverStart;
+  const s=RM.selectedPlayers.find(p=>p.name===name);
+  return s?(s.elo||RM.startElo):RM.startElo;
+}
+function rmRenderLeagueDone(standings){
+  const table=rmLeagueTable();
+  const byName={}; (standings||[]).forEach(p=>{byName[p.name]=p;});
+  const eloLine=n=>{ const p=byName[n]||RM.playerStats[n]||{}; const d=Math.round((p.elo||0)-rmStoryStart(n));
+    return `${String(n).split(' ')[0]} ${p.elo||''} <span style="color:${d>=0?'var(--green)':'var(--red)'}">${d>=0?'▲+':'▼'}${d}</span>`; };
+  const pod=(t,crown,h,bg,big)=>t?`<div class="rm-podium-slot">
+      <div class="rm-podium-crown">${crown}</div>
+      <div style="display:flex;justify-content:center">${rmAva(t.players[0],big?52:42,big?18:14)}<div style="margin-left:-12px">${rmAva(t.players[1]||'?',big?52:42,big?18:14)}</div></div>
+      <div class="rm-podium-name" style="${big?'font-weight:800':''}">${t.name}</div>
+      <div class="rm-podium-base" style="height:${h}px;background:${bg};width:96px">${big?'🥇':''}</div>
+    </div>`:'';
+  document.getElementById('rm-podium').innerHTML=pod(table[1],'🥈',52,'rgba(148,163,184,.25)')+pod(table[0],'👑',68,'rgba(245,158,11,.25)',true)+pod(table[2],'🥉',40,'rgba(180,131,80,.25)');
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('rm-final-standings').innerHTML=table.map((t,i)=>`
+    <div class="rm-rank-row">
+      <div class="rm-rank-num" style="color:${i===0?'#FFB000':i===1?'#9A9AA2':i===2?'#CD7F32':'rgba(148,163,184,.5)'}">${medals[i]||i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="rm-rank-name">${t.name}</div>
+        <div class="rm-rank-meta">${t.players.map(eloLine).join(' · ')}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="rm-rank-wl">${t.w}W ${t.l}L</div>
+        <div class="rm-rank-diff" style="color:${t.pd>=0?'var(--green)':'var(--red)'}">${t.pd>=0?'+':''}${t.pd} pts</div>
+      </div>
+    </div>`).join('');
+}
 function rmRenderLeaderboard(){
-  const sorted=rmGetLeaderboard(), el=document.getElementById('rm-lb-list');
+  const el0=document.getElementById('rm-lb-list');
+  if(RM.format==='league') return rmRenderLeagueLeaderboard(el0);
+  const sorted=rmGetLeaderboard(), el=el0;
   if(!sorted.length){el.innerHTML='<div class="rm-empty">No data yet</div>';return;}
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=sorted.map((p,i)=>{
@@ -1270,6 +1789,7 @@ function rmRenderLeaderboard(){
 }
 function rmRenderHistory(){
   const el=document.getElementById('rm-history-list');
+  if(RM.format==='league'){ el.innerHTML=rmLeagueOrderHtml(); return; }
   const done=[...RM.rounds].filter(r=>r.submitted).reverse();
   if(!done.length){el.innerHTML='<div class="rm-empty">No completed rounds yet</div>';return;}
   el.innerHTML=done.map(r=>`
@@ -1284,6 +1804,17 @@ function rmRenderHistory(){
     </div>`).join('');
 }
 function rmShowEndConfirm(){
+  if(RM.format==='league'){
+    if(!rmLeagueCanEnd()){ rmSetStatus('failed','End Match unlocks when every pair has played the same number of matches.'); return; }
+    document.getElementById('rm-end-top3').innerHTML=rmLeagueTable().slice(0,3).map((t,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span>${['🥇','🥈','🥉'][i]}</span>
+        <span style="font-size:13px;font-weight:700;flex:1">${t.name}</span>
+        <span style="font-size:12px;font-family:'Saira Condensed',monospace;color:var(--blue)">${t.w}W ${t.l}L · ${t.pd>=0?'+':''}${t.pd}</span>
+      </div>`).join('');
+    document.getElementById('rm-modal-end').classList.remove('hidden');
+    return;
+  }
   const top3=rmGetLeaderboard().slice(0,3);
   document.getElementById('rm-end-top3').innerHTML=top3.map((p,i)=>`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -1304,9 +1835,12 @@ function rmEndMatch(){
 function rmRenderDoneScreen(standings){
   const doneRounds=RM.rounds.filter(r=>r.submitted).length;
   const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('rm-done-sub').textContent=`${doneRounds} rounds · ${RM.selectedPlayers.length} players`;
+  document.getElementById('rm-done-sub').textContent=RM.format==='league'
+    ?`PlayRank League · ${(RM.teams||[]).length} pairs · ${doneRounds} slots`
+    :`${doneRounds} rounds · ${RM.selectedPlayers.length} players`;
   document.getElementById('rm-done-meta').textContent=`${now} · ${RM.venue} · simulation`;
   const fl=document.getElementById('rm-done-flags'); if(fl) fl.style.display='none';
+  if(RM.format==='league') return rmRenderLeagueDone(standings);
   const p1=standings[0],p2=standings[1],p3=standings[2];
   document.getElementById('rm-podium').innerHTML=`
     ${p2?`<div class="rm-podium-slot">
@@ -1359,6 +1893,15 @@ function simAutoPick(){
   // Pick a clean field from the fake roster: courts*4 + 2 (so a couple rotate
   // through byes), matching the session gender. New players are in the pool.
   RM.selectedPlayers=[];
+  if(RM.format==='league'){
+    // League: exactly the planned pairs (Mixed → half men, half women).
+    const n=RM.league.pairs;
+    const pick=g=>RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===g);
+    const list=RM.gender==='MIXED'?[...pick('M').slice(0,n),...pick('F').slice(0,n)]:pick(RM.gender).slice(0,n*2);
+    list.forEach(p=>RM.selectedPlayers.push({...p}));
+    rmRenderChips(); rmRenderPlayers(); rmUpdateStartBtn(); rmUpdateRec();
+    return;
+  }
   const want=RM.courts*4+2;
   const pool=RM.allPlayers.filter(p=>(p.gender||'M').toUpperCase()===RM.gender);
   pool.slice(0,want).forEach(p=>RM.selectedPlayers.push({...p}));
@@ -1375,8 +1918,9 @@ function simFillRound(){
     const t1=(m.team1[0].elo+m.team1[1].elo)/2, t2=(m.team2[0].elo+m.team2[1].elo)/2;
     const exp1=1/(1+Math.pow(10,(t2-t1)/400));
     const t1win=Math.random()<exp1;
-    const T=RM.scoreTarget, loser=Math.floor(Math.random()*T);
-    if(t1win){m.score1=T;m.score2=loser;}else{m.score2=T;m.score1=loser;}
+    // Valid score for the format: race to T → T:0..T-1; best of T → ⌈T/2⌉:0..⌈T/2⌉-1.
+    const W=RM.scoreFormat==='bestof'?Math.ceil(RM.scoreTarget/2):RM.scoreTarget, loser=Math.floor(Math.random()*W);
+    if(t1win){m.score1=W;m.score2=loser;}else{m.score2=W;m.score1=loser;}
   });
   rmRenderMatchScreen();
 }
@@ -1384,14 +1928,25 @@ function simStep(){
   if(!SIM.running) return;
   const scr=currentScreen();
   if(scr==='setup'){ rmGoToPlayers(); setTimeout(simStep, 450); return; }
-  if(scr==='players'){ if(RM.selectedPlayers.length<RM.courts*4) simAutoPick(); simComputeTarget(); rmStartMatch(); setTimeout(simStep, simDelay()); return; }
+  if(scr==='players'){ if(!simEnoughPicked()) simAutoPick(); simComputeTarget(); rmStartMatch(); setTimeout(simStep, simDelay()); return; }
+  if(scr==='teams'){ simPairAll(); setTimeout(simStep, simDelay()); return; }
   if(scr==='match'){
-    if(RM.rounds.filter(r=>r.submitted).length >= SIM.target){ SIM.running=false; simSyncToolbar(); rmEndMatch(); return; }
+    if(simFinished()){ SIM.running=false; simSyncToolbar(); rmEndMatch(); return; }
     simFillRound();
     setTimeout(function(){ if(!SIM.running) return; rmSubmitRound(); setTimeout(simStep, simDelay()); }, simDelay());
     return;
   }
   SIM.running=false; simSyncToolbar();
+}
+function simEnoughPicked(){
+  if(RM.format!=='league') return RM.selectedPlayers.length>=RM.courts*4;
+  return RM.selectedPlayers.length===RM.league.pairs*2;
+}
+function simPairAll(){ RM.teams=[]; RM._teamPick=null; rmAutoPairRest(); rmConfirmTeams(); }
+// League ends when the whole schedule is played; weekly PlayRank after SIM.target rounds.
+function simFinished(){
+  if(RM.format==='league') return rmLeagueDone();
+  return RM.rounds.filter(r=>r.submitted).length >= SIM.target;
 }
 function simToggle(){
   if(currentScreen()==='done'){ simReset(); return; }
@@ -1401,12 +1956,14 @@ function simToggle(){
 function simOneRound(){
   const scr=currentScreen();
   if(scr==='setup'){ rmGoToPlayers(); return; }
-  if(scr==='players'){ if(RM.selectedPlayers.length<RM.courts*4) simAutoPick(); simComputeTarget(); rmStartMatch(); return; }
-  if(scr==='match'){ simFillRound(); setTimeout(rmSubmitRound, 350); return; }
+  if(scr==='players'){ if(!simEnoughPicked()) simAutoPick(); simComputeTarget(); rmStartMatch(); return; }
+  if(scr==='teams'){ simPairAll(); return; }
+  if(scr==='match'){ if(RM.format==='league'&&rmLeagueDone()){ rmShowEndConfirm(); return; } simFillRound(); setTimeout(rmSubmitRound, 350); return; }
 }
 function simReset(){
   SIM.running=false;
-  RM.selectedPlayers=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0;
+  RM.selectedPlayers=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0; RM.teams=[];
+  RM.league.schedule=[]; RM.league.kPlayed=0;
   RM.courts=2; RM.gender='M'; RM.scoreFormat='race'; RM.scoreTarget=4; RM.level='lower_bronze'; RM.startElo=1350;
   // reset setup UI
   document.getElementById('rm-courts-val').textContent='2';
@@ -1414,6 +1971,7 @@ function simReset(){
   var lv=document.getElementById('rm-level'); if(lv) lv.value='lower_bronze';
   ['M','F'].forEach(x=>{var el=document.getElementById('rm-gender-'+x); if(el) el.classList.toggle('active',x==='M');});
   ['race','bestof'].forEach(x=>document.getElementById('rm-sfmt-'+x).classList.toggle('active',x==='race'));
+  rmSetFormat(RM.format==='league'?'league':'individual'); rmSetGender(RM.format==='league'?RM.gender:'M');
   rmChangeCourts(0); rmSetScoreFormat('race'); rmSetLevel('lower_bronze');
   var s=document.getElementById('rm-search'); if(s) s.value='';
   var chips=document.getElementById('rm-sel-chips-wrap'); if(chips) chips.style.display='none';
@@ -1426,6 +1984,7 @@ function simSyncToolbar(){
   if(scr==='done'){ btn.textContent='↻ Restart simulation'; }
   else if(SIM.running){ btn.textContent='⏸ Pause'; }
   else { btn.textContent=scr==='match'?'▶ Continue auto-play':'▶ Auto-play'; }
+  var oneL=document.getElementById('sim-one'); if(oneL) oneL.textContent=RM.format==='league'?'⏭ 1 slot':'⏭ 1 round';
   var one=document.getElementById('sim-one');
   if(one) one.style.display=(scr==='done')?'none':'';
 }
@@ -1434,6 +1993,7 @@ document.addEventListener('DOMContentLoaded', function(){
   rmSetLevel('lower_bronze');
   rmChangeCourts(0);
   rmSetScoreFormat('race');
+  if(/[?&]mode=league\b/.test(location.search)) rmStartSetup('league');
   rmGo('setup');
   simSyncToolbar();
 });
