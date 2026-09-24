@@ -121,6 +121,7 @@
 .prl .prl-side .nm span{font:700 10px var(--prl-mono);color:var(--prl-muted)}
 .prl .prl-side .el{font:700 20px var(--prl-disp)}
 .prl .prl-side.w{background:var(--prl-volt)}
+.prl .prl-side .pl-tag{flex:none;font:800 9.5px var(--prl-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--prl-orange);border:1.5px solid var(--prl-orange);padding:3px 7px}
 .prl .prl-prob{padding:8px 9px 10px;border-top:2px solid var(--prl-ink);background:var(--prl-court)}
 .prl .prl-prob .l{display:flex;justify-content:space-between;gap:6px;font:800 10px var(--prl-mono);margin-bottom:4px}
 .prl .prl-prob .l span:first-child{color:var(--prl-orange)}
