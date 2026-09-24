@@ -20,6 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,800;0,900;1,900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap">
 <link rel="stylesheet" href="/playrank-league.css">
+<script src="/playrank-story.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <style>
 :root{
@@ -465,13 +466,29 @@ function prlPairElo(names){
   var d=dd.length?Math.round(dd.reduce(function(a,p){return a+(p.elo-p.start);},0)/dd.length):0;
   return {elo:elo,d:d};
 }
+// Square photos (2 per pair) + passport links (new tab). No photo → initials.
+function prlSlug(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
+function prlPassport(n){ return '/player/'+prlSlug(n); }
+function prlSq(p,cls){
+  var ini=initials(p.displayName||p.name), u=p.photoUrl||'';
+  return '<div class="prl-ph'+(cls?' '+cls:'')+'">'+(u?'<img src="'+esc(u)+'" alt="" loading="lazy" onerror="__lavFallback(this,\''+ini+'\')">':ini)+'</div>';
+}
+function prlPhs(names,cls,link){
+  return '<div class="prl-phs">'+(names||[]).map(function(n){ var p=look(n), sq=prlSq(p,cls);
+    return link?'<a href="'+prlPassport(p.name||n)+'" target="_blank" rel="noopener" title="'+esc(p.displayName||p.name||n)+'">'+sq+'</a>':sq; }).join('')+'</div>';
+}
+function prlPairLinks(names){
+  return (names||[]).map(function(n){ var p=look(n);
+    return '<a class="prl-pp" href="'+prlPassport(p.name||n)+'" target="_blank" rel="noopener">'+esc(firstName(p.displayName||n))+'</a>'; }).join(' &amp; ');
+}
+var PRL_HINT='<p class="prl-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Tap your name to add your photo</p>';
 function prlShort(names){ return (names||[]).map(function(n){var w=String(look(n).displayName||n).split(' ');return esc(w[0]+(w[1]?' '+w[1][0]+'.':''));}).join(' / '); }
 function prlTable(d,visible){
   var t=d.teams||[], W=leagueWinners(d);
-  return '<div class="prl-tbl" id="prlTbl"><div class="prl-th"><span>Pos</span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>'+
+  return '<div class="prl-tbl" id="prlTbl"><div class="prl-th"><span>Pos</span><span></span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>'+
     t.map(function(x,i){ var e=prlPairElo(x.players);
       var cls='prl-tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+(i<W?' wz':'')+(i===W-1&&i<t.length-1?' cut':'')+(hitsFind(x.players)?' me':'')+(i>=visible?' prl-more':'');
-      return '<div class="'+cls+'"><span class="p">'+String(i+1).padStart(2,'0')+'</span><div class="n"><b>'+prlShort(x.players)+'</b><span>'+(i<W?placeName(i):(x.played||0)+' played')+'</span></div>'+
+      return '<div class="'+cls+'"><span class="p">'+String(i+1).padStart(2,'0')+'</span>'+prlPhs(x.players,'s')+'<div class="n"><b>'+prlShort(x.players)+'</b><span>'+(i<W?placeName(i):(x.played||0)+' played')+'</span></div>'+
         '<span class="c">'+(x.w||0)+'-'+(x.l||0)+'</span><span class="c" style="color:'+((x.pd||0)>0?'var(--prl-orange)':'var(--prl-muted)')+'">'+((x.pd||0)>0?'+':'')+(x.pd||0)+'</span>'+
         '<div class="e"><b>'+e.elo+'</b>'+prlDelta(e.d)+'</div></div>';
     }).join('')+'</div>';
@@ -489,12 +506,12 @@ function prlCourts(d){
   var now=d.now||[];
   var tgt=d.scoreTarget?((d.scoreFormat==='bestof'?'Best of ':'Race to ')+d.scoreTarget):'';
   var time=''; (d.schedule||[]).forEach(function(s){ if(s.status==='now') time=s.time||''; });
-  return now.map(function(m){
+  var out=now.map(function(m){
     var A=(m.a||[]).map(look), B=(m.b||[]).map(look);
     if(A.length<2||B.length<2) return '';
     var pa=teamWinPct(A,B), pctA=Math.round(pa*100);
     function side(names,ps,sc,oth){ var e=prlPairElo(names), w=sc!=null&&oth!=null&&sc>oth;
-      return '<div class="prl-side'+(w?' w':'')+'"><div class="nm"><b>'+pairName(names)+'</b><span>'+ps.map(function(p){return esc(firstName(p.displayName||p.name))+' '+(p.elo||'');}).join(' · ')+'</span></div>'+
+      return '<div class="prl-side'+(w?' w':'')+'">'+prlPhs(names,'',true)+'<div class="nm"><b>'+prlPairLinks(names)+'</b><span>'+ps.map(function(p){return esc(firstName(p.displayName||p.name))+' '+(p.elo||'');}).join(' · ')+'</span></div>'+
         (sc!=null&&oth!=null?'<span class="el">'+sc+'</span>':'<span class="pl-tag">Playing</span>')+'</div>'; }
     return '<div class="prl-ct"><div class="prl-ct-h"><span>Court '+esc(m.court||'')+(time?' · '+esc(time):'')+'</span><span class="v">● '+esc(tgt||'Live')+'</span></div>'+
       side(m.a,A,m.sa,m.sb)+side(m.b,B,m.sb,m.sa)+
@@ -502,6 +519,7 @@ function prlCourts(d){
       '<div class="trk"><span class="a" style="width:'+pctA+'%"></span><span class="b" style="width:'+(100-pctA)+'%"></span></div>'+
       '<div class="tk">'+take(A,B,pa)+'</div></div></div>';
   }).join('');
+  return out?PRL_HINT+out:'';
 }
 function renderCourts(d){
   var now=d.now||[];
@@ -619,7 +637,7 @@ function renderUpNext(d){
   for(;i<sched.length;i++){ if(sched[i].status==='now') break; }
   var nx=sched[i+1];
   $('upNext').innerHTML=nx?'<div class="prl-next"><div class="h">⏭ Up next · '+esc(nx.time||'')+'</div>'+
-    (nx.matches||[]).map(function(m){return '<div class="m"><i>C'+esc(m.court)+'</i> · '+pairName(m.a)+' <span style="color:var(--prl-muted)">vs</span> '+pairName(m.b)+'</div>';}).join('')+'</div>':'';
+    (nx.matches||[]).map(function(m){return '<div class="m"><i>C'+esc(m.court)+'</i> · '+prlPairLinks(m.a)+' <span style="color:var(--prl-muted)">vs</span> '+prlPairLinks(m.b)+'</div>';}).join('')+'</div>':'';
 }
 function renderLive(d){
   var lg=isLeague(d);
@@ -780,7 +798,7 @@ function prlFinalHtml(d){
   var c=t[0], ce=c?prlPairElo(c.players):{elo:0,d:0};
   function tile(x,i){ if(!x) return ''; var e=prlPairElo(x.players);
     return '<div class="prl-tile"><div class="top"><span class="no'+(i===1?'':' b')+'">'+String(i+1).padStart(2,'0')+'</span><span class="prl-chip '+(i===1?'v':'g')+'">'+(e.d>=0?'+':'')+e.d+' ELO</span></div>'+
-      '<span class="prl-lbl" style="color:'+(i===1?'var(--prl-orange)':'var(--prl-muted)')+'">'+placeName(i)+'</span><h5>'+pairName(x.players)+'</h5>'+
+      '<div class="tb">'+prlPhs(x.players,W===2?'m':'')+'<span class="prl-lbl" style="color:'+(i===1?'var(--prl-orange)':'var(--prl-muted)')+'">'+placeName(i)+'</span><h5>'+pairName(x.players)+'</h5></div>'+
       '<div class="ft"><span>'+(x.w||0)+'W - '+(x.l||0)+'L</span><span>'+((x.pd||0)>=0?'+':'')+(x.pd||0)+' diff</span></div></div>'; }
   var vslug=String(d.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   var tv=IS_DEMO?'/playrank-demo/tv':('https://venue.trekkr.online/'+vslug+'/tv');
@@ -792,10 +810,11 @@ function prlFinalHtml(d){
     (c?'<div class="prl-card o" style="overflow:hidden"><div class="prl-wm">01</div><div class="prl-champ">'+
       '<div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Champion</span><span class="prl-chip k" style="color:var(--prl-volt)">'+((c.l||0)===0?'Undefeated':'Record')+' // '+(c.w||0)+'-'+(c.l||0)+'</span></div>'+
       '<span class="prl-chip v" style="border-width:2px;box-shadow:2px 2px 0 var(--prl-ink)">'+(ce.d>=0?'↗ +':'↘ ')+ce.d+' ELO</span></div>'+
-      '<h4>'+(c.players||[]).map(function(n){return esc(look(n).displayName||n);}).join(' &amp; ')+'</h4><p class="tag">■ '+(c.played||0)+' matches · '+(c.played||0)+' different opponents</p>'+
+      prlPhs(c.players,'l')+'<h4>'+(c.players||[]).map(function(n){return esc(look(n).displayName||n);}).join(' &amp; ')+'</h4><p class="tag">■ '+(c.played||0)+' matches · '+(c.played||0)+' different opponents</p>'+
       '<div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>'+ce.elo+'</b></div><div><span class="prl-lbl">Record</span><b style="color:var(--prl-orange)">'+(c.w||0)+'-'+(c.l||0)+'</b></div>'+
       '<div><span class="prl-lbl">Point diff</span><b>'+((c.pd||0)>=0?'+':'')+(c.pd||0)+'</b></div><div><span class="prl-lbl">Points</span><b>'+(c.pf||0)+'-'+(c.pa||0)+'</b></div></div></div></div>':'')+
-    (W>=2?'<div class="prl-2" style="margin-bottom:14px">'+tile(t[1],1)+(W>=3?tile(t[2],2):'')+'</div>':'')+
+    (W>=2?'<div class="prl-2'+(W===2?' one':'')+'" style="margin-bottom:14px">'+tile(t[1],1)+(W>=3?tile(t[2],2):'')+'</div>':'')+
+    (window.PRLStory?'<button class="prl-btn prl-share-ig" id="prlIG">📸 Share to Instagram Story</button>':'')+
     '<div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Stat highlights</span><span class="prl-lbl">// Telemetry</span></div><div class="prl-tele">'+
       '<div><span class="prl-lbl">Total matches</span><b>'+hist.length+'</b><span class="s">'+sched.length+' slots'+(d.courts?' · '+d.courts+' courts':'')+'</span></div>'+
       '<div><span class="prl-lbl">Last slot</span><b style="color:var(--prl-orange)">'+esc(last||'—')+'</b><span class="s">Started '+esc((d.league&&d.league.start)||'')+'</span></div>'+
@@ -809,7 +828,18 @@ function prlFinalHtml(d){
     '<a class="prl-btn" href="'+(IS_DEMO?'/playrank-demo':'https://trekkr.online/rankings')+'">'+(IS_DEMO?'↻ Back to simulation':'🏅 Player ratings →')+'</a>'+
     '<p class="note">Powered by <b style="color:var(--prl-orange)">Trekkr</b> · ranked padel for Indonesia</p>';
 }
+// IG story (1080×1920) — drawn by the shared playrank-story.js.
+function prlStoryData(d){
+  var t=d.teams||[], cat=d.gender==='F'?'Women':d.gender==='MIXED'?'Mixed':'Men';
+  var fmt=d.scoreTarget?((d.scoreFormat==='bestof'?'Best of ':'Race to ')+d.scoreTarget):'';
+  return { venue:d.venue||'PlayRank League', winners:leagueWinners(d),
+    meta:[cat,fmt,t.length+' pairs',(d.history||[]).length+' matches'].filter(Boolean).join(' · '),
+    teams:t.map(function(x){ var e=prlPairElo(x.players), ps=(x.players||[]).map(look);
+      return {names:ps.map(function(p,i){return p.displayName||p.name||x.players[i];}), photos:ps.map(function(p){return p.photoUrl||'';}),
+        w:x.w||0,l:x.l||0,pd:x.pd||0,pf:x.pf||0,pa:x.pa||0,played:x.played||0,elo:e.elo,d:e.d}; }) };
+}
 function prlWireFinal(d){
+  var ig=$('prlIG'); if(ig) ig.onclick=function(){ window.PRLStory.open(prlStoryData(d)); };
   var cp=$('prlCopy'); if(cp) cp.onclick=function(){ var u=location.href; if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){cp.textContent='Copied ✓';setTimeout(function(){cp.textContent='Copy';},1600);}); };
   var wa=$('prlWA'); if(wa) wa.onclick=function(){
     var t=d.teams||[], W=leagueWinners(d);

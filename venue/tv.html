@@ -470,12 +470,22 @@ img{max-width:100%}
     var byeHtml=bye.length?'<div class="byline">⏸ Resting this round: <b>'+bye.join(', ')+'</b></div>':'';
     if(isLeague(d)){
       var pn=function(ns){return (ns||[]).map(function(n){return esc(first(nm(look(n))));}).join(' & ');};
+      var sq=function(p){return '<span class="sq">'+photoInner(p.photoUrl,p.name)+'</span>';};
+      courtsHtml=now.map(function(m){
+        function team(t,sc,oth){
+          var has=(sc!=null&&oth!=null), cls=!has?'pend':(sc>oth?'win':(sc<oth?'lose':''));
+          return '<div class="teamrow lg '+cls+'"><span class="ph2">'+sq(t[0])+sq(t[1])+'</span><span class="pnm">'+esc(first(nm(t[0])))+' &amp; '+esc(first(nm(t[1])))+'</span>'
+            +(has?'<span class="tsc">'+sc+'</span>':'<span class="pl-tag">Playing</span>')+'</div>';
+        }
+        return '<div class="court"><div class="court-top"><span class="ct">Court '+esc(m.court||'')+'</span><span class="fm">'+esc(tgt)+'</span></div>'
+          +team(m.a,m.sa,m.sb)+team(m.b,m.sb,m.sa)+'</div>';
+      }).join('');
       var LWc=Math.max(1,Math.min(5,parseInt((d.league||{}).winners,10)||3));
       var lrows=d.teams.map(function(t,i){
         var rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
         var pd=t.pd||0, pdc=pd>0?'var(--w)':pd<0?'var(--l)':'var(--faint)';
         return '<div class="lrow '+(i<3?'top ':'')+rc+(i===LWc-1&&i<d.teams.length-1?' prl-cut':'')+'"><span class="rk">'+(i+1)+'</span>'
-          +'<span class="pl"><span class="who"><div class="pn">'+pn(t.players)+'</div></span></span>'
+          +'<span class="pl"><span class="ph2">'+(t.players||[]).map(function(n){return sq(look(n));}).join('')+'</span><span class="who"><div class="pn">'+pn(t.players)+'</div></span></span>'
           +'<span class="wl"><span class="w">'+(t.w||0)+'</span><span class="s">/</span><span class="l">'+(t.l||0)+'</span></span>'
           +'<span class="el" style="color:'+pdc+'">'+(pd>=0?'+':'')+pd+'</span></div>';
       }).join('');
@@ -506,20 +516,38 @@ img{max-width:100%}
       +'</div>';
   }
 
+  // League podium: steps 1·2·3 (volt / white / orange), 2 big square photos per pair,
+  // cards follow the organiser's number of winners (max 3 on the podium).
+  function leaguePodium(d,rh,rl){
+    var byK={}; (d.players||[]).forEach(function(p){byK[p.name]=p;});
+    var LWp=Math.max(1,Math.min(5,parseInt((d.league||{}).winners,10)||3)), PC=Math.min(LWp,3,d.teams.length);
+    var tags=['🏆 Champion','Runner-up','3rd place'];
+    function pnames(t){return (t.players||[]).map(function(n){return esc(first(nm(byK[n]||{name:n})));}).join(' &amp; ');}
+    function col(i){
+      var t=d.teams[i]; if(!t) return '';
+      var dl=avgDelta(t.players,d.players), pd=t.pd||0;
+      return '<div class="tp-col r'+(i+1)+'"><div class="tp-card"><div class="tp-top"><span class="tp-rk">0'+(i+1)+'</span><span class="tp-tg">'+tags[i]+'</span></div>'
+        +'<div class="tp-phs">'+(t.players||[]).map(function(n){var p=byK[n]||{name:n};return '<span class="sq">'+photoInner(p.photoUrl,p.name)+'</span>';}).join('')+'</div>'
+        +'<div class="tp-nm">'+pnames(t)+'</div>'
+        +'<div class="tp-st"><span>'+(t.w||0)+'–'+(t.l||0)+'</span><span>'+(pd>=0?'+':'')+pd+' PD</span><span class="e'+(dl<0?' dn':'')+'">'+(dl>=0?'▲ +':'▼ ')+dl+' ELO</span></div></div>'
+        +'<div class="tp-step">'+(i+1)+'</div></div>';
+    }
+    var order=PC>=3?[1,0,2]:PC===2?[1,0]:[0];
+    var rest=d.teams.slice(PC,PC+4).map(function(t,i){
+      var rk=PC+i+1;
+      return '<div class="fchip"'+(rk<=LWp?' style="border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset"':'')+'><span class="tp-rk">'+(rk<=LWp?'🏅':rk)+'</span><span class="tp-nm">'+pnames(t)+'</span><span class="wl"><span class="w">'+(t.w||0)+'</span>–<span class="l">'+(t.l||0)+'</span></span></div>';
+    }).join('');
+    return '<div class="champ tv-prl"><div class="recapbar"><div class="rh">'+rh+'</div><div class="rl">'+rl+'</div></div>'
+      +'<div class="tpd"><div class="tp-bg">'+(PC===1?'CHAMPION':'CHAMPIONS')+'</div>'+order.map(col).join('')+'</div>'
+      +(rest?'<div class="finalstrip">'+rest+'</div>':'')+'</div>';
+  }
+
   // PODIUM / champions (final within celebrate window)
   function scenePodium(){
     var d=(LIVE&&LIVE.session)||{}, recap=(LIVE&&LIVE.recap)||null, s=sortStd(d.players||[]);
-    // League: podium by pair; the ELO chip shows the pair's average change.
-    if(isLeague(d)){
-      var byK={}; (d.players||[]).forEach(function(p){byK[p.name]=p;});
-      s=d.teams.map(function(t){
-        var fs=(t.players||[]).map(function(n){return first(nm(byK[n]||{name:n}));});
-        var dl=avgDelta(t.players,d.players);
-        return {name:fs.join(' '),displayName:fs.join(' & '),photoUrl:'',w:t.w||0,l:t.l||0,elo:1000+dl,start:1000};
-      });
-    }
     var rh=recap&&recap.headline?esc(recap.headline):'Champions Crowned';
     var rl=recap&&recap.line?esc(recap.line):'That\'s a wrap on today\'s PlayRank session.';
+    if(isLeague(d)) return leaguePodium(d,rh,rl);
     var med=['🥈','🥇','🥉'], stg=['s1','s2','s3'], tags=['Runner-up','Champion','Third'];
     // League: only as many podium places as the organiser's winners (max 3).
     var LW=isLeague(d)?Math.max(1,Math.min(5,parseInt((d.league||{}).winners,10)||3)):3;

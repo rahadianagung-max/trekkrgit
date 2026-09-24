@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,800;0,900;1,900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/playrank-league.css"/>
+<script src="/playrank-story.js"></script>
 <style>
 /* ── TREKKR DESIGN TOKENS ─────────────────────────────────────────────── */
 :root {
@@ -3288,14 +3289,33 @@ function rmPairElo(players,byName){
   const d=Math.round(players.reduce((a,n,i)=>a+((ps[i].elo||0)-rmStoryStart(n)),0)/Math.max(1,players.length));
   return {elo,d};
 }
+// Square player photos (2 per pair → then names); no photo → initials.
+function rmPrlSq(n,cls){
+  const p=RM.playerStats[n]||RM.selectedPlayers.find(x=>x.name===n)||{name:n};
+  const w=String(p.displayName||n).trim().split(/\s+/), ini=((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase();
+  const u=p.photoUrl||'';
+  return `<div class="prl-ph${cls?' '+cls:''}">${u?`<img src="${String(u).replace(/"/g,'&quot;')}" alt="" loading="lazy" onerror="this.parentNode.textContent='${ini}'">`:ini}</div>`;
+}
+function rmPrlPhs(players,cls){ return `<div class="prl-phs">${players.map(n=>rmPrlSq(n,cls)).join('')}</div>`; }
+// IG story (1080×1920) — shared renderer in playrank-story.js.
+function rmPrlStoryData(){
+  const table=rmLeagueTable(), cat=RM.gender==='F'?'Women':RM.gender==='MIXED'?'Mixed':'Men';
+  const played=RM.rounds.filter(r=>r.submitted), matches=played.flatMap(r=>r.matches).filter(m=>m.score1!=null&&m.score2!=null).length;
+  return { venue:RM.venue||'PlayRank League', winners:rmLeagueWinners(table.length),
+    meta:[cat,(RM.scoreFormat==='bestof'?'Best of ':'Race to ')+RM.scoreTarget,table.length+' pairs',matches+' matches'].join(' · '),
+    teams:table.map(t=>{ const e=rmPairElo(t.players); const ps=t.players.map(n=>RM.playerStats[n]||{name:n});
+      return {names:ps.map((p,i)=>p.displayName||p.name||t.players[i]), photos:ps.map(p=>p.photoUrl||''),
+        w:t.w,l:t.l,pd:t.pd,pf:t.pf,pa:t.pa,played:t.played,elo:e.elo,d:e.d}; }) };
+}
+function rmPrlStory(){ if(window.PRLStory) window.PRLStory.open(rmPrlStoryData()); }
 function rmPrlDelta(d){ return d>0?`<span class="up">+${d}</span>`:d<0?`<span class="dn">${d}</span>`:`<span style="color:var(--prl-muted)">0</span>`; }
 function rmPrlTable(rows,W,visible,byName){
   const tr=(t,i)=>{ const e=rmPairElo(t.players,byName);
     const cls='prl-tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+(i<W?' wz':'')+(i===W-1&&i<rows.length-1?' cut':'')+(i>=visible?' prl-more':'');
-    return `<div class="${cls}"><span class="p">${String(i+1).padStart(2,'0')}</span><div class="n"><b>${rmPairShort(t.players)}</b><span>${i<W?rmPlaceName(i):t.played+' played'}</span></div>`
+    return `<div class="${cls}"><span class="p">${String(i+1).padStart(2,'0')}</span>${rmPrlPhs(t.players,'s')}<div class="n"><b>${rmPairShort(t.players)}</b><span>${i<W?rmPlaceName(i):t.played+' played'}</span></div>`
       +`<span class="c">${t.w}-${t.l}</span><span class="c" style="color:${t.pd>0?'var(--prl-orange)':'var(--prl-muted)'}">${t.pd>0?'+':''}${t.pd}</span>`
       +`<div class="e"><b>${e.elo}</b>${rmPrlDelta(e.d)}</div></div>`; };
-  return `<div class="prl-tbl" id="prl-tbl"><div class="prl-th"><span>Pos</span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>${rows.map(tr).join('')}</div>`;
+  return `<div class="prl-tbl" id="prl-tbl"><div class="prl-th"><span>Pos</span><span></span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>${rows.map(tr).join('')}</div>`;
 }
 function rmPrlUrl(){ return RM_LIVE&&RM_LIVE.code?rmLiveUrl():''; }
 function rmPrlTvUrl(){ return 'https://venue.trekkr.online/'+String(RM.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'')+'/tv'; }
@@ -3324,7 +3344,7 @@ function rmRenderLeagueDone(standings){
   const c=table[0], ce=c?rmPairElo(c.players,byName):{elo:0,d:0};
   const tile=(t,i)=>{ if(!t) return ''; const e=rmPairElo(t.players,byName);
     return `<div class="prl-tile"><div class="top"><span class="no${i===1?'':' b'}">${String(i+1).padStart(2,'0')}</span><span class="prl-chip ${i===1?'v':'g'}">${e.d>=0?'+':''}${e.d} ELO</span></div>`
-      +`<span class="prl-lbl" style="color:${i===1?'var(--prl-orange)':'var(--prl-muted)'}">${rmPlaceName(i)}</span><h5>${t.name}</h5>`
+      +`<div class="tb">${rmPrlPhs(t.players,W===2?'m':'')}<span class="prl-lbl" style="color:${i===1?'var(--prl-orange)':'var(--prl-muted)'}">${rmPlaceName(i)}</span><h5>${t.name}</h5></div>`
       +`<div class="ft"><span>${t.w}W - ${t.l}L</span><span>${t.pd>=0?'+':''}${t.pd} diff</span></div></div>`; };
   const url=rmPrlUrl();
   document.getElementById('rm-done-league').innerHTML=`<div class="prl" style="padding:4px 2px 8px">
@@ -3340,10 +3360,11 @@ function rmRenderLeagueDone(standings){
     ${c?`<div class="prl-card o" style="overflow:hidden"><div class="prl-wm">01</div><div class="prl-champ">
       <div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Champion</span><span class="prl-chip k" style="color:var(--prl-volt)">${c.l===0?'Undefeated':'Record'} // ${c.w}-${c.l}</span></div>
       <span class="prl-chip v" style="border-width:2px;box-shadow:2px 2px 0 var(--prl-ink)">${ce.d>=0?'↗ +':'↘ '}${ce.d} ELO</span></div>
-      <h4>${c.players.join(' &amp; ')}</h4><p class="tag">■ ${c.played} matches · ${c.played} different opponents</p>
+      ${rmPrlPhs(c.players,'l')}<h4>${c.players.join(' &amp; ')}</h4><p class="tag">■ ${c.played} matches · ${c.played} different opponents</p>
       <div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>${ce.elo}</b></div><div><span class="prl-lbl">Record</span><b style="color:var(--prl-orange)">${c.w}-${c.l}</b></div><div><span class="prl-lbl">Point diff</span><b>${c.pd>=0?'+':''}${c.pd}</b></div><div><span class="prl-lbl">Points</span><b>${c.pf}-${c.pa}</b></div></div>
     </div></div>`:''}
-    ${W>=2?`<div class="prl-2" style="margin-bottom:14px">${tile(table[1],1)}${W>=3?tile(table[2],2):''}</div>`:''}
+    ${W>=2?`<div class="prl-2${W===2?' one':''}" style="margin-bottom:14px">${tile(table[1],1)}${W>=3?tile(table[2],2):''}</div>`:''}
+    <button class="prl-btn prl-share-ig" onclick="rmPrlStory()">📸 Share to Instagram Story</button>
     <div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Stat highlights</span><span class="prl-lbl">// Telemetry</span></div>
       <div class="prl-tele">
         <div><span class="prl-lbl">Total matches</span><b>${matches.length}</b><span class="s">${played.length} slots · ${RM.courts} courts</span></div>
@@ -3359,7 +3380,7 @@ function rmRenderLeagueDone(standings){
       ${url?`<div class="prl-url"><span>🔗 ${url.replace(/^https?:\/\//,'')}</span><button onclick="rmPrlCopy(this)">Copy</button></div>`:'<div style="height:10px"></div>'}
       <div class="prl-2"><button class="prl-btn wa sm" onclick="rmPrlWA()">➤ WhatsApp</button><button class="prl-btn v sm" onclick="rmPrlTV()">📺 Venue TV</button></div></div>
     <button class="prl-btn" onclick="rmNewMatch()">＋ Start new league →</button>
-    <div class="prl-links"><button onclick="rmShareStory()">📸 IG Story</button><span>/ /</span><button onclick="window.open('https://trekkr.online/rankings','_blank')">🏅 Player ratings</button></div>
+    <div class="prl-links"><button onclick="rmPrlStory()">📸 IG Story</button><span>/ /</span><button onclick="window.open('https://trekkr.online/rankings','_blank')">🏅 Player ratings</button></div>
   </div>`;
 }
 
@@ -3374,6 +3395,7 @@ function rmStoryStart(name){
   return s?(s.elo||RM.startElo):RM.startElo;
 }
 async function rmShareStory(){
+  if(RM.format==='league'&&window.PRLStory){ rmPrlStory(); return; }
   document.getElementById('rm-modal-story').classList.remove('hidden');
   const cv=document.getElementById('rm-story-canvas');
   try{ await Promise.all([
