@@ -82,12 +82,53 @@ async function imgbbUploadImage(dataUrl, filename) {
   return ibbHostFix((json.data && (json.data.url || json.data.display_url)) || "");
 }
 
-// Unified image upload: prefer imgbb when IMGBB_API_KEY is set, otherwise fall
-// back to Google Drive. folderId is only used by the Drive path.
+// Upload a base64 image data URL to Supabase Storage (sama seperti
+// turnamenpadel.com: bucket publik "uploads" di project Supabase yang sama).
+// Service key via Storage REST API (tanpa SDK). Bucket dibuat otomatis kalau
+// belum ada. Returns the public URL (served with CORS, so canvas can export it).
+async function supabaseUploadImage(dataUrl, filename) {
+  const base = String(process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!base || !key) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY not set");
+  const m = /^data:(image\/[\w.+-]+);base64,([\s\S]+)$/.exec(String(dataUrl || ""));
+  if (!m) throw new Error("invalid image data");
+  const mime = m[1], buf = Buffer.from(m[2], "base64");
+  const ext = (mime.split("/")[1] || "jpg").replace("jpeg", "jpg").replace("+xml", "");
+  const bucket = process.env.SUPABASE_BUCKET || "uploads";
+  const safe = String(filename || "img").replace(/\.[a-z0-9]+$/i, "").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 60) || "img";
+  const objectPath = `trekkr/${safe}_${Date.now()}.${ext}`;
+  const hdr = { Authorization: `Bearer ${key}`, apikey: key };
+  const put = () => fetch(`${base}/storage/v1/object/${bucket}/${objectPath}`, {
+    method: "POST", headers: { ...hdr, "Content-Type": mime, "x-upsert": "true", "cache-control": "31536000" }, body: buf,
+  });
+  let res = await put();
+  if (res.status === 400 || res.status === 404) {
+    // Bucket kemungkinan belum ada → buat bucket publik, lalu coba sekali lagi.
+    await fetch(`${base}/storage/v1/bucket`, { method: "POST", headers: { ...hdr, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: bucket, name: bucket, public: true, file_size_limit: 15728640 }) }).catch(() => {});
+    res = await put();
+  }
+  if (!res.ok) { const t = await res.text().catch(() => ""); throw new Error(`supabase storage ${res.status}: ${t.slice(0, 200)}`); }
+  return `${base}/storage/v1/object/public/${bucket}/${objectPath}`;
+}
+
+// Unified image upload: Supabase Storage first (retried for transient errors).
+// imgbb is no longer used for new uploads — it (then Google Drive) is only an
+// emergency fallback while Supabase is unreachable. folderId is Drive-only.
 async function uploadImage(dataUrl, filename, folderId) {
   if (!dataUrl) return "";
-  if (String(process.env.IMGBB_API_KEY || "").trim()) return imgbbUploadImage(dataUrl, filename);
-  return driveUploadImage(dataUrl, filename, folderId);
+  let lastErr;
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    for (let i = 0; i < 3; i++) {
+      try { return await supabaseUploadImage(dataUrl, filename); }
+      catch (e) { lastErr = e; if (i < 2) await new Promise((r) => setTimeout(r, 300 * (i + 1))); }
+    }
+    console.warn("supabase upload failed, falling back:", lastErr && lastErr.message);
+  }
+  try {
+    if (String(process.env.IMGBB_API_KEY || "").trim()) return await imgbbUploadImage(dataUrl, filename);
+    return await driveUploadImage(dataUrl, filename, folderId);
+  } catch (e) { throw lastErr || e; }
 }
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
@@ -2427,7 +2468,7 @@ async function updateVenue(body) {
   if (!name || !updates) return respond(400, { error: "name and updates required" });
   const sheets = getSheets();
   // A new logo may arrive as a base64 data URL. Upload it through the same image
-  // pipeline the rest of the app uses (imgbb when IMGBB_API_KEY is set, else Drive)
+  // pipeline the rest of the app uses (Supabase Storage; imgbb/Drive only as fallback)
   // and store the returned public URL in the Logo_URL column.
   let logoUrl = updates.logoUrl;
   if (updates.logo) {
