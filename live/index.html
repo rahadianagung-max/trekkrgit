@@ -166,6 +166,16 @@ header.hd{padding:18px 2px 6px}
 .pa b.up{color:var(--grn)} .pa b.dn{color:var(--red)}
 @media (prefers-reduced-motion:reduce){.pa{transition:none}.anbtn .cv{transition:none}}
 /* match history (final) */
+/* PlayRank League: tabs */
+.ltabs{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;margin:16px 0 4px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.ltab{border:0;background:transparent;color:var(--mute);font:800 12.5px/1.1 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;padding:11px 6px;border-radius:10px;cursor:pointer}
+.ltab.on{background:var(--orange);color:#fff}
+.upnext{background:var(--card2);border:1px dashed var(--line);border-radius:14px;padding:11px 14px;margin-top:4px;font-size:12.5px;color:var(--mute)}
+.upnext .h{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-ink);margin-bottom:5px}
+.upnext .m{padding:2px 0;color:var(--ink)}
+.lgrow .pmeta .ed{font-family:'Space Mono',monospace;font-weight:700}
+.lgrow .pmeta .ed.up{color:var(--grn)} .lgrow .pmeta .ed.dn{color:var(--red)}
 /* PlayRank League: pair table + order of play */
 .lgrow{grid-template-columns:26px 1fr auto auto}
 .lgrow .pd{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;min-width:38px;text-align:right}
@@ -268,13 +278,23 @@ header.hd{padding:18px 2px 6px}
       <div class="sub" id="liveSub"></div>
     </header>
 
-    <div id="nowWrap">
-      <div class="slab"><h2>On court now</h2><span class="rule"></span><span class="n" id="nowN"></span></div>
-      <div id="courts"></div>
+    <!-- PlayRank League: tabs (Now Playing · Order of Play · League Table) -->
+    <div class="ltabs" id="lgTabs" hidden role="tablist">
+      <button class="ltab" data-tab="now" role="tab">Now Playing</button>
+      <button class="ltab" data-tab="oop" role="tab">Order of Play</button>
+      <button class="ltab" data-tab="table" role="tab">League Table</button>
     </div>
 
-    <div class="slab"><h2 id="stdTitle">Live standings</h2><span class="rule"></span><span class="n" id="stdSub">by wins</span></div>
-    <div class="board" id="liveBoard"></div>
+    <div id="nowWrap">
+      <div class="slab"><h2 id="nowTitle">On court now</h2><span class="rule"></span><span class="n" id="nowN"></span></div>
+      <div id="courts"></div>
+      <div id="upNext"></div>
+    </div>
+
+    <div id="stdWrap">
+      <div class="slab"><h2 id="stdTitle">Live standings</h2><span class="rule"></span><span class="n" id="stdSub">by wins</span></div>
+      <div class="board" id="liveBoard"></div>
+    </div>
 
     <div id="oopWrap" hidden>
       <div class="slab"><h2>Order of play</h2><span class="rule"></span><span class="n" id="oopN"></span></div>
@@ -422,16 +442,16 @@ function claimUrl(name){return 'https://trekkr.online/app?claim='+encodeURICompo
 
 // ---- render: live ----
 function tierChip(elo){return '<span class="tier '+tierCls(elo)+'">'+tierName(elo)+'</span>';}
-function teamBlock(names){
+function teamBlock(names,noTier){
   return names.map(function(n){var p=look(n);
     return '<div class="team"><div class="who"><div class="nm">'+esc(p.short||firstName(p.name))+'</div>'+
-      '<div class="nm2">'+tierName(p.elo)+'</div></div><span class="elo">'+(p.elo||'')+'</span></div>';
+      (noTier?'':'<div class="nm2">'+tierName(p.elo)+'</div>')+'</div><span class="elo">'+(p.elo||'')+'</span></div>';
   }).join('<div style="height:8px"></div>');
 }
 function renderCourts(d){
   var now=d.now||[];
   var wrap=$('nowWrap');
-  if(!now.length){ wrap.hidden=true; }
+  if(!now.length){ wrap.hidden=true; $('courts').innerHTML=''; }
   else{
     wrap.hidden=false;
     $('nowN').textContent=now.length+(now.length===1?' match':' matches');
@@ -444,9 +464,9 @@ function renderCourts(d){
       var bn=B.map(function(p){return esc(p.short||firstName(p.name));}).join(' & ');
       return '<div class="court">'+
         '<div class="top"><span class="ct">Court '+esc(m.court||'')+'</span><span class="fmt">'+esc(tgt)+'</span></div>'+
-        teamBlock(m.a)+
+        teamBlock(m.a,isLeague(d))+
         '<div class="vs"><span class="l"></span><span class="v">VS</span><span class="l"></span></div>'+
-        teamBlock(m.b)+
+        teamBlock(m.b,isLeague(d))+
         '<div class="prob"><div class="lab"><span class="a">'+an+' · '+pctA+'%</span>'+
           '<span class="b">'+pctB+'% · '+bn+'</span></div>'+
           '<div class="track"><span class="fa" style="width:'+pctA+'%"></span><span class="fb" style="width:'+pctB+'%"></span></div>'+
@@ -485,13 +505,20 @@ function hitsFind(names){
   if(!FIND) return false; var q=FIND.toLowerCase();
   return (names||[]).some(function(n){ var p=look(n); return String(n).toLowerCase().indexOf(q)>-1 || String(p.displayName||'').toLowerCase().indexOf(q)>-1; });
 }
+// Pair ELO change this session = average of the two players' (elo − start).
+function pairEloDelta(names){
+  var ds=(names||[]).map(function(n){var p=look(n);return (p.start!=null&&p.elo!=null)?(p.elo-p.start):null;}).filter(function(x){return x!=null;});
+  if(!ds.length) return '';
+  var d=Math.round(ds.reduce(function(a,b){return a+b;},0)/ds.length);
+  return ' · ELO <span class="ed '+(d>0?'up':d<0?'dn':'')+'">'+(d>0?'▲+':d<0?'▼':'±')+(d<0?-d:d)+'</span>';
+}
 function leagueRow(t,i){
   var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
   var pd=t.pd||0;
   return '<div class="row lgrow'+(hitsFind(t.players)?' me':'')+'">'+
     '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
     '<div class="pl"><div class="pn">'+pairName(t.players)+'</div>'+
-      '<div class="pmeta">'+(t.played||0)+' played · PF '+(t.pf||0)+' · PA '+(t.pa||0)+'</div></div>'+
+      '<div class="pmeta">'+(t.played||0)+' played · PF '+(t.pf||0)+' · PA '+(t.pa||0)+pairEloDelta(t.players)+'</div></div>'+
     '<span class="wl">'+(t.w||0)+'<span class="l">–'+(t.l||0)+'</span></span>'+
     '<span class="pd '+(pd>0?'up':pd<0?'dn':'')+'">'+(pd>=0?'+':'')+pd+'</span>'+
   '</div>';
@@ -514,8 +541,23 @@ function renderOrder(d){
     return '<div class="oslot '+esc(sl.status||'')+(hide?' hide':'')+'"><div><div class="tm">'+esc(sl.time||'')+'</div><div class="st">'+st+'</div></div><div>'+rows+'</div></div>';
   }).join('') + (FIND&&!mine?'<div class="byecard">No matches found for “'+esc(FIND)+'”.</div>':'');
 }
+var LTAB='now';
+try{ LTAB=sessionStorage.getItem('tk_live_tab')||'now'; }catch(e){}
+function applyLeagueTab(){
+  var tabs=document.querySelectorAll('#lgTabs .ltab');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('on',tabs[i].getAttribute('data-tab')===LTAB);
+  $('nowWrap').hidden=LTAB!=='now'; $('oopWrap').hidden=LTAB!=='oop'; $('stdWrap').hidden=LTAB!=='table';
+}
+function renderUpNext(d){
+  var sched=d.schedule||[], i=0;
+  for(;i<sched.length;i++){ if(sched[i].status==='now') break; }
+  var nx=sched[i+1];
+  $('upNext').innerHTML=nx?'<div class="upnext"><div class="h">Up next · '+esc(nx.time||'')+'</div>'+
+    (nx.matches||[]).map(function(m){return '<div class="m"><b>C'+esc(m.court)+'</b> · '+pairName(m.a)+' <span style="color:var(--dim)">vs</span> '+pairName(m.b)+'</div>';}).join('')+'</div>':'';
+}
 function renderLive(d){
   var lg=isLeague(d);
+  $('lgTabs').hidden=!lg;
   $('liveSub').innerHTML =
     '<span>'+esc(d.venue||'Trekkr session')+'</span>'+
     (lg?'<span class="chip">League · Fixed Partner</span>':'')+
@@ -523,13 +565,22 @@ function renderLive(d){
     (d.round?'<span class="chip cy">'+(lg?'Slot ':'Round ')+esc(d.round)+(lg&&d.league?'/'+esc(d.league.slots):'')+'</span>':'');
   renderCourts(d);
   if(lg){
+    $('nowTitle').textContent='Now playing';
     $('stdTitle').textContent='League table';
     $('stdSub').textContent='W → PD → PF → H2H';
     $('liveBoard').innerHTML=d.teams.length?d.teams.map(leagueRow).join(''):'';
     renderOrder(d);
+    renderUpNext(d);
+    if(!(d.now||[]).length){
+      var allDone=(d.schedule||[]).length&&(d.schedule||[]).every(function(x){return x.status==='done';});
+      $('courts').innerHTML='<div class="byecard">'+(allDone?'🏁 All league matches played — final results coming up.':'Next slot starting soon…')+'</div>';
+      $('nowN').textContent='';
+    }
+    applyLeagueTab();
     return;
   }
-  $('oopWrap').hidden=true;
+  $('oopWrap').hidden=true; $('stdWrap').hidden=false;
+  $('nowTitle').textContent='On court now'; $('upNext').innerHTML='';
   var s=sortStandings(d.players);
   $('liveBoard').innerHTML = s.length ? s.map(liveRow).join('')
     : '<div class="row"><span></span><div class="pl"><div class="pmeta">Waiting for the first scores…</div></div></div>';
@@ -747,6 +798,17 @@ $('shareBtn').addEventListener('click',function(){
   else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ var b=$('shareBtn'); var o=b.textContent; b.textContent='Link copied ✓'; setTimeout(function(){b.textContent=o;},1600); }); }
   else window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
 });
+
+// league tabs
+(function(){
+  var box=$('lgTabs'); if(!box) return;
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('.ltab'); if(!b) return;
+    LTAB=b.getAttribute('data-tab');
+    try{ sessionStorage.setItem('tk_live_tab',LTAB); }catch(err){}
+    applyLeagueTab(); window.scrollTo(0,0);
+  });
+})();
 
 // order-of-play name search (remembered on this device)
 (function(){
