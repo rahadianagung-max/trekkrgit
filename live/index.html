@@ -149,6 +149,9 @@ header.hd{padding:18px 2px 6px}
   font-style:italic;font-weight:800;color:var(--dim);font-size:19px}
 .pod.first .pav{width:64px;height:64px;font-size:22px}
 .pod .pav img{width:100%;height:100%;object-fit:cover;display:block}
+.pod .pavs{display:flex;justify-content:center;gap:4px}
+.pod .pavs .pav{width:40px;height:40px;margin:8px 0 0;font-size:14px}
+.pod.first .pavs .pav{width:46px;height:46px}
 /* per-player analysis (final table) */
 .pcard{border-bottom:1px solid var(--line2)}
 .pcard:last-child{border-bottom:0}
@@ -163,6 +166,26 @@ header.hd{padding:18px 2px 6px}
 .pa b.up{color:var(--grn)} .pa b.dn{color:var(--red)}
 @media (prefers-reduced-motion:reduce){.pa{transition:none}.anbtn .cv{transition:none}}
 /* match history (final) */
+/* PlayRank League: pair table + order of play */
+.lgrow{grid-template-columns:26px 1fr auto auto}
+.lgrow .pd{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;min-width:38px;text-align:right}
+.lgrow .pd.up{color:var(--grn)} .lgrow .pd.dn{color:var(--red,#E14338)}
+.oopfind{width:100%;box-sizing:border-box;padding:11px 13px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+  color:var(--ink);font:600 13.5px 'Plus Jakarta Sans';margin-bottom:10px;outline:none}
+.oopfind:focus{border-color:var(--orange)}
+.oop{display:flex;flex-direction:column;gap:8px}
+.oslot{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:9px 12px;display:grid;grid-template-columns:52px 1fr;gap:10px}
+.oslot.done{opacity:.62}
+.oslot.now{border-color:var(--orange);box-shadow:0 0 0 2px color-mix(in srgb,var(--orange) 22%,transparent)}
+.oslot .tm{font-family:'Space Mono',monospace;font-weight:700;font-size:14px;color:var(--ink)}
+.oslot .st{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+.oslot.now .st{color:var(--orange-ink)}
+.oslot .om{font-size:13px;padding:2px 0;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.oslot .om .c{font-size:10px;font-weight:800;color:var(--cyan-ink);letter-spacing:.06em}
+.oslot .om .vs{color:var(--dim);font-size:11px}
+.oslot .om .sc{font-family:'Space Mono',monospace;font-weight:700}
+.oslot .om.me{background:color-mix(in srgb,var(--orange) 12%,transparent);border-radius:8px;padding:2px 6px;margin:0 -6px}
+.oslot.hide{display:none}
 .mhist{display:flex;flex-direction:column;gap:8px}
 .mh{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:9px 12px 10px}
 .mh .mhh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
@@ -250,8 +273,14 @@ header.hd{padding:18px 2px 6px}
       <div id="courts"></div>
     </div>
 
-    <div class="slab"><h2>Live standings</h2><span class="rule"></span><span class="n">by wins</span></div>
+    <div class="slab"><h2 id="stdTitle">Live standings</h2><span class="rule"></span><span class="n" id="stdSub">by wins</span></div>
     <div class="board" id="liveBoard"></div>
+
+    <div id="oopWrap" hidden>
+      <div class="slab"><h2>Order of play</h2><span class="rule"></span><span class="n" id="oopN"></span></div>
+      <input class="oopfind" id="oopFind" type="search" placeholder="Cari nama kamu untuk lihat jadwal mainmu…" autocomplete="off"/>
+      <div class="oop" id="oopList"></div>
+    </div>
 
     <p class="note"><span class="refresh"><span class="spin"></span> Updating live · standings refresh automatically</span></p>
     <p class="note" style="margin-top:2px">Tap <b style="color:var(--orange)">Claim</b> next to your name to link this to your Trekkr passport.</p>
@@ -270,6 +299,11 @@ header.hd{padding:18px 2px 6px}
 
     <div class="slab"><h2>Podium</h2><span class="rule"></span></div>
     <div class="podium" id="podium"></div>
+
+    <div id="lgFinalWrap" hidden>
+      <div class="slab"><h2>League table</h2><span class="rule"></span><span class="n">W → PD → PF → H2H</span></div>
+      <div class="board" id="lgFinalBoard"></div>
+    </div>
 
     <div class="slab"><h2>Session analysis</h2><span class="rule"></span><span class="n">the numbers talk</span></div>
     <div class="acards" id="analysis"></div>
@@ -442,12 +476,60 @@ function liveRow(p,i){
     '<span class="wl">'+(p.w||0)+'<span class="l">–'+(p.l||0)+'</span></span>'+
   '</div>';
 }
+// ---- PlayRank League (fixed partner): pair table + order of play ----
+var FIND='';
+try{ FIND=localStorage.getItem('tk_live_find')||''; }catch(e){}
+function isLeague(d){ return d && d.mode==='league' && Array.isArray(d.teams); }
+function pairName(names){ return (names||[]).map(function(n){return esc(firstName(look(n).displayName||n));}).join(' &amp; '); }
+function hitsFind(names){
+  if(!FIND) return false; var q=FIND.toLowerCase();
+  return (names||[]).some(function(n){ var p=look(n); return String(n).toLowerCase().indexOf(q)>-1 || String(p.displayName||'').toLowerCase().indexOf(q)>-1; });
+}
+function leagueRow(t,i){
+  var rkc=i===0?'p1':i===1?'p2':i===2?'p3':'';
+  var pd=t.pd||0;
+  return '<div class="row lgrow'+(hitsFind(t.players)?' me':'')+'">'+
+    '<span class="rk '+rkc+'">'+(i+1)+'</span>'+
+    '<div class="pl"><div class="pn">'+pairName(t.players)+'</div>'+
+      '<div class="pmeta">'+(t.played||0)+' played · PF '+(t.pf||0)+' · PA '+(t.pa||0)+'</div></div>'+
+    '<span class="wl">'+(t.w||0)+'<span class="l">–'+(t.l||0)+'</span></span>'+
+    '<span class="pd '+(pd>0?'up':pd<0?'dn':'')+'">'+(pd>=0?'+':'')+pd+'</span>'+
+  '</div>';
+}
+function renderOrder(d){
+  var sched=d.schedule||[];
+  $('oopWrap').hidden=!sched.length;
+  if(!sched.length) return;
+  var mine=0;
+  $('oopN').textContent=(d.league&&d.league.matchesPerPair?d.league.matchesPerPair+' matches per pair · ':'')+sched.length+' slots';
+  $('oopList').innerHTML=sched.map(function(sl){
+    var any=false;
+    var rows=(sl.matches||[]).map(function(m){
+      var me=hitsFind(m.a)||hitsFind(m.b); if(me){any=true;mine++;}
+      var sc=(sl.status==='done'||sl.status==='now')&&m.sa!=null&&m.sb!=null?'<span class="sc">'+m.sa+'–'+m.sb+'</span>':'';
+      return '<div class="om'+(me?' me':'')+'"><span class="c">C'+esc(m.court)+'</span> '+pairName(m.a)+' <span class="vs">vs</span> '+pairName(m.b)+' '+sc+'</div>';
+    }).join('');
+    var st=sl.status==='done'?'Done':sl.status==='now'?'On court':'';
+    var hide=FIND&&!any;
+    return '<div class="oslot '+esc(sl.status||'')+(hide?' hide':'')+'"><div><div class="tm">'+esc(sl.time||'')+'</div><div class="st">'+st+'</div></div><div>'+rows+'</div></div>';
+  }).join('') + (FIND&&!mine?'<div class="byecard">No matches found for “'+esc(FIND)+'”.</div>':'');
+}
 function renderLive(d){
+  var lg=isLeague(d);
   $('liveSub').innerHTML =
     '<span>'+esc(d.venue||'Trekkr session')+'</span>'+
-    (d.gender?'<span class="chip">'+esc(genderLabel(d.gender))+'</span>':'')+
-    (d.round?'<span class="chip cy">Round '+esc(d.round)+'</span>':'');
+    (lg?'<span class="chip">League · Fixed Partner</span>':'')+
+    (d.gender?'<span class="chip">'+esc(d.gender==='MIXED'?'Mixed':genderLabel(d.gender))+'</span>':'')+
+    (d.round?'<span class="chip cy">'+(lg?'Slot ':'Round ')+esc(d.round)+(lg&&d.league?'/'+esc(d.league.slots):'')+'</span>':'');
   renderCourts(d);
+  if(lg){
+    $('stdTitle').textContent='League table';
+    $('stdSub').textContent='W → PD → PF → H2H';
+    $('liveBoard').innerHTML=d.teams.length?d.teams.map(leagueRow).join(''):'';
+    renderOrder(d);
+    return;
+  }
+  $('oopWrap').hidden=true;
   var s=sortStandings(d.players);
   $('liveBoard').innerHTML = s.length ? s.map(liveRow).join('')
     : '<div class="row"><span></span><div class="pl"><div class="pmeta">Waiting for the first scores…</div></div></div>';
@@ -561,10 +643,34 @@ function renderFinal(d){
 
   $('finalBoard').innerHTML=s.map(finalCard).join('');
   renderMatchHistory(d);
+  if(isLeague(d)) renderLeagueFinal(d);
 
   // Primary CTA → this venue/community's weekly ranking page (venue subdomain).
   var vslug=String(d.venue||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
   $('weeklyBtn').href = vslug ? ('https://venue.trekkr.online/'+vslug) : 'https://trekkr.online/venues';
+}
+
+// League final: pair podium + pair table; player ELO table stays below.
+function renderLeagueFinal(d){
+  var t=d.teams||[];
+  $('lgFinalWrap').hidden=!t.length;
+  $('lgFinalBoard').innerHTML=t.map(leagueRow).join('');
+  var pods=[t[1],t[0],t[2]], meds=['🥈','🥇','🥉'];
+  $('podium').innerHTML=pods.map(function(x,idx){
+    if(!x) return '<div></div>';
+    var ps=(x.players||[]).map(look);
+    return '<div class="pod'+(idx===1?' first':'')+'"><div class="medal">'+meds[idx]+'</div>'+
+      '<div class="pavs">'+ps.map(function(p){return avatar(p,'pav');}).join('')+'</div>'+
+      '<div class="pn">'+pairName(x.players)+'</div><div class="rec">'+(x.w||0)+'–'+(x.l||0)+' · '+((x.pd||0)>=0?'+':'')+(x.pd||0)+'</div></div>';
+  }).join('');
+  var top=t[0];
+  if(top){
+    var first=document.querySelector('#analysis .ac');
+    if(first) first.outerHTML=ac('🏆 League champions', (top.players||[]).map(function(n){return firstName(look(n).displayName||n);}).join(' & '), (top.w||0)+'–'+(top.l||0)+' · point diff '+((top.pd||0)>=0?'+':'')+(top.pd||0)+'.');
+  }
+  $('finalSub').innerHTML='<span>'+esc(d.venue||'Trekkr session')+'</span><span class="chip">League · Fixed Partner</span>'+
+    (d.gender?'<span class="chip">'+esc(d.gender==='MIXED'?'Mixed':genderLabel(d.gender))+'</span>':'')+
+    '<span class="chip cy">'+t.length+' pairs</span>';
 }
 
 function render(){
@@ -620,6 +726,17 @@ $('shareBtn').addEventListener('click',function(){
   else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ var b=$('shareBtn'); var o=b.textContent; b.textContent='Link copied ✓'; setTimeout(function(){b.textContent=o;},1600); }); }
   else window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank');
 });
+
+// order-of-play name search (remembered on this device)
+(function(){
+  var f=$('oopFind'); if(!f) return;
+  f.value=FIND;
+  f.addEventListener('input',function(){
+    FIND=f.value.trim();
+    try{ localStorage.setItem('tk_live_find',FIND); }catch(e){}
+    if(STATE&&STATE.data&&isLeague(STATE.data)&&STATE.status!=='final'){ $('liveBoard').innerHTML=STATE.data.teams.map(leagueRow).join(''); renderOrder(STATE.data); }
+  });
+})();
 
 // theme toggle
 $('themeBtn').addEventListener('click',function(){

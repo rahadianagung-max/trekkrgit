@@ -418,6 +418,24 @@ img{max-width:100%}
   function sortStd(a){return a.slice().sort(function(x,y){return (y.w-x.w)||(y.pd-x.pd)||(y.elo-x.elo);});}
   function nm(p){return p.displayName||p.name;}
 
+  // PlayRank League (fixed partner) helpers — the snapshot carries `teams`
+  // (pair table, already ranked W → PD → PF → H2H) and `schedule` (order of play).
+  function isLeague(d){ return d&&d.mode==='league'&&Array.isArray(d.teams); }
+  function avgDelta(names,players){
+    var by={}; (players||[]).forEach(function(p){by[p.name]=p;});
+    var ds=(names||[]).map(function(n){var p=by[n]||{};return (p.elo||0)-(p.start||p.elo||0);});
+    return ds.length?Math.round(ds.reduce(function(a,b){return a+b;},0)/ds.length):0;
+  }
+  function leagueNext(d){
+    var sched=d.schedule||[], i=0;
+    for(;i<sched.length;i++){ if(sched[i].status==='now') break; }
+    var nx=sched[i+1]; if(!nx) return '';
+    var byKey={}; (d.players||[]).forEach(function(p){byKey[p.name]=p;});
+    var pn=function(ns){return (ns||[]).map(function(n){return esc(first(nm(byKey[n]||{name:n})));}).join(' & ');};
+    return '<div class="byline">⏭ Up next · <b>'+esc(nx.time||'')+'</b> — '+(nx.matches||[]).map(function(m){
+      return 'C'+esc(m.court)+': <b>'+pn(m.a)+'</b> vs <b>'+pn(m.b)+'</b>';}).join(' · ')+'</div>';
+  }
+
   // LIVE (single-gender session): on-court schedule + live standings
   function sceneLive(){
     var d=(LIVE&&LIVE.session)||{}, players=d.players||[];
@@ -440,6 +458,24 @@ img{max-width:100%}
     }).join('');
     var bye=(d.bye||[]).map(function(k){return esc(nm(look(k)));});
     var byeHtml=bye.length?'<div class="byline">⏸ Resting this round: <b>'+bye.join(', ')+'</b></div>':'';
+    if(isLeague(d)){
+      var pn=function(ns){return (ns||[]).map(function(n){return esc(first(nm(look(n))));}).join(' & ');};
+      var lrows=d.teams.map(function(t,i){
+        var rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+        var pd=t.pd||0, pdc=pd>0?'var(--w)':pd<0?'var(--l)':'var(--faint)';
+        return '<div class="lrow '+(i<3?'top ':'')+rc+'"><span class="rk">'+(i+1)+'</span>'
+          +'<span class="pl"><span class="who"><div class="pn">'+pn(t.players)+'</div></span></span>'
+          +'<span class="wl"><span class="w">'+(t.w||0)+'</span><span class="s">/</span><span class="l">'+(t.l||0)+'</span></span>'
+          +'<span class="el" style="color:'+pdc+'">'+(pd>=0?'+':'')+pd+'</span></div>';
+      }).join('');
+      return '<div class="livewrap">'
+        +'<div class="panel"><div class="panel-h"><span class="t">On Court Now</span><span class="cnt">'+now.length+(now.length===1?' match':' matches')+'</span></div>'
+          +'<div class="courts">'+(courtsHtml||'<div class="col-empty">'+((d.schedule||[]).length&&(d.schedule||[]).every(function(x){return x.status==='done';})?'🏁 All league matches played':'Next slot loading…')+'</div>')+'</div>'+leagueNext(d)+'</div>'
+        +'<div class="panel"><div class="panel-h"><span class="t">League Table</span><span class="cnt">Pairs · W · L · PD</span></div>'
+          +'<div class="lrows">'+(lrows||'<div class="col-empty">Waiting for the first scores…</div>')+'</div>'
+          +'<div class="rulenote"><b>Ranking</b> = most wins → point difference (PD) → points for → head-to-head</div></div>'
+        +'</div>';
+    }
     var std=sortStd(players);
     var rowsHtml=std.map(function(p,i){
       var rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
@@ -462,6 +498,15 @@ img{max-width:100%}
   // PODIUM / champions (final within celebrate window)
   function scenePodium(){
     var d=(LIVE&&LIVE.session)||{}, recap=(LIVE&&LIVE.recap)||null, s=sortStd(d.players||[]);
+    // League: podium by pair; the ELO chip shows the pair's average change.
+    if(isLeague(d)){
+      var byK={}; (d.players||[]).forEach(function(p){byK[p.name]=p;});
+      s=d.teams.map(function(t){
+        var fs=(t.players||[]).map(function(n){return first(nm(byK[n]||{name:n}));});
+        var dl=avgDelta(t.players,d.players);
+        return {name:fs.join(' '),displayName:fs.join(' & '),photoUrl:'',w:t.w||0,l:t.l||0,elo:1000+dl,start:1000};
+      });
+    }
     var rh=recap&&recap.headline?esc(recap.headline):'Champions Crowned';
     var rl=recap&&recap.line?esc(recap.line):'That\'s a wrap on today\'s PlayRank session.';
     var med=['🥈','🥇','🥉'], stg=['s1','s2','s3'], tags=['Runner-up','Champion','Third'];
@@ -566,7 +611,10 @@ img{max-width:100%}
     if(scene==='live'){
       var d=(LIVE&&LIVE.session)||{};
       $('eyebrow').className='vk livek'; $('eyebrow').innerHTML='<span class="livedot"></span> Live Now · PlayRank';
-      $('persub').innerHTML=(d.round?'Round <b>'+esc(d.round)+'</b> · ':'')+(d.gender?esc(d.gender==='F'?"Women's":"Men's")+' · ':'')+'<b>'+(((d.players||[]).length))+'</b> players';
+      var gl=d.gender==='F'?"Women's":d.gender==='MIXED'?'Mixed':"Men's";
+      $('persub').innerHTML=isLeague(d)
+        ? 'League · '+(d.round?'Slot <b>'+esc(d.round)+'</b>'+(d.league?'/'+esc(d.league.slots):'')+' · ':'')+esc(gl)+' · <b>'+d.teams.length+'</b> pairs'
+        : (d.round?'Round <b>'+esc(d.round)+'</b> · ':'')+(d.gender?esc(gl)+' · ':'')+'<b>'+(((d.players||[]).length))+'</b> players';
     }else if(scene==='podium'){
       $('eyebrow').className='vk'; $('eyebrow').textContent='★ Session Complete';
       $('persub').innerHTML='PlayRank results · <b>'+esc(VENUE.name)+'</b>';
@@ -628,8 +676,15 @@ img{max-width:100%}
   function loadMonthly(){
     return fetchJSON(BASE+'/venues/'+encodeURIComponent(VENUE.name||SLUG)+'/monthly').then(function(d){ MONTHLY=d||null; }).catch(function(){});
   }
+  var liveStamp='';
   function loadLive(){
-    return fetchJSON(BASE+'/live/venue?venue='+encodeURIComponent(VENUE.name||SLUG)).then(function(d){ LIVE=d||{active:false}; }).catch(function(){ /* keep last */ });
+    return fetchJSON(BASE+'/live/venue?venue='+encodeURIComponent(VENUE.name||SLUG)).then(function(d){
+      LIVE=d||{active:false};
+      // The scene controller only re-renders on a queue change, so refresh the
+      // live/podium scene in place whenever the session data itself changed.
+      var st=JSON.stringify((LIVE&&LIVE.session)||null)+'|'+(LIVE&&LIVE.phase);
+      if(st!==liveStamp){ liveStamp=st; if(curScene==='live'||curScene==='podium') renderScene(curScene); }
+    }).catch(function(){ /* keep last */ });
   }
 
   /* ---------- boot ---------- */
