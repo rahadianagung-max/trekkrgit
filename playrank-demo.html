@@ -7,6 +7,8 @@
 <meta name="description" content="A public simulation of the Trekkr PlayRank engine — the same one venues use: set the format, auto-score each round, through to results & ELO. Example players, no login."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,800;0,900;1,900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/playrank-league.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 /* ── TREKKR DESIGN TOKENS ─────────────────────────────────────────────── */
@@ -441,10 +443,10 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
             <!-- PlayRank League (fixed partner) — only visible in league mode -->
             <div class="rm-card rm-league-only" id="rm-league-card" style="display:none">
               <div class="rm-card-label">PlayRank League · Fixed Partner</div>
-              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Pasangan tetap sepanjang sesi. Jadwal dibuat di awal supaya setiap pasangan main dengan jumlah match yang sama (bukan Mexicano).</p>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Partners stay together all session. The schedule is built up front so every pair plays the same number of matches (not Mexicano).</p>
               <div class="rm-grid2" style="gap:12px">
                 <div>
-                  <div class="rm-input-label">Jumlah pasangan</div>
+                  <div class="rm-input-label">Pairs</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('pairs',-1)">−</button>
                     <div class="rm-counter-val" id="rm-lg-pairs">14</div>
@@ -452,7 +454,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Durasi (jam)</div>
+                  <div class="rm-input-label">Duration (hours)</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('hours',-0.5)">−</button>
                     <div class="rm-counter-val" id="rm-lg-hours">4</div>
@@ -460,7 +462,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Menit per match</div>
+                  <div class="rm-input-label">Minutes per match</div>
                   <div class="rm-counter" style="max-width:none">
                     <button class="rm-counter-btn" onclick="rmLeagueChange('mins',-1)">−</button>
                     <div class="rm-counter-val" id="rm-lg-mins">17</div>
@@ -468,35 +470,27 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
                   </div>
                 </div>
                 <div>
-                  <div class="rm-input-label">Jam mulai</div>
+                  <div class="rm-input-label">Start time</div>
                   <input class="rm-input" id="rm-lg-start" type="time" value="19:00" onchange="rmLeagueSetStart(this.value)" style="text-align:center"/>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
-                <div style="flex:1">
-                  <div class="rm-input-label" style="margin-bottom:2px">Jumlah juara</div>
-                  <div style="font-size:11.5px;color:var(--txt3)" id="rm-lg-winners-hint">Top 3 pairs are named winners in the final result</div>
-                </div>
-                <div class="rm-counter" style="max-width:160px">
-                  <button class="rm-counter-btn" onclick="rmLeagueChange('winners',-1)">−</button>
-                  <div class="rm-counter-val" id="rm-lg-winners">3</div>
-                  <button class="rm-counter-btn" onclick="rmLeagueChange('winners',1)">+</button>
-                </div>
-              </div>
-              <div style="margin-top:14px;padding:12px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-mid);border-radius:var(--r-rm-sm)">
-                <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">💡 Rekomendasi engine</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <span style="font-size:13px;font-weight:600;color:var(--txt2);flex:1">Match per pasangan</span>
-                  <div class="rm-counter" style="max-width:160px">
-                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',-1)">−</button>
-                    <div class="rm-counter-val" id="rm-lg-k">4</div>
-                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',1)">+</button>
+              <div class="prl-rec">
+                <span class="prl-lbl" style="color:var(--prl-ink)">// Engine recommendation</span>
+                <div class="row">
+                  <div><span class="big" id="rm-lg-k">4</span> <span class="u">matches / pair</span></div>
+                  <div class="rm-counter" style="max-width:112px;background:#fff">
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',-1)" aria-label="Fewer matches per pair">−</button>
+                    <button class="rm-counter-btn" onclick="rmLeagueChange('k',1)" aria-label="More matches per pair">+</button>
                   </div>
                 </div>
-                <div style="font-size:12.5px;color:var(--txt);margin-top:8px;line-height:1.55" id="rm-lg-rec">—</div>
+                <div class="meta" id="rm-lg-rec">—</div>
               </div>
+              <div class="prl-sec" style="margin-top:16px"><span class="t"><span class="prl-sq"></span>Number of winners</span><span class="prl-chip g" id="rm-lg-winners">3</span></div>
+              <div class="prl-win" id="rm-lg-winbtns">
+                <button onclick="rmLeagueSetWinners(1)">1</button><button onclick="rmLeagueSetWinners(2)">2</button><button onclick="rmLeagueSetWinners(3)">3</button><button onclick="rmLeagueSetWinners(4)">4</button><button onclick="rmLeagueSetWinners(5)">5</button>
+              </div>
+              <p class="prl-note" id="rm-lg-winners-hint">Top 3 pairs are named winners in the final result</p>
             </div>
-
 
             <div class="rm-card">
               <div class="rm-card-label">Number of Courts</div>
@@ -642,6 +636,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
         <!-- ── SCREEN: MATCH ── -->
         <div class="rm-screen" id="rm-match">
           <div class="rm-match">
+            <div class="prl-tick" id="prl-tick" style="display:none"></div>
             <div class="rm-tabs">
               <button class="rm-tab active" id="rmtab-courts" onclick="rmSwitchTab('courts')">🎾 Courts</button>
               <button class="rm-tab" id="rmtab-leaderboard" onclick="rmSwitchTab('leaderboard')">🏆 Leaderboard</button>
@@ -713,6 +708,7 @@ body{margin:0;background:var(--bg-rm,#F5F5F7)}
         <!-- ── SCREEN: DONE ── -->
         <div class="rm-screen" id="rm-done">
           <div class="rm-done">
+            <div id="rm-done-league"></div>
             <div class="rm-done-hero">
               <div class="rm-done-emoji">🎉</div>
               <div class="rm-done-title">Trekkr PlayRank Complete!</div>
@@ -866,6 +862,12 @@ function rmGo(id) {
   document.querySelectorAll('.rm-screen').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   simSyncToolbar();
+  rmPrlSync(id);
+}
+function rmPrlSync(id){
+  const root=document.getElementById('rm-root'); if(!root) return;
+  const scr=id||((document.querySelector('.rm-screen.active')||{}).id||'').replace('rm-','');
+  root.classList.toggle('prl', RM.format==='league' && scr!=='intro');
 }
 function rmShowErr(elId, msg){const el=document.getElementById(elId);el.textContent=msg;el.classList.remove('hidden');}
 function rmHideErr(elId){document.getElementById(elId).classList.add('hidden');}
@@ -922,6 +924,7 @@ function rmSetFormat(f) {
   if (lg) { if (RM.scoreFormat === 'bestof' && RM.scoreTarget !== 5) { RM.scoreTarget = 5; } }
   ['individual','league'].forEach(x=>{const b=document.getElementById('rm-mode-'+x); if(b) b.classList.toggle('active',x===RM.format);});
   rmChangeCourts(0);
+  rmPrlSync();
 }
 function rmSetScoreFormat(sf) {
   RM.scoreFormat = sf;
@@ -1067,7 +1070,7 @@ function rmRenderPlayers() {
         <div style="font-size:13px;color:var(--txt3);margin-bottom:10px">No player "<strong style="color:var(--on)">${q}</strong>"</div>
         ${hasLast ? `<button class="rm-add-btn" onclick="rmOpenAdd('${q.replace(/'/g,"\\'")}')">
           ${rmAva(suggestion,42,16)}
-          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Tambah "${suggestion}"</div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--blue)">Add "${suggestion}"</div>
           <div style="font-size:11px;color:var(--txt3);margin-top:2px">Register as a new player · starting ELO ${RM.startElo} (${rmTier(RM.startElo)})</div></div>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="var(--blue)"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
         </button>` : `<div style="font-size:12px;color:var(--gold);padding:10px;background:var(--gold-lt);border-radius:8px">💡 Type a first and last name to add a new player. Example: "Budi Santoso"</div>`}
@@ -1333,8 +1336,9 @@ function rmLeagueRenderSetup(){
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
   set('rm-lg-pairs',L.pairs); set('rm-lg-hours',L.hours); set('rm-lg-mins',L.mins); set('rm-lg-k',plan.k);
   L.winners=rmLeagueWinners(L.pairs);
-  set('rm-lg-winners',L.winners);
-  set('rm-lg-winners-hint',L.winners===1?'Only the champion pair is named in the final result':`Top ${L.winners} pairs are named winners (Juara 1–${L.winners}) in the final result`);
+  set('rm-lg-winners',L.winners+(L.winners===1?' winner':' winners'));
+  document.querySelectorAll('#rm-lg-winbtns button').forEach((b,i)=>b.classList.toggle('on',i+1===L.winners));
+  set('rm-lg-winners-hint',L.winners===1?'Only the champion pair is named in the final result':`Top ${L.winners} pairs are named winners (1st–${rmOrdinal(L.winners)} place) in the final result`);
   const st=document.getElementById('rm-lg-start'); if(st&&st.value!==L.start) st.value=L.start;
   const rec=document.getElementById('rm-lg-rec'); if(rec) rec.innerHTML=rmLeaguePlanText(plan);
 }
@@ -1351,6 +1355,7 @@ function rmLeagueChange(field,d){
   }
   rmLeagueRenderSetup(); rmUpdateStartBtn(); rmUpdateRec();
 }
+function rmLeagueSetWinners(n){ RM.league.winners=Math.max(1,Math.min(5,n)); rmLeagueRenderSetup(); }
 function rmLeagueSetStart(v){ if(/^\d{1,2}:\d{2}$/.test(v)) RM.league.start=v; rmLeagueRenderSetup(); }
 function rmLeagueTeamsPlan(){
   const box=document.getElementById('rm-teams-plan'); if(!box) return;
@@ -1359,10 +1364,13 @@ function rmLeagueTeamsPlan(){
   box.style.display='block';
   box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💡 League plan</div>'+rmLeaguePlanText(rmLeaguePlan(T));
 }
-// Number of winner places (Juara 1..N): 1–5, never more than the pairs playing.
+// Number of winner places (1st..Nth): 1–5, never more than the pairs playing.
 function rmLeagueWinners(T){ return Math.max(1,Math.min(5,RM.league.winners||3,T||RM.league.pairs||5)); }
 const RM_MEDALS=['🥇','🥈','🥉','🏅','🏅'];
-function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">JUARA ${i+1}</span>`:''; }
+function rmOrdinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
+// Place label for winner index i (0-based): Champion, Runner-up, 3rd place, 4th place, 5th place.
+function rmPlaceName(i){ return i===0?'Champion':i===1?'Runner-up':rmOrdinal(i+1)+' place'; }
+function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">${rmPlaceName(i).toUpperCase()}</span>`:''; }
 function rmTeamName(t){ return (t&&t.players?t.players:[]).map(n=>String(n).split(' ')[0]).join(' & '); }
 function rmTeamElo(t){ return t.players.reduce((s,n)=>s+(((RM.playerStats[n]||RM.selectedPlayers.find(p=>p.name===n)||{}).elo)||RM.startElo),0); }
 
@@ -1702,13 +1710,15 @@ function rmRenderMatchScreen() {
   document.getElementById('rm-round-pill').textContent=lg?`Slot ${round.roundNum}/${total} · ${rmLeagueClock(round.roundNum-1)}`:`Round ${round.roundNum}`;
   document.getElementById('rm-lb-badge').textContent=lg?`Slot ${round.roundNum}/${total}`:`Round ${round.roundNum}`;
   const sub=document.getElementById('rm-submit-btn');
+  rmPrlTick(round,total);
   if(lg && round.submitted){
     // Whole schedule played: nothing left to score — show the finish panel.
     document.getElementById('rm-courts-progress').textContent=`${total}/${total} slots`;
-    document.getElementById('rm-court-cards').innerHTML=`<div class="rm-court-card" style="text-align:center;padding:22px 16px">
-      <div style="font-size:34px">🏁</div>
-      <div style="font-family:'Saira Condensed',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;margin-top:4px">All league matches played</div>
-      <div style="font-size:13px;color:var(--txt2);margin-top:6px">Every pair played ${RM.league.kPlayed||''} matches. Tap <b>End Match</b> to record results &amp; ELO.</div></div>`;
+    document.getElementById('rm-court-cards').innerHTML=`<div class="prl-card o">
+      <div class="prl-chips"><span class="prl-chip v">Schedule complete</span><span class="prl-chip k">${total} slots</span></div>
+      <span class="prl-lbl">// League finished</span>
+      <h2 class="prl-h1">All matches <span>played</span></h2>
+      <p class="prl-sub">Every pair played ${RM.league.kPlayed||''} matches. Tap <b>End Match</b> to record results &amp; ELO.</p></div>`;
     document.getElementById('rm-bye-section').style.display='none';
     document.getElementById('rm-league-next').style.display='none';
     if(sub) sub.style.display='none';
@@ -1730,16 +1740,16 @@ function rmRenderMatchScreen() {
       <div class="rm-score-row">
         <div class="rm-score-team">
           <div class="rm-score-team-name">${m.team1.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
-          <input class="rm-score-input" id="rm-s1-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+          ${lg?`<div class="prl-sc"><button type="button" onclick="rmBumpScore(${i},1,-1)" aria-label="Minus">−</button>`:''}<input class="rm-score-input${lg&&m.score1!==null&&m.score1>m.score2?' prl-w':''}" id="rm-s1-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
             value="${m.score1!==null?m.score1:''}" oninput="rmUpdateScore(${i})"
-            style="${m.score1!==null&&m.score1>m.score2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score1!==null&&m.score1<m.score2?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+            style="${m.score1!==null&&m.score1>m.score2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score1!==null&&m.score1<m.score2?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>${lg?`<button type="button" onclick="rmBumpScore(${i},1,1)" aria-label="Plus">+</button></div>`:''}
         </div>
         <div class="rm-score-vs">VS</div>
         <div class="rm-score-team">
           <div class="rm-score-team-name">${m.team2.map(p=>`<div>${p.name.split(' ')[0]}</div>`).join('')}</div>
-          <input class="rm-score-input" id="rm-s2-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
+          ${lg?`<div class="prl-sc"><button type="button" onclick="rmBumpScore(${i},2,-1)" aria-label="Minus">−</button>`:''}<input class="rm-score-input${lg&&m.score2!==null&&m.score2>m.score1?' prl-w':''}" id="rm-s2-${i}" type="number" min="0" max="${RM.scoreTarget}" placeholder="0"
             value="${m.score2!==null?m.score2:''}" oninput="rmUpdateScore(${i})"
-            style="${m.score2!==null&&m.score2>m.score1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score2!==null&&m.score2<m.score1?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>
+            style="${m.score2!==null&&m.score2>m.score1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':m.score2!==null&&m.score2<m.score1?'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)':''}"/>${lg?`<button type="button" onclick="rmBumpScore(${i},2,1)" aria-label="Plus">+</button></div>`:''}
         </div>
       </div>
     </div>`).join('');
@@ -1755,15 +1765,33 @@ function rmRenderMatchScreen() {
     const next=(RM.league.schedule||[])[round.roundNum];
     const tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
     nx.style.display='block';
-    nx.innerHTML=next?`<div class="rm-bye-card" style="border-color:var(--blue-mid);background:var(--blue-lt)">
-        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">⏭ Up next · ${rmLeagueClock(round.roundNum)}</div>
-        ${next.map(m=>`<div style="font-size:13px;padding:3px 0"><b>Court ${m.court}</b> · ${tn(m.a)} <span style="color:var(--txt3)">vs</span> ${tn(m.b)}</div>`).join('')}
-      </div>`:`<div class="rm-bye-card"><div style="font-size:12px;font-weight:700;color:var(--gold)">🏁 Last slot of the league</div></div>`;
+    nx.innerHTML=next?`<div class="prl-next">
+        <div class="h">⏭ Up next · ${rmLeagueClock(round.roundNum)}</div>
+        ${next.map(m=>`<div class="m"><i>C${m.court}</i> · ${tn(m.a)} <span style="color:var(--prl-muted)">vs</span> ${tn(m.b)}</div>`).join('')}
+      </div>`:`<div class="prl-next"><div class="h">🏁 Last slot of the league</div></div>`;
   } else nx.style.display='none';
 
   rmUpdateFairBar();
   rmUpdateLiveBar();
   rmDemoPublish(false);
+}
+function rmPrlTick(round,total){
+  const el=document.getElementById('prl-tick'); if(!el) return;
+  if(RM.format!=='league'){ el.style.display='none'; return; }
+  const done=round&&round.submitted;
+  el.style.display='flex';
+  el.innerHTML=done
+    ?`<span class="l"><span class="v">League finished</span> <span class="d">// ready to end</span></span><span class="r">${total} slots</span>`
+    :`<span class="l"><span class="prl-dot"></span><span class="v">Live</span> <span class="d">// Slot ${round.roundNum}/${total}</span></span><span class="r">${rmLeagueClock(round.roundNum-1)} · ${RM.courts} courts</span>`;
+}
+function rmBumpScore(i,side,d){
+  const el=document.getElementById(`rm-s${side}-${i}`); if(!el) return;
+  const cap=RM.scoreFormat==='bestof'?Math.ceil(RM.scoreTarget/2):RM.scoreTarget;
+  const v=Math.max(0,Math.min(cap,(parseInt(el.value)||0)+d));
+  el.value=v;
+  const other=document.getElementById(`rm-s${side===1?2:1}-${i}`);
+  if(other&&other.value==='') other.value=0;
+  rmUpdateScore(i);
 }
 function rmUpdateScore(courtIdx) {
   const round=RM.rounds[RM.currentRound];
@@ -1775,6 +1803,7 @@ function rmUpdateScore(courtIdx) {
   if(!isNaN(s1)&&!isNaN(s2)){
     i1.style.cssText=s1>s2?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
     i2.style.cssText=s2>s1?'border-color:var(--green);background:var(--green-lt);color:var(--green)':'border-color:var(--red-lt);background:var(--red-lt);color:var(--red)';
+    i1.classList.toggle('prl-w',s1>s2); i2.classList.toggle('prl-w',s2>s1);
     document.getElementById(`rm-court-status-${courtIdx}`).className='rm-court-status-done';
     document.getElementById(`rm-court-status-${courtIdx}`).textContent='✓ Done';
   }
@@ -1860,35 +1889,20 @@ function rmGetLeaderboard(){
 }
 function rmRenderLeagueLeaderboard(el){
   const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
-  el.innerHTML=`<div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Ranked by wins → point diff → points for → head-to-head · top ${W} = Juara</div>`+rows.map((t,i)=>{
-    const rankClass=i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
-    return `<div class="rm-lb-row ${rankClass}" style="${i===W-1&&i<rows.length-1?'border-bottom:2px dashed var(--gold);':''}">
-      <div class="rm-lb-rank">${i<W?RM_MEDALS[i]:i+1}</div>
-      <div style="display:flex">${rmAva(t.players[0],30,11)}<div style="margin-left:-8px">${rmAva(t.players[1]||'?',30,11)}</div></div>
-      <div style="flex:1;min-width:0">
-        <div class="rm-lb-name">${t.name}${rmWinnerBadge(i,W)}</div>
-        <div class="rm-lb-elo">${t.played} played · PF ${t.pf} · PA ${t.pa}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="rm-lb-wl">${t.w}W – ${t.l}L</div>
-        <div class="rm-lb-diff" style="color:${t.pd>=0?'var(--green)':'var(--red)'}">${t.pd>=0?'+':''}${t.pd}</div>
-      </div>
-    </div>`;
-  }).join('');
+  el.innerHTML=`<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Standings</span><span class="prl-chip g">W → PD → PF → H2H</span></div>`
+    +rmPrlTable(rows,W,rows.length)
+    +`<p class="prl-note">Orange line = winners cut-off (top ${W}) · ELO = pair average, Δ this session</p>`;
 }
 function rmLeagueOrderHtml(){
   const sched=RM.league.schedule||[], tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
-  return `<div style="background:var(--sur-0);border:1px solid rgba(115,118,136,.1);border-radius:var(--r-lg);padding:16px;margin-bottom:16px">
-    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-v);margin-bottom:10px">Order of play · ${sched.length} slots</div>
-    ${sched.map((slot,si)=>{
+  return `<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Order of play</span><span class="prl-chip g">${sched.length} slots</span></div>`
+    +sched.map((slot,si)=>{
       const r=RM.rounds[si], st=r&&r.submitted?'done':(si===RM.currentRound?'now':'');
-      return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--sur-hi);font-size:12px;${st==='done'?'opacity:.6':''}">
-        <div style="width:48px;flex:none;font-weight:800;color:${st==='now'?'var(--blue)':'var(--on)'}">${rmLeagueClock(si)}${st==='now'?'<div style="font-size:9.5px">NOW</div>':''}</div>
-        <div style="flex:1">${slot.map((m,mi)=>{
-          const rm=r&&r.matches[mi], sc=rm&&rm.score1!=null&&r.submitted?` <b>${rm.score1}–${rm.score2}</b>`:'';
-          return `<div>C${m.court} · ${tn(m.a)} <span style="color:var(--txt3)">vs</span> ${tn(m.b)}${sc}</div>`;}).join('')}</div>
-      </div>`;}).join('')}
-  </div>`;
+      return `<div class="prl-slot ${st}"><div class="tm"><b>${rmLeagueClock(si)}</b><span>${st==='done'?'Done':st==='now'?'On court':''}</span></div><div class="ms">`
+        +slot.map((m,mi)=>{ const rm=r&&r.matches[mi], sc=rm&&rm.score1!=null&&r.submitted?`<span class="s">${rm.score1}–${rm.score2}</span>`:'';
+          return `<div class="mm"><span class="c">C${m.court}</span>${tn(m.a)} <span class="x">vs</span> ${tn(m.b)}${sc}</div>`; }).join('')
+        +`</div></div>`;
+    }).join('');
 }
 function rmStoryStart(name){
   const ps=RM.playerStats[name];
@@ -1896,35 +1910,87 @@ function rmStoryStart(name){
   const s=RM.selectedPlayers.find(p=>p.name===name);
   return s?(s.elo||RM.startElo):RM.startElo;
 }
+// ── League final recap (brutalist): champion card, podium, telemetry, table, share ──
+function rmPairShort(players){ return players.map(n=>{const w=String(n).split(' ');return w[0]+(w[1]?' '+w[1][0]+'.':'');}).join(' / '); }
+function rmPairElo(players,byName){
+  const ps=players.map(n=>(byName&&byName[n])||RM.playerStats[n]||{});
+  const elo=Math.round(ps.reduce((a,p)=>a+(p.elo||RM.startElo),0)/Math.max(1,ps.length));
+  const d=Math.round(players.reduce((a,n,i)=>a+((ps[i].elo||0)-rmStoryStart(n)),0)/Math.max(1,players.length));
+  return {elo,d};
+}
+function rmPrlDelta(d){ return d>0?`<span class="up">+${d}</span>`:d<0?`<span class="dn">${d}</span>`:`<span style="color:var(--prl-muted)">0</span>`; }
+function rmPrlTable(rows,W,visible,byName){
+  const tr=(t,i)=>{ const e=rmPairElo(t.players,byName);
+    const cls='prl-tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+(i<W?' wz':'')+(i===W-1&&i<rows.length-1?' cut':'')+(i>=visible?' prl-more':'');
+    return `<div class="${cls}"><span class="p">${String(i+1).padStart(2,'0')}</span><div class="n"><b>${rmPairShort(t.players)}</b><span>${i<W?rmPlaceName(i):t.played+' played'}</span></div>`
+      +`<span class="c">${t.w}-${t.l}</span><span class="c" style="color:${t.pd>0?'var(--prl-orange)':'var(--prl-muted)'}">${t.pd>0?'+':''}${t.pd}</span>`
+      +`<div class="e"><b>${e.elo}</b>${rmPrlDelta(e.d)}</div></div>`; };
+  return `<div class="prl-tbl" id="prl-tbl"><div class="prl-th"><span>Pos</span><span>Pair</span><span>W-L</span><span>PD</span><span>ELO</span></div>${rows.map(tr).join('')}</div>`;
+}
+function rmPrlUrl(){ return location.origin+'/live/demo'; }  // demo: local player link
+function rmPrlTvUrl(){ return '/playrank-demo/tv'; }  // demo: local venue TV
+function rmPrlCopy(btn){ const u=rmPrlUrl(); if(!u) return; const ok=()=>{btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1600);};
+  if(navigator.clipboard) navigator.clipboard.writeText(u).then(ok).catch(()=>window.prompt('Copy link:',u)); else window.prompt('Copy link:',u); }
+function rmPrlWA(){
+  const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
+  const txt='🏆 PlayRank League results'+(RM.venue?' · '+RM.venue:'')+'\n'+rows.slice(0,W).map((t,i)=>`${i+1}. ${t.name} (${t.w}W-${t.l}L, ${t.pd>=0?'+':''}${t.pd})`).join('\n')+(rmPrlUrl()?'\n\nFull recap: '+rmPrlUrl():'');
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+function rmPrlTV(){ window.open(rmPrlTvUrl(),'_blank'); }
+function rmPrlMore(btn){ const t=document.getElementById('prl-tbl'); if(!t) return; t.classList.toggle('open'); btn.firstChild.textContent=t.classList.contains('open')?'Show less ':'Show all pairs '; }
 function rmRenderLeagueDone(standings){
-  const table=rmLeagueTable();
+  const table=rmLeagueTable(), T=table.length, W=rmLeagueWinners(T);
   const byName={}; (standings||[]).forEach(p=>{byName[p.name]=p;});
-  const eloLine=n=>{ const p=byName[n]||RM.playerStats[n]||{}; const d=Math.round((p.elo||0)-rmStoryStart(n));
-    return `${String(n).split(' ')[0]} ${p.elo||''} <span style="color:${d>=0?'var(--green)':'var(--red)'}">${d>=0?'▲+':'▼'}${d}</span>`; };
-  const pod=(t,crown,h,bg,big)=>t?`<div class="rm-podium-slot">
-      <div class="rm-podium-crown">${crown}</div>
-      <div style="display:flex;justify-content:center">${rmAva(t.players[0],big?52:42,big?18:14)}<div style="margin-left:-12px">${rmAva(t.players[1]||'?',big?52:42,big?18:14)}</div></div>
-      <div class="rm-podium-name" style="${big?'font-weight:800':''}">${t.name}</div>
-      <div class="rm-podium-base" style="height:${h}px;background:${bg};width:96px">${big?'🥇':''}</div>
-    </div>`:'';
-  // Podium shows as many places as there are winners (max 3); Juara 4–5 are
-  // flagged in the standings below.
-  const W=rmLeagueWinners(table.length);
-  document.getElementById('rm-podium').innerHTML=(W>=2?pod(table[1],'🥈',52,'rgba(148,163,184,.25)'):'')+pod(table[0],'👑',68,'rgba(245,158,11,.25)',true)+(W>=3?pod(table[2],'🥉',40,'rgba(180,131,80,.25)'):'');
-  const sub=document.getElementById('rm-done-sub');
-  if(sub) sub.textContent+=` · ${W===1?'1 champion':W+' winners'}`;
-  document.getElementById('rm-final-standings').innerHTML=table.map((t,i)=>`
-    <div class="rm-rank-row" style="${i<W?'background:var(--gold-lt);border-radius:10px;padding-left:8px;padding-right:8px;':''}${i===W-1&&i<table.length-1?'border-bottom:2px dashed var(--gold);':''}">
-      <div class="rm-rank-num" style="color:${i===0?'#FFB000':i===1?'#9A9AA2':i===2?'#CD7F32':i<W?'var(--gold)':'rgba(148,163,184,.5)'}">${i<W?RM_MEDALS[i]:i+1}</div>
-      <div style="flex:1;min-width:0">
-        <div class="rm-rank-name">${t.name}${rmWinnerBadge(i,W)}</div>
-        <div class="rm-rank-meta">${t.players.map(eloLine).join(' · ')}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="rm-rank-wl">${t.w}W ${t.l}L</div>
-        <div class="rm-rank-diff" style="color:${t.pd>=0?'var(--green)':'var(--red)'}">${t.pd>=0?'+':''}${t.pd} pts</div>
-      </div>
-    </div>`).join('');
+  document.querySelector('#rm-root .rm-done').classList.add('prl-on');
+  const k=RM.league.kPlayed||(table[0]?table[0].played:0);
+  const cat=RM.gender==='F'?'Women':RM.gender==='MIXED'?'Mixed':'Men';
+  const played=RM.rounds.filter(r=>r.submitted);
+  const matches=played.flatMap(r=>r.matches).filter(m=>m.score1!=null&&m.score2!=null);
+  const lastAt=played.length?played[played.length-1].submittedAt:0;
+  const fin=lastAt?(d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'))(new Date(lastAt)):rmLeagueClock(played.length);
+  const gain=Object.values(RM.playerStats).map(p=>({n:p.name,d:Math.round(((byName[p.name]||p).elo||0)-rmStoryStart(p.name))})).sort((a,b)=>b.d-a.d)[0];
+  const tight=matches.slice().sort((a,b)=>Math.abs(a.score1-a.score2)-Math.abs(b.score1-b.score2)||(b.score1+b.score2)-(a.score1+a.score2))[0];
+  const nm=ps=>ps.map(p=>p.name.split(' ')[0]).join('/');
+  const c=table[0], ce=c?rmPairElo(c.players,byName):{elo:0,d:0};
+  const tile=(t,i)=>{ if(!t) return ''; const e=rmPairElo(t.players,byName);
+    return `<div class="prl-tile"><div class="top"><span class="no${i===1?'':' b'}">${String(i+1).padStart(2,'0')}</span><span class="prl-chip ${i===1?'v':'g'}">${e.d>=0?'+':''}${e.d} ELO</span></div>`
+      +`<span class="prl-lbl" style="color:${i===1?'var(--prl-orange)':'var(--prl-muted)'}">${rmPlaceName(i)}</span><h5>${t.name}</h5>`
+      +`<div class="ft"><span>${t.w}W - ${t.l}L</span><span>${t.pd>=0?'+':''}${t.pd} diff</span></div></div>`; };
+  const url=rmPrlUrl();
+  document.getElementById('rm-done-league').innerHTML=`<div class="prl" style="padding:4px 2px 8px">
+    <div class="prl-tick"><span class="l"><span class="v">League finished</span> <span class="d">// final recap</span></span><span class="r">${played.length} slots · ${matches.length} match</span></div>
+    <div class="prl-card">
+      <div class="prl-chips"><span class="prl-chip v">League finished · ${k} match/pair</span><span class="prl-chip k">${T} pairs · ${RM.courts} courts</span></div>
+      <span class="prl-lbl">// Official league classification</span>
+      <h2 class="prl-h1">${W===1?'Champion':'Champions'}<br><span>${W===1?'League winner':'Top '+W}</span></h2>
+      <p class="prl-sub">🎉 Congratulations to the ${W===1?'champion':'winners'}! PlayRank League · Fixed Partner (${cat})${RM.venue?' · '+RM.venue:''}</p>
+      <div class="prl-foot"><span>● Trekkr ELO ratings updated</span><span>${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</span></div>
+    </div>
+    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Championship podium</span><span class="prl-chip g">${W} ${W===1?'winner':'winners'}</span></div>
+    ${c?`<div class="prl-card o" style="overflow:hidden"><div class="prl-wm">01</div><div class="prl-champ">
+      <div class="top"><div class="prl-chips" style="margin:0"><span class="prl-chip o">🏆 Champion</span><span class="prl-chip k" style="color:var(--prl-volt)">${c.l===0?'Undefeated':'Record'} // ${c.w}-${c.l}</span></div>
+      <span class="prl-chip v" style="border-width:2px;box-shadow:2px 2px 0 var(--prl-ink)">${ce.d>=0?'↗ +':'↘ '}${ce.d} ELO</span></div>
+      <h4>${c.players.join(' &amp; ')}</h4><p class="tag">■ ${c.played} matches · ${c.played} different opponents</p>
+      <div class="prl-stat4"><div><span class="prl-lbl">Rating</span><b>${ce.elo}</b></div><div><span class="prl-lbl">Record</span><b style="color:var(--prl-orange)">${c.w}-${c.l}</b></div><div><span class="prl-lbl">Point diff</span><b>${c.pd>=0?'+':''}${c.pd}</b></div><div><span class="prl-lbl">Points</span><b>${c.pf}-${c.pa}</b></div></div>
+    </div></div>`:''}
+    ${W>=2?`<div class="prl-2" style="margin-bottom:14px">${tile(table[1],1)}${W>=3?tile(table[2],2):''}</div>`:''}
+    <div class="prl-card court"><div class="prl-sec" style="border-bottom:2px solid var(--prl-ink);padding-bottom:6px;margin-top:0"><span class="t">📊 Stat highlights</span><span class="prl-lbl">// Telemetry</span></div>
+      <div class="prl-tele">
+        <div><span class="prl-lbl">Total matches</span><b>${matches.length}</b><span class="s">${played.length} slots · ${RM.courts} courts</span></div>
+        <div><span class="prl-lbl">Finished</span><b style="color:var(--prl-orange)">${fin}</b><span class="s">Started ${RM.league.start||''}</span></div>
+        <div><span class="prl-lbl">ELO gainer</span><b class="nm">${gain?gain.n:'—'}</b>${gain?`<span class="prl-chip v" style="margin-top:3px">${gain.d>=0?'+':''}${gain.d} ELO</span>`:''}</div>
+        <div><span class="prl-lbl">Closest match</span><b>${tight?tight.score1+' - '+tight.score2:'—'}</b><span class="s">${tight?nm(tight.team1)+' vs '+nm(tight.team2):''}</span></div>
+      </div></div>
+    <div class="prl-sec"><span class="t"><span class="prl-sq"></span>Final standings</span><span class="prl-chip g">${T} pairs</span></div>
+    ${rmPrlTable(table,W,8,byName)}
+    ${T>8?`<button class="prl-btn w sm" style="margin:10px 0 14px" onclick="rmPrlMore(this)">Show all pairs <span>▾</span></button>`:'<div style="height:14px"></div>'}
+    <div class="prl-card"><span class="prl-lbl" style="color:var(--prl-orange)">// Player link &amp; TV</span>
+      <h4 style="margin:2px 0 0;font:900 14px var(--prl-sans);text-transform:uppercase">Share results</h4>
+      ${url?`<div class="prl-url"><span>🔗 ${url.replace(/^https?:\/\//,'')}</span><button onclick="rmPrlCopy(this)">Copy</button></div>`:'<div style="height:10px"></div>'}
+      <div class="prl-2"><button class="prl-btn wa sm" onclick="rmPrlWA()">➤ WhatsApp</button><button class="prl-btn v sm" onclick="rmPrlTV()">📺 Venue TV</button></div></div>
+    <button class="prl-btn" onclick="rmNewMatch()">＋ Start new league →</button>
+    <div class="prl-links"><button onclick="rmShareStory()">📸 IG Story</button><span>/ /</span><button onclick="window.open('https://trekkr.online/rankings','_blank')">🏅 Player ratings</button></div>
+  </div>`;
 }
 function rmRenderLeaderboard(){
   const el0=document.getElementById('rm-lb-list');
@@ -1969,7 +2035,7 @@ function rmShowEndConfirm(){
   if(RM.format==='league'){
     if(!rmLeagueCanEnd()){ rmSetStatus('failed','End Match unlocks when every pair has played the same number of matches.'); return; }
     const tbl=rmLeagueTable(), W=rmLeagueWinners(tbl.length);
-    document.getElementById('rm-end-top3').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${W===1?'Champion':'Juara 1–'+W}</div>`+tbl.slice(0,W).map((t,i)=>`
+    document.getElementById('rm-end-top3').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${W===1?'Champion':'Top '+W}</div>`+tbl.slice(0,W).map((t,i)=>`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <span>${RM_MEDALS[i]}</span>
         <span style="font-size:13px;font-weight:700;flex:1">${t.name}</span>
@@ -1997,6 +2063,7 @@ function rmEndMatch(){
   rmGo('done');
 }
 function rmRenderDoneScreen(standings){
+  { const dn=document.querySelector('#rm-root .rm-done'); if(dn) dn.classList.toggle('prl-on',RM.format==='league'); }
   const doneRounds=RM.rounds.filter(r=>r.submitted).length;
   const now=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('rm-done-sub').textContent=RM.format==='league'
@@ -2106,6 +2173,7 @@ function simOneRound(){
 }
 function simReset(){
   SIM.running=false;
+  { const dn=document.querySelector('#rm-root .rm-done'); if(dn) dn.classList.remove('prl-on'); }
   try{ localStorage.removeItem(RM_DEMO_LIVE_KEY); }catch(e){}
   RM.selectedPlayers=[]; RM.playerStats={}; RM.rounds=[]; RM.currentRound=0; RM.teams=[];
   RM.league.schedule=[]; RM.league.kPlayed=0; RM.league.winners=3;
