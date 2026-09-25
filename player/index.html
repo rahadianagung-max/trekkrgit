@@ -1362,6 +1362,23 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     if(hasBadges && !badges.some(function(b){return b.earned;})) abody+='<div class="pp2-exp-t">No badges earned yet — keep playing!</div>';
     h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
   }
+  // Tournament results (podium + round reached) — recorded by turnamenpadel.
+  var achs=(d&&d.achievements)||[];
+  if(achs.length){
+    var ppE=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    var EMO={"Juara 1":"🥇","Juara 2":"🥈","Juara 3":"🥉","Peringkat 4":"4️⃣","Semifinalis":"🎖️","Perempatfinalis":"🎾"};
+    var arows=achs.map(function(a){
+      var em=EMO[a.placement]||'🏅';
+      var cat=[a.category,a.level].filter(Boolean).join(' · ');
+      return '<div class="pp2-hrow">'
+        +'<div class="hres" style="background:rgba(255,106,0,.1);color:var(--primary);font-size:20px">'+em+'</div>'
+        +'<div class="hmid"><div class="hp">'+ppE(a.placement)+'</div>'
+        +(cat?'<div class="hsub">'+ppE(cat)+'</div>':'')
+        +'<div class="hd">'+ppE(a.eventName||'')+(a.date?(' · '+ppFmtDate(a.date)):'')+'</div></div></div>';
+    }).join('');
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppAch\')"><div class="t"><span class="em">🏆</span> Tournament results <span class="ct">· '+achs.length+'</span></div><span class="cv">›</span></div>'
+      +'<div class="pp2-accbody" id="ppAch" hidden><div class="pp2-hist">'+arows+'</div></div></div>';
+  }
   // ELO progress
   if(history && history.length>1){
     h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="pp-chart" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div></div></div>';

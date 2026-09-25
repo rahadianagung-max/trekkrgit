@@ -1790,7 +1790,20 @@ async function getPlayerDetail(name) {
     else if (history[i].delta < 0) { if (streakType === "" || streakType === "L") { streak++; streakType = "L"; } else break; }
   }
 
-  return respond(200, { player, stats: { currentElo, unrated, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history });
+  // Tournament achievements (podium + round reached), recorded by turnamenpadel.
+  // Additive: absence of the tab/rows just yields an empty list.
+  let achievements = [];
+  try {
+    const aRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `Achievements!A2:K` });
+    achievements = (aRes.data.values || [])
+      .filter((r) => aliasSet.has(normName(r[0])) || aliasSet.has(normName(r[1])))
+      .map((r) => ({ eventId: r[2] || "", eventName: r[3] || "", category: r[4] || "", level: r[5] || "", placement: r[7] || "", stage: r[8] || "", date: r[9] || "" }));
+    // Best placement first, then most recent.
+    const RANK = { "Juara 1": 1, "Juara 2": 2, "Juara 3": 3, "Peringkat 4": 4, "Semifinalis": 5, "Perempatfinalis": 6 };
+    achievements.sort((a, b) => (RANK[a.placement] || 9) - (RANK[b.placement] || 9) || String(b.date).localeCompare(String(a.date)));
+  } catch (e) { achievements = []; }
+
+  return respond(200, { player, stats: { currentElo, unrated, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history, achievements });
 }
 
 // Return a single player's matches across all venue tabs, de-duplicated, in ONE
