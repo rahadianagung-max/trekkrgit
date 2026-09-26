@@ -327,6 +327,27 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 .rm-modal{background:var(--sur-0);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
 .rm-modal-handle{width:40px;height:4px;background:var(--bdr);border-radius:2px;margin:0 auto 20px}
 .rm-modal-title{font-size:18px;font-weight:800;color:var(--on);margin-bottom:16px}
+/* Edit schedule modal */
+.rm-sched-court{border:1px solid var(--sur-hi);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.rm-sched-court h5{margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);display:flex;justify-content:space-between}
+.rm-sched-court h5 em{font-style:normal;color:var(--red)}
+.rm-sched-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rm-sched-row .vs{font-size:11px;font-weight:800;color:var(--txt3);margin:0 2px}
+.rm-sched-p{border:1.5px solid var(--sur-hi);background:var(--sur-0);border-radius:9px;padding:7px 10px;font-size:13px;font-weight:700;color:var(--on);cursor:pointer;font-family:inherit}
+.rm-sched-p.sel{border-color:var(--blue);background:var(--blue-lt);color:var(--blue)}
+.rm-sched-p.moved{box-shadow:inset 0 -3px 0 var(--gold)}
+.rm-sched-slot{display:grid;grid-template-columns:54px 1fr;gap:8px;margin-bottom:8px;align-items:start}
+.rm-sched-slot .tm{font-size:12px;font-weight:800;color:var(--txt2);padding-top:9px}
+.rm-sched-slot .tm small{display:block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.rm-sched-m{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border:1.5px solid var(--sur-hi);background:var(--sur-0);border-radius:9px;padding:8px 10px;margin-bottom:5px;font-size:12.5px;font-weight:700;color:var(--on);cursor:pointer;font-family:inherit}
+.rm-sched-m .c{font-size:10px;font-weight:800;color:var(--blue);flex:none}
+.rm-sched-m .x{color:var(--txt3);font-weight:600}
+.rm-sched-m .b2b{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--gold);flex:none}
+.rm-sched-m.sel{border-color:var(--blue);background:var(--blue-lt)}
+.rm-sched-m.moved{box-shadow:inset 3px 0 0 var(--gold)}
+.rm-sched-m.lock{opacity:.5;cursor:not-allowed}
+.rm-sched-err{display:none;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--red);background:var(--red-lt);border-radius:9px;padding:8px 10px}
+.rm-sched-err.show{display:block}
 .rm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .rm-input{width:100%;background:var(--bg-rm);border:1.5px solid var(--bdr);border-radius:var(--r-rm-sm);padding:12px 14px;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--on);outline:none;transition:border-color .15s}
 .rm-input:focus{border-color:var(--blue);background:white}
@@ -1019,6 +1040,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                   <button class="rm-chip" style="background:var(--blue-lt);color:var(--blue);font-weight:700" onclick="rmOpenManage()">👥 Manage Players</button>
+                  <button class="rm-chip" style="background:var(--gold-lt);color:var(--gold);font-weight:700" onclick="rmOpenSched()" id="rm-sched-btn">✎ Edit schedule</button>
                   <div style="font-size:12px;color:var(--txt3)" id="rm-courts-progress">0/0 done</div>
                 </div>
               </div>
@@ -1136,6 +1158,21 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
     <div style="margin-top:16px" class="rm-grid2">
       <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseAdd()">Cancel</button>
       <button class="rm-btn-full rm-btn-primary" id="rm-add-btn" onclick="rmHandleAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT SCHEDULE (weekly: swap players in the current round · league: swap matches between slots) -->
+<div class="rm-modal-overlay hidden" id="rm-modal-sched" onclick="rmCloseSched()">
+  <div class="rm-modal" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
+    <div class="rm-modal-handle"></div>
+    <div class="rm-modal-title" id="rm-sched-title">Edit schedule</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin:-6px 0 12px;line-height:1.5" id="rm-sched-hint"></div>
+    <div id="rm-sched-body"></div>
+    <div class="rm-sched-err" id="rm-sched-err"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="rm-btn-full rm-btn-ghost" onclick="rmCloseSched()">Cancel</button>
+      <button class="rm-btn-full rm-btn-primary" id="rm-sched-save" onclick="rmSaveSched()">Save changes</button>
     </div>
   </div>
 </div>
@@ -2661,6 +2698,114 @@ function rmConfirmTeams(){
   rmHideErr('rm-teams-error'); rmBeginSession();
 }
 
+/* ── EDIT SCHEDULE ──────────────────────────────────────────────────────
+   Weekly PlayRank: swap any two players in the current (unsubmitted) round —
+   between teams, courts or the resting list. Courts whose line-up changes get
+   their score cleared. League: swap two matches in the order of play (current
+   slot or later); a match already scored is locked, a pair can't play twice in
+   one slot, and back-to-back matches are flagged. Saved edits refresh the
+   match screen and are pushed to the player link + venue TV. */
+function rmSchedPObj(name,round){
+  for(const m of (round?round.matches:[])) for(const p of [...m.team1,...m.team2]) if(p.name===name) return p;
+  return {...(RM.selectedPlayers.find(p=>p.name===name)||{name}),...(RM.playerStats[name]||{})};
+}
+function rmOpenSched(){
+  const round=RM.rounds[RM.currentRound];
+  if(!round||round.submitted){ rmSetStatus('failed','Nothing left to edit — the schedule is complete.'); return; }
+  const lg=RM.format==='league';
+  RM._sched=lg
+    ?{mode:'league',slots:JSON.parse(JSON.stringify(RM.league.schedule||[])),orig:JSON.stringify(RM.league.schedule||[]),sel:null}
+    :{mode:'weekly',courts:round.matches.map(m=>({court:m.court,t1:m.team1.map(p=>p.name),t2:m.team2.map(p=>p.name)})),bye:(round.byePlayers||[]).slice(),sel:null,
+      orig:round.matches.map(m=>[...m.team1,...m.team2].map(p=>p.name).join('|'))};
+  document.getElementById('rm-sched-title').textContent=lg?'Edit order of play':`Edit line-up · Round ${round.roundNum}`;
+  document.getElementById('rm-sched-hint').innerHTML=lg
+    ?'Tap a match, then tap another match to <b>swap their places</b> (slot &amp; court). Matches already scored are locked.'
+    :'Tap a player, then tap another player to <b>swap them</b> — across teams, courts or the resting list. Courts whose line-up changes will have their score cleared.';
+  rmSchedErr('');
+  rmRenderSched();
+  document.getElementById('rm-modal-sched').classList.remove('hidden');
+}
+function rmCloseSched(){ document.getElementById('rm-modal-sched').classList.add('hidden'); RM._sched=null; }
+function rmSchedErr(msg){ const e=document.getElementById('rm-sched-err'); if(!e) return; e.textContent=msg||''; e.classList.toggle('show',!!msg); }
+// weekly positions: "c<i>-t<1|2>-<j>" or "bye-<j>"
+function rmSchedGet(k){ const S=RM._sched, p=k.split('-'); return p[0]==='bye'?S.bye[+p[1]]:S.courts[+p[0].slice(1)][p[1]][+p[2]]; }
+function rmSchedSet(k,v){ const S=RM._sched, p=k.split('-'); if(p[0]==='bye') S.bye[+p[1]]=v; else S.courts[+p[0].slice(1)][p[1]][+p[2]]=v; }
+function rmSchedLocked(si,mi){
+  if(si!==RM.currentRound) return false;
+  const m=(RM.rounds[RM.currentRound]||{matches:[]}).matches[mi];
+  return !!(m&&(m.score1!==null||m.score2!==null));
+}
+function rmSchedTap(k){
+  const S=RM._sched; if(!S) return;
+  rmSchedErr('');
+  if(S.mode==='league'){
+    const [si,mi]=k.split(':').map(Number);
+    if(rmSchedLocked(si,mi)){ rmSchedErr('That match already has a score — clear it on the court card first.'); return; }
+    if(!S.sel){ S.sel=k; rmRenderSched(); return; }
+    if(S.sel===k){ S.sel=null; rmRenderSched(); return; }
+    const [sj,mj]=S.sel.split(':').map(Number), A=S.slots[sj][mj], B=S.slots[si][mi];
+    [A.a,A.b,B.a,B.b]=[B.a,B.b,A.a,A.b];
+    const dup=[sj,si].find(x=>{ const ids=S.slots[x].flatMap(m=>[m.a,m.b]); return new Set(ids).size!==ids.length; });
+    if(dup!==undefined){
+      [A.a,A.b,B.a,B.b]=[B.a,B.b,A.a,A.b];
+      rmSchedErr(`Can't swap — a pair would play twice in the ${rmLeagueClock(dup)} slot.`);
+    }
+    S.sel=null; rmRenderSched(); return;
+  }
+  if(!S.sel){ S.sel=k; rmRenderSched(); return; }
+  if(S.sel!==k){ const a=rmSchedGet(S.sel), b=rmSchedGet(k); rmSchedSet(S.sel,b); rmSchedSet(k,a); }
+  S.sel=null; rmRenderSched();
+}
+function rmRenderSched(){
+  const S=RM._sched, el=document.getElementById('rm-sched-body'); if(!S||!el) return;
+  const first=n=>String(n||'').split(' ')[0];
+  if(S.mode==='weekly'){
+    const chip=(k,n,moved)=>`<button type="button" class="rm-sched-p${S.sel===k?' sel':''}${moved?' moved':''}" onclick="rmSchedTap('${k}')">${first(n)}</button>`;
+    el.innerHTML=S.courts.map((c,i)=>{
+      const changed=[...c.t1,...c.t2].join('|')!==S.orig[i];
+      return `<div class="rm-sched-court"><h5><span>Court ${c.court}</span>${changed?'<em>line-up changed · score resets</em>':''}</h5><div class="rm-sched-row">`
+        +c.t1.map((n,j)=>chip(`c${i}-t1-${j}`,n,changed)).join('')+`<span class="vs">VS</span>`+c.t2.map((n,j)=>chip(`c${i}-t2-${j}`,n,changed)).join('')+`</div></div>`;
+    }).join('')+(S.bye.length?`<div class="rm-sched-court"><h5><span>Resting this round</span></h5><div class="rm-sched-row">${S.bye.map((n,j)=>chip('bye-'+j,n,false)).join('')}</div></div>`:'');
+    return;
+  }
+  const orig=JSON.parse(S.orig), tn=id=>rmTeamName(RM.teams.find(t=>t.id===id));
+  const plays=(si,id)=>{ const sl=si<RM.currentRound?orig[si]:S.slots[si]; return !!(sl&&sl.some(m=>m.a===id||m.b===id)); };
+  let html='';
+  for(let si=RM.currentRound;si<S.slots.length;si++){
+    html+=`<div class="rm-sched-slot"><div class="tm">${rmLeagueClock(si)}${si===RM.currentRound?'<small>On court</small>':''}</div><div>`
+      +S.slots[si].map((m,mi)=>{
+        const k=`${si}:${mi}`, lock=rmSchedLocked(si,mi), o=orig[si]&&orig[si][mi], moved=!o||o.a!==m.a||o.b!==m.b;
+        const b2b=si>0&&(plays(si-1,m.a)||plays(si-1,m.b));
+        return `<button type="button" class="rm-sched-m${S.sel===k?' sel':''}${lock?' lock':''}${moved?' moved':''}" onclick="rmSchedTap('${k}')"><span class="c">C${m.court}</span><span>${tn(m.a)} <span class="x">vs</span> ${tn(m.b)}</span>${lock?'<span class="b2b">🔒 scored</span>':b2b?'<span class="b2b">↺ back-to-back</span>':''}</button>`;
+      }).join('')+`</div></div>`;
+  }
+  el.innerHTML=html||'<div class="rm-empty">No slots left to edit</div>';
+}
+function rmSaveSched(){
+  const S=RM._sched, round=RM.rounds[RM.currentRound]; if(!S||!round) return rmCloseSched();
+  if(S.mode==='league'){
+    RM.league.schedule=S.slots;
+    const fresh=rmGenerateLeagueRound(RM.currentRound);
+    round.matches=fresh.matches.map(m=>{
+      const old=round.matches.find(o=>o.teamIdA===m.teamIdA&&o.teamIdB===m.teamIdB);
+      return old?{...m,score1:old.score1,score2:old.score2}:m;
+    });
+  } else {
+    round.matches=round.matches.map((m,i)=>{
+      const c=S.courts[i];
+      if([...c.t1,...c.t2].join('|')===S.orig[i]) return m;
+      return {...m,team1:c.t1.map(n=>rmSchedPObj(n,round)),team2:c.t2.map(n=>rmSchedPObj(n,round)),score1:null,score2:null};
+    });
+    round.byePlayers=S.bye.slice();
+  }
+  rmCloseSched();
+  rmRenderMatchScreen();
+  if(RM.activeTab==='history') rmRenderHistory();
+  if(typeof rmSaveState==='function') rmSaveState('match');
+  try{ if(typeof rmLivePush==='function') rmLivePush(false); else if(typeof rmDemoPublish==='function') rmDemoPublish(); }catch(e){}
+  rmSetStatus('ok','✓ Schedule updated — player link &amp; TV refresh in a few seconds.');
+}
+
 /* ── MANAGE PLAYERS DURING MATCH (add / drop / swap) ── */
 function rmActiveName(n){ return RM.playerStats[n] ? RM.playerStats[n].active!==false : false; }
 function rmEnsurePlayer(name){
@@ -3658,13 +3803,15 @@ async function rmLivePush(final){
   try{
     const snap=rmLiveSnapshot(final);
     if(!RM_LIVE.code){
-      const res=await rmApi('live',{method:'POST',body:JSON.stringify({action:'create',session:snap})});
+      const res=await rmApi('live',{method:'POST',body:JSON.stringify({action:'create',session:snap,resume:rmResumeState()})});
       if(res&&res.code){ RM_LIVE.code=res.code; RM_LIVE.key=res.key; rmSaveState('match'); rmUpdateLiveBar(); }
       if(final && RM_LIVE.code){ // created straight into a final state
         await rmApi('live',{method:'POST',body:JSON.stringify({action:'finalize',code:RM_LIVE.code,key:RM_LIVE.key,session:snap})});
       }
     } else {
-      await rmApi('live',{method:'POST',body:JSON.stringify({action:final?'finalize':'update',code:RM_LIVE.code,key:RM_LIVE.key,session:snap})});
+      const body={action:final?'finalize':'update',code:RM_LIVE.code,key:RM_LIVE.key,session:snap};
+      if(!final) body.resume=rmResumeState();   // lets the host continue from another device
+      await rmApi('live',{method:'POST',body:JSON.stringify(body)});
     }
   }catch(e){ console.warn('live push warn:',e.message); }
   finally{ RM_LIVE.busy=false; }
@@ -3720,6 +3867,16 @@ function rmSaveState(screen){
       liveCode:RM_LIVE.code,liveKey:RM_LIVE.key,savedAt:Date.now(),
     }));
   }catch(e){console.warn('Save state warn:',e);}
+}
+// Full match state for cross-device resume (server keeps it admin-only). No
+// credentials: token / live key stay on each device.
+function rmResumeState(){
+  return { matchId:RM.matchId, rounds:RM.rounds, currentRound:RM.currentRound,
+    playerStats:RM.playerStats, selectedPlayers:RM.selectedPlayers,
+    courts:RM.courts, format:RM.format, scoreFormat:RM.scoreFormat,
+    scoreTarget:RM.scoreTarget, partners:RM.partners, teams:RM.teams,
+    level:RM.level, startElo:RM.startElo, league:RM.league, venue:RM.venue,
+    gender:RM.gender, savedAt:Date.now() };
 }
 function rmClearStorage(){
   if(RM.matchId){try{localStorage.removeItem(rmStorageKey());}catch(e){}}
@@ -3786,7 +3943,10 @@ function rmRenderRunningList(){
             <div style="font-size:11.5px;color:var(--txt3);margin-top:1px">${s.round?'on round '+s.round+' · ':''}created on another device${when?' · '+when:''}${s.stale?' · idle a while':''}</div>
           </div>
         </div>
-        <button class="rm-btn-full rm-btn-ghost" style="color:var(--red)" onclick="rmCloseServer('${code}')">🏁 End & Close Live</button>
+        ${s.resumable?`<div class="rm-grid2">
+          <button class="rm-btn-full rm-btn-ghost" style="color:var(--red)" onclick="rmCloseServer('${code}')">🏁 End & Close</button>
+          <button class="rm-btn-full rm-btn-primary" onclick="rmAdoptServer('${code}')">▶ Resume</button>
+        </div>`:`<button class="rm-btn-full rm-btn-ghost" style="color:var(--red)" onclick="rmCloseServer('${code}')">🏁 End & Close Live</button>`}
       </div>`;
     }).join('');
   }
@@ -3809,6 +3969,22 @@ async function rmCloseServer(code){
   catch(e){ alert('Failed to close match: '+e.message); return; }
   RM._serverLive=(RM._serverLive||[]).filter(s=>s.code!==code);
   rmRenderRunningList();
+}
+// Continue a match started on another device: fetch its resume state + live
+// write key (venue-token scoped), save it locally, then open it like a local save.
+async function rmAdoptServer(code){
+  if(!confirm('Lanjutkan match ini di device ini? Setelah ini, input skor hanya dari device ini (device lama berhenti dipakai).'))return;
+  let res;
+  try{ res=await rmApi('live',{method:'POST',body:JSON.stringify({action:'adopt',code:code,token:RM.token})}); }
+  catch(e){ alert('Gagal melanjutkan match: '+e.message); return; }
+  const r=res&&res.resume;
+  if(!r||!Array.isArray(r.rounds)){ alert('Data match tidak lengkap, tidak bisa dilanjutkan.'); return; }
+  const saved=Object.assign({}, r, { matchId:r.matchId||Date.now(), liveCode:res.code||code, liveKey:res.key||'' });
+  document.getElementById('rm-modal-restore').classList.add('hidden');
+  rmApplySaved(saved);
+  rmSaveState('match');
+  RM._serverLive=(RM._serverLive||[]).filter(s=>s.code!==code);
+  rmGo('match'); rmSwitchTab('courts'); rmRenderMatchScreen(); rmUpdateFairBar(); rmUpdateLiveBar();
 }
 function rmApplySaved(saved){
   Object.assign(RM,{
