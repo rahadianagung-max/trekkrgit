@@ -5432,6 +5432,14 @@ async function liveGet(params) {
   view.data = await liveEnrichClaims(view.data);
   return respond(200, view, { "Cache-Control": "no-store" });
 }
+// Admin-only resume state (full match state minus credentials), kept beside the
+// public snapshot so the host can continue the match from another device. Never
+// part of livePublicView/liveVenue; only returned by the token-scoped "adopt".
+function liveResumeBlob(r) {
+  if (!r || typeof r !== "object" || !Array.isArray(r.rounds)) return undefined;
+  const { token, liveKey, liveCode, username, ...rest } = r;
+  return rest;
+}
 // One POST endpoint; `action` selects create / update / finalize.
 async function livePost(body) {
   const b = body || {};
@@ -5444,6 +5452,8 @@ async function livePost(body) {
     let code = liveGenCode();
     const writeKey = crypto.randomBytes(18).toString("base64url");
     const row = { code, write_key: writeKey, status: "live", venue, data: session, recap: null, created_at: now, updated_at: now };
+    const cres = liveResumeBlob(b.resume);
+    if (cres) row.resume = cres;
     try {
       if (supaOn()) {
         // Retry once on the (astronomically unlikely) code collision.
@@ -5470,6 +5480,21 @@ async function livePost(body) {
     return respond(200, { ok: true });
   }
 
+  // Admin cross-device resume: same venue-token scope as "close". Hands the
+  // stored resume state + write_key to the venue's own admin so the new device
+  // can keep scoring and pushing the same live page.
+  if (action === "adopt") {
+    const acode = String(b.code || "").trim().toLowerCase();
+    if (!acode) return respond(400, { error: "code required" });
+    let arow;
+    try { arow = await liveRead(acode); } catch (e) { return respond(500, { error: "read failed" }); }
+    if (!arow) return respond(404, { error: "not found" });
+    if (!adminCanVenue(decodeAdminToken(b.token), arow.venue)) return respond(403, { error: "not authorized for this venue" });
+    if (arow.status !== "live") return respond(409, { error: "session already finished" });
+    if (!arow.resume) return respond(409, { error: "no resume state" });
+    return respond(200, { ok: true, code: arow.code, key: arow.write_key, resume: arow.resume }, { "Cache-Control": "no-store" });
+  }
+
   // update / finalize both require code + matching write_key.
   const code = String(b.code || "").trim().toLowerCase();
   const key = String(b.key || "");
@@ -5481,6 +5506,8 @@ async function livePost(body) {
 
   if (action === "update") {
     const patch = { data: session, venue: venue || row.venue, status: "live", updated_at: now };
+    const ures = liveResumeBlob(b.resume);
+    if (ures) patch.resume = ures;
     try {
       if (supaOn()) await supaRest("PATCH", `live_sessions?code=eq.${encodeURIComponent(code)}`, patch);
       else Object.assign(LIVE_MEM[code], patch);
@@ -5504,7 +5531,7 @@ async function livePost(body) {
       try { recap = await liveAiRecap(session); } catch (e) { console.error("[live] ai:", e.message); }
     }
     if (!recap) recap = liveRecapFallback(session);
-    const patch = { data: session, venue: venue || row.venue, status: "final", recap, updated_at: now };
+    const patch = { data: session, venue: venue || row.venue, status: "final", recap, resume: null, updated_at: now };
     try {
       if (supaOn()) await supaRest("PATCH", `live_sessions?code=eq.${encodeURIComponent(code)}`, patch);
       else Object.assign(LIVE_MEM[code], patch);
@@ -5644,6 +5671,7 @@ async function liveVenueList(params) {
       players: (d.players || []).length, round: d.round || 0, courts: d.courts || 0,
       gender: d.gender || "", updatedAt: r.updated_at || r.updatedAt || null,
       stale: r.status === "live" && ageMs >= STALE_MS,
+      resumable: r.status === "live" && !!r.resume,
     };
   }).filter((s) => s.status === "live" || (s.status === "final" && (now - new Date(s.updatedAt || 0).getTime()) < LIVE_CELEBRATE_MS));
   return respond(200, { venue, sessions }, { "Cache-Control": "no-store" });
