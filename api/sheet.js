@@ -1769,8 +1769,30 @@ async function getPlayerDetail(name) {
   const sheets = getSheets();
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
   const pRows = pRes.data.values || [];
-  const pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
-  if (!pRow) return respond(404, { error: "Player not found" });
+  let pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
+  const eRows = eRes.data.values || [];
+  if (!pRow) {
+    // Many rated players (tournament-only entrants, imports) have ELO history but
+    // no Players row. Build their passport from the ELO_Log name instead of a 404,
+    // matching by name or by the URL slug form (/player/mattmcmahon).
+    const slug = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const hit = eRows.find((r) => r[1] && (normName(r[1]) === normName(name) || slug(r[1]) === slug(name)));
+    if (!hit) return respond(404, { error: "Player not found" });
+    pRow = [hit[1], "", "FALSE", hit[1], "", "", "", "", "", "", "", ""];
+    // Gender from their recorded matches (per-player gender columns), best effort.
+    if (supaOn()) {
+      try {
+        const q = `"${String(hit[1]).replace(/"/g, "")}"`;
+        const vm = await supaRest("GET", `venue_matches?or=(p1_team1.eq.${encodeURIComponent(q)},p2_team1.eq.${encodeURIComponent(q)},p1_team2.eq.${encodeURIComponent(q)},p2_team2.eq.${encodeURIComponent(q)})&select=p1_team1,p2_team1,p1_team2,p2_team2,p1_team1_gender,p2_team1_gender,p1_team2_gender,p2_team2_gender&limit=20`) || [];
+        const cnt = { M: 0, F: 0 };
+        for (const m of vm) for (const c of ["p1_team1", "p2_team1", "p1_team2", "p2_team2"]) {
+          if (normName(m[c]) === normName(hit[1])) { const g = String(m[c + "_gender"] || "").toUpperCase(); if (cnt[g] != null) cnt[g]++; }
+        }
+        if (cnt.F > cnt.M) pRow[4] = "F"; else if (cnt.M) pRow[4] = "M";
+      } catch (e) { /* default gender */ }
+    }
+  }
 
   const player = {
     name: pRow[0], ig: pRow[1] || "", verified: pRow[2] === "TRUE",
@@ -1792,8 +1814,6 @@ async function getPlayerDetail(name) {
     } catch (e) { /* fall back to the sheet-derived claimed flag */ }
   }
 
-  const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
-  const eRows = eRes.data.values || [];
   // Match ELO_Log by the player's Name (col A) OR their Display_Name/alias (col D).
   // Some sessions were recorded under a player's short name/alias; keying only on
   // the canonical Name (as the passport now does) dropped that history entirely.
