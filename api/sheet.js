@@ -19,9 +19,36 @@ function getSheets() {
   // Supabase via the drop-in in ./_supasheets. Otherwise keep using Google
   // Sheets exactly as before (safe on/off switch — nothing changes until set).
   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-    return require("./_supasheets").makeSupabaseSheets();
+    return guardInitialRows(require("./_supasheets").makeSupabaseSheets());
   }
-  return google.sheets({ version: "v4", auth: getAuth() });
+  return guardInitialRows(google.sheets({ version: "v4", auth: getAuth() }));
+}
+// An "INITIAL" ELO_Log row seeds a NEW player's starting rating. Several flows
+// decide "new" by looking at the Players tab only, but many rated players have
+// ELO history without a Players row, so those flows re-seeded them and reset a
+// real rating (e.g. 1523 back to 1200). Guard every ELO_Log append in one place:
+// drop INITIAL rows for names that already have rated (non-INITIAL) history.
+// Deliberate re-levels use CURATION rows and are not affected.
+function guardInitialRows(s) {
+  try {
+    const v = s && s.spreadsheets && s.spreadsheets.values;
+    if (!v || v.__initGuard) return s;
+    const origAppend = v.append.bind(v), origGet = v.get.bind(v);
+    v.append = async (req) => {
+      const range = String((req && req.range) || "");
+      const vals = req && req.requestBody && req.requestBody.values;
+      if (!range.startsWith(TABS.elo_log + "!") || !Array.isArray(vals) || !vals.some((r) => r && r[0] === "INITIAL")) return origAppend(req);
+      const er = await origGet({ spreadsheetId: req.spreadsheetId, range: `${TABS.elo_log}!A2:B` });
+      const rated = new Set();
+      for (const r of (er.data.values || [])) if (r[1] && r[0] !== "INITIAL") rated.add(normName(r[1]));
+      const keep = vals.filter((r) => !(r && r[0] === "INITIAL" && rated.has(normName(r[1]))));
+      if (keep.length !== vals.length) console.warn("[elo] skipped INITIAL for already-rated:", vals.filter((r) => !keep.includes(r)).map((r) => r[1]).join(", "));
+      if (!keep.length) return { data: {} };
+      return origAppend({ ...req, requestBody: { ...req.requestBody, values: keep } });
+    };
+    v.__initGuard = true;
+  } catch (e) { /* fall back to the unguarded client */ }
+  return s;
 }
 
 // Drive auth (adds drive scope) + image upload for registration photos / payment proofs.
