@@ -1967,7 +1967,7 @@ function rmUpdateScoreHint() {
   const t=RM.scoreTarget, sf=RM.scoreFormat;
   document.getElementById('rm-score-hint').textContent = sf==='race'
     ? `Race to ${t} — first to reach ${t} wins`
-    : `Best of ${t} — need ${Math.ceil(t/2)} games to win`;
+    : `Best of ${t} — first to ${Math.ceil(t/2)}, or play all ${t} games (${t}-0, ${t-1}-1 ok)`;
 }
 function rmGoToPlayers() { rmGo('players'); rmLoadPlayers(); }
 
@@ -2584,12 +2584,13 @@ function rmLeagueCanEnd(){
 }
 function rmLeagueDone(){ return RM.rounds.filter(r=>r.submitted).length>=(RM.league.schedule||[]).length; }
 // A valid league score: no draws; Race to N → winner has exactly N;
-// Best of N → winner has ⌈N/2⌉ and the games don't exceed N.
+// Best of N → either stop at ⌈N/2⌉ (3-0, 3-1, 3-2) or play all N games
+// (5-0, 4-1, 3-2); the winner must still have more games.
 function rmLeagueScoreError(s1,s2){
   const t=RM.scoreTarget;
   if(s1===s2) return 'no draws';
   const w=Math.max(s1,s2), l=Math.min(s1,s2);
-  if(RM.scoreFormat==='bestof'){ const need=Math.ceil(t/2); if(w!==need||w+l>t) return `best of ${t} → winner needs ${need}`; }
+  if(RM.scoreFormat==='bestof'){ const need=Math.ceil(t/2); if(!((w===need&&w+l<=t)||w+l===t)) return `best of ${t} → ${need}-x, or all ${t} games (e.g. ${t}-0, ${t-1}-1)`; }
   else if(w!==t) return `race to ${t} → winner needs ${t}`;
   return '';
 }
@@ -3056,7 +3057,7 @@ function rmPrlTick(round,total){
 // League: −/+ score buttons (winner cap = race target, or ⌈N/2⌉ for best of N).
 function rmBumpScore(i,side,d){
   const el=document.getElementById(`rm-s${side}-${i}`); if(!el) return;
-  const cap=RM.scoreFormat==='bestof'?Math.ceil(RM.scoreTarget/2):RM.scoreTarget;
+  const cap=RM.scoreTarget;
   const v=Math.max(0,Math.min(cap,(parseInt(el.value)||0)+d));
   el.value=v;
   const other=document.getElementById(`rm-s${side===1?2:1}-${i}`);
