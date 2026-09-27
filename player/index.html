@@ -1026,6 +1026,9 @@ async function loadPlayer(){
     document.getElementById('content').innerHTML='<div class="state-panel"><h2 class="state-title">Player not found</h2><p class="state-copy">No Trekkr record for &ldquo;'+raw.replace(/[<>&"]/g,'')+'&rdquo; yet. Check the spelling, or find the player on the <a href="/rankings">rankings</a>.</p></div>';
     return;
   }
+  // Use the canonical name from the record for every follow-up call (the URL may
+  // be a slug such as /player/mattmcmahon that the backend resolved for us).
+  if (d && d.player && d.player.name) name = d.player.name;
   playerData = d;
   // Fast first paint: show the core passport (identity, ELO, stats, chart) immediately.
   // The history table / best partner / badges are enriched below and re-rendered.
