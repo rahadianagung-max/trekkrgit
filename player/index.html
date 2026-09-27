@@ -854,6 +854,21 @@ body{background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05)
 @keyframes ppspin{to{transform:rotate(360deg)}}
 @keyframes pppulse{0%,100%{opacity:.55}50%{opacity:1}}
 @media (prefers-reduced-motion: reduce){.pp-spinner{animation-duration:1.6s}.pp-loading-text{animation:none}}
+
+/* Progressive load: top progress bar + skeletons while the match history loads,
+   then the late sections fade in (so a half-loaded passport never looks final). */
+.pp-topbar{position:fixed;left:0;right:0;top:0;height:3px;z-index:9999;overflow:hidden;background:rgba(255,89,0,.15);pointer-events:none}
+.pp-topbar::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;background:var(--primary,#FF5900);animation:ppbar 1.1s ease-in-out infinite}
+@keyframes ppbar{0%{left:-40%}100%{left:100%}}
+.pp-sk{display:inline-block;vertical-align:middle;background:linear-gradient(90deg,#E9EDF2 0%,#F6F8FA 50%,#E9EDF2 100%);background-size:200% 100%;animation:ppsk 1.2s linear infinite}
+@keyframes ppsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.pp-sk-card{background:var(--surface,#fff);border:2px solid var(--tk-ink,#090D14);box-shadow:4px 4px 0 var(--tk-ink,#090D14);padding:14px 16px;margin-top:12px}
+.pp-sk-line{display:block;height:12px;margin:8px 0}
+.pp-loadnote{display:flex;align-items:center;gap:8px;margin:14px 2px 0;font:800 10.5px var(--mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--on-surface-variant,#475569)}
+.pp-loadnote i{width:12px;height:12px;border:2px solid var(--primary,#FF5900);border-right-color:transparent;border-radius:50% !important;animation:ppspin .7s linear infinite;flex:none}
+.pp-late{animation:pplate .35s var(--ease-out,ease-out) both}
+@keyframes pplate{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.pp-topbar::before,.pp-sk,.pp-loadnote i{animation:none}.pp-late{animation:none}}
 </style>
 <canvas id="shareCanvas" width="1080" height="1920"></canvas>
 <div class="toast" id="toast"></div>
@@ -1030,6 +1045,7 @@ async function loadPlayer(){
   // be a slug such as /player/mattmcmahon that the backend resolved for us).
   if (d && d.player && d.player.name) name = d.player.name;
   playerData = d;
+  d._pending = true; ppTopbar(true);
   // Fast first paint: show the core passport (identity, ELO, stats, chart) immediately.
   // The history table / best partner / badges are enriched below and re-rendered.
   renderPlayer(d);
@@ -1166,6 +1182,7 @@ async function loadPlayer(){
       console.warn("Gagal menarik data histori venue", err);
   }
 
+  d._pending = false; d._late = true; ppTopbar(false);
   renderPlayer(d);
 
   try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;}catch(e){}
@@ -1267,7 +1284,14 @@ function ppRankItem(r){
 }
 function ppListArr(str){return String(str||'').split(',').map(function(x){return x.trim();}).filter(function(x){return x && x.toUpperCase()!=='N/A';});}
 
+function ppTopbar(on){
+  var b=document.getElementById('ppTopbar');
+  if(on&&!b){b=document.createElement('div');b.id='ppTopbar';b.className='pp-topbar';b.setAttribute('role','progressbar');b.setAttribute('aria-label','Loading match history');document.body.appendChild(b);}
+  if(!on&&b)b.remove();
+}
 function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues,venueRanks,lastSession,highlights,d){
+  var pend=!!(d&&d._pending), late=(d&&d._late)?' pp-late':'';
+  var sk=function(w,h){return '<span class="pp-sk" style="width:'+w+';height:'+(h||'20px')+'"></span>';};
   var unrated=!!s.unrated;
   var eloDisp=unrated?'Unrated':s.currentElo;
   var st=skillTier(s.currentElo||0);
@@ -1304,7 +1328,9 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
       +'<div class="pp2-bar"><span style="width:'+st.progress+'%"></span></div>'
       +'<div class="pp2-next">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
       +'<div class="pp2-next" style="margin-top:4px">Series Tier: <b>'+series.current+'</b></div>';
-    if(venueRanks && venueRanks.length){
+    if(pend){
+      h+='<div class="pp2-div"></div>'+sk('60%','14px');
+    } else if(venueRanks && venueRanks.length){
       h+='<div class="pp2-div"></div>';
       if(venueRanks.length===1){
         h+='<div class="pp2-exp-t">Your standing · vs '+venueRanks[0].gender+'</div><div class="pp2-rankbody">'+ppRankItem(venueRanks[0])+'</div>';
@@ -1327,7 +1353,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     if(losses===0 && wins>0) ip.push('won all '+wins); else if(wins>losses) ip.push('took '+wins+' of '+tot); else ip.push(wins+'W–'+losses+'L');
     if(ls.bestWin && (Number(ls.bestWin.scoreFor)-Number(ls.bestWin.scoreAgainst))>=1) ip.push('best win <b>'+ls.bestWin.scoreFor+'–'+ls.bestWin.scoreAgainst+'</b> vs '+ls.bestWin.opponents);
     var gamesHTML=ls.games.map(function(g){return '<div class="pp2-game"><span class="rr '+(g.resText==='W'?'w':'l')+'">'+(g.resText||'D')+'</span><span class="gv">w/ '+g.partner+' · vs '+g.opponents+'</span><span class="gs">'+g.scoreFor+'–'+g.scoreAgainst+'</span></div>';}).join('');
-    h+='<div class="pp2-ls"><div class="pp2-ls-h"><span class="dot"></span> Your last session</div>'
+    h+='<div class="pp2-ls'+late+'"><div class="pp2-ls-h"><span class="dot"></span> Your last session</div>'
       +'<div class="pp2-ls-title">'+(ls.venue?ls.venue+' · ':'')+(ls.date||'')+'</div>'
       +'<div class="pp2-ls-chips">'
       +'<span class="pp2-ls-chip '+dcls+'">'+dsign+dl+' ELO</span>'
@@ -1341,18 +1367,27 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   }
 
   // ---- KEY STATS (deduped: no ELO) ----
-  h+='<div class="pp-stats" style="margin-top:12px">'
-    +'<div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">'+s.totalMatches+'</p></div>'
-    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">'+s.winRate+'%</p></div>'
-    +'<div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">'+s.totalW+'/'+s.totalL+'</p></div>'
-    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">'+(s.streak||'—')+'</p></div>'
+  var sv=function(v){return pend?sk('44px','22px'):v;};
+  if(pend){
+    // Last-session card placeholder (filled once the match history arrives).
+    h+='<div class="pp-sk-card" aria-hidden="true">'+sk('40%','12px')+'<span class="pp-sk pp-sk-line" style="width:70%;height:18px"></span><span class="pp-sk pp-sk-line" style="width:90%"></span></div>';
+  }
+  h+='<div class="pp-stats'+late+'" style="margin-top:12px">'
+    +'<div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">'+sv(s.totalMatches)+'</p></div>'
+    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">'+sv(s.winRate+'%')+'</p></div>'
+    +'<div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">'+sv(s.totalW+'/'+s.totalL)+'</p></div>'
+    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">'+sv(s.streak||'—')+'</p></div>'
     +'</div>';
+  if(pend){
+    h+='<div class="pp-loadnote" role="status"><i></i>Loading match history…</div>';
+    for(var q=0;q<3;q++) h+='<div class="pp-sk-card" aria-hidden="true">'+sk((50-q*8)+'%','14px')+'</div>';
+  }
 
-  if(!unrated && isCalibrating(s.totalMatches)) h+=buildCalibBanner(s.totalMatches);
+  if(!pend && !unrated && isCalibrating(s.totalMatches)) h+=buildCalibBanner(s.totalMatches);
 
   // ---- ACHIEVEMENT STRIP ----
   if(highlights && !unrated){
-    h+='<div class="pp2-ach">'
+    h+='<div class="pp2-ach'+late+'">'
       +'<div class="pp2-acard"><div class="ic">📈</div><div class="v">'+(highlights.peakElo||eloDisp)+'</div><div class="k">Peak ELO</div></div>'
       +'<div class="pp2-acard"><div class="ic">🔥</div><div class="v">'+(highlights.longestStreak||0)+'W</div><div class="k">Best streak</div></div>'
       +'<div class="pp2-acard"><div class="ic">⚡</div><div class="v">+'+(highlights.biggestJump||0)+'</div><div class="k">Biggest jump</div></div>'
@@ -1368,7 +1403,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     if(hasPartner) abody+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(hasBadges?'14px':'0')+'"><div><div class="pp2-exp-t">Best partner</div><div style="font-family:\'Saira Condensed\',sans-serif;font-size:22px;font-weight:900;margin-top:2px">'+bestPartner.name+'</div></div><div style="text-align:right"><div class="pp2-exp-t">Together</div><div style="color:var(--ok,#22A052);font-weight:800;font-size:16px;margin-top:2px">'+bestPartner.score+'</div></div></div>';
     if(hasBadges) abody+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+badges.filter(function(b){return b.earned;}).map(function(b){return '<div style="width:60px;text-align:center"><div style="width:48px;height:48px;margin:0 auto;border-radius:12px;background:rgba(255,106,0,.1);border:1px solid rgba(255,106,0,.3);display:flex;align-items:center;justify-content:center;font-size:22px">'+(b.emoji||'🏅')+'</div><div style="font-size:9px;font-weight:700;color:var(--on-surface-variant);margin-top:4px;line-height:1.1">'+b.name+'</div></div>';}).join('')+'</div>';
     if(hasBadges && !badges.some(function(b){return b.earned;})) abody+='<div class="pp2-exp-t">No badges earned yet — keep playing!</div>';
-    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
+    h+='<div class="pp2-acc'+late+'"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
   }
   // Tournament results (podium + round reached) — recorded by turnamenpadel.
   var achs=(d&&d.achievements)||[];
@@ -1412,9 +1447,10 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
           +'</div>';
       });
     } else { histRows='<div class="pp2-hempty">No match history found.</div>'; }
-    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppHist\')"><div class="t"><span class="em">📋</span> Playing history <span class="ct">· '+(historyTable.length||0)+'</span></div><span class="cv">›</span></div>'
+    h+='<div class="pp2-acc'+late+'"><div class="pp2-exp" onclick="ppTog(this,\'ppHist\')"><div class="t"><span class="em">📋</span> Playing history <span class="ct">· '+(historyTable.length||0)+'</span></div><span class="cv">›</span></div>'
       +'<div class="pp2-accbody" id="ppHist" hidden><div class="pp2-hist">'+histRows+'</div></div></div>';
   }
+  if(pend){ document.getElementById('content').innerHTML=h; refreshEditBtn(); return; }
   // About & venues
   var venuePills=ppListArr((playedVenues||[]).join(','));
   var tourns=ppListArr(p.tournaments), winners=ppListArr(p.winnerAt);
