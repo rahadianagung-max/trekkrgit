@@ -523,6 +523,20 @@ function tplPlayerReset(link) {
   return emailShell(c, `Reset your Trekkr player password.`);
 }
 
+function tplMagicLink(link, code) {
+  const codeBox = code
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 6px"><tr><td style="padding:12px 22px;background:#F5F5F7;border:2px dashed #D4D4D8;border-radius:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:28px;font-weight:800;letter-spacing:8px;color:#0D0D0D">${escHtml(code)}</td></tr></table>`
+      + emSmall(`Atau ketik kode di atas di halaman login Trekkr — berguna kalau kamu membuka email ini di HP lain atau lewat aplikasi Instagram/WhatsApp.`)
+    : "";
+  const c = emH(`Masuk ke Trekkr`)
+    + emP(`Klik tombol di bawah untuk masuk ke akun Trekkr kamu — tanpa password.`)
+    + emButtonBlock("Masuk ke Trekkr", link)
+    + codeBox
+    + emSmall(`Link &amp; kode berlaku sekitar 1 jam dan hanya bisa dipakai sekali. Kalau kamu tidak meminta ini, abaikan saja email ini.`)
+    + emLinkFallback(link);
+  return emailShell(c, code ? `Kode masuk Trekkr kamu: ${code}` : `Link masuk Trekkr kamu.`);
+}
+
 // Find a Player_Auth row by email. Returns { rowIndex (sheet row), row (array) } or null.
 async function findAuthByEmail(sheets, email) {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.player_auth}!A2:K` }).catch(() => ({ data: { values: [] } }));
@@ -1154,6 +1168,12 @@ const netlifyHandler = async (event) => {
     if (path === "account/me" && method === "GET") return await accountMe(params);
     if (path === "account/register-new" && method === "POST") return await accountRegisterNew(body);
     if (path === "account/claim" && method === "POST") return await accountClaim(body);
+    // Passwordless sign-in (Phase 1 claim campaign): magic link + 6-digit code,
+    // marketing consent, and claim / register for an already-signed-in user.
+    if (path === "account/magic-link" && method === "POST") return await accountMagicLink(body);
+    if (path === "account/consent" && method === "POST") return await accountConsent(body);
+    if (path === "account/claim-session" && method === "POST") return await accountClaimSession(body);
+    if (path === "account/register-session" && method === "POST") return await accountRegisterSession(body);
     if (path === "account/change-password" && method === "POST") return await accountChangePassword(body);
     if (path === "account/forgot" && method === "POST") return await accountForgot(body);
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
@@ -1555,6 +1575,120 @@ async function accountClaim(body) {
     `<p>Review &amp; approve in the superadmin console.</p>`
   );
   return respond(200, { ok: true });
+}
+
+// ── Passwordless sign-in (magic link + one-time code) ──
+// Emails a branded one-time sign-in link (and the matching 6-digit code) via
+// Brevo, using a Supabase-generated magic link. The account is created on first
+// use, so this doubles as sign-up. Always answers ok (never reveals whether an
+// email already has an account) and is throttled per address.
+const MAGIC_WINDOW_MS = 60 * 60 * 1000, MAGIC_MAX_PER_WINDOW = 5, MAGIC_MIN_GAP_MS = 45 * 1000;
+async function accountMagicLink(body) {
+  const b = body || {};
+  const email = normEmail(b.email);
+  if (!validEmail(email)) return respond(400, { error: "Email tidak valid" });
+  // Throttle: max 5 links/hour and one per 45s for the same address.
+  try {
+    const since = new Date(Date.now() - MAGIC_WINDOW_MS).toISOString();
+    const recent = await supaRest("GET", `auth_link_log?email=eq.${encodeURIComponent(email)}&sent_at=gte.${encodeURIComponent(since)}&select=sent_at&order=sent_at.desc`);
+    if (recent && recent.length) {
+      if (recent.length >= MAGIC_MAX_PER_WINDOW) return respond(429, { error: "Terlalu banyak permintaan. Coba lagi dalam 1 jam." });
+      if (Date.now() - new Date(recent[0].sent_at).getTime() < MAGIC_MIN_GAP_MS) return respond(429, { error: "Tunggu sebentar sebelum minta link lagi (±1 menit)." });
+    }
+  } catch (e) { console.error("[magic] throttle check:", e.message); }
+  const redirectTo = `${appBaseUrl()}/login`;
+  const gen = () => supaAdmin("POST", "generate_link", { type: "magiclink", email, redirect_to: redirectTo });
+  let gl;
+  try { gl = await gen(); }
+  catch (e) {
+    // Older GoTrue: magic links need an existing user — create it, then retry.
+    if (!/not.?found|no user|user.*exist/i.test(e.message)) { console.error("[magic] generate:", e.message); return respond(502, { error: "Gagal membuat link masuk. Coba lagi." }); }
+    try { await supaAdmin("POST", "users", { email, email_confirm: false }); gl = await gen(); }
+    catch (e2) { console.error("[magic] create+generate:", e2.message); return respond(502, { error: "Gagal membuat link masuk. Coba lagi." }); }
+  }
+  const props = (gl && gl.properties) || gl || {};
+  const link = props.action_link || "";
+  const code = String(props.email_otp || "").trim();
+  const userId = (gl && (gl.id || (gl.user && gl.user.id))) || "";
+  if (!link) return respond(502, { error: "Gagal membuat link masuk. Coba lagi." });
+  try { await sendBrevoEmail(email, code ? `Kode masuk Trekkr: ${code}` : "Link masuk Trekkr 🎾", tplMagicLink(link, code)); }
+  catch (e) { console.error("[magic] send:", e.message); return respond(502, { error: "Email gagal dikirim. Coba lagi sebentar lagi." }); }
+  try { await supaRest("POST", "auth_link_log", [{ email }], "return=minimal"); } catch (e) {}
+  if (userId && b.marketing !== undefined) {
+    try { await saveConsent(userId, email, !!b.marketing, String(b.source || "magic-link")); } catch (e) { console.error("[magic] consent:", e.message); }
+  }
+  return respond(200, { ok: true });
+}
+
+// Marketing consent (UU PDP): one row per account, latest choice wins.
+async function saveConsent(userId, email, marketing, source) {
+  const now = new Date().toISOString();
+  await supaRest("POST", "account_consents?on_conflict=user_id", [{
+    user_id: userId, email: email || null, marketing: !!marketing, source: String(source || "").slice(0, 40),
+    consented_at: marketing ? now : null, updated_at: now,
+  }], "resolution=merge-duplicates,return=minimal");
+}
+async function accountConsent(body) {
+  const user = await supaVerifyUser(body && body.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  await saveConsent(user.id, user.email, !!(body && body.marketing), (body && body.source) || "web");
+  return respond(200, { ok: true });
+}
+
+// Claim an existing profile for an account that is ALREADY signed in (Google or
+// magic link) — no password involved. Same admin-review gate as accountClaim.
+async function accountClaimSession(body) {
+  const user = await supaVerifyUser(body && body.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  const wanted = String((body && body.player_name) || "").trim();
+  if (!wanted) return respond(400, { error: "Nama pemain wajib dipilih" });
+  const mine = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
+  if (mine && mine.length) return respond(400, { error: `Akun ini sudah terhubung ke profil ${mine[0].name}.` });
+  const pl = await supaRest("GET", `players?name=eq.${encodeURIComponent(wanted)}&select=name,user_id&limit=1`);
+  if (!pl || !pl.length) return respond(404, { error: "Pemain tidak ditemukan" });
+  if (pl[0].user_id) return respond(400, { error: "Profil ini sudah diklaim akun lain" });
+  const open = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&status=eq.pending&select=player_name&limit=1`);
+  if (open && open.length) {
+    if (open[0].player_name === pl[0].name) return respond(200, { ok: true, pending: true });
+    return respond(400, { error: `Kamu masih punya klaim yang sedang ditinjau (${open[0].player_name}).` });
+  }
+  await supaRest("POST", "profile_claims", [{ user_id: user.id, email: user.email, player_name: pl[0].name, status: "pending" }], "return=minimal");
+  await notifyOwner(
+    `🙋 New profile claim: ${pl[0].name}`,
+    `<h2>A player wants to claim a profile</h2>` +
+    `<p><b>Player:</b> ${escHtml(pl[0].name)}<br>` +
+    `<b>Claim email:</b> ${escHtml(user.email)} (verified sign-in)</p>` +
+    `<p>Review &amp; approve in the superadmin console.</p>`
+  );
+  return respond(200, { ok: true });
+}
+
+// Create a NEW player profile for an account that is already signed in. The
+// email is already verified by the sign-in itself, so the profile links now.
+async function accountRegisterSession(body) {
+  const b = body || {};
+  const user = await supaVerifyUser(b.token);
+  if (!user) return respond(401, { error: "Silakan login dulu" });
+  const name = String(b.name || "").trim().replace(/\s+/g, " ");
+  if (name.length < 2) return respond(400, { error: "Nama wajib diisi" });
+  if (name.length > 60) return respond(400, { error: "Nama terlalu panjang" });
+  const mine = await supaRest("GET", `players?user_id=eq.${user.id}&select=name&limit=1`);
+  if (mine && mine.length) return respond(400, { error: `Akun ini sudah terhubung ke profil ${mine[0].name}.` });
+  const exists = await supaRest("GET", `players?name=eq.${encodeURIComponent(name)}&select=name&limit=1`);
+  if (exists && exists.length) return respond(409, { error: "Nama sudah terdaftar di Trekkr — silakan klaim profil itu.", claim: true });
+  let photoUrl = "";
+  if (b.photo) { try { photoUrl = await uploadImage(b.photo, `profile_${playerSlug(name)}_${Date.now()}.jpg`); } catch (e) {} }
+  const SEED_ALLOWED = ["900", "1000", "1500"];
+  const seedEstimate = SEED_ALLOWED.includes(String(b.seedEstimate || "").trim()) ? String(b.seedEstimate).trim() : "";
+  const playerRow = {
+    name, ig: String(b.ig || "").trim().replace(/^@+/, ""), verified: "FALSE", display_name: name,
+    gender: String(b.gender || "").trim().toUpperCase() === "F" ? "F" : "M",
+    region: String(b.region || "").trim(), photo_url: ibbHostFix(photoUrl),
+    clubs: "", created_at: new Date().toISOString(), user_id: user.id,
+  };
+  if (seedEstimate) playerRow.seed_estimate = seedEstimate;
+  await supaRest("POST", "players", [playerRow], "return=minimal");
+  return respond(200, { ok: true, name });
 }
 
 async function accountProfile(body) {

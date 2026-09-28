@@ -16,6 +16,28 @@
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   });
 
+  // One session for the PWA and the website: Google / magic-link sign-ins land
+  // on /login, which stores the tokens under trekkr_player_* — adopt them here,
+  // and mirror any app sign-in back so the website is signed in too.
+  var WK = { at: "trekkr_player_token", rt: "trekkr_player_refresh", exp: "trekkr_player_exp" };
+  function lsGet(k) { try { return w.localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function lsSet(k, v) { try { if (v == null) w.localStorage.removeItem(k); else w.localStorage.setItem(k, v); } catch (e) {} }
+  sb.auth.onAuthStateChange(function (ev, session) {
+    if (session && session.access_token) {
+      lsSet(WK.at, session.access_token);
+      if (session.refresh_token) lsSet(WK.rt, session.refresh_token);
+      if (session.expires_at) lsSet(WK.exp, String(session.expires_at * 1000));
+    } else if (ev === "SIGNED_OUT") { lsSet(WK.at, null); lsSet(WK.rt, null); lsSet(WK.exp, null); }
+  });
+  async function bridgeSession() {
+    try {
+      var cur = await sb.auth.getSession();
+      if (cur && cur.data && cur.data.session) return;
+      var at = lsGet(WK.at), rt = lsGet(WK.rt);
+      if (at && rt) await sb.auth.setSession({ access_token: at, refresh_token: rt });
+    } catch (e) {}
+  }
+
   async function request(path, opts) {
     opts = opts || {};
     var res = await fetch(API_BASE + "/" + path, {
@@ -41,6 +63,7 @@
   var API = {
     base: API_BASE,
     sb: sb,
+    bridgeSession: bridgeSession,
     accountMe: function (token) { return request("account/me?token=" + encodeURIComponent(token)); },
     getPlayer: function (name) { return request("players/" + encodeURIComponent(name)); },
     getPlayerMatches: function (name) { return request("players/" + encodeURIComponent(name) + "/matches"); },

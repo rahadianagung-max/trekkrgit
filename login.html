@@ -48,6 +48,7 @@ input:focus{outline:none;border-color:var(--or)}
   <div id="app"></div>
 </div>
 
+<script src="/trekkr-auth.js"></script>
 <script>
 const SUPA_URL = "https://ftkbankqixnwssfrbqyc.supabase.co";
 const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0a2JhbmtxaXhud3NzZnJicXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0MDEsImV4cCI6MjEwMzM2NDQwMX0.RWVf6xehxQ9BPSK3ykDW8cikP9O5gvGRINwj9TAMaJQ";
@@ -71,8 +72,13 @@ async function apiGet(path){const r=await fetch(`${API}/${path}`);const d=await 
 // After we have a token, figure out where the player belongs and go there.
 async function afterLogin(){
   let me;
+  // Refresh the access token if needed, save any pending consent, then honour
+  // the page the player came from (claim / passport / app).
+  try{ await TrekkrAuth.token(); await TrekkrAuth.flushConsent(); }catch(e){}
+  const next = TrekkrAuth.takeNext();
+  if(next){ location.href = next; return; }
   try{ me = await apiGet(`account/me?token=${encodeURIComponent(tok())}`); }
-  catch(e){ localStorage.removeItem(TK); msg("Sesi tidak valid, silakan masuk lagi."); return viewLogin(); }
+  catch(e){ TrekkrAuth.clear(); msg("Sesi tidak valid, silakan masuk lagi."); return viewLogin(); }
   if(me.player){
     msg("");
     location.href = `${HOME}/player/${slug(me.player.name)}`;
@@ -85,16 +91,20 @@ async function afterLogin(){
 
 function viewLogin(){
   app().innerHTML=`
-    <h1>Player Login</h1>
-    <p class="sub">Masuk dengan email &amp; password yang kamu daftarkan untuk mengelola profil pemainmu.</p>
-    <div class="card">
+    <h1>Masuk ke Trekkr</h1>
+    <p class="sub">Tanpa password — pakai akun Google atau link yang kami kirim ke email kamu.</p>
+    <div class="card" id="taBox"></div>
+    <div class="center" style="margin:14px 0 4px"><button class="link" id="pwToggle">Masuk dengan password</button></div>
+    <div class="card" id="pwCard" hidden>
       <div class="field"><label>Email</label><input id="email" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
       <div class="field"><label>Password</label><input id="pass" type="password" placeholder="Password kamu" autocomplete="current-password"/></div>
       <button class="btn" id="go">Masuk</button>
       <div class="center" style="margin-top:14px"><button class="link" id="forgot">Lupa password?</button></div>
     </div>
-    <div class="sep">belum punya akun?</div>
+    <div class="sep">belum punya profil pemain?</div>
     <div class="foot">Baru di Trekkr atau mau klaim profilmu? <a class="link" href="${HOME}/join">Daftar / Klaim di sini &rarr;</a></div>`;
+  TrekkrAuth.renderBox($("taBox"),{onDone:afterLogin});
+  $("pwToggle").onclick=()=>{const c=$("pwCard");c.hidden=!c.hidden;};
   $("go").onclick=doLogin;
   $("forgot").onclick=()=>viewForgot();
   $("pass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
@@ -105,7 +115,7 @@ async function doLogin(){
   const b=$("go"); b.disabled=true; b.textContent="Memproses…";
   try{
     const d=await gotrue("token?grant_type=password",{email,password});
-    localStorage.setItem(TK,d.access_token); msg("");
+    TrekkrAuth.saveSession(d); msg("");
     b.textContent="Memuat profil…";
     await afterLogin();
   }catch(e){
@@ -144,7 +154,7 @@ function viewPending(claim){
     <p class="sub">Klaim profil <b>${esc(claim.player_name)}</b> sedang ditinjau admin. Kamu akan dapat email begitu disetujui, lalu bisa login untuk mengelola profil.</p>
     <div class="card center"><div style="font-size:34px;margin-bottom:6px">⏳</div><div style="font-weight:700">Sedang ditinjau admin</div></div>
     <div class="foot" style="margin-top:6px"><button class="link" id="lo">Keluar</button></div>`;
-  $("lo").onclick=()=>{localStorage.removeItem(TK);msg("");viewLogin();};
+  $("lo").onclick=()=>{TrekkrAuth.clear();msg("");viewLogin();};
 }
 function viewNoProfile(me){
   app().innerHTML=`
@@ -154,25 +164,14 @@ function viewNoProfile(me){
       <a class="btn" href="${HOME}/join" style="display:block;text-align:center;text-decoration:none">Klaim / daftar profil</a>
       <div class="center" style="margin-top:14px"><button class="link" id="lo">Keluar</button></div>
     </div>`;
-  $("lo").onclick=()=>{localStorage.removeItem(TK);msg("");viewLogin();};
+  $("lo").onclick=()=>{TrekkrAuth.clear();msg("");viewLogin();};
 }
 
 // ---- init: handle email-confirmation redirect hash, else login ----
 (function init(){
-  const h = new URLSearchParams((location.hash||"").replace(/^#/,""));
-  const type=h.get("type"), at=h.get("access_token");
-  if(at && (type==="signup"||type==="magiclink"||type==="email_change"||!type)){
-    // Confirmed via email link → we already have a session token.
-    localStorage.setItem(TK,at);
-    history.replaceState(null,"",location.pathname);
-    msg("Email terkonfirmasi ✓ Selamat datang!","ok");
-    afterLogin();
-    return;
-  }
-  if(h.get("error_description")){
-    msg("Link tidak valid / kedaluwarsa: "+h.get("error_description"));
-    history.replaceState(null,"",location.pathname);
-  }
+  const r = TrekkrAuth.consumeHash();
+  if(r && r.error){ msg("Link tidak valid / kedaluwarsa: "+r.error+". Minta link baru di bawah."); }
+  else if(r && r.ok){ msg("Berhasil masuk ✓","ok"); afterLogin(); return; }
   if(tok()){ afterLogin(); } else { viewLogin(); }
 })();
 </script>

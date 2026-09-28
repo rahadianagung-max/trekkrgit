@@ -947,6 +947,7 @@ body{background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05)
 <script src="https://trekkr.online/trekkr-api.js"></script>
 <script src="https://trekkr.online/trekkr-loader.js"></script>
 
+<script src="/trekkr-auth.js"></script>
 <script>
 let playerData=null;
 // ── Player session (logged-in owner can edit this passport) ──
@@ -957,7 +958,8 @@ function ppSlug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function ppTok(){try{return localStorage.getItem(PP_TK)||'';}catch(e){return '';}}
 var _session={token:'',myName:'',owns:false,loaded:false};
 async function initSession(){
-  _session.token=ppTok();
+  // Shared auth module refreshes an expiring token (Google / magic-link sessions).
+  try{ if(window.TrekkrAuth) _session.token=await TrekkrAuth.token(); else _session.token=ppTok(); }catch(e){ _session.token=ppTok(); }
   if(_session.token){
     try{
       const r=await fetch(`${PP_API}/account/me?token=${encodeURIComponent(_session.token)}`);
@@ -2610,7 +2612,7 @@ function doChangePassword(){
       else { pm.style.color='var(--danger)'; pm.textContent=(res.d&&res.d.error)||'Gagal ganti password.'; }
     }).catch(function(){ btn.disabled=false; btn.textContent='Ganti password'; pm.style.color='var(--danger)'; pm.textContent='Error jaringan.'; });
 }
-function ppLogout(){ try{localStorage.removeItem(PP_TK);}catch(e){} _session={token:'',myName:'',owns:false,loaded:true}; closeEditModal(); refreshEditBtn(); }
+function ppLogout(){ try{ if(window.TrekkrAuth) TrekkrAuth.clear(); else localStorage.removeItem(PP_TK);}catch(e){} _session={token:'',myName:'',owns:false,loaded:true}; closeEditModal(); refreshEditBtn(); }
 </script>
 
 <div class="share-modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
