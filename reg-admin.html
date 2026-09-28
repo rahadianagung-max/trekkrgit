@@ -61,6 +61,7 @@
   <div id="app"><div class="center"><div class="spin"></div>Memuat…</div></div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="/trekkr-api.js"></script>
 <script>
 const API_BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 let FORMS=[], FE=null, TOURNS=[], VIEW='list';
@@ -236,9 +237,17 @@ async function saveForm(){
     renderEditor();
   }catch(e){toast(e.message||'Gagal simpan',1);}
 }
+// Hapus/arsip wajib kunci admin bertanda tangan: pakai sesi admin yang ada, atau minta login.
+async function adminKey(){
+  let k=(TrekkrAPI.getSession()||{}).adminKey; if(k) return k;
+  const u=prompt('Login admin — username:'); if(!u) return '';
+  const pw=prompt('Password admin:'); if(!pw) return '';
+  try{ const d=await TrekkrAPI.login(u.trim(),pw); return d.adminKey||''; }catch(e){ toast('Login gagal',1); return ''; }
+}
 async function archiveForm(){
   if(!confirm('Arsipkan formulir ini? Link publik tidak bisa dipakai lagi.'))return;
-  try{await api('reg/form/'+encodeURIComponent(FE.formId)+'/delete',{method:'POST'});FORMS=FORMS.filter(f=>f.formId!==FE.formId);toast('Diarsipkan');renderList();}catch(e){toast('Gagal',1);}
+  const k=await adminKey(); if(!k) return;
+  try{await api('reg/form/'+encodeURIComponent(FE.formId)+'/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminKey:k})});FORMS=FORMS.filter(f=>f.formId!==FE.formId);toast('Diarsipkan');renderList();}catch(e){toast(e.message||'Gagal',1);}
 }
 
 let REGS=[],REG_TITLE='';

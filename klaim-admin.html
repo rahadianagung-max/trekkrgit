@@ -63,11 +63,11 @@ function viewLogin(){
 }
 async function load(){
   const s=TrekkrAPI.getSession();
-  if(!s.token) return viewLogin();
+  if(!s.token||!s.adminKey) return viewLogin();
   $("logout").classList.remove("hidden");
   app().innerHTML=`<h1>Klaim Profil</h1><p class="sub">Permintaan pemain untuk mengelola profilnya sendiri. Setujui hanya jika yakin orangnya benar.</p><div id="list" class="card"><div class="empty">Memuat…</div></div>`;
   try{
-    const d=await apiGet("account/claims?status=pending");
+    const d=await apiGet("account/claims?status=pending&key="+encodeURIComponent(s.adminKey));
     const cl=d.claims||[]; const el=$("list");
     if(!cl.length){ el.innerHTML='<div class="empty">🎉 Tidak ada klaim yang menunggu.</div>'; return; }
     el.classList.remove("card"); el.innerHTML=cl.map(c=>`
@@ -83,7 +83,7 @@ async function load(){
 async function resolve(id,action,row){
   const admin=(TrekkrAPI.getSession().username)||"admin";
   row.querySelectorAll("button").forEach(b=>b.disabled=true);
-  try{ await apiSend("account/claims/resolve","POST",{claimId:parseInt(id),action,admin});
+  try{ await apiSend("account/claims/resolve","POST",{claimId:parseInt(id),action,admin,adminKey:TrekkrAPI.getSession().adminKey});
     msg(action==="approve"?"Klaim disetujui ✓":"Klaim ditolak","ok"); row.remove();
     if(!$("list").querySelector(".claim")) load();
   }catch(e){ msg("Gagal: "+e.message); row.querySelectorAll("button").forEach(b=>b.disabled=false); }

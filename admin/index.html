@@ -1642,7 +1642,7 @@ async function sessionSave(){
 async function sessionDelete(id){
   if(!confirm('Delete this session? Existing bookings for it will be orphaned.')) return;
   try{
-    var r=await fetch(API_BASE+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:RM.token})});
+    var r=await fetch(API_BASE+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:RM.token,adminKey:(TrekkrAPI.getSession()||{}).adminKey||''})});
     var d=await r.json(); if(!r.ok) throw new Error(d.error||'Failed'); loadSessions();
   }catch(e){ alert(e.message||'Failed to delete'); }
 }

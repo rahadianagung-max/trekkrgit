@@ -56,6 +56,7 @@ const TrekkrAPI = (() => {
         localStorage.setItem("trekkr_role", data.role);
         localStorage.setItem("trekkr_venue", data.venue);
         localStorage.setItem("trekkr_user", data.username);
+        localStorage.setItem("trekkr_admin_key", data.adminKey || "");
       }
       return data;
     },
@@ -64,6 +65,7 @@ const TrekkrAPI = (() => {
       localStorage.removeItem("trekkr_role");
       localStorage.removeItem("trekkr_venue");
       localStorage.removeItem("trekkr_user");
+      localStorage.removeItem("trekkr_admin_key");
     },
     getSession() {
       return {
@@ -71,6 +73,7 @@ const TrekkrAPI = (() => {
         role: localStorage.getItem("trekkr_role") || "",
         venue: localStorage.getItem("trekkr_venue") || "",
         username: localStorage.getItem("trekkr_user") || "",
+        adminKey: localStorage.getItem("trekkr_admin_key") || "",
       };
     },
 
