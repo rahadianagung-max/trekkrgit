@@ -260,6 +260,40 @@ header.hd{padding:18px 2px 6px}
 .state .spin{width:26px;height:26px;border-width:3px;margin:0 auto}
 .state a{color:var(--orange);font-weight:700;text-decoration:none}
 [hidden]{display:none!important}
+
+/* ── PlayRank League theme for the weekly (non-league) view. The league view
+   already uses playrank-league.css (body.prl); this re-skins the rest to the
+   site theme: ink / orange / volt, Space Grotesk + JetBrains Mono, square
+   corners, 2px ink borders + hard shadows. Dark mode keeps its palette. ── */
+:root:not([data-theme="dark"]){
+  --ground:#FFFFFF; --card:#FFFFFF; --card2:#F4F6F9; --line:#090D14; --line2:#E2E8F0;
+  --ink:#090D14; --mute:#475569; --dim:#64748B; --orange:#FF5900; --orange-ink:#C24300;
+  --cyan:#D2F802; --cyan-ink:#090D14; --pill:#FFFFFF; --bar-track:#E2E8F0;
+  --shadow:4px 4px 0 #090D14;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --shadow:4px 4px 0 #000; --line:#3A3F48; } }
+body:not(.prl){background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px);background-size:24px 24px}
+body:not(.prl) .mono,body:not(.prl) .elo,body:not(.prl) .rk,body:not(.prl) .wl,body:not(.prl) .pod .rec,body:not(.prl) .pod .dl,
+body:not(.prl) .ac .big,body:not(.prl) .mh .ms,body:not(.prl) .mh .mpd,body:not(.prl) .oslot .tm,body:not(.prl) .oslot .om .sc{font-family:'JetBrains Mono',ui-monospace,monospace}
+body:not(.prl) .title,body:not(.prl) .slab h2,body:not(.prl) .recap .rh,body:not(.prl) .state .big,body:not(.prl) .cond,body:not(.prl) .vs .v{
+  font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;font-style:normal;letter-spacing:-.02em}
+body:not(.prl) .title{font-weight:700;letter-spacing:-.035em}
+body:not(.prl) .title b{font-style:normal}
+body:not(.prl) .slab .rule{height:2px;background:var(--ink)}
+body:not(.prl) .court,body:not(.prl) .board,body:not(.prl) .oslot,body:not(.prl) .mh,body:not(.prl) .recap,body:not(.prl) .pod,
+body:not(.prl) .ac,body:not(.prl) .ltabs{border:2px solid var(--line);border-radius:0;box-shadow:var(--shadow)}
+body:not(.prl) .pod.first{border-color:var(--line);box-shadow:5px 5px 0 var(--orange);background:#FFF4EC}
+body:not(.prl) .byecard,body:not(.prl) .upnext{border:2px dashed var(--line);border-radius:0}
+body:not(.prl) .chip{border-radius:0;border:1.5px solid var(--line);background:var(--pill);color:var(--ink);font-family:'JetBrains Mono',monospace}
+body:not(.prl) .chip.cy{background:var(--cyan);color:var(--cyan-ink);border-color:var(--line)}
+body:not(.prl) .court .ct{border-radius:0;background:var(--cyan);color:var(--cyan-ink);border:1.5px solid var(--line);font-family:'JetBrains Mono',monospace}
+body:not(.prl) .pod .pav,body:not(.prl) .oopfind{border-radius:0}
+body:not(.prl) .oopfind{border:2px solid var(--line)}
+body:not(.prl) .btn{border-radius:0;border:2px solid var(--line);box-shadow:var(--shadow);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em}
+body:not(.prl) .themebtn{border-radius:0;border:2px solid var(--line)}
+body:not(.prl) .live,body:not(.prl) .final-lbl{font-family:'JetBrains Mono',ui-monospace,monospace;font-style:normal}
+/* Square corners everywhere in the weekly view (live dot + spinners stay round). */
+body:not(.prl) #app *:not(.dot):not(.spin):not([class*="spin"]){border-radius:0 !important}
 </style>
 </head>
 <body>

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 /* =====================================================================
  * TREKKR — WAVE 1 DESIGN TOKENS + COMPONENT PRIMITIVES
  * ---------------------------------------------------------------------
@@ -286,3 +287,65 @@ h2,.h2{ font-family:var(--display); font-weight:700; font-size:22px; text-transf
   :root{ --shell-max:520px; }
   h1,.h1{ font-size:44px; }
 }
+
+/* =====================================================================
+ * PlayRank League theme (site-wide direction, Sep 2026): ink / orange /
+ * volt, Space Grotesk + JetBrains Mono, grid paper, 2px ink borders and
+ * hard offset shadows. Re-values the Wave 1 tokens and restyles the
+ * primitives so every Wave 1 page (passport, ranking, season, series,
+ * sessions, session, liga-trekkr) matches the rest of trekkr.online.
+ * ===================================================================== */
+:root{
+  --field:#FFFFFF; --card:#FFFFFF; --ink:#090D14; --mute:#475569; --dim:#64748B; --line:#E2E8F0;
+  --flare:#FF5900; --flare-soft:#FFF4EC; --flare-deep:#C24300; --volt:#D2F802;
+  --teal:#090D14; --teal-soft:#F4F6F9;
+  --display:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --tk-shadow:4px 4px 0 var(--ink);
+}
+body{ background-color:#fff;
+  background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px);
+  background-size:24px 24px; }
+h1,.h1{ font-weight:700; letter-spacing:-.035em; line-height:.95; }
+h2,.h2{ font-weight:700; letter-spacing:-.02em; }
+.eyebrow{ color:var(--flare); font-weight:800; }
+.card,.srow,.result,.locked,.prize,.stat3 > div,.minicards div{ border:2px solid var(--ink); box-shadow:var(--tk-shadow); }
+.card{ margin-bottom:14px; }
+.card.flare,.prize.t1{ background:var(--flare-soft); border-color:var(--ink); box-shadow:5px 5px 0 var(--flare); }
+.card.teal{ background:#F4F6F9; border-color:var(--ink); }
+.locked{ border-style:solid; background:#fff; }
+.srow:hover,.result:hover{ border-color:var(--ink); box-shadow:4px 4px 0 var(--flare); }
+.btn{ border:2px solid var(--ink); box-shadow:var(--tk-shadow); font-family:var(--mono); font-weight:800; font-size:13px;
+  letter-spacing:.06em; transition:transform .08s, box-shadow .08s; }
+.btn:hover{ filter:none; background:#ff6a1a; }
+.btn:active{ transform:translate(2px,2px); box-shadow:2px 2px 0 var(--ink); }
+.btn.ghost{ background:#fff; border:2px solid var(--ink); color:var(--ink); }
+.btn.ghost:hover{ background:#F4F6F9; }
+.btn.dark:hover{ background:#1c2330; }
+.seg{ border:2px solid var(--ink); }
+.seg button{ font-weight:800; color:var(--ink); }
+.seg button + button{ border-left:2px solid var(--ink); }
+.seg button.on{ background:var(--flare); color:#fff; }
+.note{ background:#fff; border:2px solid var(--ink); border-left:6px solid var(--flare); color:var(--ink); }
+.soon{ background:var(--volt); color:var(--ink); border:1.5px solid var(--ink); font-weight:800; }
+.stepn{ background:var(--flare); border:2px solid var(--ink); }
+.rnum{ background:var(--ink); }
+.sesblock{ border:2px solid var(--ink); }
+.sesblock.done{ background:var(--flare); border-color:var(--ink); }
+.sesblock.now{ background:var(--volt); border-color:var(--ink); }
+.sesblock.now b,.sesblock.now span{ color:var(--ink); }
+.spots b,.sdate b,.stat3 b,.minicards b{ font-family:var(--mono); font-weight:800; font-variant-numeric:tabular-nums; }
+.spots b{ color:var(--flare); }
+.input,label > .input{ border:2px solid var(--ink); }
+.input:focus{ box-shadow:3px 3px 0 var(--flare); }
+.field-label{ color:var(--ink); font-weight:800; }
+.monthhead{ border-bottom:3px solid var(--ink); }
+.countdown{ border:2px solid var(--ink); box-shadow:5px 5px 0 var(--flare); }
+.countdown span{ color:rgba(255,255,255,.65); }
+.rav{ background:#F4F6F9; color:var(--ink); border:2px solid var(--ink); border-radius:0; }
+.ghost-tag{ color:var(--ink); border-color:var(--ink); background:var(--volt); }
+.w1-footer{ border-top:3px solid var(--ink); color:var(--mute); }
+.w1-footer a{ color:var(--ink); font-weight:800; }
+.w1-menu-btn{ border:2px solid var(--ink); }
+.w1-menu-panel{ border:2px solid var(--ink); box-shadow:5px 5px 0 var(--ink); }
+.skel{ background:linear-gradient(90deg,#E9EDF2 25%,#F6F8FA 50%,#E9EDF2 75%); background-size:200% 100%; }
