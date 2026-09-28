@@ -54,6 +54,9 @@ const SHEET_MAP = {
   RE_Players:         { table: "re_players",          cols: ["event_id","player_id","name","canonical","start_elo","tier","claimed_at","status","level","gender"] },
   RE_Waves:           { table: "re_waves",            cols: ["event_id","wave","phase","start_time","status","rest_ids"] },
   RE_Matches:         { table: "re_matches",          cols: ["event_id","match_id","wave","phase","tier","court","a1","a2","b1","b2","score_a","score_b","status","scorer","updated_at"] },
+  // Read-only here: turnamenpadel archives finished events into this table; the
+  // competition pages rebuild group/bracket views from it.
+  Tournament_Archive: { table: "tournament_archive",  cols: ["archived_at","event_id","source_tab","row_json"] },
   Achievements:       { table: "achievements",         cols: ["player","player_norm","event_id","event_name","category","level","tournament_id","placement","stage","event_date","created_at"] },
 };
 
