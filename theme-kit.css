@@ -1,0 +1,76 @@
+/* ==========================================================================
+   theme-kit.css — PlayRank League skin for Trekkr's standalone pages
+   (login / join / reset, venue onboarding, Ranked Event, recap, register…).
+   Those pages share a small legacy kit (.wrap .top .brand .card .btn input
+   .msg …) with their own orange-gradient, rounded look. Link this AFTER the
+   page's own <style> so it re-values that kit into the site theme:
+   ink #090D14 · orange #FF5900 · volt #D2F802, Space Grotesk + JetBrains Mono,
+   grid paper, square corners, 2px ink borders and hard offset shadows.
+   Add class "tk-band" to <body> on pages whose .top is a coloured header band.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,900&display=swap');
+
+:root{
+  --tk-ink:#090D14; --tk-or:#FF5900; --tk-volt:#D2F802; --tk-line:#E2E8F0; --tk-mute:#475569;
+  --tk-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --tk-disp:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
+  /* legacy kit tokens, re-valued */
+  --or:#FF5900; --o:#FF5900; --or-d:#E04E00; --ink:#090D14; --grad:#FF5900;
+  --bg:#FFFFFF; --bd:#E2E8F0; --line:#E2E8F0; --mu:#475569; --mut:#475569;
+}
+body{
+  background-color:#fff !important;
+  background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px) !important;
+  background-size:24px 24px !important;
+  color:var(--tk-ink);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+::selection{background:var(--tk-volt);color:var(--tk-ink)}
+
+/* Type */
+h1,h2,h3{font-family:var(--tk-disp);font-style:normal;letter-spacing:-.02em}
+h1{font-weight:700;text-transform:uppercase;letter-spacing:-.035em;line-height:1}
+.sub,.hint,.help,.desc{color:var(--tk-mute)}
+
+/* Brand word-mark: TREKKR // */
+.brand,.logo{font-family:'Plus Jakarta Sans',system-ui,sans-serif !important;font-style:italic;font-weight:900 !important;
+  text-transform:uppercase;letter-spacing:-.04em !important;color:var(--tk-ink)}
+.brand b,.logo b,.logo span{color:var(--tk-ink)}
+.brand::after,.logo::after{content:'//';font-style:normal;background:var(--tk-or);color:#fff;padding:0 6px;margin-left:3px;font-size:.8em;vertical-align:.08em}
+
+/* Coloured header band → ink band with a volt rule */
+.tk-band .top{background:var(--tk-ink) !important;color:#fff;border-bottom:4px solid var(--tk-volt)}
+.tk-band .top .brand,.tk-band .top .brand b,.tk-band .top .logo{color:#fff}
+.tk-band .top a{color:var(--tk-volt)}
+
+/* Surfaces */
+.card,.pay,.upbox,.state,.done{border:2px solid var(--tk-ink) !important;border-radius:0 !important;box-shadow:4px 4px 0 var(--tk-ink) !important;background:#fff}
+.banner:not(img){border-radius:0 !important;border:2px solid var(--tk-ink)}
+img.banner{border-radius:0 !important;border-bottom:3px solid var(--tk-ink)}
+
+/* Buttons */
+.btn{background:var(--tk-or) !important;color:#fff;border:2px solid var(--tk-ink) !important;border-radius:0 !important;
+  box-shadow:4px 4px 0 var(--tk-ink);font-family:var(--tk-mono) !important;font-weight:800 !important;font-size:13px !important;
+  letter-spacing:.06em;text-transform:uppercase;transition:transform .08s,box-shadow .08s}
+.btn:hover:not(:disabled){background:#ff6a1a !important;filter:none}
+.btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:2px 2px 0 var(--tk-ink)}
+.btn.ghost,.btn.gh{background:#fff !important;color:var(--tk-ink) !important}
+.btn.ghost:hover:not(:disabled),.btn.gh:hover:not(:disabled){background:#F4F6F9 !important}
+.link,a.link{color:var(--tk-or)}
+
+/* Form fields */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{border:2px solid var(--tk-ink) !important;border-radius:0 !important;background:#fff}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--tk-ink) !important;box-shadow:3px 3px 0 var(--tk-or)}
+label,label.flabel{font-family:var(--tk-mono);font-size:10.5px !important;letter-spacing:.08em;text-transform:uppercase;color:var(--tk-ink) !important;font-weight:800 !important}
+.opt{border:2px solid var(--tk-ink) !important;border-radius:0 !important}
+.opt.sel{background:var(--tk-volt) !important;color:var(--tk-ink) !important}
+
+/* Messages */
+.msg,.err,.info{border-radius:0 !important}
+.msg.ok,.msg.err,.msg.info{border:2px solid var(--tk-ink) !important}
+.msg.info{background:#FFF4EC}
+
+/* Misc chips / badges */
+.badge,.chip,.pill{border-radius:0 !important;border:1.5px solid var(--tk-ink);font-family:var(--tk-mono);font-weight:800}
+.foot{font-family:var(--tk-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--tk-mute)}
+.foot b,.foot a{color:var(--tk-ink)}
