@@ -6723,6 +6723,98 @@ async function tournamentFromEngine(sheets, comp, base) {
     .filter((c) => (c.pairs && c.pairs.length) || (c.players && c.players.length));
   return categories;
 }
+// Venue-tab fallback (engine rows lost, e.g. events finished before the
+// archive kept groups/matches): rebuild the format from the flat match log.
+// The group stage is the longest prefix of the log in which every connected
+// set of pairs is a (near-)complete round robin; everything after it is the
+// knockout. Knockout rounds follow the winners: both sides fresh -> round 1,
+// both won round r -> round r+1, both lost the same round -> 3rd-place match.
+// Returns null when no group stage can be recognised.
+function reconstructVenueFormat(rows, pinfo) {
+  const keyOf = (t) => t.slice().sort().join(" | ");
+  const ms = [], teams = {};
+  rows.forEach((r) => {
+    const t1 = [r[2], r[3]].filter(Boolean), t2 = [r[4], r[5]].filter(Boolean);
+    if (!t1.length || !t2.length || !validScore(r[6]) || !validScore(r[7])) return;
+    const a = keyOf(t1), b = keyOf(t2);
+    if (a === b) return;
+    teams[a] = t1; teams[b] = t2;
+    ms.push({ a, b, sa: Number(r[6]), sb: Number(r[7]) });
+  });
+  if (ms.length < 6) return null;
+  // Prefix scan: components (union-find) with node + unique-edge counts.
+  const par = {}, nodes = {}, edges = {};
+  const find = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+  const add = (x) => { if (par[x] === undefined) { par[x] = x; nodes[x] = 1; edges[x] = 0; } };
+  const seen = new Set();
+  const dense = () => Object.keys(par).every((x) => {
+    if (find(x) !== x || nodes[x] < 2) return true;
+    return edges[x] >= 0.8 * nodes[x] * (nodes[x] - 1) / 2;
+  });
+  let cut = 0;
+  for (let i = 0; i < ms.length; i++) {
+    const m = ms[i], ek = [m.a, m.b].sort().join(" ## ");
+    if (seen.has(ek)) break;                       // a rematch is knockout
+    seen.add(ek); add(m.a); add(m.b);
+    let ra = find(m.a), rb = find(m.b);
+    if (ra !== rb) { par[rb] = ra; nodes[ra] += nodes[rb]; edges[ra] += edges[rb]; }
+    edges[ra]++;
+    if (dense()) cut = i + 1;
+  }
+  // Rebuild the components of the group-stage prefix.
+  const gp = {}; const gfind = (x) => (gp[x] === x ? x : (gp[x] = gfind(gp[x])));
+  ms.slice(0, cut).forEach((m) => { [m.a, m.b].forEach((t) => { if (gp[t] === undefined) gp[t] = t; }); gp[gfind(m.b)] = gfind(m.a); });
+  const comp = {}, order = [];
+  ms.slice(0, cut).forEach((m) => [m.a, m.b].forEach((t) => { const r = gfind(t); if (!comp[r]) { comp[r] = []; order.push(r); } if (!comp[r].includes(t)) comp[r].push(t); }));
+  const gsets = order.map((r) => comp[r]).filter((g) => g.length >= 3);
+  if (!gsets.length || cut < ms.length * 0.4) return null;
+  const gOf = {}; gsets.forEach((g, i) => g.forEach((t) => { gOf[t] = i; }));
+  const side = (k) => ({ players: teams[k].map((n) => { const x = pinfo(n); return { name: x.display || x.name, slug: x.slug, photo: x.photo }; }) });
+  const out = (m) => ({ a: side(m.a), b: side(m.b), sa: m.sa, sb: m.sb, winner: m.sa > m.sb ? "a" : m.sb > m.sa ? "b" : null, played: true, time: "" });
+  const L = "ABCDEFGHIJKLMNOP";
+  const groups = gsets.map((g, i) => {
+    const gm = ms.slice(0, cut).filter((m) => gOf[m.a] === i && gOf[m.b] === i);
+    const st = {}; g.forEach((t) => { st[t] = { t, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }; });
+    gm.forEach((m) => {
+      const a = st[m.a], b = st[m.b];
+      a.p++; b.p++; a.gf += m.sa; a.ga += m.sb; b.gf += m.sb; b.ga += m.sa;
+      if (m.sa > m.sb) { a.w++; b.l++; } else if (m.sb > m.sa) { b.w++; a.l++; } else { a.d++; b.d++; }
+    });
+    const table = Object.values(st)
+      .sort((x, y) => (y.w - x.w) || (y.d - x.d) || ((y.gf - y.ga) - (x.gf - x.ga)) || (y.gf - x.gf))
+      .map((r, j) => ({ rank: j + 1, ...side(r.t), played: r.p, wins: r.w, draws: r.d, losses: r.l, gd: r.gf - r.ga }));
+    return { label: "Group " + (L[i] || i + 1), table, matches: gm.map(out) };
+  });
+  // Knockout
+  const last = {}, byRound = []; let third = null, ok = true;
+  ms.slice(cut).forEach((m) => {
+    if (m.sa === m.sb) { ok = false; return; }
+    const pa = last[m.a], pb = last[m.b];
+    let r = 0;
+    if (pa && pb && !pa.won && !pb.won && pa.r === pb.r && !third) third = m;
+    else {
+      if (pa || pb) {
+        if ((pa && !pa.won) || (pb && !pb.won) || (pa && pb && pa.r !== pb.r)) ok = false;
+        r = Math.max(pa ? pa.r + 1 : 0, pb ? pb.r + 1 : 0);
+      }
+      (byRound[r] = byRound[r] || []).push(m);
+    }
+    last[m.a] = { r, won: m.sa > m.sb }; last[m.b] = { r, won: m.sb > m.sa };
+  });
+  const rs = byRound.filter(Boolean), n = rs.length;
+  if (!n || rs[n - 1].length !== 1 || rs.some((x, i) => i && x.length > rs[i - 1].length)) ok = false;
+  let brackets = [], podium = [];
+  if (ok) {
+    const rounds = rs.map((list, i) => {
+      const off = n - 1 - i;
+      return { name: off === 0 ? "Final" : off === 1 ? "Semifinals" : off === 2 ? "Quarterfinals" : ("Round of " + Math.pow(2, off + 1)), matches: list.map(out) };
+    });
+    brackets = [{ name: "", rounds, thirdPlace: third ? out(third) : null }];
+    const f = rs[n - 1][0], w = (m) => (m.sa > m.sb ? [m.a, m.b] : [m.b, m.a]);
+    podium = w(f); if (third) podium = podium.concat(w(third));
+  }
+  return { format: { groups, brackets }, podium: podium.map((k) => teams[k]) };
+}
 async function getTournamentCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "tournament", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
   if (comp.eventId) {
@@ -6743,7 +6835,21 @@ async function getTournamentCompetition(sheets, comp) {
   const LABEL = { M: "Men's Doubles", F: "Women's Doubles", MIXED: "Fixed Mixed" };
   const categories = ["M", "F", "MIXED"]
     .filter((k) => buckets[k] && buckets[k].length)
-    .map((k) => ({ key: k, label: LABEL[k] || k, pairs: buildPairs(buckets[k], pinfo), players: buildPlayers(buckets[k], pinfo) }));
+    .map((k) => {
+      const c = { key: k, label: LABEL[k] || k, pairs: buildPairs(buckets[k], pinfo), players: buildPlayers(buckets[k], pinfo) };
+      const rec = reconstructVenueFormat(buckets[k], pinfo);
+      if (rec) {
+        c.format = rec.format;
+        // Bracket-aware standings: podium first, then the rest by wins.
+        if (rec.podium.length) {
+          const pk = (pl) => pl.map((x) => x.slug).sort().join("|");
+          const want = rec.podium.map((t) => t.map((n) => pinfo(n).slug).sort().join("|"));
+          const top = want.map((w) => c.pairs.find((p) => pk(p.players) === w)).filter(Boolean);
+          c.pairs = top.concat(c.pairs.filter((p) => !top.includes(p))).map((p, i) => ({ ...p, rank: i + 1 }));
+        }
+      }
+      return c;
+    });
 
   return respond(200, { ...base, categories });
 }
