@@ -1,31 +1,45 @@
 /* Trekkr — shared site nav. Drop-in: add <div id="tk-nav"></div> near the top
    of <body> and <script src="/trekkr-nav.js" defer></script>. Renders the
-   audience-based header (Players / Venues & Community / Liga Trekkr + Rankings)
-   with a Get-the-App button and a venue Login, plus a mobile sheet. Self-styled. */
+   main menu (Players / PlayRank / League & Tournament) with a Get-the-App
+   button and a venue Login, plus a mobile sheet. Self-styled. Also loaded on the
+   venue subdomain (venue.trekkr.online), where site links become absolute. */
 (function (w, d) {
   "use strict";
   var ADMIN = "https://admin.trekkr.online";
+  var VENUE = "https://venue.trekkr.online";
+  var host = location.hostname;
+  var onVenue = /^venue\./.test(host);
+  // Site-relative links resolve against trekkr.online when rendered elsewhere
+  // (venue subdomain, previews of other projects).
+  var mainSite = host === "trekkr.online" || host === "localhost" || host === "127.0.0.1" || (/\.vercel\.app$/.test(host) && /^trekkrgit/.test(host));
+  var SITE = mainSite ? "" : "https://trekkr.online";
 
-  // Audience groups (label → dropdown items). `cta:true` styles the item as a button.
+  // Main menu (label → dropdown items). `cta:true` styles the item as a button.
+  // `venueGroup` says which group is active on the venue subdomain.
   var GROUPS = [
     { label: "Players", items: [
-      ["What is Trekkr", "/about"],
-      ["How we track your play", "/how-it-works"],
+      ["Rankings", "/rankings"],
+      ["Player passport", "/passport"],
       ["ELO & tiers explained", "/how-trekkr-works"],
+      ["How we track your play", "/how-it-works"],
+      ["What is Trekkr", "/about"],
       ["Get the Player App", "/app", true],
     ] },
-    { label: "Venues & Community", items: [
+    { label: "PlayRank", items: [
+      ["What is PlayRank", "/playrank"],
+      ["Venues & Community", "/venues"],
       ["Join / Get listed", "/get-listed"],
-      ["Venue & community directory", "/venues"],
       ["Venue login (host here)", ADMIN],
-    ] },
-    { label: "Liga Trekkr", items: [
-      ["How the league works", "/liga-trekkr"],
+    ], venueGroup: "pr" },
+    { label: "League & Tournament", items: [
+      ["Tourney & League overview", "/tournament"],
+      ["Tournaments", VENUE + "/?tab=tn"],
+      ["Leagues", VENUE + "/?tab=lg"],
+      ["Liga Trekkr", "/liga-trekkr"],
       ["Season calendar", "/season"],
       ["Trekkr Series", "/series"],
-    ] },
+    ], venueGroup: "tl" },
   ];
-  var SOLO = [["PlayRank", "/playrank"], ["Rankings", "/rankings"]];
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   var path = location.pathname.replace(/\/+$/, "") || "/";
@@ -34,12 +48,22 @@
     var h = href.replace(/\/+$/, "") || "/";
     return h === path;
   }
-  function groupActive(g) { return g.items.some(function (it) { return isActive(it[1]); }); }
-  function attrs(href) { return href.charAt(0) === "/" ? "" : ' target="_blank" rel="noopener"'; }
+  function groupActive(g) {
+    if (onVenue) {
+      // venue.trekkr.online: tournament/league pages (or their directory tabs)
+      // belong to League & Tournament; everything else there is PlayRank venues.
+      var tourney = /^\/(tournament|league)\b/.test(path) || /[?&]tab=(tn|lg)/.test(location.search);
+      return g.venueGroup === "tl" ? tourney : g.venueGroup === "pr" ? !tourney : false;
+    }
+    return g.items.some(function (it) { return isActive(it[1]); });
+  }
+  function href(h) { return h.charAt(0) === "/" ? SITE + h : h; }
+  // Only third-party / admin links open a new tab; Trekkr's own sites stay in-tab.
+  function attrs(h) { return (h.charAt(0) === "/" || h.indexOf(VENUE) === 0) ? "" : ' target="_blank" rel="noopener"'; }
 
   function menuItems(items) {
     return items.map(function (it) {
-      return '<a class="tk-mi' + (it[2] ? " cta" : "") + (isActive(it[1]) ? " on" : "") + '" href="' + esc(it[1]) + '"' + attrs(it[1]) + ">" + esc(it[0]) + "</a>";
+      return '<a class="tk-mi' + (it[2] ? " cta" : "") + (!onVenue && isActive(it[1]) ? " on" : "") + '" href="' + esc(href(it[1])) + '"' + attrs(it[1]) + ">" + esc(it[0]) + "</a>";
     }).join("");
   }
 
@@ -50,16 +74,14 @@
         ' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
         '<div class="tk-menu">' + menuItems(g.items) + "</div></div>";
     }).join("");
-    var solo = SOLO.map(function (s) { return '<a class="tk-solo' + (isActive(s[1]) ? " on" : "") + '" href="' + esc(s[1]) + '">' + esc(s[0]) + "</a>"; }).join("");
-    return '<nav class="tk-nav" aria-label="Primary">' + drops + solo + "</nav>";
+    return '<nav class="tk-nav" aria-label="Primary">' + drops + "</nav>";
   }
 
   function mobileNav() {
     var groups = GROUPS.map(function (g) {
       return '<div class="tk-mgroup"><div class="tk-mlabel">' + esc(g.label) + "</div>" + menuItems(g.items) + "</div>";
     }).join("");
-    var solo = SOLO.map(function (s) { return '<a class="tk-mi' + (isActive(s[1]) ? " on" : "") + '" href="' + esc(s[1]) + '">' + esc(s[0]) + "</a>"; }).join("");
-    return '<div class="tk-msheet" id="tkMsheet">' + groups + '<div class="tk-mgroup">' + solo +
+    return '<div class="tk-msheet" id="tkMsheet">' + groups + '<div class="tk-mgroup">' +
       '<a class="tk-mi" href="' + ADMIN + '" target="_blank" rel="noopener">Venue / admin login</a></div></div>';
   }
 
@@ -101,10 +123,10 @@
     if (!el) return;
     el.innerHTML = css() +
       '<header class="tk-header"><div class="tk-in">' +
-        '<a class="tk-brand" href="/" aria-label="Trekkr home">Trekkr<i>//</i></a>' +
+        '<a class="tk-brand" href="' + (SITE || "/") + '" aria-label="Trekkr home">Trekkr<i>//</i></a>' +
         desktopNav() +
         '<div class="tk-act">' +
-          '<a class="tk-getapp" href="/app">Get the App</a>' +
+          '<a class="tk-getapp" href="' + SITE + '/app">Get the App</a>' +
           '<a class="tk-login" href="' + ADMIN + '" target="_blank" rel="noopener">Login</a>' +
           '<button class="tk-burger" id="tkBurger" aria-label="Menu" aria-expanded="false">&#9776;</button>' +
         "</div>" +
