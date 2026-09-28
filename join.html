@@ -73,6 +73,7 @@ input:focus,select:focus{outline:none;border-color:var(--or)}
   <div id="app"></div>
 </div>
 
+<script src="/trekkr-auth.js"></script>
 <script>
 const SUPA_URL="https://ftkbankqixnwssfrbqyc.supabase.co";
 const API=(location.hostname==="trekkr.online"||(location.hostname.endsWith(".vercel.app")&&location.hostname.startsWith("trekkrgit")))?"/api":"https://trekkr.online/api";
@@ -87,13 +88,26 @@ let _photoData="";           // base64 for new-player photo
 let _mode="";                // "new" | "claim"
 let _existingName="";        // canonical name when claiming
 let _seed="";                // seed placement estimate (SEED ONLY — bukan tier/ELO resmi)
+let _autoClaim="";           // claim to submit automatically after the sign-in redirect
+let _me=null;                // account/me for a signed-in visitor (null = not signed in)
+const PK="trekkr_join_pending"; // new-player form kept across the sign-in redirect
+
+async function authToken(){ try{ return await TrekkrAuth.token(); }catch(e){ return ""; } }
+async function loadMe(){
+  const t=await authToken(); if(!t) return null;
+  try{ const r=await fetch(`${API}/account/me?token=${encodeURIComponent(t)}`); if(!r.ok){ if(r.status===401) TrekkrAuth.clear(); return null; } return await r.json(); }catch(e){ return null; }
+}
+function savePending(o){ try{ localStorage.setItem(PK, JSON.stringify(o)); }catch(e){ try{ delete o.photo; localStorage.setItem(PK, JSON.stringify(o)); }catch(e2){} } }
+function takePending(){ try{ const v=JSON.parse(localStorage.getItem(PK)||"null"); localStorage.removeItem(PK); return v; }catch(e){ return null; } }
 
 // ---------- ENTRY (name check) ----------
 function viewEntry(prefill){
   _mode=""; _photoData=""; _existingName=""; _seed="";
+  const who=_me&&_me.email?`<div class="banner new" style="margin-bottom:14px">Masuk sebagai <b>${esc(_me.email)}</b> · <button class="link" id="soBtn" style="padding:0">Keluar</button></div>`:"";
   app().innerHTML=`
     <h1>Gabung ke Trekkr</h1>
     <p class="sub">Masukkan nama kamu. Kami cek dulu apakah kamu sudah ada di Trekkr — kalau sudah, kamu tinggal <b>klaim</b> profilnya; kalau belum, kamu bisa <b>daftar baru</b>.</p>
+    ${who}
     <div class="card">
       <div class="field">
         <label>Nama lengkap</label>
@@ -104,6 +118,7 @@ function viewEntry(prefill){
     </div>
     <div class="foot">Sudah punya akun? <a class="link" href="${HOME}/login">Masuk di sini &rarr;</a></div>`;
   $("name").addEventListener("input",scheduleCheck);
+  const so=$("soBtn"); if(so) so.onclick=()=>{TrekkrAuth.clear();_me=null;viewEntry(($("name").value||"").trim());};
   if(prefill){ scheduleCheck(); }
 }
 
@@ -127,31 +142,48 @@ function doCheck(n){
     }).catch(()=>setHint("Gagal cek nama, coba lagi.","err"));
 }
 
+// Sign-in box shown inline when a visitor must sign in to finish.
+function renderAuth(el, next, onDone){
+  TrekkrAuth.renderBox(el,{
+    title:"",
+    sub:"Langkah terakhir: masuk tanpa password — pakai Google atau link/kode dari email.",
+    next, onDone,
+  });
+}
+
 // ---------- CLAIM (name already exists) ----------
 function renderClaim(name){
   _mode="claim"; _existingName=name;
+  if(_me&&_me.player){
+    $("dyn").innerHTML=`<div class="banner claim">Akunmu sudah terhubung ke profil <b>${esc(_me.player.name)}</b>. <a class="link" href="${HOME}/player/${slug(_me.player.name)}">Buka profilmu &rarr;</a></div>`;
+    return;
+  }
   $("dyn").innerHTML=`
     <div class="banner claim"><b>"${esc(name)}"</b> sudah ada di Trekkr. Klaim profil ini untuk mengelolanya — riwayat pertandingan &amp; ELO-mu tetap. Klaim ditinjau admin dulu.</div>
-    <div class="field"><label>Email</label><input id="cEmail" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
-    <div class="field"><label>Buat password</label><input id="cPass" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password"/><div class="note">Password ini yang kamu pakai untuk login nanti.</div></div>
-    <button class="btn" id="cGo">Ajukan klaim</button>
+    <div id="cAuth"></div>
+    <button class="btn" id="cGo" ${_me?"":"hidden"}>Ajukan klaim</button>
     <div class="msg" id="cMsg"></div>`;
-  $("cGo").onclick=submitClaim;
+  if(_me){ $("cGo").onclick=submitClaim; if(_autoClaim && _autoClaim.toLowerCase()===String(name).toLowerCase()){ _autoClaim=""; submitClaim(); } }
+  else renderAuth($("cAuth"), `/join?name=${encodeURIComponent(name)}&act=claim`, async()=>{ _me=await loadMe(); submitClaim(); });
 }
 async function submitClaim(){
-  const email=($("cEmail").value||"").trim(), pass=$("cPass").value||"";
-  const m=$("cMsg");
-  if(!validEmail(email)){ m.className="msg err"; m.textContent="Masukkan email yang valid."; return; }
-  if(pass.length<6){ m.className="msg err"; m.textContent="Password minimal 6 karakter."; return; }
-  const b=$("cGo"); b.disabled=true; b.textContent="Mengirim…"; m.className="msg";
-  const {ok,d}=await apiSend("account/claim","POST",{player_name:_existingName,email,password:pass});
+  const m=$("cMsg"), b=$("cGo");
+  if(b){ b.hidden=false; b.disabled=true; b.textContent="Mengirim…"; }
+  m.className="msg";
+  const t=await authToken();
+  if(!t){ m.className="msg err"; m.textContent="Sesi berakhir — silakan masuk lagi."; if(b){b.disabled=false;b.textContent="Ajukan klaim";} return; }
+  const {ok,d}=await apiSend("account/claim-session","POST",{token:t,player_name:_existingName});
   if(ok){ viewDoneClaim(_existingName); }
-  else { m.className="msg err"; m.textContent=(d&&d.error)||"Gagal mengajukan klaim."; b.disabled=false; b.textContent="Ajukan klaim"; }
+  else { m.className="msg err"; m.textContent=(d&&d.error)||"Gagal mengajukan klaim."; if(b){b.disabled=false; b.textContent="Ajukan klaim";} }
 }
 
 // ---------- NEW PLAYER ----------
 function renderNew(){
   _mode="new";
+  if(_me&&_me.player){
+    $("dyn").innerHTML=`<div class="banner claim">Akunmu sudah terhubung ke profil <b>${esc(_me.player.name)}</b>. <a class="link" href="${HOME}/player/${slug(_me.player.name)}">Buka profilmu &rarr;</a></div>`;
+    return;
+  }
   $("dyn").innerHTML=`
     <div class="banner new">Nama belum terdaftar — buat profil baru. Rating resmimu terbentuk otomatis dari hasil main, bukan dari isian ini.</div>
     <div class="row2">
@@ -173,8 +205,6 @@ function renderNew(){
       </div>
     </div>
     <div class="field"><label>Instagram <span class="opt">(opsional)</span></label><input id="nIg" placeholder="username tanpa @" autocomplete="off"/></div>
-    <div class="field"><label>Email</label><input id="nEmail" type="email" placeholder="email@contoh.com" autocomplete="email"/></div>
-    <div class="field"><label>Buat password</label><input id="nPass" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password"/><div class="note">Password ini yang kamu pakai untuk login nanti.</div></div>
     <div class="field"><label>Foto <span class="opt">(opsional)</span></label>
       <div class="photo">
         <img id="nPhotoPrev" class="pv" alt="" style="display:none">
@@ -185,7 +215,8 @@ function renderNew(){
         </div>
       </div>
     </div>
-    <button class="btn" id="nGo">Daftar</button>
+    <button class="btn" id="nGo">${_me?"Daftar":"Lanjut"}</button>
+    <div id="nAuth" style="margin-top:14px"></div>
     <div class="msg" id="nMsg"></div>`;
   $("nPhoto").addEventListener("change",onPhoto);
   $("nSeed").addEventListener("click",function(e){
@@ -214,33 +245,46 @@ function onPhoto(e){
   };
   r.readAsDataURL(f); e.target.value="";
 }
-async function submitNew(){
-  const name=($("name").value||"").trim();
-  const email=($("nEmail").value||"").trim(), pass=$("nPass").value||"";
-  const m=$("nMsg");
-  if(name.length<2){ m.className="msg err"; m.textContent="Masukkan nama lengkap."; return; }
-  if(!validEmail(email)){ m.className="msg err"; m.textContent="Masukkan email yang valid."; return; }
-  if(pass.length<6){ m.className="msg err"; m.textContent="Password minimal 6 karakter."; return; }
-  const body={name,email,password:pass,gender:($("nGender").value||"M"),region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
+function newBody(){
+  const body={name:($("name").value||"").trim(),gender:($("nGender").value||"M"),region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
   if(_photoData) body.photo=_photoData;
   if(_seed) body.seedEstimate=_seed;   // SEED ONLY — dipakai buat matchmaking awal, bukan tier/ELO resmi
-  const b=$("nGo"); b.disabled=true; b.textContent="Mendaftar…"; m.className="msg";
-  const {ok,d}=await apiSend("account/register-new","POST",body);
-  if(ok){ viewDoneNew(email); }
-  else if(d&&d.claim){ m.className="msg"; renderClaim(name); }  // race: name got taken → offer claim
-  else { m.className="msg err"; m.textContent=(d&&d.error)||"Gagal mendaftar."; b.disabled=false; b.textContent="Daftar"; }
+  return body;
+}
+async function submitNew(){
+  const body=newBody(), m=$("nMsg");
+  if(body.name.length<2){ m.className="msg err"; m.textContent="Masukkan nama lengkap."; return; }
+  if(!_me){
+    // Keep the form, sign in, then finish (here via code, or on return via link).
+    savePending(body);
+    $("nGo").hidden=true;
+    renderAuth($("nAuth"), "/join?act=new", async()=>{ _me=await loadMe(); const p=takePending()||body; registerNew(p); });
+    return;
+  }
+  registerNew(body);
+}
+async function registerNew(body){
+  const m=$("nMsg"), b=$("nGo");
+  if(b){ b.hidden=false; b.disabled=true; b.textContent="Mendaftar…"; }
+  m.className="msg";
+  const t=await authToken();
+  if(!t){ m.className="msg err"; m.textContent="Sesi berakhir — silakan masuk lagi."; if(b){b.disabled=false;b.textContent="Daftar";} return; }
+  const {ok,d}=await apiSend("account/register-session","POST",Object.assign({token:t},body));
+  if(ok){ viewDoneNew((d&&d.name)||body.name); }
+  else if(d&&d.claim){ m.className="msg"; renderClaim(body.name); }  // race: name got taken → offer claim
+  else { m.className="msg err"; m.textContent=(d&&d.error)||"Gagal mendaftar."; if(b){b.disabled=false; b.textContent="Daftar";} }
 }
 
 // ---------- DONE ----------
-function viewDoneNew(email){
+function viewDoneNew(name){
   window.scrollTo(0,0);
   app().innerHTML=`
     <div class="card done center">
       <div class="ic">✓</div>
-      <h2>Cek email kamu</h2>
-      <p>Kami kirim link konfirmasi ke <b>${esc(email)}</b>. Klik link itu untuk mengaktifkan akunmu, lalu kamu bisa login.</p>
-      <div class="box">Tidak ada email? Cek folder <b>spam/promosi</b>. Setelah akun aktif, mainlah di <b>venue atau komunitas mitra Trekkr</b> supaya pertandinganmu tercatat dan rating-mu mulai terbentuk.</div>
-      <p style="margin-top:18px"><a class="link" href="${HOME}/login">Ke halaman login &rarr;</a></p>
+      <h2>Profil kamu sudah jadi</h2>
+      <p>Selamat datang di Trekkr, <b>${esc(name)}</b>! Profilmu langsung aktif dan terhubung ke akunmu.</p>
+      <div class="box">Mainlah di <b>venue atau komunitas mitra Trekkr</b> supaya pertandinganmu tercatat dan rating-mu mulai terbentuk.</div>
+      <p style="margin-top:18px"><a class="btn" href="${HOME}/player/${slug(name)}" style="display:inline-block;text-decoration:none">Lihat profilku &rarr;</a></p>
     </div>`;
 }
 function viewDoneClaim(name){
@@ -250,15 +294,27 @@ function viewDoneClaim(name){
       <div class="ic">⏳</div>
       <h2>Klaim diajukan</h2>
       <p>Permintaan klaim profil <b>${esc(name)}</b> sudah kami terima dan sedang ditinjau admin.</p>
-      <div class="box">Begitu disetujui, kamu akan menerima <b>email konfirmasi</b> berisi link ke profilmu. Setelah itu kamu bisa login dengan email &amp; password yang tadi kamu buat.</div>
-      <p style="margin-top:18px"><a class="link" href="${HOME}/">&larr; Kembali ke beranda</a></p>
+      <div class="box">Begitu disetujui, kamu akan menerima <b>email konfirmasi</b>. Sementara itu kamu sudah masuk — analitik lengkap di semua profil sudah terbuka untukmu.</div>
+      <p style="margin-top:18px"><a class="link" href="${HOME}/player/${slug(name)}">Lihat profil ${esc(name)} &rarr;</a></p>
     </div>`;
 }
 
 // ---------- init ----------
-(function init(){
+(async function init(){
   const q=new URLSearchParams(location.search);
-  const preName=q.get("name")||"";
+  const preName=q.get("name")||"", act=q.get("act")||"";
+  app().innerHTML='<div class="card center" style="padding:30px">Memuat…</div>';
+  _me=await loadMe();
+  // Returning from a sign-in redirect → finish what the player started.
+  if(_me && act==="new"){
+    const p=takePending();
+    try{ history.replaceState(null,"",location.pathname); }catch(e){}
+    if(p&&p.name){ viewEntry(p.name); _mode="new"; $("dyn").innerHTML='<div class="msg" id="nMsg"></div>'; return registerNew(p); }
+  }
+  if(_me && act==="claim" && preName && !_me.player){
+    try{ history.replaceState(null,"",location.pathname+"?name="+encodeURIComponent(preName)); }catch(e){}
+    _autoClaim=preName; viewEntry(preName); return;   // name check → renderClaim submits it
+  }
   viewEntry(preName);
 })();
 </script>

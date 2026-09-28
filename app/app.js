@@ -259,7 +259,7 @@
   }
   function boot() {
     setHTML('<div class="center"><div class="spinner"></div></div>');
-    sb.auth.getSession().then(function (r) {
+    API.bridgeSession().then(function () { return sb.auth.getSession(); }).then(function (r) {
       S.session = r.data.session; S.token = S.session ? S.session.access_token : null;
       // The splash stays as an interactive welcome screen; the user taps Play Now.
       S.view = "welcome";
@@ -354,13 +354,17 @@
       '<div class="login-wrap">' +
         '<button class="link" id="lback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
         '<div class="brand">Trekk<b>r</b></div>' +
-        '<p class="sub">Sign in to your player account.</p>' +
+        '<p class="sub">Sign in to your player account — no password needed.</p>' +
+        '<div id="pwless" style="margin-top:14px"></div>' +
+        '<div style="text-align:center;margin-top:14px"><button class="link" id="pwToggle">Sign in with password</button></div>' +
+        '<div id="pwBox" class="hidden">' +
         '<div class="field"><label class="label">Email</label>' +
           '<input class="input" id="email" type="email" autocomplete="email" placeholder="you@example.com"/></div>' +
         '<div class="field"><label class="label">Password</label>' +
           '<input class="input" id="pass" type="password" autocomplete="current-password" placeholder="Password"/></div>' +
         '<div class="msg err hidden" id="err"></div>' +
         '<button class="btn" id="go">Sign in</button>' +
+        '</div>' +
         '<div style="text-align:center;margin-top:16px">' +
           '<button class="link" id="ljoin">No account yet? Register / claim</button><br>' +
           '<button class="link" id="lforgot" style="color:var(--faint)">Forgot password?</button>' +
@@ -368,6 +372,12 @@
       '</div>'
     );
     maybeIosHint();
+    if (w.TrekkrAuth) {
+      // Google + magic link / code. Code sign-in finishes here; link sign-in
+      // returns through /login and back to /app (bridgeSession picks it up).
+      TrekkrAuth.renderBox(d.getElementById("pwless"), { next: "/app", onDone: function () { API.bridgeSession(); } });
+    } else { d.getElementById("pwBox").classList.remove("hidden"); }
+    d.getElementById("pwToggle").onclick = function () { d.getElementById("pwBox").classList.toggle("hidden"); };
     d.getElementById("lback").onclick = function () { S.view = "rankings"; render(); };
     d.getElementById("ljoin").onclick = function () { S.view = "join"; render(); };
     d.getElementById("lforgot").onclick = function () { S.view = "forgot"; render(); };
