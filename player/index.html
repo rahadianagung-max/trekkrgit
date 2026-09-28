@@ -869,6 +869,24 @@ body{background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05)
 .pp-late{animation:pplate .35s var(--ease-out,ease-out) both}
 @keyframes pplate{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.pp-topbar::before,.pp-sk,.pp-loadnote i{animation:none}.pp-late{animation:none}}
+/* Fase 2 — analitik terkunci untuk pengunjung yang belum masuk (akun gratis).
+   Kunci hanya di tampilan: kelas body.pp-locked mem-blur elemen .lk. */
+body.pp-locked .lk{filter:blur(6px);user-select:none;-webkit-user-select:none;cursor:pointer;transition:filter .25s}
+body:not(.pp-locked) .lk-only{display:none !important}
+.lk-wrap{position:relative}
+.lk-ov{display:none}
+body.pp-locked .lk-ov{display:flex;position:absolute;inset:0;margin:auto;width:max-content;max-width:90%;height:max-content;align-items:center;gap:6px;padding:10px 14px;background:#fff;color:var(--tk-ink,#090D14);border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-or,#FF5900);font:800 11px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.05em;cursor:pointer}
+.pp-lockcta{margin-top:14px;padding:16px;background:var(--tk-ink,#090D14);color:#fff;border:2px solid var(--tk-ink,#090D14);box-shadow:5px 5px 0 var(--tk-or,#FF5900)}
+.pp-lockcta .k{font:800 10.5px var(--tk-mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--tk-volt,#D2F802)}
+.pp-lockcta .t{font:700 17px/1.35 var(--tk-disp,'Space Grotesk',sans-serif);margin:6px 0 4px}
+.pp-lockcta .t b{color:var(--tk-or,#FF5900);font-family:var(--tk-mono,'JetBrains Mono',monospace)}
+.pp-lockcta .s{font-size:12.5px;line-height:1.5;color:#CBD5E1;margin:0 0 12px}
+.pp-lockcta button{width:100%;padding:12px;background:var(--tk-or,#FF5900);color:#fff;border:2px solid #fff;font:800 12px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+#unlockModal .share-modal{max-height:92vh;overflow:auto}
+#unlockBox .btn{width:100%;padding:13px;background:var(--tk-or,#FF5900);color:#fff;border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-ink,#090D14);font:800 12px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+#unlockBox .btn:disabled{opacity:.6}
+#unlockBox .ta-row .btn{width:auto}
+#unlockBox input[type=email],#unlockBox .ta-row input{border:2px solid var(--tk-ink,#090D14);border-radius:0}
 </style>
 <canvas id="shareCanvas" width="1080" height="1920"></canvas>
 <div class="toast" id="toast"></div>
@@ -969,8 +987,57 @@ async function initSession(){
     }catch(e){}
   }
   _session.loaded=true;
+  // Selesai masuk dari jendela "Buka analitik" (kode, link email, atau Google) → catat sekali.
+  try{ if(_session.token && localStorage.getItem('trekkr_unlock_pending')){ localStorage.removeItem('trekkr_unlock_pending'); ppFunnel('auth_done'); } }catch(e){}
+  ppSetLock(!_session.token);
   refreshEditBtn();
 }
+// ── Fase 2: kunci analitik untuk pengunjung (akun gratis membuka) ──
+function ppSid(){try{var k='trekkr_sid',v=localStorage.getItem(k);if(!v){v=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem(k,v);}return v;}catch(e){return '';}}
+function ppFunnel(ev){
+  try{ fetch(PP_API+'/funnel',{method:'POST',keepalive:true,headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({event:ev,player:(playerData&&playerData.player&&playerData.player.name)||'',sid:ppSid()})}).catch(function(){}); }catch(e){}
+}
+function ppLocked(){ return document.body.classList.contains('pp-locked'); }
+var _lockViewSent=false;
+function ppSetLock(locked){
+  document.body.classList.toggle('pp-locked', !!locked);
+  if(locked && !_lockViewSent && playerData && !playerData._pending && document.querySelector('#content .lk')){ _lockViewSent=true; ppFunnel('lock_view'); }
+}
+function ppLockCta(name, bestRank){
+  var who=ppE0(String(name||'').split(' ')[0]||'Pemain ini');
+  var t=bestRank
+    ? who+' ada di <b>Top '+bestRank.pct+'%</b> pemain '+(/^(women|female|f)$/i.test(bestRank.gender||'')?'wanita':(/^(men|male|m)$/i.test(bestRank.gender||'')?'pria':ppE0(bestRank.gender||'')))+' di '+ppE0(bestRank.venue)+'.'
+    : 'Lihat bagaimana '+who+' berkembang dari match ke match.';
+  return '<div class="pp-lockcta lk-only"><div class="k">🔒 Analitik terkunci</div><div class="t">'+t+'</div>'
+    +'<p class="s">Grafik ELO, perubahan ELO per match, win rate, streak, partner terbaik &amp; peringkat per venue — gratis setelah masuk. Tanpa password.</p>'
+    +'<button type="button" onclick="ppOpenUnlock()">Buka analitik gratis</button></div>';
+}
+function ppE0(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ppOpenUnlock(){
+  ppFunnel('lock_click');
+  var m=document.getElementById('unlockModal'); if(!m||!window.TrekkrAuth) { location.href=PP_HOME+'/login'; return; }
+  var box=document.getElementById('unlockBox');
+  TrekkrAuth.renderBox(box,{
+    next: location.pathname+location.search,
+    onDone: async function(){ closeUnlock(); await initSession(); showToast('Analitik terbuka ✓'); }
+  });
+  m.classList.add('open');
+}
+function closeUnlock(){ var m=document.getElementById('unlockModal'); if(m) m.classList.remove('open'); }
+// Klik elemen yang ter-blur → buka jendela masuk (bukan aksi aslinya).
+document.addEventListener('click',function(e){
+  if(!ppLocked()) return;
+  var t=e.target&&e.target.closest?e.target.closest('.lk'):null;
+  if(t){ e.preventDefault(); e.stopPropagation(); ppOpenUnlock(); }
+},true);
+// "Mulai masuk": tombol kirim link / Google di dalam jendela masuk.
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('#unlockBox .ta-send, #unlockBox .ta-google'):null;
+  if(b){ ppFunnel('auth_start'); try{localStorage.setItem('trekkr_unlock_pending','1');}catch(e){} }
+},true);
+// Optimis: kalau ada token tersimpan, jangan blur dulu (dicek ulang di initSession).
+ppSetLock(!ppTok());
 function ppOwnsThis(){
   if(!_session.myName || !playerData || !playerData.player) return false;
   const a=String(_session.myName).toLowerCase().trim();
@@ -1186,6 +1253,7 @@ async function loadPlayer(){
 
   d._pending = false; d._late = true; ppTopbar(false);
   renderPlayer(d);
+  if(ppLocked()) ppSetLock(true); // catat lock_view sekali setelah render final
 
   try{const s=await TrekkrAPI.getSettings();const st=s.settings||{};if(st.passport_label)document.getElementById('ppLabel').textContent=st.passport_label;if(st.passport_title)document.getElementById('ppTitle').textContent=st.passport_title;}catch(e){}
 }
@@ -1315,7 +1383,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     +'<div class="pp-chips">'
     +(unrated?'<span class="ppc gray">Unrated</span>'
        :('<span class="ppc tier">'+tierEmoji(st.name)+' '+st.name+'</span><span class="ppc elo">ELO<b>'+eloDisp+'</b>'+tri+'</span>'))
-    +(bestRank?('<span class="ppc rank">⭐ #'+bestRank.rank+' '+bestRank.venue+'</span>'):'')
+    +(bestRank?('<span class="ppc rank lk">⭐ #'+bestRank.rank+' '+bestRank.venue+'</span>'):'')
     +'</div>'
     +'<button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()" style="margin-top:12px">Edit</button>'
     +'</div></article>';
@@ -1327,21 +1395,22 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     h+='<div class="pp2-stand"><div class="pp2-stand-top">'
       +'<div class="pp2-tier">'+st.name+'<small>Skill tier'+(isCalibrating(s.totalMatches)?' · calibrating':' · calibrated')+'</small></div>'
       +'<div class="pp2-elo"><div class="v">'+eloDisp+tri+'</div><div class="k">ELO</div></div></div>'
-      +'<div class="pp2-bar"><span style="width:'+st.progress+'%"></span></div>'
-      +'<div class="pp2-next">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
+      +'<div class="pp2-bar lk"><span style="width:'+st.progress+'%"></span></div>'
+      +'<div class="pp2-next lk">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
       +'<div class="pp2-next" style="margin-top:4px">Series Tier: <b>'+series.current+'</b></div>';
     if(pend){
       h+='<div class="pp2-div"></div>'+sk('60%','14px');
     } else if(venueRanks && venueRanks.length){
       h+='<div class="pp2-div"></div>';
       if(venueRanks.length===1){
-        h+='<div class="pp2-exp-t">Your standing · vs '+venueRanks[0].gender+'</div><div class="pp2-rankbody">'+ppRankItem(venueRanks[0])+'</div>';
+        h+='<div class="pp2-exp-t">Your standing · vs '+venueRanks[0].gender+'</div><div class="pp2-rankbody lk">'+ppRankItem(venueRanks[0])+'</div>';
       } else {
-        h+='<div class="pp2-exp" onclick="ppTog(this,\'ppRanks\')"><span class="pp2-rank-lead"><span class="pos">#'+bestRank.rank+'</span>Best rank · '+bestRank.venue+'</span><span style="display:flex;gap:9px;align-items:center"><span class="pp2-exp-t">'+venueRanks.length+' venues</span><span class="cv">›</span></span></div>'
+        h+='<div class="pp2-exp lk" onclick="ppTog(this,\'ppRanks\')"><span class="pp2-rank-lead"><span class="pos">#'+bestRank.rank+'</span>Best rank · '+bestRank.venue+'</span><span style="display:flex;gap:9px;align-items:center"><span class="pp2-exp-t">'+venueRanks.length+' venues</span><span class="cv">›</span></span></div>'
           +'<div class="pp2-rankbody" id="ppRanks" hidden>'+venueRanks.map(ppRankItem).join('')+'</div>';
       }
     }
     h+='</div>';
+    if(!pend) h+=ppLockCta(alias, bestRank);
   }
 
   // ---- LAST SESSION ----
@@ -1356,13 +1425,13 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     if(ls.bestWin && (Number(ls.bestWin.scoreFor)-Number(ls.bestWin.scoreAgainst))>=1) ip.push('best win <b>'+ls.bestWin.scoreFor+'–'+ls.bestWin.scoreAgainst+'</b> vs '+ls.bestWin.opponents);
     var gamesHTML=ls.games.map(function(g){return '<div class="pp2-game"><span class="rr '+(g.resText==='W'?'w':'l')+'">'+(g.resText||'D')+'</span><span class="gv">w/ '+g.partner+' · vs '+g.opponents+'</span><span class="gs">'+g.scoreFor+'–'+g.scoreAgainst+'</span></div>';}).join('');
     h+='<div class="pp2-ls'+late+'"><div class="pp2-ls-h"><span class="dot"></span> Your last session</div>'
-      +'<div class="pp2-ls-title">'+(ls.venue?ls.venue+' · ':'')+(ls.date||'')+'</div>'
+      +'<div class="pp2-ls-title">'+(ls.venue?ls.venue+' · ':'')+(ppFmtDate(ls.date)||ls.date||'')+'</div>'
       +'<div class="pp2-ls-chips">'
-      +'<span class="pp2-ls-chip '+dcls+'">'+dsign+dl+' ELO</span>'
+      +'<span class="pp2-ls-chip lk '+dcls+'">'+dsign+dl+' ELO</span>'
       +'<span class="pp2-ls-chip">'+wins+'W · '+losses+'L</span>'
-      +(rn?('<span class="pp2-ls-chip or">Rank #'+rn.rank+' at '+rn.venue+'</span>'):'')
+      +(rn?('<span class="pp2-ls-chip or lk">Rank #'+rn.rank+' at '+rn.venue+'</span>'):'')
       +'</div>'
-      +'<div class="pp2-ls-insight">'+ip.join(' · ')+'.</div>'
+      +'<div class="pp2-ls-insight lk">'+ip.join(' · ')+'.</div>'
       +'<div class="pp2-ls-foot" onclick="ppTog(this,\'ppLsGames\')">See every game ›</div>'
       +'<div id="ppLsGames" hidden style="margin-top:4px">'+gamesHTML+'</div>'
       +'</div>';
@@ -1376,9 +1445,9 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   }
   h+='<div class="pp-stats'+late+'" style="margin-top:12px">'
     +'<div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">'+sv(s.totalMatches)+'</p></div>'
-    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val">'+sv(s.winRate+'%')+'</p></div>'
+    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val lk">'+sv(s.winRate+'%')+'</p></div>'
     +'<div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">'+sv(s.totalW+'/'+s.totalL)+'</p></div>'
-    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val">'+sv(s.streak||'—')+'</p></div>'
+    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val lk">'+sv(s.streak||'—')+'</p></div>'
     +'</div>';
   if(pend){
     h+='<div class="pp-loadnote" role="status"><i></i>Loading match history…</div>';
@@ -1389,7 +1458,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
 
   // ---- ACHIEVEMENT STRIP ----
   if(highlights && !unrated){
-    h+='<div class="pp2-ach'+late+'">'
+    h+='<div class="pp2-ach lk'+late+'">'
       +'<div class="pp2-acard"><div class="ic">📈</div><div class="v">'+(highlights.peakElo||eloDisp)+'</div><div class="k">Peak ELO</div></div>'
       +'<div class="pp2-acard"><div class="ic">🔥</div><div class="v">'+(highlights.longestStreak||0)+'W</div><div class="k">Best streak</div></div>'
       +'<div class="pp2-acard"><div class="ic">⚡</div><div class="v">+'+(highlights.biggestJump||0)+'</div><div class="k">Biggest jump</div></div>'
@@ -1402,7 +1471,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   var hasBadges=badges && badges.length;
   if(hasPartner || hasBadges){
     var abody='';
-    if(hasPartner) abody+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(hasBadges?'14px':'0')+'"><div><div class="pp2-exp-t">Best partner</div><div style="font-family:\'Saira Condensed\',sans-serif;font-size:22px;font-weight:900;margin-top:2px">'+bestPartner.name+'</div></div><div style="text-align:right"><div class="pp2-exp-t">Together</div><div style="color:var(--ok,#22A052);font-weight:800;font-size:16px;margin-top:2px">'+bestPartner.score+'</div></div></div>';
+    if(hasPartner) abody+='<div class="lk" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(hasBadges?'14px':'0')+'"><div><div class="pp2-exp-t">Best partner</div><div style="font-family:\'Saira Condensed\',sans-serif;font-size:22px;font-weight:900;margin-top:2px">'+bestPartner.name+'</div></div><div style="text-align:right"><div class="pp2-exp-t">Together</div><div style="color:var(--ok,#22A052);font-weight:800;font-size:16px;margin-top:2px">'+bestPartner.score+'</div></div></div>';
     if(hasBadges) abody+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+badges.filter(function(b){return b.earned;}).map(function(b){return '<div style="width:60px;text-align:center"><div style="width:48px;height:48px;margin:0 auto;border-radius:12px;background:rgba(255,106,0,.1);border:1px solid rgba(255,106,0,.3);display:flex;align-items:center;justify-content:center;font-size:22px">'+(b.emoji||'🏅')+'</div><div style="font-size:9px;font-weight:700;color:var(--on-surface-variant);margin-top:4px;line-height:1.1">'+b.name+'</div></div>';}).join('')+'</div>';
     if(hasBadges && !badges.some(function(b){return b.earned;})) abody+='<div class="pp2-exp-t">No badges earned yet — keep playing!</div>';
     h+='<div class="pp2-acc'+late+'"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
@@ -1426,7 +1495,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   }
   // ELO progress
   if(history && history.length>1){
-    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="pp-chart" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div></div></div>';
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="lk-wrap"><div class="pp-chart lk" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div><button type="button" class="lk-ov" onclick="ppOpenUnlock()">🔒 Masuk gratis untuk lihat grafik ELO</button></div></div></div>';
   }
   // Playing history — compact mobile-first rows (no wide table; nothing clipped)
   if(historyTable){
@@ -1445,7 +1514,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
           +'<div class="hsub">vs '+hItem.opponents+'</div>'
           +'<div class="hd">'+ppFmtDate(hItem.date)+venue+'</div></div>'
           +'<div class="hright"><div class="hscore">'+hItem.scoreFor+'–'+hItem.scoreAgainst+'</div>'
-          +(dtxt?('<div class="hdelta '+dcls+'">'+dtxt+'</div>'):'')+'</div>'
+          +(dtxt?('<div class="hdelta lk '+dcls+'">'+dtxt+'</div>'):'')+'</div>'
           +'</div>';
       });
     } else { histRows='<div class="pp2-hempty">No match history found.</div>'; }
@@ -2655,6 +2724,14 @@ function ppLogout(){ try{ if(window.TrekkrAuth) TrekkrAuth.clear(); else localSt
   </div>
 </div>
 
+<div class="share-modal-overlay" id="unlockModal" onclick="if(event.target===this)closeUnlock()">
+  <div class="share-modal">
+    <div class="share-modal-handle"></div>
+    <div class="share-modal-head"><div class="share-modal-title">Buka analitik gratis</div><button class="share-modal-close" onclick="closeUnlock()" aria-label="Tutup">&times;</button></div>
+    <p class="share-modal-sub">Masuk sekali tanpa password — grafik ELO, perubahan per match, win rate &amp; peringkat langsung terbuka.</p>
+    <div id="unlockBox"></div>
+  </div>
+</div>
 <div class="share-modal-overlay" id="cropModal" onclick="if(event.target===this)cropCancel()">
   <div class="share-modal" style="max-width:360px">
     <div class="share-modal-handle"></div>

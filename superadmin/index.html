@@ -163,6 +163,11 @@ footer span{color:var(--lime)}
     </div>
     <div class="tab-pane" id="tab-claims">
       <div class="section">
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">FUNNEL KLAIM <select id="fn-days" onchange="loadFunnel()" style="font-size:11px"><option value="7">7 hari</option><option value="30" selected>30 hari</option><option value="90">90 hari</option></select></div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5">Pengunjung Passport yang melihat analitik terkunci → klik → mulai masuk → berhasil masuk, lalu akun baru, klaim, dan akun tertaut. Angka event = browser unik.</p>
+        <div id="fn-box"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
+      </div>
+      <div class="section">
         <div class="section-title">CLAIM REQUESTS · PENDING</div>
         <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Permintaan pemain mengklaim profil miliknya (login email &amp; password). <b>Approve</b> menautkan akun ke profil, mengaktifkan login, &amp; mengirim email konfirmasi ke pemain. <b>Reject</b> menolak permintaan.</p>
         <div id="cr-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
@@ -685,7 +690,28 @@ function renderCR(c){
     +'<div class="er-btns"><button class="er-rej" onclick="resolveClaim('+Number(c.id)+',\'reject\')">Reject</button>'
     +'<button class="er-app" onclick="resolveClaim('+Number(c.id)+',\'approve\')">Approve</button></div></div>';
 }
+async function loadFunnel(){
+  var box=document.getElementById("fn-box"); if(!box)return;
+  var days=(document.getElementById("fn-days")||{}).value||"30";
+  try{ var r=await fetch(crApi()+"/funnel/stats?days="+days+"&key="+encodeURIComponent(AK())); var d=await r.json();
+    if(!r.ok) throw new Error(d.error||"Gagal");
+    var ev={}; (d.events||[]).forEach(function(e){ ev[e.event]=e; });
+    var u=function(k){ return ev[k]?Number(ev[k].uniq):0; };
+    var base=u("lock_view")||0;
+    var pct=function(n){ return base?(' <span style="color:var(--muted2);font-size:10px">'+Math.round(n/base*100)+'%</span>'):''; };
+    var row=function(lbl,n,note){ return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border,#2a2a2a)"><span style="font-size:12px">'+lbl+'</span><b style="font-family:monospace">'+n+(note||'')+'</b></div>'; };
+    box.innerHTML=row("👀 Lihat analitik terkunci",u("lock_view"))
+      +row("🔓 Klik buka analitik",u("lock_click"),pct(u("lock_click")))
+      +row("✉️ Mulai masuk (kirim link / Google)",u("auth_start"),pct(u("auth_start")))
+      +row("✅ Berhasil masuk",u("auth_done"),pct(u("auth_done")))
+      +row("🆕 Akun baru (semua jalur)",d.accounts_new||0)
+      +row("📧 Setuju email marketing",d.consents_marketing||0)
+      +row("🙋 Klaim diajukan / disetujui",(d.claims_new||0)+" / "+(d.claims_approved||0))
+      +row("🔗 Total profil tertaut akun",(d.linked_total||0)+" / "+(d.players_total||0));
+  }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat funnel: '+erEsc(e.message)+'</p>'; }
+}
 async function loadClaimRequests(){
+  loadFunnel();
   var box=document.getElementById("cr-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
   try{ var r=await fetch(crApi()+"/account/claims?status=pending&key="+encodeURIComponent(AK())); var d=await r.json(); var cl=(d&&d.claims)||[];
     box.innerHTML=cl.length?cl.map(renderCR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan klaim pending.</p>';
