@@ -1333,7 +1333,9 @@ const netlifyHandler = async (event) => {
     if (path === "reg/forms" && method === "GET") return await regListForms();
     if (path === "reg/form" && method === "POST") return await regSaveForm(body);
     if (path.startsWith("reg/form/") && path.endsWith("/delete") && method === "POST")
-      return await regDeleteForm(decodeURIComponent(path.replace("reg/form/", "").replace("/delete", "")));
+      return verifyAdminKey(body && body.adminKey)
+        ? await regDeleteForm(decodeURIComponent(path.replace("reg/form/", "").replace("/delete", "")))
+        : respond(401, ADMIN_KEY_DENIED);
     if (path.startsWith("reg/form/") && method === "GET")
       return await regGetForm(decodeURIComponent(path.replace("reg/form/", "")));
     if (path.startsWith("reg/submit/") && method === "POST")
@@ -1711,16 +1713,35 @@ async function accountProfile(body) {
   return respond(200, { ok: true });
 }
 
+// Kunci admin bertanda tangan HMAC (AUTH_SECRET), dikeluarkan saat login di samping
+// token lama (yang tidak ditandatangani). Wajib untuk moderasi akun pemain (klaim &
+// ganti nama) dan semua endpoint hapus, supaya tidak bisa dipanggil dengan token palsu.
+const ADMIN_KEY_TTL_MS = 12 * 3600 * 1000;
+function issueAdminKey(username, role, venue) {
+  if (!authSecret()) return "";
+  return signSession({ k: "admin", u: String(username || ""), role: String(role || "venue_admin"), venue: String(venue || ""), exp: Date.now() + ADMIN_KEY_TTL_MS });
+}
+function verifyAdminKey(key, roles) {
+  const p = verifySession(key);
+  if (!p || p.k !== "admin" || !p.u) return null;
+  if (roles && !roles.includes(p.role)) return null;
+  return p;
+}
+const ADMIN_KEY_DENIED = { error: "Sesi admin tidak valid / kedaluwarsa. Silakan logout lalu login ulang." };
+
 async function accountClaimsList(params) {
+  if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const status = String((params && params.status) || "pending");
   const rows = await supaRest("GET", `profile_claims?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,player_name,status,created_at`);
   return respond(200, { claims: rows || [] });
 }
 
 async function accountClaimsResolve(body) {
+  const ak = verifyAdminKey(body && body.adminKey, ["superadmin"]);
+  if (!ak) return respond(401, ADMIN_KEY_DENIED);
   const claimId = parseInt((body && body.claimId), 10);
   const action = String((body && body.action) || "").toLowerCase();
-  const admin = String((body && body.admin) || "");
+  const admin = ak.u;
   if (!claimId || (action !== "approve" && action !== "reject")) return respond(400, { error: "claimId & action wajib" });
   const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,email,player_name,status&limit=1`);
   if (!cr || !cr.length) return respond(404, { error: "Klaim tidak ditemukan" });
@@ -1778,15 +1799,18 @@ async function submitNameRequest(body) {
 }
 
 async function listNameRequests(params) {
+  if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const status = String((params && params.status) || "pending");
   const rows = await supaRest("GET", `name_change_requests?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,old_name,new_name,status,created_at`);
   return respond(200, { requests: rows || [] });
 }
 
 async function resolveNameRequest(body) {
+  const ak = verifyAdminKey(body && body.adminKey, ["superadmin"]);
+  if (!ak) return respond(401, ADMIN_KEY_DENIED);
   const reqId = parseInt((body && body.reqId), 10);
   const action = String((body && body.action) || "").toLowerCase();
-  const admin = String((body && body.admin) || "");
+  const admin = ak.u;
   if (!reqId || (action !== "approve" && action !== "reject")) return respond(400, { error: "reqId & action wajib" });
   const rr = await supaRest("GET", `name_change_requests?id=eq.${reqId}&select=id,user_id,email,old_name,new_name,status&limit=1`);
   if (!rr || !rr.length) return respond(404, { error: "Request tidak ditemukan" });
@@ -1865,7 +1889,7 @@ async function login({ username, password }) {
     if (!pwVerify(password, a.password)) return respond(401, { error: "Invalid credentials" });
     const role = a.role || "venue_admin", venue = a.venue || "";
     const token = Buffer.from(`${a.username}:${role}:${venue}:${Date.now()}`).toString("base64");
-    return respond(200, { token, role, venue, username: a.username });
+    return respond(200, { token, role, venue, username: a.username, adminKey: issueAdminKey(a.username, role, venue) });
   }
   // Non-Supabase fallback: legacy plaintext compare over the Admins sheet.
   const sheets = getSheets();
@@ -1876,7 +1900,7 @@ async function login({ username, password }) {
   const role = match[2] || "venue_admin";
   const venue = match[3] || "";
   const token = Buffer.from(`${username}:${role}:${venue}:${Date.now()}`).toString("base64");
-  return respond(200, { token, role, venue, username });
+  return respond(200, { token, role, venue, username, adminKey: issueAdminKey(username, role, venue) });
 }
 
 // ── PLAYERS ──
@@ -5467,6 +5491,7 @@ async function updateTrackedEvent(body) {
   return respond(200, { success: true });
 }
 async function deleteTrackedEvent(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const name = String((body && body.name) || "").trim();
   if (!name) return respond(400, { error: "name required" });
   const removed = await deleteRowsByKey(getSheets(), TABS.tracked_events, 1, new Set([name.toLowerCase()])); // col B = Name
@@ -6151,8 +6176,9 @@ async function saveScheduleRow(body) {
 }
 async function deleteScheduleRow(body) {
   const b = body || {};
-  const tok = decodeAdminToken(b.token);
-  if (!tok) return respond(401, { error: "Login required" });
+  // Hapus wajib kunci admin bertanda tangan; venue diambil dari kunci itu.
+  const tok = verifyAdminKey(b.adminKey);
+  if (!tok) return respond(401, ADMIN_KEY_DENIED);
   const id = String(b.id || "").trim();
   if (!id) return respond(400, { error: "id required" });
   // Verify the row belongs to a venue this admin controls before deleting.
@@ -6434,6 +6460,7 @@ async function deleteRowsByKey(sheets, tabTitle, keyCol, keysLower) {
 // Remove a player entirely: their Players row + their ELO_Log rows (col B = name).
 // Use MERGE (dedup) instead when the goal is to fold a duplicate into a real player.
 async function deletePlayer(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const name = String((body && body.name) || "").trim();
   if (!name) return respond(400, { error: "name required" });
   const sheets = getSheets();
@@ -6445,6 +6472,7 @@ async function deletePlayer(body) {
   return respond(200, { success: true, playersRemoved, eloRemoved });
 }
 async function deleteVenue(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const name = String((body && body.name) || "").trim();
   if (!name) return respond(400, { error: "name required" });
   const removed = await deleteRowsByKey(getSheets(), TABS.venues, 0, new Set([name.toLowerCase()]));
@@ -6452,6 +6480,7 @@ async function deleteVenue(body) {
   return respond(200, { success: true, removed });
 }
 async function deleteAdmin(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const username = String((body && body.username) || "").trim();
   if (!username) return respond(400, { error: "username required" });
   const sheets = getSheets();

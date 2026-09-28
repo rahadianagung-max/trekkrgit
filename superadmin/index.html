@@ -306,7 +306,9 @@ footer span{color:var(--lime)}
 const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2130'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%232a3045'/%3E%3Cpath d='M6 28c0-6 4-10 10-10s10 4 10 10' fill='%232a3045'/%3E%3C/svg%3E";
 let allPC=[];let allVenues=[];
 
-function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&s.role==='superadmin')showDash(s)}
+function AK(){return (TrekkrAPI.getSession()||{}).adminKey||''}
+// Tanpa kunci admin bertanda tangan (login lama) → minta login ulang.
+function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&s.role==='superadmin'&&s.adminKey)showDash(s)}
 async function doLogin(){const u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value,st=document.getElementById('loginStatus');try{const d=await TrekkrAPI.login(u,p);if(d.role!=='superadmin'){st.className='status-msg error';st.textContent='Superadmin only';return}showDash(d)}catch(e){st.className='status-msg error';st.textContent=e.message||'Login failed'}}
 function showDash(s){document.getElementById('loginScreen').style.display='none';document.getElementById('adminScreen').style.display='block';document.getElementById('userLabel').textContent=`Logged in as ${s.username||''}`;loadAll()}
 function doLogout(){TrekkrAPI.logout();location.reload()}
@@ -323,7 +325,7 @@ function filterPlayers(){const q=document.getElementById('playerSearch').value.t
 async function deletePlayerUI(name){
   const st=document.getElementById('playerActionStatus');
   if(!confirm('Hapus pemain "'+name+'"?\n\nBaris pemain + seluruh riwayat ELO_Log-nya akan dihapus permanen. Untuk menggabungkan pemain dobel, pakai tab Duplicates.'))return;
-  try{const r=await fetch(crApi()+'/players/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus ('+d.eloRemoved+' baris ELO).';await loadPlayers();}
+  try{const r=await fetch(crApi()+'/players/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,adminKey:AK()})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus ('+d.eloRemoved+' baris ELO).';await loadPlayers();}
   catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
 
@@ -358,7 +360,7 @@ async function venueDisplay(name,patch){
 async function deleteVenueUI(name){
   const st=document.getElementById('addVenueStatus');
   if(!confirm('Hapus venue "'+name+'" dari direktori?\n\nBaris venue dihapus; tab match Venue_ tidak ikut dihapus.'))return;
-  try{const r=await fetch(crApi()+'/venues/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus.';await loadVenues();}
+  try{const r=await fetch(crApi()+'/venues/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,adminKey:AK()})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+name+'" dihapus.';await loadVenues();}
   catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
 
@@ -388,7 +390,7 @@ async function addAdmin(){const st=document.getElementById('addAdminStatus'),u=d
 async function deleteAdminUI(username){
   const st=document.getElementById('adminActionStatus');
   if(!confirm('Hapus akun admin "'+username+'"?'))return;
-  try{const r=await fetch(crApi()+'/admins/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+username+'" dihapus.';await loadAdmins();}
+  try{const r=await fetch(crApi()+'/admins/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,adminKey:AK()})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Gagal');st.className='status-msg success';st.textContent='✓ "'+username+'" dihapus.';await loadAdmins();}
   catch(e){st.className='status-msg error';st.textContent=e.message||'Gagal menghapus.'}
 }
 
@@ -467,7 +469,7 @@ function editTrackedEvent(enc){
 }
 function delTrackedEvent(enc){
   var name=decodeURIComponent(enc);if(!confirm('Hapus "'+name+'" dari home?'))return;
-  fetch(crApi()+'/tracked-events/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadTrackedEvents();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
+  fetch(crApi()+'/tracked-events/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,adminKey:AK()})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadTrackedEvents();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
 }
 
 // ── LIGA CONFIG (championship + series; drives web /liga-trekkr AND the app) ──
@@ -540,7 +542,7 @@ async function saveSchedule(){
 }
 function delSchedule(enc){
   var id=decodeURIComponent(enc);if(!confirm('Hapus sesi ini?'))return;
-  fetch(crApi()+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,token:(TrekkrAPI.getSession()||{}).token||''})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadScheduleAdmin();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
+  fetch(crApi()+'/schedule/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,adminKey:AK(),token:(TrekkrAPI.getSession()||{}).token||''})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success)loadScheduleAdmin();else alert((d&&d.error)||'Gagal');}).catch(function(){alert('Error jaringan.');});
 }
 
 // ── DUPLICATES (dedup scan + merge) ──
@@ -685,13 +687,13 @@ function renderCR(c){
 }
 async function loadClaimRequests(){
   var box=document.getElementById("cr-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
-  try{ var r=await fetch(crApi()+"/account/claims?status=pending"); var d=await r.json(); var cl=(d&&d.claims)||[];
+  try{ var r=await fetch(crApi()+"/account/claims?status=pending&key="+encodeURIComponent(AK())); var d=await r.json(); var cl=(d&&d.claims)||[];
     box.innerHTML=cl.length?cl.map(renderCR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan klaim pending.</p>';
   }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat.</p>'; }
 }
 async function resolveClaim(claimId,action){
   var admin=(TrekkrAPI.getSession().username)||"admin";
-  try{ var r=await fetch(crApi()+"/account/claims/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({claimId:claimId,action:action,admin:admin})});
+  try{ var r=await fetch(crApi()+"/account/claims/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({claimId:claimId,action:action,admin:admin,adminKey:AK()})});
     var d=await r.json(); if(d&&d.ok){ loadClaimRequests(); if(action==="approve"&&typeof loadPlayers==="function")loadPlayers(); } else alert((d&&d.error)||"Gagal.");
   }catch(e){ alert("Error jaringan."); }
 }
@@ -706,14 +708,14 @@ function renderNR(c){
 }
 async function loadNameRequests(){
   var box=document.getElementById("nr-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
-  try{ var r=await fetch(crApi()+"/account/name-requests?status=pending"); var d=await r.json(); var cl=(d&&d.requests)||[];
+  try{ var r=await fetch(crApi()+"/account/name-requests?status=pending&key="+encodeURIComponent(AK())); var d=await r.json(); var cl=(d&&d.requests)||[];
     box.innerHTML=cl.length?cl.map(renderNR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan ganti nama pending.</p>';
   }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat.</p>'; }
 }
 async function resolveNR(reqId,action){
   if(action==="approve"&&!confirm("Approve name change? Ini mengganti nama kanonik pemain & memindahkan seluruh riwayat ELO/match ke nama baru."))return;
   var admin=(TrekkrAPI.getSession().username)||"admin";
-  try{ var r=await fetch(crApi()+"/account/name-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action,admin:admin})});
+  try{ var r=await fetch(crApi()+"/account/name-requests/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reqId:reqId,action:action,admin:admin,adminKey:AK()})});
     var d=await r.json(); if(d&&d.ok){ loadNameRequests(); if(action==="approve"&&typeof loadPlayers==="function")loadPlayers(); } else alert((d&&d.error)||"Gagal.");
   }catch(e){ alert("Error jaringan."); }
 }
