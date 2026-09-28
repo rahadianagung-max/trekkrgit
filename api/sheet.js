@@ -1174,6 +1174,8 @@ const netlifyHandler = async (event) => {
     if (path === "account/consent" && method === "POST") return await accountConsent(body);
     if (path === "account/claim-session" && method === "POST") return await accountClaimSession(body);
     if (path === "account/register-session" && method === "POST") return await accountRegisterSession(body);
+    if (path === "funnel" && method === "POST") return await funnelLog(body);
+    if (path === "funnel/stats" && method === "GET") return await funnelStats(params);
     if (path === "account/change-password" && method === "POST") return await accountChangePassword(body);
     if (path === "account/forgot" && method === "POST") return await accountForgot(body);
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
@@ -1728,6 +1730,24 @@ function verifyAdminKey(key, roles) {
   return p;
 }
 const ADMIN_KEY_DENIED = { error: "Sesi admin tidak valid / kedaluwarsa. Silakan logout lalu login ulang." };
+
+// ── Funnel kampanye klaim (Passport terkunci → klik → mulai masuk → masuk) ──
+// Anonim: hanya nama event, nama profil yang dilihat, dan id acak per browser.
+const FUNNEL_EVENTS = new Set(["lock_view", "lock_click", "auth_start", "auth_done"]);
+async function funnelLog(body) {
+  const b = body || {};
+  const event = String(b.event || "");
+  if (!FUNNEL_EVENTS.has(event)) return respond(400, { error: "event tidak dikenal" });
+  const row = { event, player: String(b.player || "").slice(0, 80) || null, sid: String(b.sid || "").replace(/[^a-z0-9]/gi, "").slice(0, 40) || null };
+  try { await supaRest("POST", "funnel_events", [row], "return=minimal"); } catch (e) { console.error("[funnel]", e.message); }
+  return respond(200, { ok: true });
+}
+async function funnelStats(params) {
+  if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
+  const days = Math.min(365, Math.max(1, parseInt((params && params.days) || "30", 10) || 30));
+  const d = await supaRest("POST", "rpc/funnel_stats", { days });
+  return respond(200, d || {}, { "Cache-Control": "no-store" });
+}
 
 async function accountClaimsList(params) {
   if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
