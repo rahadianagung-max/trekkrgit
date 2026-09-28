@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
+<script src="https://trekkr.online/trekkr-nav.js" defer></script>
 <style>
 .page-head{padding:26px 0 0}
 .page-head h1{font-size:clamp(28px,5vw,42px);margin:8px 0 0}
@@ -211,32 +212,7 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="https://trekkr.online/" class="brand">Trekkr</a>
-    <nav class="nav" aria-label="Primary">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-    <div class="header-actions">
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">≡</button>
-    </div>
-  </div>
-  <div class="container">
-    <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
-      <a href="https://trekkr.online/">Home</a>
-      <a href="https://trekkr.online/rankings">Rankings</a>
-      <a href="https://trekkr.online/playrank">PlayRank</a>
-      <a href="https://trekkr.online/tournament">Tourney &amp; League</a>
-      <a href="https://trekkr.online/get-listed">Get Listed</a>
-      <a href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a>
-    </nav>
-  </div>
-</header>
+<div id="tk-nav"></div>
 
 <main class="container" id="main">
   <div id="content"><div class="skeleton" style="margin-top:26px"></div></div>
@@ -328,6 +304,9 @@
       applySearch();
     });});
     inp.addEventListener('input',applySearch);
+    // Deep link from the main menu: ?tab=tn (Tournaments) / ?tab=lg (Leagues).
+    var want=(location.search.match(/[?&]tab=(pr|tn|lg)\b/)||[])[1];
+    if(want&&want!=='pr'){var tb=content.querySelector('.dirtabs .vmode-b[data-dt="'+want+'"]'); if(tb)tb.click();}
   }
 
   /* ---- Detail ---- */
