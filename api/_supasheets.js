@@ -36,7 +36,7 @@ const SHEET_MAP = {
   PlayRank_Active:    { table: "playrank_active",     cols: ["event_id","title","venue","level","gender","format","week_start","week_end","status","players","leader","url","highlight"] },
   Tracked_Events:     { table: "tracked_events",      cols: ["month_year","name","location","logo_url","url"] },
   Tournament_Leads:   { table: "tournament_leads",    cols: ["lead_id","timestamp","tournament_name","location","pic_name","phone","email","message","status"] },
-  Competitions:       { table: "competitions",        cols: ["slug","type","source_venue","name","location","logo_url","status"] },
+  Competitions:       { table: "competitions",        cols: ["slug","type","source_venue","name","location","logo_url","status","event_date"] },
   Tournament_Events:  { table: "tournament_events",   cols: ["event_id","name","venue","date","start_time","num_courts","match_minutes","created_at","status","format","category","url","highlight"] },
   Tournaments:        { table: "tournaments",         cols: ["tournament_id","event_id","category","level","format","group_size_target","advancers_per_group","status","admin_username","created_at"] },
   Tournament_Entrants:{ table: "tournament_entrants", cols: ["tournament_id","entrant_id","player1_name","player1_ig","player2_name","player2_ig","seed_elo","is_new_p1","is_new_p2","created_at"] },
