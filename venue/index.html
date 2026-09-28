@@ -64,7 +64,17 @@
 
 @media(max-width:860px){.nav{display:none}.menu-toggle{display:flex}.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+/* Loading: fixed top progress bar + an in-page loading panel */
+#tk-topbar{position:fixed;top:0;left:0;right:0;height:4px;z-index:9999;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .25s}
+#tk-topbar.on{opacity:1}
+#tk-topbar i{position:absolute;top:0;bottom:0;left:0;width:40%;background:var(--orange,#FF5900);animation:tkbar 1.1s ease-in-out infinite}
+@keyframes tkbar{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.ld{margin-top:30px;border:2px solid var(--ink,#090D14);box-shadow:4px 4px 0 var(--ink,#090D14);background:#fff;padding:18px 18px 20px;max-width:520px}
+.ld-t{display:flex;justify-content:space-between;font:800 11px var(--mono,monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--ink,#090D14)}
+.ld-t span:last-child{color:var(--orange,#FF5900)}
+.ld-bar{position:relative;height:12px;margin-top:10px;border:2px solid var(--ink,#090D14);background:#F1F5F9;overflow:hidden}
+.ld-bar i{position:absolute;top:0;bottom:0;left:0;width:35%;background:repeating-linear-gradient(90deg,var(--orange,#FF5900) 0 10px,#ff7a33 10px 14px);animation:tkbar 1.2s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.skeleton,#tk-topbar i,.ld-bar i{animation:none}#tk-topbar i,.ld-bar i{width:100%;opacity:.6}}
   .pp-nudge{display:flex;align-items:center;gap:13px;background:linear-gradient(100deg,#FFF3EA,#FFFBF7);border:1px solid #FFD9BF;border-radius:12px;padding:14px 16px;margin-bottom:12px}
   .pp-nudge .pp-ic{width:40px;height:40px;border-radius:11px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;animation:ppPulse 2.4s ease-in-out infinite}
   @keyframes ppPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,106,0,.38)}50%{box-shadow:0 0 0 7px rgba(255,106,0,0)}}
@@ -235,7 +245,8 @@
 <div id="tk-nav"></div>
 
 <main class="container" id="main">
-  <div id="content"><div class="skeleton" style="margin-top:26px"></div></div>
+  <div id="tk-topbar" aria-hidden="true"><i></i></div>
+  <div id="content"><div class="ld" role="status"><div class="ld-t"><span>Loading</span><span>Trekkr</span></div><div class="ld-bar"><i></i></div></div></div>
 </main>
 
 <footer class="site-footer">
@@ -262,6 +273,14 @@
   function vlogo(v,big){var c=big?'vlogo':'vlogo';if(v.logoUrl)return '<span class="'+c+'"><img src="'+esc(v.logoUrl)+'" alt=""/></span>';return '<span class="'+c+'">'+esc(initials(v.name))+'</span>';}
   function photo(p){if(p.photoUrl)return '<img class="lb-photo" src="'+esc(p.photoUrl)+'" alt="" loading="lazy"/>';return '<span class="lb-photo">'+esc(initials(p.name))+'</span>';}
   var content=document.getElementById('content');
+  // Standard loading UI: a panel with a progress bar, plus the thin top bar
+  // that stays on while any API request is in flight.
+  function loader(label){return '<div class="ld" role="status" aria-live="polite"><div class="ld-t"><span>'+esc(label||'Loading')+'</span><span>Trekkr</span></div><div class="ld-bar"><i></i></div></div>';}
+  var topbar=document.getElementById('tk-topbar'), inflight=0;
+  function busy(d){inflight=Math.max(0,inflight+d); if(topbar)topbar.classList.toggle('on',inflight>0);}
+  var _fetch=window.fetch.bind(window);
+  window.fetch=function(u){var api=String(u&&u.url||u).indexOf(BASE)===0; if(api)busy(1);
+    var p=_fetch.apply(null,arguments); if(api)p.then(function(){busy(-1);},function(){busy(-1);}); return p;};
 
   function selected(){
     var seg=decodeURIComponent((location.pathname.split('/').filter(Boolean).pop())||'');
@@ -447,7 +466,7 @@
   }
   function loadWeekly(v,week){
     CUR=v;CURWEEK=week||null;
-    content.innerHTML=hdr(v)+modeTabs('week')+'<div class="state" style="margin-top:24px">Loading week&hellip;</div>';
+    content.innerHTML=hdr(v)+modeTabs('week')+loader('Loading week');
     var u=BASE+'/venues/'+encodeURIComponent(v.name)+'/ranking'+(week?('?week='+encodeURIComponent(week)):'');
     fetch(u).then(function(r){return r.json();}).then(function(d){CURWEEK=d.week;renderWeekly(v,d);})
       .catch(function(){content.innerHTML=hdr(v)+modeTabs('week')+'<div class="state">Couldn\'t load week.</div>';});
@@ -483,7 +502,7 @@
   }
   function showAll(){
     if(ALLCACHE){renderAll(CUR,ALLCACHE,'loyal');return;}
-    content.innerHTML=hdr(CUR)+modeTabs('all')+'<div class="state" style="margin-top:24px">Loading players&hellip;</div>';
+    content.innerHTML=hdr(CUR)+modeTabs('all')+loader('Loading players');
     fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({venue:CUR.name,limit:200}).toString()).then(function(r){return r.json();})
       .then(function(ld){ALLCACHE=(ld&&ld.leaderboard)||[];renderAll(CUR,ALLCACHE,'loyal');})
       .catch(function(){content.innerHTML=hdr(CUR)+modeTabs('all')+'<div class="state">Couldn\'t load players.</div>';});
@@ -597,7 +616,7 @@
     });});
   }
   function loadTournamentPage(cslug){
-    content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
+    content.innerHTML=loader('Loading tournament');
     fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
       if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">Tournament not found.</div>';return;}
       var html=compHdr(d,'tb-tourney','<i class="ti ti-trophy"></i>Tournament · Single Event');
@@ -664,7 +683,7 @@
       +'</div>';
   }
   function loadLeaguePage(cslug){
-    content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
+    content.innerHTML=loader('Loading league');
     fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
       if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">League not found.</div>';return;}
       var html=leagueHdr(d);
