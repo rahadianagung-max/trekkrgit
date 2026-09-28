@@ -199,8 +199,8 @@
     return '<span class="'+cls+'">'+esc(initials(disp(p)))+'</span>';
   }
   function meta(p){var parts=[tierName(p.elo)];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
-  // Public name = alias if set, else first name (server-computed as p.display).
-  function disp(p){return (p&&(p.display||p.name))||'';}
+  // The website always shows the player's full name (aliases are app-only).
+  function disp(p){return (p&&(p.name||p.display))||'';}
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
 
   function rowHTML(p,rank){

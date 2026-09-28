@@ -202,8 +202,8 @@ a.tr:hover{background:var(--warm)}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
   function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  // Public name = alias if set, else first name (server-computed as p.display).
-  function dnm(p){return (p&&(p.display||p.name))||'';}
+  // The website always shows the player's full name (aliases are app-only).
+  function dnm(p){return (p&&(p.name||p.display))||'';}
   // Square photo with an initials fallback.
   function av(p,sz){
     var u=p.photoUrl||p.photo||'', st=sz?' style="width:'+sz+'px;height:'+sz+'px"':'';
