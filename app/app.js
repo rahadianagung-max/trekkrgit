@@ -894,37 +894,37 @@
   }
   function drawNightCard(ctx, W, H, data, img) {
     var PHOTO_H = Math.round(H * 0.54);
-    ctx.fillStyle = "#080808"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#090D14"; ctx.fillRect(0, 0, W, H);
     // top: photo (cover) or initials panel
     if (img) {
       var s = Math.max(W / img.width, PHOTO_H / img.height);
       var dw = img.width * s, dh = img.height * s, dx = (W - dw) / 2, dy = (PHOTO_H - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
       var g = ctx.createLinearGradient(0, PHOTO_H * 0.35, 0, PHOTO_H);
-      g.addColorStop(0, "rgba(8,8,8,0)"); g.addColorStop(1, "#080808");
+      g.addColorStop(0, "rgba(9,13,20,0)"); g.addColorStop(1, "#090D14");
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, PHOTO_H);
     } else {
-      ctx.fillStyle = "#141414"; ctx.fillRect(0, 0, W, PHOTO_H);
-      ctx.fillStyle = "#242424"; ctx.font = "700 320px 'Saira Condensed',sans-serif"; ctx.textAlign = "center";
+      ctx.fillStyle = "#161C27"; ctx.fillRect(0, 0, W, PHOTO_H);
+      ctx.fillStyle = "#2A3342"; ctx.font = "700 320px 'Space Grotesk',sans-serif"; ctx.textAlign = "center";
       ctx.fillText(initials(data.display), W / 2, Math.round(PHOTO_H * 0.62));
     }
     // name + url + sub
     ctx.textAlign = "left";
-    ctx.fillStyle = "#fff"; ctx.font = "800 74px 'Saira Condensed',sans-serif";
+    ctx.fillStyle = "#fff"; ctx.font = "800 74px 'Space Grotesk',sans-serif";
     ctx.fillText(String(data.display).toUpperCase(), 60, PHOTO_H - 96);
-    ctx.fillStyle = "#FF8A3D"; ctx.font = "600 30px 'Plus Jakarta Sans',sans-serif";
+    ctx.fillStyle = "#FF5900"; ctx.font = "600 30px 'Plus Jakarta Sans',sans-serif";
     ctx.fillText("trekkr.online/player/" + data.slug, 60, PHOTO_H - 54);
     if (data.region) { ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.font = "400 30px 'Plus Jakarta Sans',sans-serif"; ctx.fillText(data.region, 60, PHOTO_H - 16); }
     // ELO + tier
     var eloY = PHOTO_H + 150;
     ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif"; ctx.textAlign = "left";
     ctx.fillText("ELO RATING", 60, eloY);
-    ctx.fillStyle = "#fff"; ctx.font = "800 150px 'Saira Condensed',sans-serif";
+    ctx.fillStyle = "#FF5900"; ctx.font = "800 150px 'JetBrains Mono',monospace";
     ctx.fillText(data.unrated ? "—" : String(data.elo), 60, eloY + 140);
     if (!data.unrated && data.tier) {
       ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif"; ctx.textAlign = "right";
       ctx.fillText("TIER", W - 60, eloY);
-      ctx.fillStyle = "#FFB000"; ctx.font = "800 60px 'Saira Condensed',sans-serif";
+      ctx.fillStyle = "#D2F802"; ctx.font = "800 60px 'Space Grotesk',sans-serif";
       ctx.fillText(String(data.tier).split(" · ")[0], W - 60, eloY + 58);
     }
     // stat boxes
@@ -932,8 +932,8 @@
     var bY = eloY + 260, bGap = 24, bW = (W - 120 - bGap * 2) / 3, bH = 150, bX = 60;
     stats.forEach(function (st, i) {
       var x = bX + i * (bW + bGap);
-      ctx.fillStyle = "#141414"; roundRect(ctx, x, bY, bW, bH, 20); ctx.fill();
-      ctx.fillStyle = "#fff"; ctx.font = "800 66px 'Saira Condensed',sans-serif"; ctx.textAlign = "center";
+      ctx.fillStyle = "#161C27"; roundRect(ctx, x, bY, bW, bH, 0); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.font = "800 66px 'JetBrains Mono',monospace"; ctx.textAlign = "center";
       ctx.fillText(st[1] != null ? String(st[1]) : "–", x + bW / 2, bY + 86);
       ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
       ctx.fillText(st[0], x + bW / 2, bY + bH - 22);
@@ -941,20 +941,20 @@
     // best partner
     if (data.partner) {
       var pY = bY + bH + 56;
-      ctx.fillStyle = "#141414"; roundRect(ctx, 60, pY, W - 120, 150, 20); ctx.fill();
+      ctx.fillStyle = "#161C27"; roundRect(ctx, 60, pY, W - 120, 150, 0); ctx.fill();
       ctx.textAlign = "left";
       ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
       ctx.fillText("BEST PARTNER", 96, pY + 46);
-      ctx.fillStyle = "#fff"; ctx.font = "800 52px 'Saira Condensed',sans-serif";
+      ctx.fillStyle = "#fff"; ctx.font = "800 52px 'Space Grotesk',sans-serif";
       ctx.fillText(String(data.partner.name).toUpperCase(), 96, pY + 108, W - 320);
       ctx.textAlign = "right";
       ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "700 22px 'Plus Jakarta Sans',sans-serif";
       ctx.fillText("TOGETHER", W - 96, pY + 46);
-      ctx.fillStyle = "#4ADE80"; ctx.font = "800 44px 'Saira Condensed',sans-serif";
+      ctx.fillStyle = "#D2F802"; ctx.font = "800 44px 'JetBrains Mono',monospace";
       ctx.fillText(data.partner.w + "–" + data.partner.l, W - 96, pY + 104);
     }
     // footer
-    ctx.fillStyle = "#fff"; ctx.font = "800 50px 'Saira Condensed',sans-serif"; ctx.textAlign = "left";
+    ctx.fillStyle = "#fff"; ctx.font = "800 50px 'Space Grotesk',sans-serif"; ctx.textAlign = "left";
     ctx.fillText("TREKKR", 60, H - 56);
     ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.font = "400 28px 'Plus Jakarta Sans',sans-serif"; ctx.textAlign = "right";
     ctx.fillText("Visit trekkr.online", W - 60, H - 56);

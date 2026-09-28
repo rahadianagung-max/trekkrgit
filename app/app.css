@@ -1,11 +1,16 @@
-/* Trekkr Player — app-shell styles. Brand tokens, app-first, light & dark. */
+/* Trekkr Player — app-shell styles. PlayRank League theme (ink / orange / volt,
+   Space Grotesk + JetBrains Mono, square corners, hard shadows), light & dark. */
 :root{
-  --or:#FF6A00; --or-soft:#FFF1E7; --or-line:rgba(255,106,0,.28);
-  --grad:linear-gradient(135deg,#FF3830,#FFB000);
-  --ink:#1A1614; --mu:#6C6660; --faint:#98918a;
-  --bg:#F7F5F2; --card:#fff; --line:#EBE5DE; --line-soft:#F2EDE7;
-  --grn:#0E8A4F; --red:#C2410C;
-  --display:'Saira Condensed',system-ui,sans-serif;
+  --or:#FF5900; --or-soft:#FFF1E8; --or-line:rgba(255,89,0,.35);
+  --grad:#FF5900;
+  --ink:#090D14; --mu:#475569; --faint:#64748B;
+  --bg:#FFFFFF; --card:#fff; --line:#E2E8F0; --line-soft:#F1F5F9;
+  --grn:#0E8A4F; --red:#DC2626;
+  --volt:#D2F802; --night:#090D14;
+  --edge:#090D14;            /* hard borders + offset shadows */
+  --gridline:rgba(9,13,20,.05);
+  --display:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --body:'Plus Jakarta Sans',system-ui,sans-serif;
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
@@ -13,16 +18,18 @@
 /* Dark tokens: apply on system-dark (unless the user forced light), and always
    when the user explicitly picks dark via the in-app toggle. */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --or:#FF7E22; --or-soft:#2A1B10; --or-line:rgba(255,126,34,.34);
-  --ink:#F3EEE9; --mu:#ADA49B; --faint:#7C746C;
-  --bg:#141110; --card:#1E1A18; --line:#302A26; --line-soft:#241F1C;
-  --grn:#4ADE80; --red:#F97316;
+  --or:#FF6A1A; --or-soft:#2A1608; --or-line:rgba(255,106,26,.4);
+  --ink:#F1F5F9; --mu:#A3AEBE; --faint:#7B8798;
+  --bg:#090D14; --card:#111722; --line:#263041; --line-soft:#182030;
+  --grn:#4ADE80; --red:#F87171;
+  --edge:#3A4659; --gridline:rgba(255,255,255,.04);
 }}
 :root[data-theme="dark"]{
-  --or:#FF7E22; --or-soft:#2A1B10; --or-line:rgba(255,126,34,.34);
-  --ink:#F3EEE9; --mu:#ADA49B; --faint:#7C746C;
-  --bg:#141110; --card:#1E1A18; --line:#302A26; --line-soft:#241F1C;
-  --grn:#4ADE80; --red:#F97316;
+  --or:#FF6A1A; --or-soft:#2A1608; --or-line:rgba(255,106,26,.4);
+  --ink:#F1F5F9; --mu:#A3AEBE; --faint:#7B8798;
+  --bg:#090D14; --card:#111722; --line:#263041; --line-soft:#182030;
+  --grn:#4ADE80; --red:#F87171;
+  --edge:#3A4659; --gridline:rgba(255,255,255,.04);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
@@ -387,3 +394,114 @@ h1.page{font-family:var(--display);text-transform:uppercase;font-size:27px;font-
 .vp-rk-p{font-family:var(--display);font-weight:800;font-size:20px;flex:none;text-align:right}
 .vp-rk-p small{display:block;font-family:var(--body);font-weight:600;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
 .vp-note{font-size:12px;color:var(--faint);line-height:1.5;margin-top:10px}
+
+/* ==========================================================================
+   PlayRank League skin — square corners, hard ink borders + offset shadows,
+   grid paper, mono labels, orange tabular-mono ELO. Overrides the rules above.
+   ========================================================================== */
+body{background-color:var(--bg);
+  background-image:linear-gradient(to right,var(--gridline) 1px,transparent 1px),linear-gradient(to bottom,var(--gridline) 1px,transparent 1px);
+  background-size:24px 24px}
+::selection{background:var(--volt);color:#090D14}
+#app *:not(.spinner):not(.vp-dot):not(.pptri),.toast,.ioshint,.ioshint *,.bsheet,.bsheet *{border-radius:0 !important}
+
+/* brand word-mark: TREKKR // */
+.brand,.wc-logo,.ah-brand{font-family:var(--body);font-style:italic;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;color:var(--ink)}
+.brand b,.wc-logo b,.ah-brand b{color:inherit}
+.brand b::after,.wc-logo b::after,.ah-brand b::after{content:"//";font-style:normal;background:var(--or);color:#fff;padding:0 .22em;margin-left:.12em;font-size:.62em;vertical-align:.14em;letter-spacing:0}
+
+/* type */
+h1.page,.rtitle,.vp-name,.lsx-title,.s2-tier,.tierprog .tp-cur,.bs-name{font-family:var(--display);font-weight:700;letter-spacing:-.03em}
+.sec,.p-hi,.s2-rh,.lsx-h,.rp-flabel,.vp-sec,.vp-pay-l,.vp-rlabel,.label,.hero .lbl,.cc-eyebrow,.ttable th,.s2-elo span,.hix-card span,.stat span,.tab{font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.sec{color:var(--ink);font-size:10.5px;display:flex;align-items:center;gap:8px}
+.sec::before{content:"";width:10px;height:10px;background:var(--or);flex:0 0 auto}
+.label{font-size:10.5px;color:var(--ink);font-weight:800}
+.stat span,.hix-card span{font-size:9px}
+.tab{font-size:9.5px;letter-spacing:.06em}
+
+/* ELO / numbers — orange tabular mono */
+.hero .num,.s2-elo b,.rrow .el,.hitem .e,.statrow4 .stat b,.stat b,.vp-rk-p,.cc-pool,.cp-row b,.mrow .msc,.wc-count b,.vr-pos,.vp-pos,.rrow .rk,.hix-card b,.vp-num,.ttable td.r{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rrow .el,.s2-elo b,.hitem .e,.statrow4 .stat.hl b{color:var(--or)}
+.rrow .el.prov-el{color:var(--faint)}
+.wc-count b{background:none;-webkit-text-fill-color:currentColor;color:var(--or)}
+
+/* surfaces */
+.stand2,.lsx,.hix-card,.stat,.hitem,.tierprog,.sparkcard,.mrow,.badge,.plain,.vp-pay,.vp-ses,.vp-rk,.seedopt{
+  border:2px solid var(--edge);box-shadow:3px 3px 0 var(--edge)}
+.badge:not(.earned){box-shadow:none;border-color:var(--line)}
+.badge.earned{background:var(--volt);border-color:var(--edge)}
+.badge.earned .bn{color:#090D14}
+.statrow4 .stat.hl{background:var(--or-soft);border-color:var(--edge)}
+.bsheet{border:2px solid var(--edge);box-shadow:6px 6px 0 var(--or)}
+.calib{border:2px solid var(--edge);background:var(--or-soft)}
+
+/* hero + championship: ink block, volt rule, orange ELO */
+.hero,.champcard{background:#090D14;color:#fff;border:2px solid #090D14;border-bottom:5px solid var(--volt);box-shadow:5px 5px 0 var(--or)}
+.hero::after,.champcard::after{display:none}
+.hero .num{color:var(--or);font-size:60px;font-weight:800}
+.hero .tier{background:var(--volt);color:#090D14;border:none;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px}
+.hero .delta{background:transparent;border:1.5px solid var(--volt);color:var(--volt);font-family:var(--mono)}
+.pptri.up{color:var(--volt)} .pptri.down{color:#FF8A8A}
+.s2-elo .pptri.up{color:var(--grn)} .s2-elo .pptri.down{color:var(--red)}
+.cc-pool{color:var(--volt)}
+.cp-row{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18)}
+
+/* progress bars */
+.s2-bar,.tp-bar{height:10px;background:var(--line-soft);border:1.5px solid var(--edge)}
+.s2-bar>span,.tp-fill{background:var(--or)}
+
+/* avatars → square photos */
+.ava,.rav,.vp-logo{background:#090D14;border:2px solid var(--edge);font-family:var(--mono)}
+.rp-logo{border:2px solid var(--edge);background:var(--volt);color:#090D14}
+
+/* buttons + inputs */
+.btn,.ah-signin,.vp-b.book,.ioshint .installgo{background:var(--or);color:#fff;border:2px solid var(--edge);box-shadow:3px 3px 0 var(--edge);
+  font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-size:14px;transition:transform .08s,box-shadow .08s}
+.btn:active:not(:disabled),.ah-signin:active,.vp-b.book:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--edge)}
+.ah-signin{font-size:12px;padding:8px 13px}
+.btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--edge)}
+.vp-b.wait,.vp-b.ok{border-width:2px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-size:12.5px}
+.link{font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+.input,.rp-select select{border:2px solid var(--edge);font-family:var(--body)}
+.input:focus,.rp-select select:focus{border-color:var(--edge);box-shadow:3px 3px 0 var(--or)}
+.seedopt.on{background:var(--volt);color:#090D14;border-color:var(--edge)}
+.themebtn{border:2px solid var(--edge);background:var(--card)}
+
+/* segmented + chips */
+.seg,.vp-seg,.vp-gseg{border:2px solid var(--edge);background:var(--card);padding:3px}
+.seg button,.vp-seg button,.vp-gseg button{font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-size:11.5px}
+.seg button.on,.vp-seg button.on,.vp-gseg button.on{background:#090D14;color:var(--volt);box-shadow:none}
+.seg button.on .segn{background:var(--volt);color:#090D14}
+.chip{border:2px solid var(--edge);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+.chip.on{background:var(--volt);color:#090D14;border-color:var(--edge)}
+.lsx-chip,.vp-fact,.prov,.pendtag,.bs-status{font-family:var(--mono);letter-spacing:.03em}
+.lsx-chip{border:1.5px solid var(--edge)}
+.soon::after{background:#090D14;color:var(--volt);font-family:var(--mono)}
+
+/* rankings rows */
+.rrow{border-bottom:1px solid var(--line)}
+.rrow.top .rk{color:var(--or)}
+.rrow.me{background:var(--volt);color:#090D14}
+.rrow.me .mt,.rrow.me .rk{color:#334155}
+.rrow.me .el{color:#090D14}
+.mres{font-family:var(--mono);border:1.5px solid currentColor}
+
+/* journey */
+.jnum{border:2px solid var(--edge);font-family:var(--mono)}
+.jstep.on .jnum{background:var(--or);border-color:var(--edge);box-shadow:2px 2px 0 var(--edge)}
+.jstep::before{background:var(--edge);width:2px}
+
+/* chrome */
+.appheader{border-bottom:2px solid var(--edge)}
+.tabbar{border-top:2px solid var(--edge)}
+.tab.on{color:var(--or)}
+.tab.on .ic{position:relative}
+.tab.on .ic::after{content:"";position:absolute;left:50%;bottom:-3px;width:18px;height:3px;margin-left:-9px;background:var(--or)}
+.toast,.ioshint{background:#090D14;color:#fff;border:2px solid #090D14;box-shadow:4px 4px 0 var(--or)}
+.spinner{border-color:var(--line);border-top-color:var(--or)}
+.wc-list li::before{border-radius:0;width:7px;height:7px;top:6px}
+/* dark: an ink "on" state would vanish into the ink page — flip to volt */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.seg,.vp-seg,.vp-gseg) button.on{background:var(--volt);color:#090D14}
+  :root:not([data-theme="light"]) .seg button.on .segn{background:#090D14;color:var(--volt)}}
+:root[data-theme="dark"] :is(.seg,.vp-seg,.vp-gseg) button.on{background:var(--volt);color:#090D14}
+:root[data-theme="dark"] .seg button.on .segn{background:#090D14;color:var(--volt)}
