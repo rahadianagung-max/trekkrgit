@@ -6657,8 +6657,8 @@ function buildEngineFormat(tid, groupRows, allMatches, entrants, pinfo) {
 // the Tournament_Archive backup tab as JSON. Read them back so a competition
 // page keeps showing its podium/standings after archiving. Returns arrays in
 // the same shape as the live tabs, filtered to this event.
-async function loadArchivedTournamentRows(sheets, eventId) {
-  const res = await sheets.spreadsheets.values
+async function loadArchivedTournamentRows(sheets, eventId, preloaded) {
+  const res = preloaded || await sheets.spreadsheets.values
     .get({ spreadsheetId: SHEET_ID, range: `Tournament_Archive!A2:D` })
     .catch(() => ({ data: { values: [] } }));
   const out = { [TABS.t_tournaments]: [], [TABS.t_groups]: [], [TABS.t_matches]: [] };
@@ -6687,9 +6687,11 @@ async function tournamentFromEngine(sheets, comp, base) {
   val(5).forEach((r) => { if (r[0]) evName[r[0]] = r[1] || ""; });
   // Fallback: an event with no live tournament rows (archived) is rebuilt from
   // the Tournament_Archive backup. Players/ELO stay live (unaffected by archive).
+  let archRes = null;   // read the archive once, even for multi-event pages
   for (const ev of evIds) {
     if (trRows.some((t) => t[1] === ev)) continue;
-    const arch = await loadArchivedTournamentRows(sheets, ev);
+    if (!archRes) archRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `Tournament_Archive!A2:D` }).catch(() => ({ data: { values: [] } }));
+    const arch = await loadArchivedTournamentRows(sheets, ev, archRes);
     if (arch.tournaments.length) { trRows = trRows.concat(arch.tournaments); grRows = grRows.concat(arch.groups); mRows = mRows.concat(arch.matches); }
     if (arch.eventName && !evName[ev]) evName[ev] = arch.eventName;
   }
