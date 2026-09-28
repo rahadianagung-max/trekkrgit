@@ -6337,7 +6337,7 @@ async function deleteAdmin(body) {
 // ── COMPETITIONS registry (standalone Tournament / League result pages) ──
 // Maps a friendly slug -> engine Event_ID. Self-bootstrapping tab.
 // Columns: Slug | Type | Event_ID | Name | Location | Logo_URL | Status
-const COMPETITIONS_HEADER = ["Slug", "Type", "Source_Venue", "Name", "Location", "Logo_URL", "Status"];
+const COMPETITIONS_HEADER = ["Slug", "Type", "Source_Venue", "Name", "Location", "Logo_URL", "Status", "Date"];
 async function ensureCompetitionsTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
   const existing = (meta.data.sheets || []).map((s) => s.properties.title);
@@ -6441,12 +6441,21 @@ function pairStatsFromRows(rows) {
 async function listCompetitions() {
   const sheets = getSheets();
   await ensureCompetitionsTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A2:G` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.competitions}!A2:H` }).catch(() => ({ data: { values: [] } }));
+  // Event date (col H, YYYY-MM-DD). Blank -> fall back to the creation time
+  // embedded in an engine Event_ID in col C ("EV_<ms>_...") so it still sorts.
+  const compDate = (r) => {
+    const d = (r[7] || "").toString().trim();
+    if (d) return d.slice(0, 10);
+    const m = (r[2] || "").toString().match(/EVT?_(\d{12,14})/i);
+    return m ? new Date(Number(m[1])).toISOString().slice(0, 10) : "";
+  };
   const competitions = (res.data.values || [])
     .filter((r) => (r[0] || "").toString().trim() && (r[3] || "").toString().trim())
     .map((r) => ({
       slug: r[0].toString().trim(), type: (r[1] || "tournament").toString().trim().toLowerCase(),
       name: r[3] || "", location: r[4] || "", logoUrl: (r[5] || "").toString().trim(), status: (r[6] || "").toString().trim().toLowerCase(),
+      date: compDate(r),
     }));
   return respond(200, { competitions });
 }

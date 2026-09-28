@@ -217,6 +217,14 @@
   .vmode-b.on{background:var(--orange);border-color:var(--ink,#090D14);color:#fff;box-shadow:3px 3px 0 var(--ink,#090D14)}
   .vmode-b:hover:not(.on){border-color:var(--ink,#090D14);background:#F4F6F9;color:var(--ink,#090D14)}
   .searchbar{border:2px solid var(--ink,#090D14)}
+  /* Tournaments by month */
+  .mon{margin-top:30px}
+  .mon-h{display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--ink,#090D14);padding-bottom:8px}
+  .mon-h b{font:700 clamp(22px,3.2vw,30px)/1 var(--display);text-transform:uppercase;letter-spacing:-.03em}
+  .mon-h .yr{font:800 12px var(--mono,monospace);color:var(--orange);letter-spacing:.08em}
+  .mon-h .n{margin-left:auto;background:var(--ink,#090D14);color:var(--volt,#D2F802);font:800 10.5px var(--mono,monospace);letter-spacing:.08em;text-transform:uppercase;padding:4px 8px}
+  .mon .grid{margin-top:14px}
+  .vcard .vdate{display:inline-block;margin-top:10px;background:var(--volt,#D2F802);color:var(--ink,#090D14);border:1.5px solid var(--ink,#090D14);font:800 10.5px var(--mono,monospace);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px}
   .champ{border:2px solid var(--ink,#090D14);box-shadow:4px 4px 0 var(--ink,#090D14)}
   .champ1{box-shadow:5px 5px 0 var(--orange)}
   .vhero .vlogo{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;overflow:hidden}
@@ -274,12 +282,50 @@
     var logo=c.logoUrl?'<span class="vlogo"><img src="'+esc(c.logoUrl)+'" alt=""/></span>':'<span class="vlogo">'+esc(initials(c.name))+'</span>';
     var st=c.status?'<div class="vmeta"><i class="ti ti-flag" aria-hidden="true"></i>'+esc(c.status.charAt(0).toUpperCase()+c.status.slice(1))+'</div>':'';
     return '<a class="vcard" href="/'+esc(c.type)+'/'+esc(c.slug)+'">'+logo
+      +(c.date?'<span class="vdate">'+esc(dayLabel(c.date))+'</span>':'')
       +'<div class="vname">'+esc(c.name)+'</div>'
       +(c.location?'<div class="vmeta"><i class="ti ti-map-pin" aria-hidden="true"></i>'+esc(c.location)+'</div>':'')
       +st
       +'<div class="vgo">View results <i class="ti ti-arrow-right" aria-hidden="true"></i></div></a>';
   }
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function pdate(d){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null;}
+  function dayLabel(d){var x=pdate(d);return x?DOW[x.getDay()]+' '+x.getDate()+' '+MONTHS[x.getMonth()].slice(0,3)+' '+x.getFullYear():'';}
+  // Tournament cards in month sections, newest month first (undated last).
+  function monthSections(list){
+    list=list.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'')||String(a.name).localeCompare(String(b.name));});
+    var groups=[],idx={};
+    list.forEach(function(c){
+      var x=pdate(c.date), k=x?c.date.slice(0,7):'tba';
+      if(!(k in idx)){idx[k]=groups.length;groups.push({k:k,x:x,items:[]});}
+      groups[idx[k]].items.push(c);
+    });
+    return groups.map(function(g){
+      var head=g.x?'<b>'+MONTHS[g.x.getMonth()]+'</b><span class="yr">'+g.x.getFullYear()+'</span>':'<b>Date TBA</b>';
+      return '<section class="mon"><div class="mon-h">'+head+'<span class="n">'+g.items.length+' tournament'+(g.items.length>1?'s':'')+'</span></div>'
+        +'<div class="grid dgrid">'+g.items.map(compCard).join('')+'</div></section>';
+    }).join('');
+  }
+  // ?tab=tn → a tournaments-only page, sectioned by month.
+  function renderTournaments(comps){
+    var tournaments=(comps||[]).filter(function(c){return c.type==='tournament';});
+    content.innerHTML='<div class="page-head"><span class="eyebrow">League &amp; Tournament</span><h1 class="display">Tournaments</h1>'
+      +'<p>Every tournament tracked on Trekkr — groups, knockouts and final standings, by month.</p></div>'
+      +'<div class="searchbar" style="margin-top:14px"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search tournaments…" aria-label="Search tournaments"/></div>'
+      +'<div id="grid-tn">'+(tournaments.length?monthSections(tournaments):'<div class="state">No tournaments listed yet.</div>')+'</div>';
+    var inp=document.getElementById('vsearch');
+    inp.addEventListener('input',function(){filterSections(document.getElementById('grid-tn'),(inp.value||'').toLowerCase());});
+  }
+  function filterSections(root,q){
+    Array.prototype.forEach.call(root.querySelectorAll('.vcard'),function(c){c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';});
+    Array.prototype.forEach.call(root.querySelectorAll('.mon'),function(m){
+      var any=Array.prototype.some.call(m.querySelectorAll('.vcard'),function(c){return c.style.display!=='none';});
+      m.style.display=any?'':'none';
+    });
+  }
   function renderDirectory(venues,comps){
+    if((location.search.match(/[?&]tab=(pr|tn|lg)\b/)||[])[1]==='tn') return renderTournaments(comps);
     venues=(venues||[]).filter(function(v){return v.name;});
     comps=comps||[];
     var tournaments=comps.filter(function(c){return c.type==='tournament';});
@@ -297,7 +343,7 @@
       +'</div>'
       +'<div class="searchbar" style="margin-top:14px"><i class="ti ti-search" aria-hidden="true"></i><input id="vsearch" type="search" placeholder="Search…" aria-label="Search"/></div>'
       +grid('grid-pr',venues.map(venueCard).join(''),'No venues yet.',true)
-      +grid('grid-tn',tournaments.map(compCard).join(''),'No tournaments listed yet.',false)
+      +'<div id="grid-tn" style="display:none">'+(tournaments.length?monthSections(tournaments):'<div class="state">No tournaments listed yet.</div>')+'</div>'
       +grid('grid-lg',leagues.map(compCard).join(''),'No leagues listed yet.',false);
     var tabs=content.querySelectorAll('.dirtabs .vmode-b');
     var map={pr:'grid-pr',tn:'grid-tn',lg:'grid-lg'};
@@ -305,6 +351,7 @@
     var inp=document.getElementById('vsearch');
     function applySearch(){
       var q=(inp.value||'').toLowerCase(), g=document.getElementById(map[active]);
+      if(active==='tn') return filterSections(g,q);
       Array.prototype.forEach.call(g.children,function(c){
         if(c.classList&&c.classList.contains('vcard'))c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?'':'none';
       });
