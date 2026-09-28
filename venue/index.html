@@ -174,6 +174,39 @@
   .cp-photo img{width:100%;height:100%;object-fit:cover;display:block}
   .champ1 .cp-photo{width:60px;height:60px;font-size:21px;border-color:var(--orange)}
   .cp-name{font-family:var(--display);font-style:italic;font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(16px,3.6vw,23px);line-height:1.04;white-space:normal;word-break:break-word;min-width:0}
+  /* Tournament format: knockout bracket + group stage */
+  .fmt-tabs{margin-top:18px}
+  .ko-scroll{overflow-x:auto;margin-top:12px;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .ko{display:flex;gap:14px;min-width:min-content}
+  .ko-col{display:flex;flex-direction:column;min-width:210px;flex:0 0 210px}
+  .ko-rh{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--subtle);padding:0 2px 8px;border-bottom:2px solid var(--ink,#090D14);margin-bottom:10px}
+  .ko-col.final .ko-rh{color:var(--orange);border-color:var(--orange)}
+  .ko-list{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:12px}
+  .ko-m{border:2px solid var(--ink,#090D14);background:#fff;box-shadow:3px 3px 0 var(--ink,#090D14)}
+  .ko-col.final .ko-m{box-shadow:4px 4px 0 var(--orange)}
+  .ko-s{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12.5px;line-height:1.3}
+  .ko-s+.ko-s{border-top:1px solid var(--border-soft,#E2E8F0)}
+  .ko-s .nm{flex:1;min-width:0}
+  .ko-s .nm a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit}
+  .ko-s .sc{font-family:var(--mono,monospace);font-weight:800;font-size:15px;min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+  .ko-s.w{background:var(--volt,#D2F802)}
+  .ko-s.w .nm{font-weight:800}
+  .ko-s.l{color:var(--subtle)}
+  .ko-tbd{color:var(--subtle);font-style:italic}
+  .ko-third{margin-top:18px;max-width:260px}
+  .grp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:12px}
+  .grp{border:2px solid var(--ink,#090D14);background:#fff;box-shadow:4px 4px 0 var(--ink,#090D14);padding:12px 12px 6px}
+  .grp-h{font-family:var(--display);font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 6px}
+  .grp .tbl td,.grp .tbl th{padding:8px 5px}
+  .grp .tbl tr.adv td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
+  .grp-res{margin-top:6px;border-top:1px solid var(--border-soft,#E2E8F0)}
+  .grp-res summary{cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--orange);padding:9px 2px}
+  .grp-rm{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 2px;border-top:1px dashed var(--border-soft,#E2E8F0)}
+  .grp-rm .t{flex:1;min-width:0}
+  .grp-rm .t.r{text-align:right}
+  .grp-rm .t.win{font-weight:800}
+  .grp-rm .sc{font-family:var(--mono,monospace);font-weight:800;white-space:nowrap}
+  .fmt-note{font-size:12px;color:var(--subtle);margin-top:8px}
 </style>
 </head>
 <body>
@@ -460,9 +493,70 @@
     }).join('');
     return '<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div>';
   }
+  function pairNames(side){
+    if(!side||!side.players||!side.players.length)return '<span class="ko-tbd">TBD</span>';
+    return side.players.map(function(p){return '<a href="'+passHref(p.slug)+'">'+esc(p.name)+'</a>';}).join('');
+  }
+  function pairShort(side){
+    if(!side||!side.players)return 'TBD';
+    return side.players.map(function(p){return esc(p.name);}).join(' / ');
+  }
+  function koMatch(m){
+    var cls=function(s){return m.winner?(m.winner===s?' w':' l'):'';};
+    var sc=function(v){return m.played?v:'&ndash;';};
+    return '<div class="ko-m">'
+      +'<div class="ko-s'+cls('a')+'"><div class="nm">'+pairNames(m.a)+'</div><div class="sc">'+sc(m.sa)+'</div></div>'
+      +'<div class="ko-s'+cls('b')+'"><div class="nm">'+pairNames(m.b)+'</div><div class="sc">'+sc(m.sb)+'</div></div></div>';
+  }
+  function renderKnockout(f){
+    var brs=(f&&f.brackets)||[];
+    if(!brs.length)return '<div class="state">No knockout stage.</div>';
+    return brs.map(function(br,bi){
+      var title=(brs.length>1&&br.name&&br.name.toUpperCase()!=='MAIN')?'<div class="sec-label" style="margin-top:'+(bi?'22px':'4px')+'">'+esc(br.name)+'</div>':'';
+      var cols=br.rounds.map(function(r){
+        return '<div class="ko-col'+(r.name==='Final'?' final':'')+'"><div class="ko-rh">'+esc(r.name)+'</div><div class="ko-list">'+r.matches.map(koMatch).join('')+'</div></div>';
+      }).join('');
+      var third=br.thirdPlace?'<div class="ko-third"><div class="ko-rh">3rd place</div>'+koMatch(br.thirdPlace)+'</div>':'';
+      return title+'<div class="ko-scroll"><div class="ko">'+cols+'</div></div>'+third;
+    }).join('');
+  }
+  function renderGroups(f){
+    var gs=(f&&f.groups)||[];
+    if(!gs.length)return '<div class="state">No group stage.</div>';
+    var adv={};
+    ((f.brackets&&f.brackets[0]&&f.brackets[0].rounds[0]&&f.brackets[0].rounds[0].matches)||[]).forEach(function(m){[m.a,m.b].forEach(function(sd){if(sd&&sd.players)adv[sd.players.map(function(p){return p.slug;}).sort().join('|')]=1;});});
+    var anyDraw=gs.some(function(g){return g.table.some(function(r){return r.draws;});});
+    return '<div class="grp-grid">'+gs.map(function(g){
+      var rows=g.table.map(function(r){
+        var k=(r.players||[]).map(function(p){return p.slug;}).sort().join('|');
+        var cell='<div class="pairc-stack">'+(r.players||[]).map(function(p){return '<span class="pl-inline">'+pAv(p)+nameLink(p)+'</span>';}).join('')+'</div>';
+        return '<tr'+(adv[k]?' class="adv"':'')+'><td class="rkn">'+r.rank+'</td><td class="pairc">'+cell+'</td><td>'+r.played+'</td><td>'+r.wins+'</td>'+(anyDraw?'<td>'+r.draws+'</td>':'')+'<td>'+r.losses+'</td><td>'+pdText(r.gd)+'</td></tr>';
+      }).join('');
+      var res=g.matches.filter(function(m){return m.played;}).map(function(m){
+        return '<div class="grp-rm"><span class="t'+(m.winner==='a'?' win':'')+'">'+pairShort(m.a)+'</span><span class="sc">'+m.sa+' &ndash; '+m.sb+'</span><span class="t r'+(m.winner==='b'?' win':'')+'">'+pairShort(m.b)+'</span></div>';
+      }).join('');
+      return '<div class="grp"><div class="grp-h">'+esc(g.label)+'</div>'
+        +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Pair</th><th>P</th><th>W</th>'+(anyDraw?'<th>D</th>':'')+'<th>L</th><th>+/&minus;</th></tr>'+rows+'</table></div>'
+        +(res?'<details class="grp-res"><summary>Results ('+g.matches.filter(function(m){return m.played;}).length+')</summary>'+res+'</details>':'')
+        +'</div>';
+    }).join('')+'</div>'
+    +(Object.keys(adv).length?'<div class="fmt-note">Orange marker = advanced to the knockout stage.</div>':'');
+  }
   function catBody(cat){
-    return tourPodium(cat)
-      +'<div class="sec-label" style="margin-top:16px">Final standings &middot; by pair</div>'+tourPairsTable(cat);
+    var f=cat.format||{}, views=[];
+    if(f.brackets&&f.brackets.length)views.push({k:'ko',label:'Knockout',html:function(){return renderKnockout(f);}});
+    if(f.groups&&f.groups.length)views.push({k:'grp',label:'Group stage',html:function(){return renderGroups(f);}});
+    views.push({k:'st',label:'Final standings',html:function(){return tourPairsTable(cat);}});
+    var bar=views.length>1?'<div class="vmode fmt-tabs">'+views.map(function(v,i){return '<button class="vmode-b'+(i===0?' on':'')+'" data-fv="'+i+'">'+v.label+'</button>';}).join('')+'</div>':'<div class="sec-label" style="margin-top:16px">Final standings &middot; by pair</div>';
+    window.__fmtViews=views;   // read by wireFormatTabs for the tab switch
+    return tourPodium(cat)+bar+'<div class="fmt-body">'+views[0].html()+'</div>';
+  }
+  function wireFormatTabs(root){
+    var bs=root.querySelectorAll('.fmt-tabs .vmode-b[data-fv]'), body=root.querySelector('.fmt-body');
+    Array.prototype.forEach.call(bs,function(b){b.addEventListener('click',function(){
+      Array.prototype.forEach.call(bs,function(x){x.classList.toggle('on',x===b);});
+      var v=(window.__fmtViews||[])[parseInt(b.getAttribute('data-fv'),10)]; if(v&&body)body.innerHTML=v.html();
+    });});
   }
   function loadTournamentPage(cslug){
     content.innerHTML='<div class="skeleton" style="margin-top:26px"></div>';
@@ -480,7 +574,7 @@
       html+='<div id="catBody"></div>';
       content.innerHTML=html;
       var body=document.getElementById('catBody');
-      function renderCat(i){ body.innerHTML=catBody(cats[i]); }
+      function renderCat(i){ body.innerHTML=catBody(cats[i]); wireFormatTabs(body); }
       renderCat(0);
       var cb=content.querySelectorAll('.catbar .vmode-b[data-ci]');
       Array.prototype.forEach.call(cb,function(b){b.addEventListener('click',function(){

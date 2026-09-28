@@ -6573,7 +6573,81 @@ function buildEngineCategory(tid, catStr, groupRows, allMatches, pinfo) {
 
   const code = catCode(catStr);
   const LABEL = { MD: "Men's Doubles", WD: "Women's Doubles", MIXED: "Fixed Mixed" };
-  return { key: code, label: LABEL[code] || catStr || "Results", pairs, players };
+  const format = buildEngineFormat(tid, groupRows, allMatches, entrants, pinfo);
+  return { key: code, label: LABEL[code] || catStr || "Results", pairs, players, format };
+}
+// Tournament format for the public page (additive): group stage tables + results,
+// and the knockout bracket by round (Round of 16 / Quarterfinals / Semifinals /
+// Final, plus the 3rd-place match). Names are resolved like the standings.
+function buildEngineFormat(tid, groupRows, allMatches, entrants, pinfo) {
+  const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
+  const side = (id) => {
+    const e = entrants[id];
+    if (!e) return null;
+    return { players: e.players.filter(Boolean).map((n) => { const x = pinfo(n); return { name: x.name, slug: x.slug, photo: x.photo }; }) };
+  };
+  const mine = allMatches.filter((m) => m.tournamentId === tid);
+  const matchOut = (m) => {
+    const done = has(m.scoreA) && has(m.scoreB) && m.entrantA && m.entrantB;
+    let win = null;
+    if (done) {
+      if (m.winner && String(m.winner) === String(m.entrantA)) win = "a";
+      else if (m.winner && String(m.winner) === String(m.entrantB)) win = "b";
+      else if (Number(m.scoreA) > Number(m.scoreB)) win = "a";
+      else if (Number(m.scoreB) > Number(m.scoreA)) win = "b";
+    }
+    return { a: side(m.entrantA), b: side(m.entrantB), sa: done ? Number(m.scoreA) : null, sb: done ? Number(m.scoreB) : null, winner: win, played: !!done, time: m.time || "" };
+  };
+
+  // ---- Group stage ----
+  const labels = [];
+  const members = {};
+  for (const g of groupRows) {
+    if (g[0] !== tid) continue;
+    const l = String(g[2] || "").trim() || "A";
+    if (!members[l]) { members[l] = []; labels.push(l); }
+    members[l].push(g[3]);
+  }
+  labels.sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+  const groups = labels.map((l) => {
+    const gm = mine.filter((m) => m.stage === "GROUP" && String(m.groupLabel || "").trim() === l)
+      .sort((x, y) => (x.slot - y.slot) || (x.court - y.court));
+    const st = {};
+    members[l].forEach((id) => { st[id] = { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }; });
+    for (const m of gm) {
+      if (!(has(m.scoreA) && has(m.scoreB)) || !st[m.entrantA] || !st[m.entrantB]) continue;
+      const a = st[m.entrantA], b = st[m.entrantB], sa = Number(m.scoreA), sb = Number(m.scoreB);
+      a.p++; b.p++; a.gf += sa; a.ga += sb; b.gf += sb; b.ga += sa;
+      if (sa > sb) { a.w++; b.l++; } else if (sb > sa) { b.w++; a.l++; } else { a.d++; b.d++; }
+    }
+    const table = Object.values(st)
+      .sort((x, y) => (y.w - x.w) || (y.d - x.d) || ((y.gf - y.ga) - (x.gf - x.ga)) || (y.gf - x.gf))
+      .map((r, i) => ({ rank: i + 1, ...side(r.id), played: r.p, wins: r.w, draws: r.d, losses: r.l, gd: r.gf - r.ga }));
+    return { label: "Group " + l, table, matches: gm.map(matchOut) };
+  });
+
+  // ---- Knockout ----
+  const po = mine.filter((m) => m.stage === "PLAYOFF");
+  const tiers = [...new Set(po.map((m) => m.bracket || ""))];
+  const numR = (m) => (/^\d+$/.test(String(m.round)) ? parseInt(m.round) : null);
+  const brackets = tiers.map((tier) => {
+    const tm = po.filter((m) => (m.bracket || "") === tier);
+    const maxR = Math.max(0, ...tm.map(numR).filter((x) => x != null));
+    const rounds = [];
+    for (let r = 1; r <= maxR; r++) {
+      const ms = tm.filter((m) => numR(m) === r).sort((x, y) => x.slot - y.slot);
+      if (!ms.length) continue;
+      const off = maxR - r;
+      const name = off === 0 ? "Final" : off === 1 ? "Semifinals" : off === 2 ? "Quarterfinals" : ("Round of " + Math.pow(2, off + 1));
+      rounds.push({ name, matches: ms.map(matchOut) });
+    }
+    const bronze = tm.filter((m) => String(m.round).toUpperCase() === "BRONZE").map(matchOut)
+      .filter((m) => m.played)[0] || null;
+    return { name: tier, rounds, thirdPlace: bronze };
+  }).filter((b) => b.rounds.length)
+    .sort((x, y) => y.rounds.length - x.rounds.length);   // main draw first
+
+  return { groups, brackets };
 }
 // When an event is archived, the engine's operational rows (Tournaments,
 // Tournament_Groups, Tournament_Matches) are moved out of the live tabs into
