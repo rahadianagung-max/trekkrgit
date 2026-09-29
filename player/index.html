@@ -883,6 +883,20 @@ body.pp-locked .lk-ov{display:flex;position:absolute;inset:0;margin:auto;width:m
 .pp-lockcta .s{font-size:12.5px;line-height:1.5;color:#CBD5E1;margin:0 0 12px}
 .pp-lockcta button{width:100%;padding:12px;background:var(--tk-or,#FF5900);color:#fff;border:2px solid #fff;font:800 12px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
 #unlockModal .share-modal{max-height:92vh;overflow:auto}
+/* Kartu IG Story: pilih tema + preview */
+.cs-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cs-tab{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 6px;background:#fff;border:2px solid var(--tk-ink,#090D14);font:800 11px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.05em;color:var(--tk-ink,#090D14);cursor:pointer}
+.cs-tab i{width:14px;height:14px;border:2px solid var(--tk-ink,#090D14);flex:none}
+.cs-tab.on{background:var(--tk-ink,#090D14);color:#fff;box-shadow:3px 3px 0 var(--tk-or,#FF5900)}
+.cs-tab.on i{border-color:#fff}
+.cs-prev{width:min(62vw,250px);aspect-ratio:9/16;margin:0 auto 16px;border:2px solid var(--tk-ink,#090D14);box-shadow:5px 5px 0 var(--tk-ink,#090D14);background:#EEF0F3;overflow:hidden}
+.cs-prev img{display:block;width:100%;height:100%;object-fit:cover}
+.cs-load{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.6)}
+.cs-load span{width:26px;height:26px;border:3px solid var(--tk-or,#FF5900);border-right-color:transparent;border-radius:50%!important;animation:ppspin .7s linear infinite}
+.cs-actions{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.cs-btn{padding:13px 10px;background:#fff;color:var(--tk-ink,#090D14);border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-ink,#090D14);font:800 12px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.05em;cursor:pointer}
+.cs-btn--pri{background:var(--tk-or,#FF5900);color:#fff}
+.cs-wa{display:block;width:100%;margin-top:12px;padding:8px;background:none;border:0;color:var(--on-surface-variant,#475569);font:700 12px var(--tk-mono,'JetBrains Mono',monospace);cursor:pointer}
 #unlockBox .btn{width:100%;padding:13px;background:var(--tk-or,#FF5900);color:#fff;border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-ink,#090D14);font:800 12px var(--tk-mono,'JetBrains Mono',monospace);text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
 #unlockBox .btn:disabled{opacity:.6}
 #unlockBox .ta-row .btn{width:auto}
@@ -966,6 +980,7 @@ body.pp-locked .lk-ov{display:flex;position:absolute;inset:0;margin:auto;width:m
 <script src="https://trekkr.online/trekkr-loader.js"></script>
 
 <script src="/trekkr-auth.js"></script>
+<script src="/trekkr-card.js"></script>
 <script>
 let playerData=null;
 // ── Player session (logged-in owner can edit this passport) ──
@@ -1299,8 +1314,10 @@ function ppComputeExtras(d, historyTable, canonName){
     var l=games.filter(function(g){return g.resText==='L';}).length;
     var wins=games.filter(function(g){return g.resText==='W';});
     var bw=null; wins.forEach(function(g){var m=Number(g.scoreFor)-Number(g.scoreAgainst); if(!bw||m>bw.m)bw={m:m,g:g};});
+    // Total ELO change of the session (sum of its rows), not just the last match.
+    var sessDelta=eloReal.filter(function(e){return e.sessionId===last.sessionId;}).reduce(function(t,e){return t+Number(e.delta||0);},0);
     d.lastSession={
-      venue:lv, date:ld, delta:Number(last.delta||0), newElo:last.elo,
+      venue:lv, date:ld, delta:Number(last.delta||0), sessionDelta:sessDelta, newElo:last.elo,
       w:w, l:l, games:games, bestWin:bw?bw.g:null
     };
   }
@@ -1415,7 +1432,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
 
   // ---- LAST SESSION ----
   if(lastSession && lastSession.games && lastSession.games.length){
-    var ls=lastSession, dl=Number(ls.delta||0);
+    var ls=lastSession, dl=Number(ls.sessionDelta!=null?ls.sessionDelta:(ls.delta||0));
     var dcls=dl>0?'up':(dl<0?'down':''), dsign=dl>0?'▲ +':(dl<0?'▼ ':'');
     var rn=(venueRanks||[]).filter(function(r){return ppNN(r.venue)===ppNN(ls.venue);})[0]||bestRank||null;
     // rule-based insight
@@ -1541,7 +1558,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   h+='<div class="pp-share-v2"><div class="pp-share-v2-title">'
     +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.7"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share your passport</div>'
     +'<div class="pp-share-grid">'
-    +'<button class="pp-share-card" onclick="openResultModal()"><div class="pp-share-card-icon" style="background:#1e1700"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFB000" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div><div class="pp-share-card-label">Share your result</div><div class="pp-share-card-sub">Achievement card for IG/WA</div></button>'
+    +'<button class="pp-share-card" onclick="openResultModal()"><div class="pp-share-card-icon" style="background:#1e1700"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFB000" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg></div><div class="pp-share-card-label">Kartu IG Story</div><div class="pp-share-card-sub">3 tema · Night, Scorecard, Level-Up</div></button>'
     +'<button class="pp-share-card" onclick="openUrlModal()"><div class="pp-share-card-icon" style="background:var(--surface-container)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div><div class="pp-share-card-label">Copy passport URL</div><div class="pp-share-card-sub">Share your profile link</div></button>'
     +'</div></div>';
 
@@ -2318,31 +2335,50 @@ function doUrlCopy(){
   setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied');},2000);
 }
 
+// ── Kartu IG Story (3 tema) — digambar oleh /trekkr-card.js ──
+var _cs={theme:'',blob:null,url:'',seq:0};
+function csDefaultTheme(m){
+  try{ var t=localStorage.getItem('trekkr_card_theme'); if(t && TrekkrCard.themes.indexOf(t)>-1) return t; }catch(e){}
+  if(m.hasSession && m.l===0 && m.w>0) return 'score';
+  return (m.delta>0) ? 'night' : 'level';
+}
 function openResultModal(){
-  if(!playerData)return;
-  var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
-  var ti=tierProg(s.currentElo);
-  var stier=(typeof skillTier==='function')?skillTier(s.currentElo||0).name:ti.current.split(' · ')[0];
-  var vr=(playerData.venueRanks||[])[0];
-  document.getElementById('ncpName').textContent=((p.name||p.display)).toUpperCase();
-  document.getElementById('ncpSub').textContent=vr?('#'+vr.rank+' at '+vr.venue):(p.clubs||p.region||'');
-  var ncpTierShort=stier;
-  document.getElementById('ncpRankPill').textContent=ncpTierShort.toUpperCase();
-  document.getElementById('ncpElo').textContent=s.currentElo;
-  document.getElementById('ncpTier').textContent=ncpTierShort;
-  document.getElementById('ncpM').textContent=s.totalMatches;
-  document.getElementById('ncpWR').textContent=s.winRate+'%';
-  document.getElementById('ncpWL').textContent=s.totalW+'W-'+s.totalL+'L';
-  var photoEl=document.getElementById('ncpPhoto');
-  var oldImg=photoEl.querySelector('.ncp-img');if(oldImg)oldImg.remove();
-  if(p.photoUrl){var img=document.createElement('img');img.className='ncp-img';img.src=p.photoUrl;img.alt='';img.onerror=function(){var s=img.getAttribute('src')||'';if(!img.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){img.dataset.ibbAlt='1';img.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}img.remove();};photoEl.insertBefore(img,photoEl.firstChild);}
-  var iparts=(p.name).trim().split(/\s+/);
-  document.getElementById('ncpInitials').textContent=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'').slice(0,2).toUpperCase();
-  var badgeMap={rated:{cls:'ncp-badge-blue',ico:'★'},hot_streak:{cls:'ncp-badge-teal',ico:'▲'},win_machine:{cls:'ncp-badge-gold',ico:'⚡'},first_win:{cls:'ncp-badge-purple',ico:'◆'},consistent:{cls:'ncp-badge-teal',ico:'●'},veteran:{cls:'ncp-badge-blue',ico:'◈'}};
-  var bc=document.getElementById('ncpBadges');bc.innerHTML='';
-  if(p.winnerAt&&p.winnerAt!=='N/A'){p.winnerAt.split(',').slice(0,1).forEach(function(w){var sp=document.createElement('span');sp.className='ncp-badge ncp-badge-gold';sp.textContent='★ '+w.trim().slice(0,20);bc.appendChild(sp);});}
-  badges.filter(function(b){return b.earned;}).slice(0,3).forEach(function(b){var cfg=badgeMap[b.id]||{cls:'ncp-badge-blue',ico:'◆'};var sp=document.createElement('span');sp.className='ncp-badge '+cfg.cls;sp.textContent=cfg.ico+' '+b.name;bc.appendChild(sp);});
+  if(!playerData || !window.TrekkrCard) return;
+  if(playerData.stats && playerData.stats.unrated){ showToast('Kartu tersedia setelah match PlayRank pertamamu.'); return; }
+  var m=TrekkrCard.data(playerData);
   document.getElementById('resultModal').classList.add('open');
+  csPick(_cs.theme || csDefaultTheme(m));
+}
+function csPick(theme){
+  _cs.theme=theme; try{localStorage.setItem('trekkr_card_theme',theme);}catch(e){}
+  document.querySelectorAll('.cs-tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-theme')===theme); });
+  var seq=++_cs.seq, img=document.getElementById('csImg'), ld=document.getElementById('csLoad');
+  ld.style.display='flex';
+  var c=document.createElement('canvas');
+  TrekkrCard.render(c, TrekkrCard.data(playerData), theme).then(function(cv){
+    cv.toBlob(function(bl){
+      if(seq!==_cs.seq || !bl) return;
+      if(_cs.url) URL.revokeObjectURL(_cs.url);
+      _cs.blob=bl; _cs.url=URL.createObjectURL(bl); img.src=_cs.url; ld.style.display='none';
+    },'image/png');
+  }).catch(function(){ ld.style.display='none'; showToast('Gagal membuat kartu.'); });
+}
+function csFileName(){ return 'trekkr-'+ppSlug((playerData&&playerData.player&&playerData.player.name)||'player')+'-'+_cs.theme+'.png'; }
+function csDownload(){
+  if(ppLocked()){ ppOpenUnlock(); return; }
+  if(!_cs.url) return;
+  var a=document.createElement('a'); a.href=_cs.url; a.download=csFileName(); document.body.appendChild(a); a.click(); a.remove();
+  ppFunnel('card_download'); showToast('Kartu tersimpan — unggah ke Story IG kamu 🎾');
+}
+async function csShare(){
+  if(ppLocked()){ ppOpenUnlock(); return; }
+  if(!_cs.blob) return;
+  var file=new File([_cs.blob], csFileName(), {type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); ppFunnel('card_share'); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  csDownload(); // desktop / browser tanpa Web Share → unduh
 }
 function closeResultModal(){document.getElementById('resultModal').classList.remove('open');}
 
@@ -2356,118 +2392,8 @@ function shareResultWA(){
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
-function downloadNightCard(){
-  if(!playerData)return;
-  var p=playerData.player,s=playerData.stats,badges=playerData.badges||[];
-  var ti=tierProg(s.currentElo);
-  var c=document.getElementById('shareCanvas'),ctx=c.getContext('2d');
-  var W=1080,H=1920;c.width=W;c.height=H;
+function downloadNightCard(){ openResultModal(); }
 
-  function drawCard(){
-    var pname=(p.name).toUpperCase();
-    var stier=(typeof skillTier==='function')?skillTier(s.currentElo||0):{name:ti.current.split(' · ')[0]};
-    var vr=(playerData.venueRanks||[])[0];
-    var dir=playerData.eloDir||'flat';
-    var rankStr=vr?('#'+vr.rank+' at '+vr.venue):'';
-    var sub=rankStr||p.clubs||p.region||'';
-    var PHOTO_H=Math.round(H*0.60);
-    var CONTENT_Y=PHOTO_H+60;
-
-    // Skill-tier pill top-right
-    ctx.fillStyle='#FFB000';roundRect(ctx,W-260,56,200,54,27);ctx.fill();
-    ctx.fillStyle='#1a1000';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.textAlign='center';ctx.fillText(stier.name.toUpperCase(),W-160,93);
-
-    // Name + URL + rank/venue over gradient
-    var purl='trekkr.online/player/'+(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-    ctx.fillStyle='#fff';ctx.font='700 74px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText(pname,60,PHOTO_H-78);
-    ctx.fillStyle='#FF8A3D';ctx.font='600 30px Plus Jakarta Sans,sans-serif';ctx.fillText(purl,60,PHOTO_H-38);
-    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='400 30px Plus Jakarta Sans,sans-serif';ctx.fillText(sub,60,PHOTO_H-2);
-
-    // Divider line
-    ctx.strokeStyle='#1e1e1e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,CONTENT_Y);ctx.lineTo(W-60,CONTENT_Y);ctx.stroke();
-
-    // ELO + tier row
-    var eloY=CONTENT_Y+56;
-    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='left';ctx.fillText('ELO RATING',60,eloY);
-    ctx.fillStyle='#fff';ctx.font='700 120px Saira Condensed,sans-serif';ctx.fillText(String(s.currentElo),60,eloY+118);
-    // ELO direction triangle (green up / red down)
-    if(dir!=='flat'){ var ew=ctx.measureText(String(s.currentElo)).width; ctx.fillStyle=dir==='up'?'#4ADE80':'#FF5A4D'; ctx.font='700 64px Saira Condensed,sans-serif'; ctx.fillText(dir==='up'?'▲':'▼',60+ew+24,eloY+112); }
-    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='700 20px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('TIER',W-60,eloY);
-    ctx.fillStyle='#FFB000';ctx.font='700 48px Saira Condensed,sans-serif';ctx.fillText(stier.name,W-60,eloY+50);
-
-    // Stat boxes
-    var bY=eloY+148,bW=306,bH=128,bGap=30,bX=60;
-    [{v:s.totalMatches,l:'PLAYED'},{v:s.winRate+'%',l:'WIN RATE'},{v:s.totalW+'W '+s.totalL+'L',l:'RECORD'}].forEach(function(st,i){
-      ctx.fillStyle='#141414';roundRect(ctx,bX+i*(bW+bGap),bY,bW,bH,18);ctx.fill();
-      ctx.fillStyle='#fff';ctx.font='700 58px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(String(st.v),bX+i*(bW+bGap)+bW/2,bY+82);
-      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText(st.l,bX+i*(bW+bGap)+bW/2,bY+bH-16);
-    });
-
-    // Best performing partner (single — matches passport format)
-    var bp=playerData.bestPartner;
-    if(bp&&bp.name&&bp.name!=='No Data'){
-      var pY=bY+bH+40,pH=150;
-      ctx.fillStyle='#141414';roundRect(ctx,60,pY,W-120,pH,18);ctx.fill();
-      ctx.textAlign='left';
-      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('BEST PERFORMING PARTNER',96,pY+50);
-      var pn=String(bp.name);ctx.font='800 46px Saira Condensed,sans-serif';
-      while(pn.length>3&&ctx.measureText(pn).width>W-120-370){pn=pn.slice(0,-1);}
-      if(pn!==bp.name)pn=pn.trim()+'…';
-      ctx.fillStyle='#fff';ctx.fillText(pn,96,pY+108);
-      ctx.textAlign='right';
-      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='700 22px Plus Jakarta Sans,sans-serif';ctx.fillText('RECORD TOGETHER',W-96,pY+50);
-      ctx.fillStyle='#4ADE80';ctx.font='800 42px Saira Condensed,sans-serif';ctx.fillText(String(bp.score||''),W-96,pY+106);
-    }
-
-    // Footer — FIXED: white text, "Visit trekkr.online"
-    var footerY=H-100;
-    ctx.strokeStyle='#2a2a2a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,footerY);ctx.lineTo(W-60,footerY);ctx.stroke();
-    ctx.fillStyle='#ffffff';ctx.font='800 46px Saira Condensed,sans-serif';ctx.textAlign='left';ctx.fillText('TREKKR',60,H-44);
-    ctx.fillStyle='#ffffff';ctx.font='400 28px Plus Jakarta Sans,sans-serif';ctx.textAlign='right';ctx.fillText('Visit trekkr.online',W-60,H-44);
-
-    var link=document.createElement('a');link.download='trekkr-'+(p.name||'player').toLowerCase().replace(/\s+/g,'-')+'.png';link.href=c.toDataURL('image/png');link.click();
-    showToast('Story card downloaded!');closeResultModal();
-  }
-
-  // Black background always
-  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
-
-  if(p.photoUrl){
-    var imgEl=new Image();imgEl.crossOrigin='anonymous';
-    imgEl.onload=function(){
-      var PHOTO_H=Math.round(H*0.60);
-      // FIX: maintain aspect ratio — fit width, center vertically, no crop distortion
-      var naturalRatio=imgEl.naturalWidth/imgEl.naturalHeight;
-      var targetRatio=W/PHOTO_H;
-      var dw,dh,dx,dy;
-      if(naturalRatio>targetRatio){
-        // image wider — fit by height, center horizontally
-        dh=PHOTO_H;dw=dh*naturalRatio;dx=(W-dw)/2;dy=0;
-      } else {
-        // image taller — fit by width, top-align
-        dw=W;dh=dw/naturalRatio;dx=0;dy=0;
-      }
-      // clip to photo area
-      ctx.save();ctx.beginPath();ctx.rect(0,0,W,PHOTO_H);ctx.clip();
-      ctx.drawImage(imgEl,dx,dy,dw,dh);
-      ctx.restore();
-      // gradient overlay bottom of photo
-      var g1=ctx.createLinearGradient(0,PHOTO_H*0.4,0,PHOTO_H);
-      g1.addColorStop(0,'transparent');g1.addColorStop(1,'#080808');
-      ctx.fillStyle=g1;ctx.fillRect(0,PHOTO_H*0.4,W,PHOTO_H*0.6);
-      ctx.fillStyle='#080808';ctx.fillRect(0,PHOTO_H,W,H-PHOTO_H);
-      drawCard();
-    };
-    imgEl.onerror=function(){var s=imgEl.getAttribute('src')||'';if(!imgEl.dataset.ibbAlt&&s.indexOf('i.ibb.co')>-1){imgEl.dataset.ibbAlt='1';imgEl.src=s.indexOf('i.ibb.co.com')>-1?s.replace('i.ibb.co.com/','i.ibb.co/'):s.replace('i.ibb.co/','i.ibb.co.com/');return;}drawCard();};
-    imgEl.src=p.photoUrl;
-  } else {
-    var iparts=(p.name).trim().split(/\s+/);
-    var inits=iparts.length>=2?(iparts[0][0]+iparts[iparts.length-1][0]).toUpperCase():(p.name||'??').slice(0,2).toUpperCase();
-    ctx.fillStyle='#141414';ctx.fillRect(0,0,W,Math.round(H*0.60));
-    ctx.fillStyle='#222';ctx.font='700 300px Saira Condensed,sans-serif';ctx.textAlign='center';ctx.fillText(inits,W/2,Math.round(H*0.38));
-    drawCard();
-  }
-}
 </script>
 
 <div class="share-modal-overlay" id="urlModal" onclick="if(event.target===this)closeUrlModal()">
@@ -2497,70 +2423,30 @@ function downloadNightCard(){
 </div>
 
 <div class="share-modal-overlay" id="resultModal" onclick="if(event.target===this)closeResultModal()">
-  <div class="share-modal" style="max-height:90vh;overflow-y:auto">
+  <div class="share-modal" style="max-height:94vh;overflow-y:auto">
     <div class="share-modal-handle"></div>
     <div class="share-modal-head">
-      <div class="share-modal-title">Share your result</div>
-      <button class="share-modal-close" onclick="closeResultModal()">&times;</button>
+      <div class="share-modal-title">Kartu IG Story</div>
+      <button class="share-modal-close" onclick="closeResultModal()" aria-label="Tutup">&times;</button>
     </div>
-    <div class="result-layout" style="margin-bottom:16px">
-      <div>
-        <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:8px">Preview</p>
-        <div class="night-card-preview" id="nightCardPreview">
-          <div class="ncp-photo" id="ncpPhoto">
-            <div class="ncp-initials" id="ncpInitials">TP</div>
-            <div class="ncp-gradient"></div>
-            <div class="ncp-rank-pill" id="ncpRankPill">T3</div>
-            <div class="ncp-name-area">
-              <div class="ncp-pname" id="ncpName">TOMMY PRASS</div>
-              <div class="ncp-psub" id="ncpSub">Gabuters</div>
-            </div>
-          </div>
-          <div class="ncp-bottom">
-            <div class="ncp-elo-row">
-              <div><div class="ncp-elo-lbl">ELO RATING</div><div class="ncp-elo-val" id="ncpElo">1412</div></div>
-              <div><div class="ncp-tier-lbl">TIER</div><div class="ncp-tier-val" id="ncpTier">T3</div></div>
-            </div>
-            <div class="ncp-stats">
-              <div class="ncp-sbox"><div class="ncp-sv" id="ncpM">7</div><div class="ncp-sl">PLAYED</div></div>
-              <div class="ncp-sbox"><div class="ncp-sv" id="ncpWR">57%</div><div class="ncp-sl">WIN RATE</div></div>
-              <div class="ncp-sbox"><div class="ncp-sv" id="ncpWL">4W-3L</div><div class="ncp-sl">RECORD</div></div>
-            </div>
-            <div class="ncp-badges" id="ncpBadges"></div>
-            <div class="ncp-footer">
-              <span class="ncp-brand">TREKKR</span>
-              <span class="ncp-visit">Visit trekkr.online</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <p style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-surface-variant);margin-bottom:10px">Share via</p>
-        <div class="share-opt-row" onclick="shareResultWA()">
-          <div class="share-opt-icon" style="background:#E7F6EC">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.557 4.135 1.532 5.875L0 24l6.335-1.635A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.37l-.36-.214-3.728.961.995-3.625-.234-.373A9.815 9.815 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-          </div>
-          <div class="share-opt-body">
-            <div class="share-opt-label">WhatsApp</div>
-            <div class="share-opt-sub">Kirim link + stats ke chat / group</div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </div>
-        <div class="share-opt-row" onclick="downloadNightCard()">
-          <div class="share-opt-icon" style="background:#141414">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFB000" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12l4 4 4-4"/></svg>
-          </div>
-          <div class="share-opt-body">
-            <div class="share-opt-label">Download PNG</div>
-            <div class="share-opt-sub">Story card 1080×1920 untuk IG / TikTok</div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </div>
-      </div>
+    <p class="share-modal-sub">Pilih tema, lalu bagikan ke Story. Link Passport-mu ada di kartu.</p>
+    <div class="cs-tabs" role="tablist">
+      <button type="button" class="cs-tab" data-theme="night" onclick="csPick('night')"><i style="background:#090D14"></i>Night</button>
+      <button type="button" class="cs-tab" data-theme="score" onclick="csPick('score')"><i style="background:linear-gradient(#FF5900 50%,#F4F1EA 50%)"></i>Scorecard</button>
+      <button type="button" class="cs-tab" data-theme="level" onclick="csPick('level')"><i style="background:#D2F802"></i>Level-Up</button>
     </div>
+    <div class="cs-prev lk-wrap">
+      <img id="csImg" class="lk" alt="Preview kartu IG Story">
+      <div class="cs-load" id="csLoad"><span></span></div>
+      <button type="button" class="lk-ov" onclick="ppOpenUnlock()">🔒 Masuk gratis untuk unduh kartu</button>
+    </div>
+    <div class="cs-actions">
+      <button type="button" class="cs-btn cs-btn--pri" onclick="csShare()">Bagikan ke Story</button>
+      <button type="button" class="cs-btn" onclick="csDownload()">Unduh PNG</button>
+    </div>
+    <button type="button" class="cs-wa" onclick="shareResultWA()">Kirim link Passport via WhatsApp →</button>
   </div>
 </div>
-
 <script>(function(){var t=document.getElementById('menuToggle'),m=document.getElementById('mobileNav');t&&t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});})();
 var _editPhotoData="";
 var _EDIT_PH="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2766%27 height=%2766%27%3E%3Crect width=%2766%27 height=%2766%27 rx=%2714%27 fill=%27%23EFEFF1%27/%3E%3C/svg%3E";

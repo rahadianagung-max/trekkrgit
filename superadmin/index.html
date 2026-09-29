@@ -707,6 +707,7 @@ async function loadFunnel(){
       +row("🆕 Akun baru (semua jalur)",d.accounts_new||0)
       +row("📧 Setuju email marketing",d.consents_marketing||0)
       +row("🙋 Klaim diajukan / disetujui",(d.claims_new||0)+" / "+(d.claims_approved||0))
+      +row("📸 Kartu IG dibagikan / diunduh",u("card_share")+" / "+u("card_download"))
       +row("🔗 Total profil tertaut akun",(d.linked_total||0)+" / "+(d.players_total||0));
   }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat funnel: '+erEsc(e.message)+'</p>'; }
 }
