@@ -409,7 +409,7 @@ const BASE = location.protocol.startsWith("http") ? "/api" : "https://www.turnam
 const state = { event:null, tournament:null, format:"SINGLE", events:[], tournaments:[], entrantNames:{} };
 
 async function api(path, opts={}){
-  const res = await fetch(`${BASE}/${path}`, {
+  const res = await (window.TrekkrAdminKey?TrekkrAdminKey.fetch:fetch)(`${BASE}/${path}`, {
     method: opts.method || "GET",
     headers: { "Content-Type":"application/json" },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
@@ -930,5 +930,6 @@ function renderEloResults(r){
 loadEvents();
 renderContext();
 </script>
+<script src="/admin-key.js"></script>
 </body>
 </html>

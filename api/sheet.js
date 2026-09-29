@@ -1245,7 +1245,7 @@ const netlifyHandler = async (event) => {
       return await getVenueSessions(v, params);
     }
 
-    if (path === "sessions" && method === "POST") return await saveSession(body);
+    if (path === "sessions" && method === "POST") return gate() || await saveSession(body);
     if (path === "sessions" && method === "GET") return await listSessions(params);
 
     // --- WAVE 1 (calendar) ---
@@ -1298,7 +1298,7 @@ const netlifyHandler = async (event) => {
       return await tScheduleEvent(decodeURIComponent(path.replace("tournament/event/", "").replace("/schedule", "")), body);
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/finalize-elo") && method === "POST") {
-      return await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
+      return gate() || await tFinalizeElo(decodeURIComponent(path.replace("tournament/event/", "").replace("/finalize-elo", "")), body && body.force);
     }
     if (path.startsWith("tournament/event/") && path.endsWith("/public") && method === "GET") {
       const live = params.live === "1" || params.live === "true";
@@ -1385,11 +1385,11 @@ const netlifyHandler = async (event) => {
     if (path.startsWith("re/event/") && path.endsWith("/swap") && method === "POST")
       return await reSwapPlayer(decodeURIComponent(path.replace("re/event/", "").replace("/swap", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/purge") && method === "POST")
-      return await rePurge(decodeURIComponent(path.replace("re/event/", "").replace("/purge", "")), body);
+      return gate(SUPER) || await rePurge(decodeURIComponent(path.replace("re/event/", "").replace("/purge", "")), body);
     if (path.startsWith("re/event/") && path.endsWith("/rebuild-elo") && method === "POST")
-      return await reRebuildElo(decodeURIComponent(path.replace("re/event/", "").replace("/rebuild-elo", "")));
+      return gate(SUPER) || await reRebuildElo(decodeURIComponent(path.replace("re/event/", "").replace("/rebuild-elo", "")));
     if (path.startsWith("re/event/") && path.endsWith("/finish") && method === "POST")
-      return await reFinishEvent(decodeURIComponent(path.replace("re/event/", "").replace("/finish", "")));
+      return gate() || await reFinishEvent(decodeURIComponent(path.replace("re/event/", "").replace("/finish", "")));
     if (path.startsWith("re/event/") && path.endsWith("/ranking") && method === "GET")
       return await reRanking(decodeURIComponent(path.replace("re/event/", "").replace("/ranking", "")));
     if (/^re\/event\/[^/]+\/scorer\/[^/]+$/.test(path) && method === "GET") {
