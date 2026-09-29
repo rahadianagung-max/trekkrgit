@@ -1,271 +1,361 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Liga Trekkr — Trekkr Championship</title>
-<meta name="description" content="The Trekkr Championship: one champion per tier, a real prize pool, and a season of ranked padel you actually qualify for. Book a ranked session or find your profile.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/wave1/tokens.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Liga Trekkr — Main tiap minggu, naik level</title>
+<meta name="description" content="Liga padel mingguan Trekkr: 8 match per malam, lawan selalu selevel, juara tiap malam dan tiap bulan. Menang terus? Kamu Promoted ke divisi berikutnya."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
 <style>
-  .hero-h1{ margin-top:2px; }
-  .prizes{ margin-top:14px; }
-  .counters .stat3 b.skel{ min-width:2ch; display:inline-block; }
+/* ── Liga Trekkr (PlayRank League theme) ── */
+.lg-demo{background:var(--volt);border-bottom:2px solid var(--ink);font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:7px 12px;color:var(--ink)}
+.lg-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center;padding:40px 0 8px}
+.lg-hero h1{font:700 clamp(44px,8vw,86px)/.9 var(--disp);letter-spacing:-.05em;text-transform:uppercase;margin:10px 0 0;color:var(--ink)}
+.lg-hero h1 span{color:var(--orange)}
+.lg-hero p{font-size:16px;line-height:1.6;color:#334155;margin:16px 0 0;max-width:46ch}
+.lg-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.lg-stats{display:grid;grid-template-columns:repeat(3,1fr);background:var(--ink);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--orange)}
+.lg-stats div{padding:22px 14px;border-right:2px solid #1E293B;color:#fff}
+.lg-stats div:last-child{border-right:0}
+.lg-stats b{display:block;font:800 clamp(34px,5vw,52px)/1 var(--mono);color:var(--volt);font-variant-numeric:tabular-nums}
+.lg-stats span{display:block;margin-top:8px;font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#CBD5E1}
 
-  /* ============================================================
-     Responsive home — mobile-first single column (base, unchanged),
-     expanding into a wider multi-column layout on tablet/desktop.
-     Scoped to .home so other Wave 1 pages keep the narrow column.
-     ============================================================ */
-  @media (min-width:760px){
-    .home .w1-appbar, .home .w1-shell{ max-width:1080px; }
-    .home h1, .home .h1{ font-size:60px; }
+.lg-sec{margin-top:52px}
+.lg-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lg-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.lg-step .n{font:800 12px var(--mono);color:var(--orange)}
+.lg-step h3{font:700 22px/1.1 var(--disp);letter-spacing:-.02em;margin:8px 0 6px;text-transform:uppercase}
+.lg-step p{margin:0;font-size:13.5px;line-height:1.55;color:#475569}
+.lg-pts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.lg-pts span{font:800 11px var(--mono);border:2px solid var(--ink);padding:4px 7px;background:var(--paper)}
+.lg-pts span b{color:var(--orange)}
 
-    /* Hero → two columns: message left, countdown + prizes right */
-    .home .hero-grid{ display:grid; grid-template-columns:1.05fr .95fr; gap:44px; align-items:center; }
-    .home .hero-left .lede{ max-width:42ch; }
-    .home .hero-right .countdown{ margin-top:0; }
+.lg-award{position:relative;overflow:hidden}
+.lg-award .ic{font-size:30px;line-height:1}
+.lg-award h3{font:700 21px/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em;margin:10px 0 6px}
+.lg-award p{margin:0;font-size:13.5px;color:#475569;line-height:1.55}
+.lg-award.k{background:var(--ink);color:#fff}
+.lg-award.k p{color:#CBD5E1}
 
-    /* Prize rows sit side by side */
-    .home .prizes{ flex-direction:row; margin-top:12px; }
-    .home .prizes .prize{ flex:1; flex-direction:column; align-items:flex-start; gap:6px; }
+.lg-div{display:flex;flex-direction:column;gap:6px}
+.lg-div .code{font:800 44px/1 var(--mono);color:var(--ink)}
+.lg-div .tiers{font:700 14px var(--disp);text-transform:uppercase}
+.lg-div .range{font-size:13px;color:#475569}
+.lg-div.soon{background:#F1F5F9;box-shadow:none;border-style:dashed}
+.lg-div.soon .code{color:#94A3B8}
+.lg-note{margin-top:14px;display:flex;gap:12px;align-items:flex-start;background:var(--warm);border:2px solid var(--ink);padding:14px 16px;font-size:14px;line-height:1.55;color:#334155}
+.lg-note b{color:var(--ink)}
 
-    /* Ladder → three columns, drop the vertical connector */
-    .home .ladder{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
-    .home .ladder .rung{ padding-bottom:0; }
-    .home .ladder .rung::before{ display:none; }
+.lg-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.lg-tab{font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border:2px solid var(--ink);background:var(--paper);color:var(--ink)}
+.lg-tab.on{background:var(--ink);color:var(--volt)}
+.lg-tabs.sub .lg-tab.on{background:var(--orange);color:#fff}
 
-    /* Next sessions → responsive grid; empty/error card spans full width */
-    .home #next-sessions{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px; }
-    .home #next-sessions > .srow{ margin-bottom:0; }
-    .home #next-sessions > .locked{ grid-column:1 / -1; }
+.lg-sess{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.lg-s{display:flex;flex-direction:column;gap:10px}
+.lg-s__top{display:flex;gap:12px;align-items:flex-start}
+.lg-s__date{flex:none;width:56px;border:2px solid var(--ink);text-align:center;background:var(--volt)}
+.lg-s__date b{display:block;font:800 24px/1.1 var(--mono);padding-top:4px}
+.lg-s__date span{display:block;font:800 10px var(--mono);text-transform:uppercase;background:var(--ink);color:#fff;padding:2px 0}
+.lg-s__venue{font:700 17px/1.2 var(--disp)}
+.lg-s__meta{font-size:12.5px;color:#475569;margin-top:3px}
+.lg-s__chips{display:flex;flex-wrap:wrap;gap:5px}
+.lg-bar{height:8px;border:2px solid var(--ink);background:#fff}
+.lg-bar i{display:block;height:100%;background:var(--orange)}
+.lg-s__foot{display:flex;justify-content:space-between;align-items:center;gap:10px;font:800 11px var(--mono);text-transform:uppercase}
+.lg-s__foot .muted{color:#64748B}
 
-    /* Actions → buttons in a row, caption on its own line */
-    .home .s-actions{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
-    .home .s-actions .btn{ width:auto; flex:1 1 260px; margin-top:0; }
-    .home .s-actions .cap{ flex-basis:100%; margin-top:4px; }
+.lg-cols{display:grid;grid-template-columns:1.35fr .65fr;gap:22px;align-items:start}
+.lg-tbl{width:100%;border-collapse:collapse;background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow)}
+.lg-tbl th{font:800 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--ink);text-align:left;padding:9px 10px}
+.lg-tbl td{padding:9px 10px;border-top:1px solid var(--border-soft);font-size:14px;vertical-align:middle}
+.lg-tbl td.num,.lg-tbl th.num{text-align:right;font-family:var(--mono);font-weight:800;font-variant-numeric:tabular-nums}
+.lg-tbl tr.top td{background:#FFF7EE}
+.lg-rk{font:800 14px var(--mono);width:34px}
+.lg-pl{display:flex;align-items:center;gap:10px}
+.lg-pl .tk-ph{width:32px;height:32px;font-size:11px}
+.lg-pl small{display:block;font-size:11.5px;color:#64748B}
+.lg-pts-b{color:var(--orange)}
 
-    /* Give the section rhythm a little more air on wide screens */
-    .home .s-getin{ margin-top:40px; }
-    .home .s-next, .home .s-counters{ margin-top:40px; }
-  }
+.lg-list{display:flex;flex-direction:column;gap:10px}
+.lg-row{display:flex;align-items:center;gap:10px;background:var(--paper);border:2px solid var(--ink);padding:10px 12px}
+.lg-row .grow{flex:1;min-width:0}
+.lg-row b{font:700 15px var(--disp)}
+.lg-row small{display:block;font-size:12px;color:#64748B}
+.lg-promo{background:var(--ink);color:#fff}
+.lg-promo small{color:#94A3B8}
+.lg-promo .to{font:800 12px var(--mono);color:var(--volt);white-space:nowrap}
 
-  @media (min-width:1024px){
-    .home h1, .home .h1{ font-size:72px; }
-    .home .w1-shell{ padding-bottom:80px; }
-  }
+.lg-faq details{background:var(--paper);border:2px solid var(--ink);margin-bottom:10px}
+.lg-faq summary{cursor:pointer;list-style:none;padding:14px 16px;font:700 16px var(--disp);display:flex;justify-content:space-between;gap:10px}
+.lg-faq summary::-webkit-details-marker{display:none}
+.lg-faq summary::after{content:'+';font:800 18px var(--mono);color:var(--orange)}
+.lg-faq details[open] summary::after{content:'–'}
+.lg-faq p{margin:0;padding:0 16px 16px;font-size:14px;line-height:1.6;color:#475569}
+
+.lg-final{margin:56px 0 40px;background:var(--orange);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;color:#fff}
+.lg-final h2{margin:0;font:700 clamp(28px,4.5vw,44px)/.95 var(--disp);text-transform:uppercase;letter-spacing:-.04em}
+.lg-final p{margin:8px 0 0;font-size:15px;color:#FFF3EA}
+
+@media(max-width:900px){
+  .lg-hero{grid-template-columns:1fr;gap:24px;padding-top:28px}
+  .lg-grid4{grid-template-columns:repeat(2,1fr)}
+  .lg-grid3{grid-template-columns:1fr}
+  .lg-cols{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .lg-grid4{grid-template-columns:1fr}
+  .lg-stats div{padding:16px 10px}
+  .lg-tbl td.hide-sm,.lg-tbl th.hide-sm{display:none}
+  .lg-final{padding:20px}
+}
 </style>
 </head>
-<body class="home">
+<body>
 
 <div id="tk-nav"></div>
+<div class="lg-demo">Pratinjau Liga Trekkr baru · jadwal, klasemen &amp; nama di halaman ini adalah contoh</div>
 
-<main class="w1-shell">
+<main class="container">
 
-  <!-- BLOCK 1 — Championship hero -->
-  <section class="s-hero" aria-labelledby="champ-title">
-    <div class="hero-grid">
-      <div class="hero-left">
-        <div class="eyebrow" id="champ-eyebrow">Championship</div>
-        <h1 id="champ-title" class="hero-h1">TREKKR<br>CHAMPIONSHIP</h1>
-        <p class="lede">One champion per tier. You compete only against players at your own level — so
-          every tier is genuinely winnable.</p>
+  <!-- HERO -->
+  <section class="lg-hero">
+    <div>
+      <span class="eyebrow">Liga Trekkr · Liga padel mingguan</span>
+      <h1>Main tiap minggu.<br><span>Naik level.</span></h1>
+      <p>Satu malam, 8 match, lawan selalu selevel. Ada juara tiap malam, juara tiap bulan — dan kalau kamu menang terus, kamu <b>Promoted</b> ke divisi berikutnya.</p>
+      <div class="lg-cta">
+        <a class="btn btn--primary" href="#jadwal">Lihat jadwal Liga</a>
+        <a class="btn" href="#cara-main">Cara main</a>
       </div>
-      <div class="hero-right">
-        <div class="countdown">
-          <div class="cd-days"><b id="cd-days">—</b><span>days</span></div>
-          <div class="cdline"></div>
-          <div class="cd-pool"><b id="cd-pool">—</b><span>Total prize pool</span></div>
-        </div>
-        <div class="prizes" id="champ-prizes"></div>
+    </div>
+    <div class="lg-stats" aria-label="Liga dalam angka">
+      <div><b>8</b><span>Match / malam</span></div>
+      <div><b>3</b><span>Poin / menang</span></div>
+      <div><b>3</b><span>Divisi</span></div>
+    </div>
+  </section>
+
+  <!-- CARA MAIN -->
+  <section class="lg-sec" id="cara-main">
+    <div class="tk-sec"><span class="tk-sec__t">Cara main</span></div>
+    <div class="lg-grid4">
+      <div class="tk-card lg-step">
+        <span class="n">01</span>
+        <h3>Main 8 match</h3>
+        <p>Satu malam ±3 jam. Partner &amp; lawan ganti tiap ronde. Tiap match <i>race to 4</i>.</p>
+      </div>
+      <div class="tk-card lg-step">
+        <span class="n">02</span>
+        <h3>Kumpulkan poin</h3>
+        <p>Poinnya milikmu, walau partner ganti-ganti.</p>
+        <div class="lg-pts"><span>Menang <b>3</b></span><span>Kalah 3–4 <b>1</b></span><span>Kalah <b>0</b></span></div>
+      </div>
+      <div class="tk-card lg-step">
+        <span class="n">03</span>
+        <h3>Lawan selevel</h3>
+        <p>Kamu main di divisimu: D1, D2 atau D3. Semua punya peluang menang.</p>
+      </div>
+      <div class="tk-card tk-card--o lg-step">
+        <span class="n">04</span>
+        <h3>Promoted 🚀</h3>
+        <p>Menang terus? Kamu naik ke divisi atas &amp; mulai lagi dari nol di sana.</p>
       </div>
     </div>
   </section>
 
-  <!-- BLOCK 2 — How you get in -->
-  <section class="s-getin mt26" aria-labelledby="ladder-title">
-    <h2 id="ladder-title">How you get in</h2>
-    <div class="ladder">
-      <div class="rung">
-        <div class="rnum">1</div>
-        <div class="rbody">
-          <b>Get your tier</b>
-          <span>Play 3 ranked sessions at any partner venue. Your rating and tier come out of them.</span>
-          <div id="rung-meter"></div>
-        </div>
+  <!-- GELAR -->
+  <section class="lg-sec">
+    <div class="tk-sec"><span class="tk-sec__t">Tiga cara jadi juara</span></div>
+    <div class="lg-grid3">
+      <div class="tk-card lg-award">
+        <div class="ic">🏆</div>
+        <h3>Juara malam ini</h3>
+        <p>Poin terbanyak di sesimu. Setiap malam Liga ada juaranya.</p>
       </div>
-      <div class="rung">
-        <div class="rnum">2</div>
-        <div class="rbody">
-          <b>Enter at least <span id="series-min">2</span> Trekkr Series</b>
-          <span><b id="series-pool" style="color:var(--ink)"></b> prize pool at every single one — and each
-            result adds to your season points.</span>
-          <div class="minicards" id="series-cards"></div>
-        </div>
+      <div class="tk-card tk-card--o lg-award k">
+        <div class="ic">🥇</div>
+        <h3>Juara bulan ini</h3>
+        <p>Total semua poinmu selama sebulan di divisimu. Makin rutin main, makin dekat.</p>
       </div>
-      <div class="rung last">
-        <div class="rnum">3</div>
-        <div class="rbody">
-          <b>Finish top <span id="qual-topn">16</span> in your tier</b>
-          <span>Season points decide the field. Places per tier, plus event winners and wildcards.</span>
-        </div>
+      <div class="tk-card lg-award">
+        <div class="ic">❤️</div>
+        <h3>Pemain paling setia</h3>
+        <p>Paling sering main di satu venue dalam sebulan, per kategori.</p>
       </div>
     </div>
   </section>
 
-  <!-- BLOCK 3 — Actions -->
-  <section class="s-actions mt8">
-    <a class="btn" href="/sessions">Start now — book a ranked session</a>
-    <a class="btn ghost mt8" href="/claim">I've played before — find my profile</a>
-    <p class="cap" id="qual-caption">Qualifying closes 30 November</p>
+  <!-- DIVISI -->
+  <section class="lg-sec" id="divisi">
+    <div class="tk-sec"><span class="tk-sec__t">Divisi</span></div>
+    <div class="lg-grid4">
+      <div class="tk-card lg-div"><span class="code">D1</span><span class="tiers">Beginner</span><span class="range">Rating Trekkr di bawah <span class="tk-elo">1200</span></span></div>
+      <div class="tk-card lg-div"><span class="code">D2</span><span class="tiers">Bronze</span><span class="range">Rating <span class="tk-elo">1200</span>–<span class="tk-elo">1799</span></span></div>
+      <div class="tk-card lg-div"><span class="code">D3</span><span class="tiers">Silver</span><span class="range">Rating <span class="tk-elo">1800</span>–<span class="tk-elo">2499</span></span></div>
+      <div class="tk-card lg-div soon"><span class="code">OPEN</span><span class="tiers">Segera hadir</span><span class="range">Untuk semua level</span></div>
+    </div>
+    <div class="lg-note"><span style="font-size:20px">🧭</span><div><b>Baru pertama kali ikut?</b> Jawab 5 pertanyaan singkat — lama main, seberapa sering, pengalaman turnamen, latar olahraga. Kami kasih rekomendasi divisi, tapi <b>kamu yang pilih</b>. Rating Trekkr akan menyesuaikan level-mu dengan sendirinya.</div></div>
   </section>
 
-  <!-- BLOCK 4 — Next ranked sessions -->
-  <section class="s-next mt28" aria-labelledby="next-title">
-    <h2 id="next-title">Next ranked sessions</h2>
-    <div id="next-sessions" aria-live="polite"></div>
+  <!-- JADWAL -->
+  <section class="lg-sec" id="jadwal">
+    <div class="tk-sec"><span class="tk-sec__t">Jadwal Liga minggu ini</span><a class="tk-sec__more" href="/sessions">Semua sesi →</a></div>
+    <div class="lg-tabs" id="sessTabs" role="tablist"></div>
+    <div class="lg-sess" id="sessList"></div>
   </section>
 
-  <!-- BLOCK 5 — Platform counters (hidden until data is confirmed) -->
-  <section class="s-counters mt26 counters" id="counters" hidden>
-    <div class="stat3">
-      <div><b id="c-players">—</b><span>Players tracked</span></div>
-      <div><b id="c-matches">—</b><span>Matches recorded</span></div>
-      <div><b id="c-venues">—</b><span>Venues</span></div>
+  <!-- KLASEMEN + SAMPING -->
+  <section class="lg-sec lg-cols">
+    <div>
+      <div class="tk-sec"><span class="tk-sec__t">Klasemen bulan ini</span><span class="tk-chip tk-chip--g" id="monthLbl">Oktober</span></div>
+      <div class="lg-tabs" id="catTabs" role="tablist"></div>
+      <div class="lg-tabs sub" id="divTabs" role="tablist"></div>
+      <table class="lg-tbl" aria-label="Klasemen bulanan">
+        <thead><tr><th>#</th><th>Pemain</th><th class="num hide-sm">Sesi</th><th class="num hide-sm">M–K</th><th class="num">Poin</th></tr></thead>
+        <tbody id="standBody"></tbody>
+      </table>
+    </div>
+    <div>
+      <div class="tk-sec"><span class="tk-sec__t">Juara minggu lalu</span></div>
+      <div class="lg-list" id="winList"></div>
+
+      <div class="tk-sec" style="margin-top:26px"><span class="tk-sec__t">Promoted 🚀</span></div>
+      <div class="lg-list" id="promoList"></div>
+
+      <div class="tk-sec" style="margin-top:26px"><span class="tk-sec__t">Paling setia</span></div>
+      <div class="lg-list" id="loyalList"></div>
     </div>
   </section>
 
-  <!-- BLOCK 6 — Challenges, coming soon -->
-  <section class="s-challenges mt16">
-    <div class="card teal">
-      <span class="soon">Coming soon</span>
-      <div style="font-family:var(--display);font-weight:800;font-size:24px;line-height:1;
-        text-transform:uppercase;margin-bottom:7px">Challenges</div>
-      <div style="font-size:13px;color:var(--mute);line-height:1.55">
-        Call out a player above you, book a court, settle it. Wins move you up the ladder between
-        sessions. Opens once enough players are ranked in your area.</div>
+  <!-- FAQ -->
+  <section class="lg-sec lg-faq">
+    <div class="tk-sec"><span class="tk-sec__t">Pertanyaan umum</span></div>
+    <details><summary>Harus bawa partner?</summary><p>Untuk Men dan Women tidak perlu — partnermu ganti tiap ronde. Untuk Mixed, datang bareng satu partner lawan jenis dan main 8 match bersama.</p></details>
+    <details><summary>Boleh pindah-pindah venue?</summary><p>Boleh. Poin bulananmu dihitung dari semua venue Liga Trekkr. Hanya gelar Pemain Paling Setia yang dihitung per venue.</p></details>
+    <details><summary>Kalau aku naik divisi di tengah bulan?</summary><p>Selamat, kamu Promoted! Kamu mulai mengumpulkan poin dari nol di divisi baru bersama pemain selevelmu. Itu yang bikin juara di setiap divisi benar-benar juara di levelnya.</p></details>
+    <details><summary>Kalau sering kalah?</summary><p>Rating-mu akan membawamu ke divisi yang lebih pas. Tetap main, tetap berkembang, dan kamu bisa naik lagi.</p></details>
+    <details><summary>Berapa biaya &amp; hadiahnya?</summary><p>Setiap venue punya biaya dan hadiahnya sendiri — semuanya tertera di halaman pendaftaran sesi.</p></details>
+  </section>
+
+  <section class="lg-final">
+    <div>
+      <h2>Sampai jumpa di lapangan 🎾</h2>
+      <p>Pilih sesi Liga terdekat, main 8 match, kumpulkan poin.</p>
     </div>
+    <a class="btn btn--ink" href="#jadwal">Pilih sesi</a>
   </section>
 
 </main>
 
-<footer class="w1-footer">
-  Trekkr · Ranked padel, Indonesia · <a href="/season">Season calendar</a>
-</footer>
+<div data-eco-footer>
+  <a href="/app">Get the App</a>
+  <a href="/rankings">Rankings</a>
+  <a href="/venues">Venues</a>
+  <a href="/liga-trekkr">Liga Trekkr</a>
+  <a href="/how-trekkr-works">How it works</a>
+  <a href="https://admin.trekkr.online">Venue login</a>
+</div>
 
-<script src="/wave1/config.js"></script>
-<script src="/wave1/app.js"></script>
 <script>
+/* Data contoh untuk pratinjau Liga (belum tersambung ke engine). */
 (function () {
-  var W = window.TrekkrW1, C = window.TREKKR;
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var ini = function (n) { return n.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); };
+  var CAT = { M: "Men", W: "Women", X: "Mixed" };
   var $ = function (id) { return document.getElementById(id); };
 
-  function __render() {
-  // --- Block 1: hero eyebrow, countdown, prize rows ---
-  var champ = C.championship;
-  $("champ-eyebrow").textContent =
-    W.longDate(champ.date).replace(/^\w+ /, "") + " · " + champ.city; // "13 December 2026 · Jakarta"
-  $("cd-pool").textContent = W.rp(champ.prizePool);
-  W.mountCountdown($("cd-days"), champ.date);
-
-  $("champ-prizes").innerHTML = champ.prizes.map(function (p) {
-    return '<div class="prize' + (p.highlight ? " t1" : "") + '">' +
-      '<span class="pt">' + W.esc(p.tier) + " · " + W.esc(p.label) + "</span>" +
-      "<b>" + W.rp(p.amount) + "</b></div>";
-  }).join("");
-
-  // --- Block 2: ladder ---
-  $("rung-meter").innerHTML = W.sessionMeter(["empty", "empty", "empty"], ["Session", "Session", "Ranked"]);
-  $("series-min").textContent = C.series.minEntered;
-  $("series-pool").textContent = W.rp(C.series.prizePool);
-  $("qual-topn").textContent = C.qualifying.topN;
-  // Series mini-cards from config (single source of truth), then enrich from
-  // /api/schedule?type=SERIES when available.
-  function renderSeriesCards(list) {
-    $("series-cards").innerHTML = list.slice(0, 3).map(function (s, i) {
-      // Show the venue (managed in superadmin → Liga); fall back to the Series name.
-      var line = s.venue || s.name || ("Series #" + (i + 1));
-      return "<div><b>" + W.esc(s.label) + "</b><span>" + W.esc(line) + "</span></div>";
+  // ── Jadwal (contoh) ──
+  var SESS = [
+    { d: "06", m: "Okt", dow: "Sen", t: "19:00", venue: "Venue A · Kemang", area: "Jakarta Selatan", cat: "M", div: "D2", courts: 2, cap: 9, booked: 7, price: "Rp150rb", prize: "Voucher Rp500rb" },
+    { d: "07", m: "Okt", dow: "Sel", t: "19:00", venue: "Venue B · BSD", area: "Tangerang", cat: "W", div: "D1", courts: 3, cap: 12, booked: 9, price: "Rp125rb", prize: "Raket padel" },
+    { d: "08", m: "Okt", dow: "Rab", t: "20:00", venue: "Venue C · PIK", area: "Jakarta Utara", cat: "X", div: "D2", courts: 2, cap: 9, booked: 9, price: "Rp175rb / orang", prize: "Voucher Rp750rb" },
+    { d: "09", m: "Okt", dow: "Kam", t: "19:00", venue: "Venue A · Kemang", area: "Jakarta Selatan", cat: "M", div: "D1", courts: 4, cap: 18, booked: 11, price: "Rp150rb", prize: "Voucher Rp500rb" },
+    { d: "10", m: "Okt", dow: "Jum", t: "19:30", venue: "Venue D · Bandung", area: "Bandung", cat: "M", div: "D3", courts: 2, cap: 9, booked: 4, price: "Rp160rb", prize: "Sponsor gear pack" },
+    { d: "11", m: "Okt", dow: "Sab", t: "16:00", venue: "Venue B · BSD", area: "Tangerang", cat: "X", div: "D1", courts: 3, cap: 12, booked: 6, price: "Rp140rb / orang", prize: "Voucher Rp500rb" },
+  ];
+  var sessFilter = "all";
+  function renderTabs(el, items, cur, onPick) {
+    el.innerHTML = items.map(function (it) {
+      return '<button type="button" role="tab" class="lg-tab' + (it[0] === cur ? " on" : "") + '" aria-selected="' + (it[0] === cur) + '" data-k="' + it[0] + '">' + esc(it[1]) + "</button>";
+    }).join("");
+    el.onclick = function (e) { var b = e.target.closest("[data-k]"); if (b) onPick(b.getAttribute("data-k")); };
+  }
+  function renderSess() {
+    renderTabs($("sessTabs"), [["all", "Semua"], ["M", "Men"], ["W", "Women"], ["X", "Mixed"]], sessFilter, function (k) { sessFilter = k; renderSess(); });
+    $("sessList").innerHTML = SESS.filter(function (s) { return sessFilter === "all" || s.cat === sessFilter; }).map(function (s) {
+      var full = s.booked >= s.cap, left = s.cap - s.booked;
+      return '<div class="tk-card lg-s">' +
+        '<div class="lg-s__top"><div class="lg-s__date"><b>' + s.d + "</b><span>" + s.m + "</span></div>" +
+        '<div><div class="lg-s__venue">' + esc(s.venue) + '</div><div class="lg-s__meta">' + s.dow + " " + s.t + " · " + esc(s.area) + " · " + s.courts + " lapangan</div></div></div>" +
+        '<div class="lg-s__chips"><span class="tk-chip tk-chip--k">' + CAT[s.cat] + '</span><span class="tk-chip tk-chip--v">' + s.div + '</span><span class="tk-chip">8 match</span><span class="tk-chip tk-chip--g">🎁 ' + esc(s.prize) + "</span></div>" +
+        '<div class="lg-bar" aria-hidden="true"><i style="width:' + Math.round(s.booked / s.cap * 100) + '%"></i></div>' +
+        '<div class="lg-s__foot"><span>' + (full ? "Penuh · cadangan" : left + " slot tersisa") + ' <span class="muted">/ ' + s.cap + "</span></span><span>" + esc(s.price) + "</span></div>" +
+        '<a class="btn ' + (full ? "" : "btn--primary") + '" href="/sessions">' + (full ? "Masuk daftar cadangan" : "Daftar") + "</a>" +
+        "</div>";
     }).join("");
   }
-  // Liga config is the single source of truth for the Series cards (venue,
-  // dates, name) — managed in superadmin → Liga. The Schedule tab drives only
-  // the bookable ranked sessions below, not these Series venues.
-  renderSeriesCards(C.series.dates);
 
-  // --- Block 3: qualifying caption ---
-  $("qual-caption").textContent = "Qualifying closes " +
-    W.longDate(C.qualifying.close).replace(/^\w+ /, "").replace(/ \d{4}$/, ""); // "30 November"
-
-  // --- Block 4: next ranked sessions (3 soonest RANKPLAY) ---
-  var next = $("next-sessions");
-  next.innerHTML =
-    '<div class="srow" aria-hidden="true"><div class="sdate"><b class="skel">00</b>' +
-    '<span class="skel">···</span></div><div class="sbody"><b class="skel">Loading soon</b>' +
-    '<span class="skel">·····</span></div><div class="spots"><b class="skel">0</b></div></div>';
-  var todayISO = new Date().toISOString().slice(0, 10);
-  W.api.schedule({ type: "RANKPLAY", from: todayISO }).then(function (r) {
-    var rows = ((r && r.schedule) || []).slice(0, 3);
-    if (!rows.length) {
-      next.innerHTML = '<div class="locked"><b>No sessions listed yet</b>' +
-        '<span>See the full season calendar for what’s coming.</span>' +
-        '<a class="btn ghost sm" style="margin-top:12px" href="/season">See the season</a></div>';
-      return;
-    }
-    next.innerHTML = rows.map(sessionRow).join("");
-  }).catch(function () {
-    next.innerHTML = '<div class="locked"><b>Couldn’t load sessions</b>' +
-      '<span>The list is taking a moment.</span>' +
-      '<a class="btn ghost sm" style="margin-top:12px" href="/sessions">Open sessions</a></div>';
-  });
-
-  function sessionRow(s) {
-    var full = s.status === "FULL" || s.spotsLeft <= 0;
-    var spots = full
-      ? '<div class="spots full"><b>Full</b><span>waitlist</span></div>'
-      : '<div class="spots"><b>' + s.spotsLeft + "</b><span>left</span></div>";
-    var meta = W.dowShort(s.date) + " " + (s.startTime || "") +
-      (s.courts ? " · " + s.courts + " court" + (s.courts === 1 ? "" : "s") : "");
-    return '<a class="srow" href="/sessions/' + encodeURIComponent(s.id) + '">' +
-      '<div class="sdate"><b>' + W.dayNum(s.date) + "</b><span>" + W.monShort(s.date) + "</span></div>" +
-      '<div class="sbody"><b>' + W.esc(s.venue) + (s.area ? " · " + W.esc(s.area.split(",")[0]) : "") + "</b>" +
-      "<span>" + W.esc(meta) + "</span></div>" + spots + "</a>";
+  // ── Klasemen bulanan (contoh) ──
+  var NAMES = {
+    M: ["Andre Wijaya", "Bayu Pratama", "Dimas Saputra", "Rizky Hidayat", "Kevin Santoso", "Fajar Nugroho", "Aldo Kurniawan", "Hendra Gunawan"],
+    W: ["Nadia Putri", "Sarah Amelia", "Tiara Maharani", "Clara Wibowo", "Intan Lestari", "Maya Salsabila", "Dewi Anggraini", "Rani Oktavia"],
+    X: ["Yoga Permana", "Laras Ayu", "Bima Aditya", "Citra Kirana", "Reza Firmansyah", "Putri Handayani", "Galih Ramadhan", "Anisa Rahma"],
+  };
+  var VENUES = ["Venue A · Kemang", "Venue B · BSD", "Venue C · PIK", "Venue D · Bandung"];
+  function standings(cat, div) {
+    var seed = cat.charCodeAt(0) * 7 + Number(div.slice(1)) * 13;
+    var rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    return NAMES[cat].map(function (n, i) {
+      var sesi = 2 + Math.floor(rnd() * 3);
+      var w = 0, l = 0, p = 0;
+      for (var k = 0; k < sesi * 8; k++) { if (rnd() < 0.76 - i * 0.05) { w++; p += 3; } else { l++; if (rnd() < 0.35) p += 1; } }
+      return { n: n, v: VENUES[Math.floor(rnd() * VENUES.length)], sesi: sesi, w: w, l: l, p: p };
+    }).sort(function (a, b) { return b.p - a.p || (b.w - b.l) - (a.w - a.l); });
+  }
+  var cat = "M", div = "D2";
+  function renderStand() {
+    renderTabs($("catTabs"), [["M", "Men"], ["W", "Women"], ["X", "Mixed"]], cat, function (k) { cat = k; renderStand(); });
+    renderTabs($("divTabs"), [["D1", "D1"], ["D2", "D2"], ["D3", "D3"]], div, function (k) { div = k; renderStand(); });
+    $("standBody").innerHTML = standings(cat, div).map(function (r, i) {
+      return '<tr class="' + (i === 0 ? "top" : "") + '"><td class="lg-rk">' + (i === 0 ? "🥇" : i + 1) + "</td>" +
+        '<td><div class="lg-pl"><span class="tk-ph">' + ini(r.n) + "</span><div><b>" + esc(r.n) + "</b><small>" + esc(r.v) + "</small></div></div></td>" +
+        '<td class="num hide-sm">' + r.sesi + '</td><td class="num hide-sm">' + r.w + "–" + r.l + '</td><td class="num lg-pts-b">' + r.p + "</td></tr>";
+    }).join("");
   }
 
-  // --- Block 5: platform counters (hide on failure, never show —) ---
-  // Ask for the whole board in one page so the sums are complete; the server
-  // caches this for 60s. `total` is the authoritative player count.
-  W.api.leaderboard(100000).then(function (r) {
-    var lb = (r && r.leaderboard) || [];
-    if (!lb.length) return; // stay hidden
-    var players = Number(r.total) || lb.length;
-    var matches = lb.reduce(function (a, p) { return a + (Number(p.totalMatches) || 0); }, 0);
-    var venues = new Set();
-    lb.forEach(function (p) {
-      String(p.clubs || "").split(/[,;/]+/).forEach(function (c) {
-        c = c.trim(); if (c) venues.add(c.toLowerCase());
-      });
-    });
-    $("c-players").textContent = players.toLocaleString("en-US");
-    $("c-matches").textContent = matches.toLocaleString("en-US");
-    $("c-venues").textContent = venues.size.toLocaleString("en-US");
-    $("counters").hidden = false;
-  }).catch(function () { /* Build Spec §5.5: hide the block, never render — or Loading… */ });
-  } // __render
+  // ── Samping (contoh) ──
+  $("winList").innerHTML = [
+    ["Bayu Pratama", "Men · D2 · Venue A · Kemang", "22 poin · 7–1"],
+    ["Tiara Maharani", "Women · D1 · Venue B · BSD", "21 poin · 7–1"],
+    ["Yoga Permana & Laras Ayu", "Mixed · D2 · Venue C · PIK", "20 poin · 6–2"],
+  ].map(function (r) {
+    return '<div class="lg-row"><span style="font-size:22px">🏆</span><div class="grow"><b>' + esc(r[0]) + "</b><small>" + esc(r[1]) + '</small></div><span class="tk-chip tk-chip--o">' + esc(r[2]) + "</span></div>";
+  }).join("");
 
-  // Server-managed Liga config (championship + series prize pools/dates) edited
-  // in superadmin overrides the static wave1 config; falls back to it on failure.
-  var __base = (location.hostname === "trekkr.online" || (location.hostname.endsWith(".vercel.app") && location.hostname.startsWith("trekkrgit"))) ? "/api" : "https://trekkr.online/api";
-  fetch(__base + "/liga/config").then(function (r) { return r.json(); }).then(function (d) {
-    if (d && d.config) {
-      if (d.config.championship) C.championship = Object.assign({}, C.championship, d.config.championship);
-      if (d.config.series) C.series = Object.assign({}, C.series, d.config.series);
-    }
-  }).catch(function () {}).then(__render);
+  $("promoList").innerHTML = [
+    ["Kevin Santoso", "Men · menang 8–0", "D1 → D2"],
+    ["Clara Wibowo", "Women · 7–1 dua sesi beruntun", "D2 → D3"],
+  ].map(function (r) {
+    return '<div class="lg-row lg-promo"><span class="tk-ph">' + ini(r[0]) + '</span><div class="grow"><b>' + esc(r[0]) + "</b><small>" + esc(r[1]) + '</small></div><span class="to">' + r[2] + "</span></div>";
+  }).join("");
+
+  $("loyalList").innerHTML = [
+    ["Hendra Gunawan", "Venue A · Kemang · Men", "24 match"],
+    ["Intan Lestari", "Venue B · BSD · Women", "24 match"],
+  ].map(function (r) {
+    return '<div class="lg-row"><span style="font-size:20px">❤️</span><div class="grow"><b>' + esc(r[0]) + "</b><small>" + esc(r[1]) + '</small></div><span class="tk-chip">' + r[2] + "</span></div>";
+  }).join("");
+
+  $("monthLbl").textContent = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  renderSess(); renderStand();
 })();
 </script>
 <script src="/trekkr-nav.js" defer></script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+<script src="/nav-account.js" defer></script>
 </body>
 </html>
