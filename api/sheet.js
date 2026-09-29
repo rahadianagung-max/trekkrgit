@@ -189,7 +189,7 @@ const TABS = {
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Key",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Content-Type": "application/json",
 };
@@ -1122,13 +1122,22 @@ const netlifyHandler = async (event) => {
     }
     const body = method === "POST" || method === "PUT" ? JSON.parse(rawBody) : {};
     const params = event.queryStringParameters || {};
+    // Signed admin key may also arrive as the X-Admin-Key header (trekkr-api.js / admin pages).
+    const hdrKey = String(((event.headers || {})["x-admin-key"]) || "");
+    if (hdrKey) {
+      if (body && typeof body === "object" && !Array.isArray(body) && !body.adminKey) body.adminKey = hdrKey;
+      if (!params.key) params.key = hdrKey;
+    }
+    // Gate for admin-only writes: null when allowed, else a 401 response.
+    const gate = (roles) => (verifyAdminKey((body && body.adminKey) || params.key, roles) ? null : respond(401, ADMIN_KEY_DENIED));
+    const SUPER = ["superadmin"];
 
     // --- ROUTES ---
     if (path === "settings" && method === "GET") return await getSettings();
     // Liga config (championship + series prize pools/dates) — read by the web
     // Liga page AND the mobile app; edited from superadmin.
     if (path === "liga/config" && method === "GET") return await getLigaConfig();
-    if (path === "liga/config" && method === "PUT") return await saveLigaConfig(body);
+    if (path === "liga/config" && method === "PUT") return gate(SUPER) || await saveLigaConfig(body);
     // PlayRank Live — shareable live standings page for a ranked-match session.
     // GET is public (read by /live/<code>); POST is admin-driven (create/update/finalize),
     // guarded by an unguessable write_key held only by the host that created it.
@@ -1142,14 +1151,14 @@ const netlifyHandler = async (event) => {
     // ratings, tournament history and calibration flags → risk score per player.
     if (path === "eligibility" && method === "POST") return await eligibilityCheck(body);
     if (path === "tiers/boundaries" && method === "GET") return respond(200, await tierBoundaries(false), { "Cache-Control": "public, max-age=300" });
-    if (path === "tiers/recompute" && method === "POST") return respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
+    if (path === "tiers/recompute" && method === "POST") return gate(SUPER) || respond(200, await tierBoundaries(true), { "Cache-Control": "no-store" });
     if (path === "flags/calibration" && method === "GET") return await listCalibrationFlags();
-    if (path === "flags/calibration/resolve" && method === "POST") return await resolveCalibrationFlag(body);
+    if (path === "flags/calibration/resolve" && method === "POST") return gate(SUPER) || await resolveCalibrationFlag(body);
     if (path === "public/feed" && method === "GET") return await getPublicFeed();
     if (path === "get-listed" && method === "POST") return await submitVenueLead(body);
     if (path === "tracked-events" && method === "GET") return await getTrackedEvents();
-    if (path === "tracked-events" && method === "POST") return await addTrackedEvent(body);
-    if (path === "tracked-events/update" && method === "PUT") return await updateTrackedEvent(body);
+    if (path === "tracked-events" && method === "POST") return gate(SUPER) || await addTrackedEvent(body);
+    if (path === "tracked-events/update" && method === "PUT") return gate(SUPER) || await updateTrackedEvent(body);
     if (path === "tracked-events/delete" && method === "POST") return await deleteTrackedEvent(body);
     if (path === "tournament-lead" && method === "POST") return await submitTournamentLead(body);
     if (path === "competitions" && method === "GET") return await listCompetitions();
@@ -1161,7 +1170,7 @@ const netlifyHandler = async (event) => {
     if (path === "auth/set-password" && method === "POST") return await setPlayerPassword(body);
     if (path === "auth/login-player" && method === "POST") return await loginPlayer(body);
     if (path === "auth/claims" && method === "GET") return await listAccountClaims(params);
-    if (path === "auth/claims/resolve" && method === "POST") return await resolveAccountClaim(body);
+    if (path === "auth/claims/resolve" && method === "POST") return gate(SUPER) || await resolveAccountClaim(body);
     if (path === "players/me" && method === "PUT") return await updateOwnProfile(body);
 
     // --- PLAYER ACCOUNTS (Supabase Auth: self-service profiles) ---
@@ -1186,15 +1195,15 @@ const netlifyHandler = async (event) => {
     if (path === "account/name-requests/resolve" && method === "POST") return await resolveNameRequest(body);
 
     if (path === "players" && method === "GET") return await cached60("players:" + JSON.stringify(params || {}), () => getPlayers(params));
-    if (path === "players" && method === "POST") return await addPlayer(body);
-    if (path === "players/update" && method === "PUT") return await updatePlayer(body);
+    if (path === "players" && method === "POST") return gate() || await addPlayer(body);
+    if (path === "players/update" && method === "PUT") return gate() || await updatePlayer(body);
     if (path === "players/claim" && method === "POST") return await claimProfile(body);
-    if (path === "players/sync-clubs" && method === "POST") return await syncPlayerClubs();
+    if (path === "players/sync-clubs" && method === "POST") return gate(SUPER) || await syncPlayerClubs();
     if (path === "players/edit-request" && method === "POST") return await submitEditRequest(body);
     if (path === "players/check-name" && method === "GET") return await checkPlayerName(params);
     if (path === "players/register" && method === "POST") return await registerNewPlayer(body);
     if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
-    if (path === "players/edit-requests/resolve" && method === "POST") return await resolveEditRequest(body);
+    if (path === "players/edit-requests/resolve" && method === "POST") return gate() || await resolveEditRequest(body);
     if (path === "players/delete" && method === "POST") return await deletePlayer(body);
     if (path.startsWith("players/") && path.endsWith("/matches") && method === "GET") {
       return await getPlayerMatches(decodeURIComponent(path.replace("players/", "").replace("/matches", "")));
@@ -1205,10 +1214,16 @@ const netlifyHandler = async (event) => {
     }
 
     if (path === "venues" && method === "GET") return await getVenues();
-    if (path === "venues" && method === "POST") return await addVenue(body);
-    if (path === "venues/update" && method === "PUT") return await updateVenue(body);
+    if (path === "venues" && method === "POST") return gate(SUPER) || await addVenue(body);
+    if (path === "venues/update" && method === "PUT") {
+      // Venue admins may only edit their own venue; superadmin edits any.
+      const vk = verifyAdminKey((body && body.adminKey) || params.key);
+      if (!vk) return respond(401, ADMIN_KEY_DENIED);
+      if (vk.role !== "superadmin" && String(vk.venue || "").trim().toLowerCase() !== String((body && body.name) || "").trim().toLowerCase()) return respond(403, { error: "Bukan venue Anda" });
+      return await updateVenue(body);
+    }
     if (path === "venues/delete" && method === "POST") return await deleteVenue(body);
-    if (path === "venues/display" && method === "POST") return await setVenueDisplay(body);
+    if (path === "venues/display" && method === "POST") return gate(SUPER) || await setVenueDisplay(body);
     if (path.startsWith("venues/") && path.endsWith("/matches") && method === "GET") {
       const v = decodeURIComponent(path.replace("venues/", "").replace("/matches", ""));
       return await getVenueMatches(v, params);
@@ -1254,21 +1269,21 @@ const netlifyHandler = async (event) => {
     if (path === "elo/history" && method === "GET") return await getEloHistory(params.player);
     if (path === "elo/leaderboard" && method === "GET") return withCdnCache(await cached60("leaderboard:" + JSON.stringify(params || {}), () => getNationalLeaderboard(params)), 60, 300);
     if (path === "home-summary" && method === "GET") return withCdnCache(await cached60("home-summary", getHomeSummary), 60, 300);
-    if (path === "elo/record-match" && method === "POST") return await recordManualMatch(body);
-    if (path === "elo/import-matches" && method === "POST") return await importMatches(body);
+    if (path === "elo/record-match" && method === "POST") return gate(SUPER) || await recordManualMatch(body);
+    if (path === "elo/import-matches" && method === "POST") return gate(SUPER) || await importMatches(body);
 
     if (path === "parse" && method === "POST") return await parseAmericanoUrl(body);
 
     if (path === "admins" && method === "GET") return await getAdmins();
-    if (path === "admins" && method === "POST") return await addAdmin(body);
+    if (path === "admins" && method === "POST") return gate(SUPER) || await addAdmin(body);
     if (path === "admins/delete" && method === "POST") return await deleteAdmin(body);
 
     // --- Superadmin: leads inbox (read the self-bootstrapping lead tabs) ---
     if (path === "venue-leads" && method === "GET") return await listVenueLeads();
     if (path === "tournament-leads" && method === "GET") return await listTournamentLeads();
     // --- VENUE ONBOARDING (lead → approve → set info + password → login) ---
-    if (path === "venue-leads/approve" && method === "POST") return await approveVenueLead(body);
-    if (path === "venue-leads/reject" && method === "POST") return await rejectVenueLead(body);
+    if (path === "venue-leads/approve" && method === "POST") return gate(SUPER) || await approveVenueLead(body);
+    if (path === "venue-leads/reject" && method === "POST") return gate(SUPER) || await rejectVenueLead(body);
     if (path === "venue/onboard" && method === "GET") return await venueOnboardVerify(params);
     if (path === "venue/onboard" && method === "POST") return await venueOnboardSubmit(body);
     if (path === "venue/forgot" && method === "POST") return await venueForgot(body);
@@ -1347,9 +1362,9 @@ const netlifyHandler = async (event) => {
 
     // --- DEDUP + SEED AGENT (AI-assisted) ---
     if (path === "dedup/players-scan" && method === "GET") return await ddPlayersScan();
-    if (path === "dedup/match" && method === "POST") return await ddMatch(body);
-    if (path === "dedup/apply" && method === "POST") return await ddApply(body);
-    if (path === "dedup/merge" && method === "POST") return await ddMerge(body);
+    if (path === "dedup/match" && method === "POST") return gate() || await ddMatch(body);
+    if (path === "dedup/apply" && method === "POST") return gate() || await ddApply(body);
+    if (path === "dedup/merge" && method === "POST") return gate(SUPER) || await ddMerge(body);
 
     // --- RECAP TURNAMEN OTOMATIS ---
     if (path === "recap/list" && method === "GET") return await recapList();
@@ -1872,6 +1887,7 @@ module.exports = async (req, res) => {
     url: req.url,
     httpMethod: req.method,
     queryStringParameters: req.query || {},
+    headers: req.headers || {},
     body: typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {}),
     isBase64Encoded: false
   };

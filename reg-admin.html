@@ -69,7 +69,10 @@ let CL=[], SEEDS=[], SEED_FORM='', SEED_TITLE='';
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toast(m,err){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2200);}
-async function api(path,opts){const r=await fetch(`${API_BASE}/${path}`,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');return d;}
+async function api(path,opts){
+  // Tulis (POST) butuh kunci admin: pakai sesi admin yang ada, atau minta login.
+  if(opts&&opts.method&&opts.method!=='GET'){ const k=await adminKey(); if(!k) throw new Error('Perlu login admin'); opts.headers=Object.assign({},opts.headers||{},{'X-Admin-Key':k}); }
+  const r=await fetch(`${API_BASE}/${path}`,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Error');return d;}
 
 const FIELD_TYPES=[['text','Teks'],['textarea','Paragraf'],['number','Angka'],['email','Email'],['phone','No. HP'],['date','Tanggal'],['select','Dropdown'],['radio','Pilihan'],['checkbox','Checkbox'],['photo','Upload Foto'],['payment_proof','Bukti Bayar'],['heading','Judul Section'],['info','Teks Info']];
 function tyLabel(t){const f=FIELD_TYPES.find(x=>x[0]===t);return f?f[1]:t;}
