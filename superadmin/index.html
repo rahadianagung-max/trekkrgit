@@ -306,6 +306,10 @@ footer span{color:var(--lime)}
   </div>
   <footer>TREKKR · <span>SUPERADMIN</span> · © 2026 · <span id="buildTag">build 2026-09-01d</span></footer>
 </div>
+<script>
+// Sertakan kunci admin bertanda tangan pada setiap panggilan API (header X-Admin-Key).
+(function(){var f=window.fetch;window.fetch=function(u,o){try{var s=typeof u==='string'?u:(u&&u.url)||'';var k=localStorage.getItem('trekkr_admin_key');if(k&&(/^\/api\//.test(s)||/^https:\/\/(trekkr\.online|trekkrgit[a-z0-9-]*\.vercel\.app)\/api\//.test(s))){o=Object.assign({},o||{});var h=new Headers(o.headers||{});if(!h.has('X-Admin-Key'))h.set('X-Admin-Key',k);o.headers=h;}}catch(e){}return f.call(this,u,o);};})();
+</script>
 <script src="trekkr-api.js"></script>
 <script>
 const DA="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2130'/%3E%3Ccircle cx='16' cy='12' r='5' fill='%232a3045'/%3E%3Cpath d='M6 28c0-6 4-10 10-10s10 4 10 10' fill='%232a3045'/%3E%3C/svg%3E";

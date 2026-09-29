@@ -16,6 +16,7 @@ const TrekkrAPI = (() => {
       headers: {
         "Content-Type": "application/json",
         ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+        ...(localStorage.getItem("trekkr_admin_key") ? { "X-Admin-Key": localStorage.getItem("trekkr_admin_key") } : {}),
       },
       ...options,
     };

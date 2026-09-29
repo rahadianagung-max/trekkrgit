@@ -162,7 +162,7 @@
       + '<button class="btn" id="' + id + 'v" type="button">Masuk</button></div>'
       + '<button class="ta-link" id="' + id + 'r" type="button">Kirim ulang</button>'
       + '</div>'
-      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/about" target="_blank" rel="noopener">ketentuan &amp; kebijakan privasi</a> Trekkr.</p>'
+      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/privacy" target="_blank" rel="noopener">kebijakan privasi</a> Trekkr.</p>'
       + '</div>';
     var $ = function (s) { return document.getElementById(id + s); };
     function msg(t, k) { var m = $("m"); m.textContent = t || ""; m.className = "ta-msg" + (k ? " " + k : ""); }

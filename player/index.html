@@ -998,6 +998,7 @@ async function initSession(){
       const r=await fetch(`${PP_API}/account/me?token=${encodeURIComponent(_session.token)}`);
       const d=await r.json().catch(()=>({}));
       if(r.ok && d.player){ _session.myName=d.player.name||''; }
+      else if(r.ok){ _session.claim=d.claim||null; } // signed in, not linked yet
       else if(r.status===401){ try{localStorage.removeItem(PP_TK);}catch(e){} _session.token=''; }
     }catch(e){}
   }
@@ -1070,15 +1071,40 @@ function refreshEditBtn(){
     // Already claimed by someone → verified, cannot be claimed again.
     btn.disabled=true; btn.classList.add('pp-edit-btn--verified');
     btn.innerHTML='<i class="ti ti-rosette-discount-check" aria-hidden="true"></i> Verified';
+  } else if(ppClaimPendingHere()){
+    btn.disabled=true; btn.classList.remove('pp-edit-btn--verified');
+    btn.innerHTML='<i class="ti ti-hourglass" aria-hidden="true"></i> Klaim sedang ditinjau';
   } else {
     btn.disabled=false; btn.classList.remove('pp-edit-btn--verified');
-    btn.innerHTML='<i class="ti ti-shield-check" aria-hidden="true"></i> Klaim profil ini';
+    // Signed in but not linked yet → one-tap claim right here.
+    btn.innerHTML='<i class="ti ti-shield-check" aria-hidden="true"></i> '+(ppSignedInUnlinked()?'Ini profilku — klaim':'Klaim profil ini');
   }
+}
+function ppSignedInUnlinked(){ return !!(_session.loaded && _session.token && !_session.myName); }
+function ppClaimPendingHere(){
+  var c=_session.claim, nm=playerData&&playerData.player&&playerData.player.name;
+  return !!(c && c.status==='pending' && nm && String(c.player_name||'').toLowerCase().trim()===String(nm).toLowerCase().trim());
+}
+async function ppClaimHere(){
+  var nm=playerData.player.name;
+  if(_session.claim && _session.claim.status==='pending'){ showToast('Kamu sudah mengajukan klaim untuk "'+_session.claim.player_name+'" — tunggu review admin dulu.'); return; }
+  if(!confirm('Klaim profil "'+nm+'" sebagai profilmu?\n\nAdmin akan meninjau sebelum profil tertaut ke akunmu.')) return;
+  var btn=document.getElementById('ppEditBtn'); if(btn){ btn.disabled=true; btn.textContent='Mengirim…'; }
+  try{
+    var t=window.TrekkrAuth?await TrekkrAuth.token():_session.token;
+    var r=await fetch(PP_API+'/account/claim-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t,player_name:nm})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    _session.claim={player_name:nm,status:'pending'};
+    showToast('Klaim terkirim ✓ Admin akan meninjau — kamu dapat email saat disetujui.');
+  }catch(e){ showToast('Gagal klaim: '+e.message); }
+  refreshEditBtn();
 }
 function onEditBtn(){
   if(_session.owns){ openEditModal(); return; }
   // Already claimed by someone else → not claimable.
   if(playerData&&playerData.player&&playerData.player.claimed){ showToast('Profil ini sudah diklaim & terverifikasi.'); return; }
+  if(ppSignedInUnlinked()){ ppClaimHere(); return; }
   // Not the owner (or not logged in) → go claim/register this name.
   const nm=(playerData&&playerData.player&&playerData.player.name)||'';
   location.href=`${PP_HOME}/join?name=${encodeURIComponent(nm)}`;

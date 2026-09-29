@@ -1235,6 +1235,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
   </div>
 </div>
 
+<script>
+// Sertakan kunci admin bertanda tangan pada setiap panggilan API (header X-Admin-Key).
+(function(){var f=window.fetch;window.fetch=function(u,o){try{var s=typeof u==='string'?u:(u&&u.url)||'';var k=localStorage.getItem('trekkr_admin_key');if(k&&(/^\/api\//.test(s)||/^https:\/\/(trekkr\.online|trekkrgit[a-z0-9-]*\.vercel\.app)\/api\//.test(s))){o=Object.assign({},o||{});var h=new Headers(o.headers||{});if(!h.has('X-Admin-Key'))h.set('X-Admin-Key',k);o.headers=h;}}catch(e){}return f.call(this,u,o);};})();
+</script>
 <script src="https://trekkr.online/trekkr-api.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════

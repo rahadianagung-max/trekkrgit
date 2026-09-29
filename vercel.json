@@ -13,6 +13,7 @@
       "destination": "/join.html"
     },
     { "source": "/login", "destination": "/login.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/reset", "destination": "/reset.html" },
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/live", "destination": "/live/index.html" },
