@@ -1963,7 +1963,10 @@ async function getPlayerDetail(name) {
   const sheets = getSheets();
   const pRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
   const pRows = pRes.data.values || [];
-  let pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase());
+  const slugOf = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  // Exact name first, then the URL slug form (/player/rahadiannagung → "Rahadian N Agung").
+  let pRow = pRows.find((r) => r[0]?.toLowerCase() === name.toLowerCase())
+    || pRows.find((r) => r[0] && slugOf(r[0]) === slugOf(name));
   const eRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` });
   const eRows = eRes.data.values || [];
   if (!pRow) {
