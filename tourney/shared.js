@@ -32,6 +32,7 @@ const TK_TOKEN_KEY = 'trekkr_token';
 const TK_ROLE_KEY = 'trekkr_role';
 const TK_VENUE_KEY = 'trekkr_venue';
 const TK_USER_KEY = 'trekkr_user';
+const TK_ADMIN_KEY = 'trekkr_admin_key';   // signed admin key (12h) — required to write ELO
 
 /* ============================================================
    ORIGINAL HELPERS (unchanged — do not break v2 displays)
@@ -86,6 +87,9 @@ function getRoundLabel(r, tot) {
    TREKKR API CORE + AUTH
    ============================================================ */
 function tkToken() { try { return localStorage.getItem(TK_TOKEN_KEY) || ''; } catch(e){ return ''; } }
+function tkAdminKey() { try { return localStorage.getItem(TK_ADMIN_KEY) || ''; } catch(e){ return ''; } }
+// Kunci admin masih berlaku? (payload base64url berisi exp; tanda tangan dicek server)
+function tkAdminKeyValid() { try { const p = JSON.parse(atob(tkAdminKey().split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))); return Number(p.exp) > Date.now() + 60000; } catch(e){ return false; } }
 function tkSession() {
   try { return {
     token: tkToken(),
@@ -96,11 +100,11 @@ function tkSession() {
 }
 async function tkApi(path, options = {}) {
   const res = await fetch(`${TREKKR.base}/${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(tkToken() ? { Authorization: `Bearer ${tkToken()}` } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(tkToken() ? { Authorization: `Bearer ${tkToken()}` } : {}), ...(tkAdminKey() ? { 'X-Admin-Key': tkAdminKey() } : {}) },
     ...options,
   });
   let data = null; try { data = await res.json(); } catch(e){}
-  if (!res.ok) throw new Error((data && data.error) || `HTTP ${res.status}`);
+  if (!res.ok) { const err = new Error((data && data.error) || `HTTP ${res.status}`); err.status = res.status; throw err; }
   return data;
 }
 async function tkLogin(username, password) {
@@ -111,12 +115,13 @@ async function tkLogin(username, password) {
       localStorage.setItem(TK_ROLE_KEY, data.role || '');
       localStorage.setItem(TK_VENUE_KEY, data.venue || '');
       localStorage.setItem(TK_USER_KEY, data.username || username);
+      localStorage.setItem(TK_ADMIN_KEY, data.adminKey || '');
     } catch(e){}
   }
   return data;
 }
 function tkLogout() {
-  [TK_TOKEN_KEY, TK_ROLE_KEY, TK_VENUE_KEY, TK_USER_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+  [TK_TOKEN_KEY, TK_ROLE_KEY, TK_VENUE_KEY, TK_USER_KEY, TK_ADMIN_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
 }
 
 /* ============================================================
@@ -427,7 +432,7 @@ function tkBuildEloResults(matchList, baseEloByName){
 // Push ELO for all not-yet-sent completed matches. Updates the cached roster
 // ELO and the sent-keys set on success. Returns {ok, sent, sessionId, skipped}.
 async function tkPushElo(groups, sched, playoff, numGroups, meta={}){
-  if(!tkToken()) return { ok:false, needAuth:true };
+  if(!tkToken() || !tkAdminKeyValid()) return { ok:false, needAuth:true };
   const all = tkCollectCompletedMatches(groups, sched, playoff, numGroups);
   const sent = new Set(tkSentKeys());
   const fresh = all.filter(m=>!sent.has(m.key));
@@ -453,6 +458,7 @@ async function tkPushElo(groups, sched, playoff, numGroups, meta={}){
     }
     return { ok:true, sent:fresh.length, sessionId:res?.sessionId, results };
   } catch(e){
+    if(e.status===401) return { ok:false, needAuth:true };
     return { ok:false, error:e.message };
   }
 }

@@ -1240,6 +1240,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
 (function(){var f=window.fetch;window.fetch=function(u,o){try{var s=typeof u==='string'?u:(u&&u.url)||'';var k=localStorage.getItem('trekkr_admin_key');if(k&&(/^\/api\//.test(s)||/^https:\/\/(trekkr\.online|trekkrgit[a-z0-9-]*\.vercel\.app)\/api\//.test(s))){o=Object.assign({},o||{});var h=new Headers(o.headers||{});if(!h.has('X-Admin-Key'))h.set('X-Admin-Key',k);o.headers=h;}}catch(e){}return f.call(this,u,o);};})();
 </script>
 <script src="https://trekkr.online/trekkr-api.js"></script>
+<script src="https://trekkr.online/admin-key.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════
    ADMIN AUTH
@@ -3293,6 +3294,9 @@ async function rmEndMatch(){
   // A debounced score push still pending would land AFTER finalize and flip the
   // live page back to "live" — cancel it; the final push carries every score.
   clearTimeout(RM._scorePushT);
+  // Kirim ELO butuh kunci admin yang masih berlaku — login ulang di tempat bila
+  // kedaluwarsa, supaya hasil sesi tidak hilang (state belum dihapus).
+  if(window.TrekkrAdminKey){ try{ await TrekkrAdminKey.ensure('Sesi admin kedaluwarsa — login ulang untuk menyimpan hasil & ELO.'); }catch(e){ return; } }
   const btn=document.getElementById('rm-end-btn');
   btn.innerHTML='<div class="rm-spinner" style="margin:auto"></div>'; btn.disabled=true;
   const standings=rmGetLeaderboard();
@@ -3352,7 +3356,10 @@ async function rmEndMatch(){
         });
       }
       RM.lastFlags=(resp&&resp.flags)||[];   // Step 5: dominant-calibration flags
-    } catch(e){console.warn('Final session warn:',e.message);}
+    } catch(e){
+      console.warn('Final session warn:',e.message);
+      if(/sesi admin|401/i.test(e.message||'')){ alert('ELO belum tersimpan: '+e.message+' Hasil sesi tidak dihapus — login ulang lalu tekan End lagi.'); btn.textContent='Yes, End'; btn.disabled=false; return; }
+    }
   }
   await rmLivePush(true);   // finalize the live page (server writes the AI recap)
   rmClearStorage();
