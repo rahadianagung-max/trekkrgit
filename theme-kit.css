@@ -37,6 +37,8 @@ h1{font-weight:700;text-transform:uppercase;letter-spacing:-.035em;line-height:1
   text-transform:uppercase;letter-spacing:-.04em !important;color:var(--tk-ink)}
 .brand b,.logo b,.logo span{color:var(--tk-ink)}
 .brand::after,.logo::after{content:'//';font-style:normal;background:var(--tk-or);color:#fff;padding:0 6px;margin-left:3px;font-size:.8em;vertical-align:.08em}
+/* Image logo (trekkr-logo.png) already carries the wordmark — no text slash. */
+.brand:has(img)::after,.logo:has(img)::after{content:none !important;display:none !important}
 
 /* Coloured header band → ink band with a volt rule */
 .tk-band .top{background:var(--tk-ink) !important;color:#fff;border-bottom:4px solid var(--tk-volt)}

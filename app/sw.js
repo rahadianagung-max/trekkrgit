@@ -1,6 +1,6 @@
 /* Trekkr Player PWA — service worker. Cache the app shell for offline/instant
    load; never cache API or auth (always network). Bump CACHE to invalidate. */
-var CACHE = "trekkr-app-v44";
+var CACHE = "trekkr-app-v45";
 var SHELL = [
   "/app",
   "/app/",
@@ -9,6 +9,7 @@ var SHELL = [
   "/app/app.js",
   "/app/api.js",
   "/app/manifest.webmanifest",
+  "/trekkr-logo.png",
   "/app/icons/icon-192.png",
   "/app/icons/icon-512.png",
   "/app/icons/apple-touch-icon.png",

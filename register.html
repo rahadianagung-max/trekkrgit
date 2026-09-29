@@ -61,7 +61,7 @@
   <div id="app">
     <div class="center"><div class="spin"></div>Memuat formulir…</div>
   </div>
-  <div class="foot">POWERED BY <b>TREKKR</b></div>
+  <div class="foot" style="display:flex;align-items:center;justify-content:center;gap:6px">POWERED BY <img src="/trekkr-logo.png" alt="Trekkr" style="height:13px;width:auto"></div>
 </div>
 <script>
 const API_BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
@@ -87,11 +87,11 @@ function render(){
   const c=CONFIG;
   if(c.bannerUrl) document.getElementById('banner-slot').innerHTML=`<img class="banner" src="${esc(c.bannerUrl)}" alt="" onerror="this.style.display='none'"/>`;
   if(STATUS!=='active'){
-    document.getElementById('app').innerHTML=`<div class="head"><div class="logo">Trekkr</div><h1>${esc(c.title||c._name||'Pendaftaran')}</h1></div>
+    document.getElementById('app').innerHTML=`<div class="head"><div class="logo"><img src="/trekkr-logo.png" alt="Trekkr" style="height:20px;width:auto;display:block"></div><h1>${esc(c.title||c._name||'Pendaftaran')}</h1></div>
       <div class="center"><div style="font-size:40px;margin-bottom:10px">🔒</div>Pendaftaran sudah ditutup.</div>`;
     return;
   }
-  let h=`<div class="head"><div class="logo">Trekkr</div><h1>${esc(c.title||c._name||'Pendaftaran Peserta')}</h1>`;
+  let h=`<div class="head"><div class="logo"><img src="/trekkr-logo.png" alt="Trekkr" style="height:20px;width:auto;display:block"></div><h1>${esc(c.title||c._name||'Pendaftaran Peserta')}</h1>`;
   if(c.subtitle) h+=`<div class="sub">${esc(c.subtitle)}</div>`;
   h+=`</div>`;
   if(c.description) h+=`<div class="desc">${esc(c.description)}</div>`;

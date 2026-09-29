@@ -78,7 +78,17 @@
     for (var x = 0; x < W; x += 72) ctx.fillRect(x, 0, 2, H);
     for (var y = 0; y < H; y += 72) ctx.fillRect(0, y, W, 2);
   }
+  var LOGO = null; // /trekkr-logo.png (same origin → canvas stays exportable)
   function logo(ctx, x, y, color, slashBg) { // baseline y
+    if (LOGO) {
+      var lh = 50, lw = lh * LOGO.naturalWidth / LOGO.naturalHeight;
+      if (color === INK && slashBg === INK) { // on the orange band: ink silhouette so it stays readable
+        var o = document.createElement('canvas'); o.width = Math.ceil(lw); o.height = lh;
+        var ox = o.getContext('2d'); ox.drawImage(LOGO, 0, 0, lw, lh); ox.globalCompositeOperation = 'source-in'; ox.fillStyle = INK; ox.fillRect(0, 0, lw, lh);
+        ctx.drawImage(o, x, y - 44);
+      } else ctx.drawImage(LOGO, x, y - 44, lw, lh);
+      return;
+    }
     font(ctx, 'italic 700 54px ' + DISP); ctx.fillStyle = color; ctx.textAlign = 'left';
     var t = sp(ctx, 'TREKKR', x, y, -1.5);
     font(ctx, 'italic 700 54px ' + DISP); var sw = ctx.measureText('//').width + 20;
@@ -310,7 +320,8 @@
   function render(canvas, m, theme) {
     canvas.width = W; canvas.height = H;
     var ctx = canvas.getContext('2d');
-    return Promise.all([fontsReady(), loadImg(m.photo)]).then(function (r) {
+    var lg = LOGO ? Promise.resolve(LOGO) : new Promise(function (res) { var im = new Image(); im.onload = function () { LOGO = im; res(im); }; im.onerror = function () { res(null); }; im.src = '/trekkr-logo.png'; });
+    return Promise.all([fontsReady(), loadImg(m.photo), lg]).then(function (r) {
       var img = r[1], fn = THEMES[theme] || night;
       fn(ctx, m, img);
       if (img) { try { canvas.toDataURL('image/png').slice(0, 8); } catch (e) { fn(ctx, m, null); } } // tainted → monogram
