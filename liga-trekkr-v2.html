@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Liga Trekkr — Main 8 match, kumpulkan poin, naik level</title>
+<meta name="description" content="Liga padel mingguan Trekkr. Main 8 match, partner berganti, 3 poin tiap menang. Kejar leaderboard dan Promotion ke divisi berikutnya."/>
+<meta name="robots" content="noindex"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
+<style>
+/* ── Liga Trekkr v2 (PlayRank League theme) ── */
+.v2-demo{background:var(--volt);border-bottom:2px solid var(--ink);font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:7px 12px;color:var(--ink)}
+.v2-demo a{text-decoration:underline}
+.v2-sec{margin-top:64px}
+.v2-h2{font:700 clamp(30px,5vw,48px)/.95 var(--disp);letter-spacing:-.045em;text-transform:uppercase;margin:8px 0 22px;color:var(--ink)}
+.v2-h2 span{color:var(--orange)}
+
+/* Hero */
+.v2-hero{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding:42px 0 0}
+.v2-hero h1{font:700 clamp(44px,7.4vw,84px)/.9 var(--disp);letter-spacing:-.055em;text-transform:uppercase;margin:12px 0 0;color:var(--ink)}
+.v2-hero h1 .o{color:var(--orange)}
+.v2-hero .sub{font-size:17px;line-height:1.55;color:#334155;margin:18px 0 0;max-width:44ch}
+.v2-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.v2-facts span{font:800 12px var(--mono);letter-spacing:.04em;text-transform:uppercase;border:2px solid var(--ink);padding:7px 10px;background:var(--paper)}
+.v2-facts span.v{background:var(--volt)}
+.v2-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px;align-items:center}
+.v2-cta .btn{padding:15px 22px;font-size:13px}
+.v2-solo{margin-top:18px;display:flex;gap:12px;align-items:flex-start;border-left:4px solid var(--orange);padding:4px 0 4px 12px;font-size:14px;color:#334155;max-width:46ch}
+.v2-solo b{color:var(--ink)}
+
+/* Loop diagram */
+.v2-loop{background:var(--ink);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--orange);padding:20px;color:#fff}
+.v2-loop .lbl{font:800 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#94A3B8;margin-bottom:12px}
+.v2-node{display:flex;align-items:center;justify-content:space-between;gap:10px;border:2px solid #334155;padding:10px 12px;background:#0F172A}
+.v2-node b{font:800 14px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.v2-node small{font-size:12px;color:#94A3B8;text-align:right}
+.v2-node.hl{border-color:var(--volt)}
+.v2-node.hl b{color:var(--volt)}
+.v2-node.pr{background:var(--orange);border-color:var(--orange)}
+.v2-node.pr small{color:#FFE7D6}
+.v2-arrow{text-align:center;font:800 14px/1 var(--mono);color:var(--orange);padding:5px 0}
+
+/* How it works */
+.v2-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:3px solid var(--ink);box-shadow:var(--shadow);background:var(--paper)}
+.v2-step{padding:18px 16px;border-right:2px solid var(--ink);position:relative}
+.v2-step:last-child{border-right:0}
+.v2-step .n{display:inline-grid;place-items:center;width:30px;height:30px;background:var(--ink);color:var(--volt);font:800 14px var(--mono)}
+.v2-step h3{font:700 19px/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em;margin:12px 0 6px}
+.v2-step p{margin:0;font-size:13.5px;line-height:1.5;color:#475569}
+.v2-step.last{background:var(--orange);color:#fff}
+.v2-step.last p{color:#FFF1E6}
+.v2-step.last .n{background:#fff;color:var(--orange)}
+.v2-points{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.v2-pt{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:18px;display:flex;align-items:center;gap:16px}
+.v2-pt b{font:800 clamp(52px,7vw,76px)/1 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.v2-pt.win{background:var(--volt)}
+.v2-pt.win b{color:var(--ink)}
+.v2-pt span{font:800 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
+.v2-pt span small{display:block;font:500 12.5px var(--body);letter-spacing:0;text-transform:none;color:#475569;margin-top:2px}
+
+/* 3 ways to win */
+.v2-wins{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.v2-win{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:20px}
+.v2-win .ic{font-size:34px;line-height:1}
+.v2-win .t{font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-top:12px}
+.v2-win h3{font:700 23px/1.1 var(--disp);letter-spacing:-.02em;margin:6px 0 8px}
+.v2-win p{margin:0;font-size:14px;line-height:1.55;color:#475569}
+.v2-win.k{background:var(--ink);color:#fff;box-shadow:8px 8px 0 var(--orange)}
+.v2-win.k p{color:#CBD5E1}
+.v2-win.k .t{color:var(--volt)}
+
+/* Two numbers */
+.v2-two{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch}
+.v2-num{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px}
+.v2-num .k{font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+.v2-num .big{font:800 clamp(46px,6vw,64px)/1 var(--mono);margin:10px 0 6px;font-variant-numeric:tabular-nums}
+.v2-num .tag{display:inline-block;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px}
+.v2-num p{margin:14px 0 0;font-size:14px;line-height:1.55;color:#475569}
+.v2-num p b{color:var(--ink)}
+.v2-num.pts{background:var(--ink);color:#fff;box-shadow:8px 8px 0 var(--volt)}
+.v2-num.pts .k{color:#94A3B8}
+.v2-num.pts .big{color:var(--volt)}
+.v2-num.pts .tag{border-color:var(--volt);color:var(--volt)}
+.v2-num.pts p{color:#CBD5E1}
+.v2-num.pts p b{color:#fff}
+.v2-vs{display:grid;place-items:center;font:800 13px var(--mono);color:var(--orange)}
+
+/* Journey */
+.v2-journey{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;align-items:stretch}
+.v2-jcard{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);background:var(--paper)}
+.v2-jhead{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:3px solid var(--ink);background:var(--ink);color:#fff}
+.v2-jhead .tk-ph{width:48px;height:48px;border-color:#fff;font-size:14px}
+.v2-jhead b{font:700 18px var(--disp)}
+.v2-jhead small{display:block;font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--volt)}
+.v2-jrow{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--ink)}
+.v2-jrow > div{padding:16px}
+.v2-jrow > div + div{border-left:2px solid var(--ink)}
+.v2-jrow .k{font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+.v2-jrow .v{font:800 34px/1.1 var(--mono);margin-top:4px;font-variant-numeric:tabular-nums}
+.v2-jrow .s{font:700 12px var(--mono);color:#475569;margin-top:2px}
+.v2-next{padding:16px}
+.v2-next .k{font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+.v2-next b{display:block;font:700 18px var(--disp);margin:4px 0 10px}
+.v2-prog{height:14px;border:2px solid var(--ink);background:#fff;position:relative}
+.v2-prog i{position:absolute;inset:0 auto 0 0;background:var(--orange)}
+.v2-prog-l{display:flex;justify-content:space-between;font:800 10.5px var(--mono);margin-top:6px;color:#475569}
+.v2-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.v2-stat{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:18px}
+.v2-stat b{display:block;font:800 clamp(40px,5vw,54px)/1 var(--mono);font-variant-numeric:tabular-nums}
+.v2-stat span{display:block;margin-top:8px;font:800 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+.v2-stat.o b{color:var(--orange)}
+.v2-quote{grid-column:1/-1;border:2px dashed var(--ink);padding:14px 16px;font:700 16px var(--disp);background:var(--warm)}
+
+/* Divisions + promotion */
+.v2-divs{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:0;border:3px solid var(--ink);box-shadow:var(--shadow);background:var(--paper)}
+.v2-div{padding:20px;border-right:2px solid var(--ink)}
+.v2-div .dot{display:inline-block;width:14px;height:14px;border:2px solid var(--ink);margin-right:8px;vertical-align:-2px}
+.v2-div .code{font:800 13px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.v2-div h3{font:700 26px/1 var(--disp);text-transform:uppercase;margin:10px 0 6px;letter-spacing:-.03em}
+.v2-div .r{font:700 13px var(--mono)}
+.v2-div p{margin:10px 0 0;font-size:13.5px;line-height:1.5;color:#475569}
+.v2-div.open{background:#F1F5F9;color:#94A3B8;display:grid;place-items:center;text-align:center;border-right:0;min-width:130px}
+.v2-div.open b{font:800 18px var(--mono);color:#94A3B8}
+.v2-div.open small{font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.v2-promo{margin-top:18px;display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;background:var(--orange);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:22px;color:#fff}
+.v2-promo .rk{font-size:54px;line-height:1}
+.v2-promo h3{font:700 clamp(24px,3.4vw,34px)/1 var(--disp);text-transform:uppercase;letter-spacing:-.03em;margin:0}
+.v2-promo p{margin:8px 0 0;font-size:14.5px;line-height:1.55;color:#FFF1E6;max-width:56ch}
+.v2-path{display:flex;align-items:center;gap:6px;font:800 16px var(--mono);white-space:nowrap}
+.v2-path span{background:#fff;color:var(--ink);border:2px solid var(--ink);padding:6px 9px}
+.v2-path span.on{background:var(--volt)}
+
+/* What you get */
+.v2-get{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow)}
+.v2-get div{display:flex;align-items:center;gap:12px;padding:16px 18px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.v2-get div:nth-child(3n){border-right:0}
+.v2-get div:nth-last-child(-n+3){border-bottom:0}
+.v2-get i{font-style:normal;font-size:24px}
+.v2-get b{font:800 13px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+
+/* Sessions */
+.v2-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.v2-tab{font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:9px 13px;border:2px solid var(--ink);background:var(--paper);color:var(--ink)}
+.v2-tab.on{background:var(--ink);color:var(--volt)}
+.v2-sess{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.v2-s{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.v2-s__day{background:var(--ink);color:#fff;padding:10px 14px;font:800 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.v2-s__day em{font-style:normal;color:var(--volt)}
+.v2-s__body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.v2-s__div{font:700 24px/1.05 var(--disp);text-transform:uppercase;letter-spacing:-.03em}
+.v2-s__line{font-size:14px;color:#334155}
+.v2-s__line b{color:var(--ink)}
+.v2-s__meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.v2-s__foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:2px solid var(--ink)}
+.v2-s__price{font:800 18px var(--mono)}
+.v2-s__price small{display:block;font:700 10.5px var(--mono);color:#64748B;letter-spacing:.04em;text-transform:uppercase}
+.v2-s__foot .btn{padding:12px 18px}
+
+/* FAQ */
+.v2-faq details{background:var(--paper);border:2px solid var(--ink);margin-bottom:10px}
+.v2-faq summary{cursor:pointer;list-style:none;padding:15px 16px;font:700 16px var(--disp);display:flex;justify-content:space-between;gap:10px}
+.v2-faq summary::-webkit-details-marker{display:none}
+.v2-faq summary::after{content:'+';font:800 18px var(--mono);color:var(--orange)}
+.v2-faq details[open] summary::after{content:'–'}
+.v2-faq .a{padding:0 16px 16px;font-size:14.5px;line-height:1.6;color:#475569}
+.v2-faq .a p{margin:0 0 6px}
+.v2-faq .a b{color:var(--ink)}
+
+/* Final CTA */
+.v2-final{margin:70px 0 44px;background:var(--ink);border:3px solid var(--ink);box-shadow:10px 10px 0 var(--orange);padding:clamp(24px,5vw,48px);color:#fff;text-align:center}
+.v2-final h2{margin:0;font:700 clamp(40px,7vw,76px)/.9 var(--disp);text-transform:uppercase;letter-spacing:-.055em}
+.v2-final h2 span{color:var(--volt)}
+.v2-final p{margin:16px auto 0;font-size:16px;line-height:1.55;color:#CBD5E1;max-width:40ch}
+.v2-final .btn{margin-top:22px;padding:16px 26px;font-size:14px}
+.v2-final small{display:block;margin-top:18px;font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--orange)}
+
+@media(max-width:960px){
+  .v2-hero{grid-template-columns:1fr;gap:28px;padding-top:28px}
+  .v2-steps{grid-template-columns:1fr}
+  .v2-step{border-right:0;border-bottom:2px solid var(--ink)}
+  .v2-step:last-child{border-bottom:0}
+  .v2-points,.v2-wins{grid-template-columns:1fr}
+  .v2-two{grid-template-columns:1fr}
+  .v2-vs{padding:2px 0}
+  .v2-journey{grid-template-columns:1fr}
+  .v2-divs{grid-template-columns:1fr}
+  .v2-div{border-right:0;border-bottom:2px solid var(--ink)}
+  .v2-div.open{min-width:0;padding:14px}
+  .v2-promo{grid-template-columns:1fr;gap:14px}
+  .v2-get{grid-template-columns:1fr 1fr}
+  .v2-get div{border-right:2px solid var(--ink)!important;border-bottom:2px solid var(--ink)!important}
+  .v2-get div:nth-child(2n){border-right:0!important}
+}
+@media(max-width:520px){
+  .v2-get{grid-template-columns:1fr}
+  .v2-get div{border-right:0!important}
+  .v2-path{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<div id="tk-nav"></div>
+<div class="v2-demo">Demo versi 2 · bandingkan dengan <a href="/liga-trekkr">versi 1</a> · jadwal &amp; data pemain adalah contoh</div>
+
+<main class="container">
+
+  <!-- HERO -->
+  <section class="v2-hero">
+    <div>
+      <span class="eyebrow">Liga Trekkr · Liga padel mingguan</span>
+      <h1>Main 8 match.<br>Kumpulkan poin.<br><span class="o">Naik level.</span></h1>
+      <p class="sub">Liga padel mingguan tempat setiap match membuat kamu semakin dekat dengan podium.</p>
+      <div class="v2-facts"><span class="v">8 Match</span><span>Partner berganti</span><span>3 Poin / menang</span></div>
+      <div class="v2-cta">
+        <a class="btn btn--primary" href="#jadwal">Lihat jadwal Liga →</a>
+        <a class="btn" href="#cara-main">Cara main</a>
+      </div>
+      <div class="v2-solo"><span style="font-size:20px">🙋</span><div><b>Datang sendiri juga bisa.</b> Untuk Men &amp; Women, partner dan lawan berganti setiap ronde.</div></div>
+    </div>
+
+    <div class="v2-loop" aria-label="Alur Liga Trekkr">
+      <div class="lbl">Liga Trekkr dalam satu alur</div>
+      <div class="v2-node hl"><b>8 Match</b><small>satu malam · ±3 jam</small></div>
+      <div class="v2-arrow">↓</div>
+      <div class="v2-node"><b>Win +3 · Loss +1 / 0</b><small>tiap match</small></div>
+      <div class="v2-arrow">↓</div>
+      <div class="v2-node"><b>Session Rank</b><small>🏆 juara sesi</small></div>
+      <div class="v2-arrow">↓</div>
+      <div class="v2-node"><b>Monthly Points</b><small>🥇 juara bulanan</small></div>
+      <div class="v2-arrow">↓</div>
+      <div class="v2-node"><b>Rating Trekkr</b><small>naik tiap kamu menang</small></div>
+      <div class="v2-arrow">↓</div>
+      <div class="v2-node pr"><b>🚀 Promotion</b><small>level berikutnya</small></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="v2-sec" id="cara-main">
+    <span class="eyebrow">How it works</span>
+    <h2 class="v2-h2">Gimana cara <span>mainnya?</span></h2>
+    <div class="v2-steps">
+      <div class="v2-step"><span class="n">1</span><h3>Daftar</h3><p>Pilih sesi sesuai divisi kamu.</p></div>
+      <div class="v2-step"><span class="n">2</span><h3>Main 8 match</h3><p>Partner &amp; lawan berganti setiap ronde. Setiap match <b>race to 4</b>.</p></div>
+      <div class="v2-step"><span class="n">3</span><h3>Kumpulkan poin</h3><p>Setiap hasil match memberi League Points.</p></div>
+      <div class="v2-step"><span class="n">4</span><h3>Kejar ranking</h3><p>Makin banyak poin, makin tinggi posisimu di leaderboard.</p></div>
+      <div class="v2-step last"><span class="n">5</span><h3>Naik level 🚀</h3><p>Rating naik → Promotion ke divisi berikutnya.</p></div>
+    </div>
+    <div class="v2-points" aria-label="Sistem poin">
+      <div class="v2-pt win"><b>3</b><span>Menang<small>Setiap kemenangan</small></span></div>
+      <div class="v2-pt"><b>1</b><span>Kalah 3–4<small>Kalah tipis tetap dihargai</small></span></div>
+      <div class="v2-pt"><b>0</b><span>Kalah<small>Skor 0–4, 1–4, 2–4</small></span></div>
+    </div>
+  </section>
+
+  <!-- 3 WAYS TO WIN -->
+  <section class="v2-sec">
+    <span class="eyebrow">Apa yang kamu kejar?</span>
+    <h2 class="v2-h2">Ada <span>3 cara</span> menang di Liga Trekkr</h2>
+    <div class="v2-wins">
+      <div class="v2-win"><div class="ic">🏆</div><div class="t">Session Champion</div><h3>Juara Sesi</h3><p><b>Poin terbanyak malam ini.</b> Main 8 match, kumpulkan poin, dan pemain dengan poin tertinggi jadi Juara Sesi.</p></div>
+      <div class="v2-win k"><div class="ic">🥇</div><div class="t">Monthly Champion</div><h3>Juara Bulanan</h3><p><b style="color:#fff">Total poin terbanyak selama satu bulan.</b> Makin sering main, makin banyak kesempatan mengumpulkan poin.</p></div>
+      <div class="v2-win"><div class="ic">❤️</div><div class="t">Most Loyal Player</div><h3>Paling Setia</h3><p><b>Paling sering main di satu venue</b> selama satu bulan. Karena rumahmu layak dibela.</p></div>
+    </div>
+  </section>
+
+  <!-- TWO NUMBERS -->
+  <section class="v2-sec">
+    <span class="eyebrow">Rating vs Points</span>
+    <h2 class="v2-h2">Ada <span>2 angka</span> yang perlu kamu tahu</h2>
+    <div class="v2-two">
+      <div class="v2-num">
+        <div class="k">🎯 Rating Trekkr</div>
+        <div class="big tk-elo">1,527</div>
+        <span class="tag">D2 · Bronze</span>
+        <p><b>Menentukan kamu main di divisi mana.</b> Rating berubah setiap match, dan ikut kamu ke mana pun kamu main.</p>
+      </div>
+      <div class="v2-vs">≠</div>
+      <div class="v2-num pts">
+        <div class="k">🏆 League Points</div>
+        <div class="big">36 PTS</div>
+        <span class="tag">#7 bulan ini</span>
+        <p><b>Menentukan posisimu di Liga bulan ini.</b> Poin didapat dari hasil 8 match setiap sesi, dan mulai dari 0 lagi tiap bulan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOURNEY -->
+  <section class="v2-sec">
+    <span class="eyebrow">Your Journey</span>
+    <h2 class="v2-h2">Setiap match <span>membangun perjalananmu</span></h2>
+    <div class="v2-journey">
+      <div class="v2-jcard">
+        <div class="v2-jhead"><span class="tk-ph">RP</span><div><small>Contoh player</small><b>Rani Pratiwi</b></div><span class="tk-chip tk-chip--v" style="margin-left:auto">D2 · Bronze</span></div>
+        <div class="v2-jrow">
+          <div><div class="k">Rating</div><div class="v tk-elo">1,527</div><div class="s"><span class="tk-up">▲ 34</span> minggu ini</div></div>
+          <div><div class="k">Bulan ini</div><div class="v">36 PTS</div><div class="s">#7 · 5M · 3K</div></div>
+        </div>
+        <div class="v2-next">
+          <div class="k">Next target</div>
+          <b>🚀 Promotion ke D3 Silver</b>
+          <div class="v2-prog" aria-label="Progres menuju Promotion"><i style="width:55%"></i></div>
+          <div class="v2-prog-l"><span class="tk-elo">1200</span><span>Keep playing &amp; improving</span><span class="tk-elo">1800</span></div>
+        </div>
+      </div>
+      <div class="v2-stats">
+        <div class="v2-stat"><b>27</b><span>Total match</span></div>
+        <div class="v2-stat"><b>17</b><span>Wins</span></div>
+        <div class="v2-stat o"><b>63%</b><span>Win rate</span></div>
+        <div class="v2-stat"><b>4</b><span>Best win streak</span></div>
+        <div class="v2-quote">“Saya sudah sampai sini. Minggu depan harus main lagi.”</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIVISIONS + PROMOTION -->
+  <section class="v2-sec" id="divisi">
+    <span class="eyebrow">Your Division</span>
+    <h2 class="v2-h2">Main dengan <span>pemain selevel</span></h2>
+    <div class="v2-divs">
+      <div class="v2-div"><span class="dot" style="background:#22C55E"></span><span class="code">D1</span><h3>Beginner</h3><div class="r">Rating &lt; <span class="tk-elo">1200</span></div><p>Untuk yang baru mulai membangun permainan kompetitif.</p></div>
+      <div class="v2-div"><span class="dot" style="background:#F59E0B"></span><span class="code">D2</span><h3>Bronze</h3><div class="r">Rating <span class="tk-elo">1200</span>–<span class="tk-elo">1799</span></div><p>Untuk player yang sudah rutin bermain.</p></div>
+      <div class="v2-div"><span class="dot" style="background:#3B82F6"></span><span class="code">D3</span><h3>Silver</h3><div class="r">Rating <span class="tk-elo">1800</span>–<span class="tk-elo">2499</span></div><p>Untuk player dengan pengalaman &amp; performa kompetitif lebih tinggi.</p></div>
+      <div class="v2-div open"><div><b>OPEN</b><br><small>Coming soon</small></div></div>
+    </div>
+    <div class="v2-promo">
+      <div class="rk">🚀</div>
+      <div>
+        <h3>Sudah waktunya naik level?</h3>
+        <p>Rating Trekkr kamu menentukan divisi. Menang terus, dan kamu <b>Promoted</b>. 🎉 Di divisi baru kamu mulai mengumpulkan League Points dari 0, bersama player selevel yang baru.</p>
+      </div>
+      <div class="v2-path" aria-label="Jalur divisi"><span>D1</span>→<span class="on">D2</span>→<span>D3</span></div>
+    </div>
+  </section>
+
+  <!-- WHAT YOU GET -->
+  <section class="v2-sec">
+    <span class="eyebrow">Apa yang kamu dapat?</span>
+    <h2 class="v2-h2">Setiap sesi, <span>kamu dapat</span></h2>
+    <div class="v2-get">
+      <div><i>🎾</i><b>8 match</b></div>
+      <div><i>👥</i><b>Partner berbeda</b></div>
+      <div><i>🏆</i><b>Peluang Juara Sesi</b></div>
+      <div><i>📈</i><b>Rating Trekkr diperbarui</b></div>
+      <div><i>🏅</i><b>League Points bertambah</b></div>
+      <div><i>🚀</i><b>Peluang Promotion</b></div>
+    </div>
+  </section>
+
+  <!-- SESSIONS -->
+  <section class="v2-sec" id="jadwal">
+    <span class="eyebrow">This week</span>
+    <h2 class="v2-h2">Pilih <span>pertandinganmu</span></h2>
+    <div class="v2-tabs" id="tabs" role="tablist"></div>
+    <div class="v2-sess" id="sess"></div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="v2-sec v2-faq">
+    <span class="eyebrow">FAQ</span>
+    <h2 class="v2-h2">Masih <span>bingung?</span></h2>
+    <details><summary>❓ Harus bawa partner?</summary><div class="a"><p><b>Men &amp; Women:</b> tidak. Partner berganti setiap ronde.</p><p><b>Mixed:</b> ya, datang bersama satu partner lawan jenis dan main bersama selama 8 match.</p></div></details>
+    <details><summary>❓ Kalau saya kalah?</summary><div class="a"><p>Tidak masalah. Hasil match tetap tercatat, dan Rating Trekkr membantu menempatkan kamu di level yang pas.</p></div></details>
+    <details><summary>❓ Boleh main di venue berbeda?</summary><div class="a"><p>Boleh. League Points bulanan dihitung dari seluruh sesi Liga Trekkr. Penghargaan Paling Setia dihitung per venue.</p></div></details>
+    <details><summary>❓ Kalau naik divisi di tengah bulan?</summary><div class="a"><p><b>Selamat, kamu Promoted 🚀</b> Kamu mulai mengumpulkan League Points dari 0 di divisi baru.</p></div></details>
+    <details><summary>❓ Pertama kali ikut, pilih divisi mana?</summary><div class="a"><p>Jawab 5 pertanyaan singkat, kami kasih rekomendasi divisi. <b>Kamu yang memutuskan.</b> Rating Trekkr akan menyesuaikan level-mu dengan sendirinya.</p></div></details>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="v2-final">
+    <h2>Ready to <span>play?</span></h2>
+    <p>8 match. 3 poin setiap kemenangan. Satu langkah lebih dekat ke level berikutnya.</p>
+    <a class="btn btn--primary" href="#jadwal">Pilih sesi Liga →</a>
+    <small>Main minggu ini · Kejar podium · Naik level</small>
+  </section>
+
+</main>
+
+<div data-eco-footer>
+  <a href="/app">Get the App</a>
+  <a href="/rankings">Rankings</a>
+  <a href="/venues">Venues</a>
+  <a href="/liga-trekkr">Liga Trekkr</a>
+  <a href="/how-trekkr-works">How it works</a>
+  <a href="https://admin.trekkr.online">Venue login</a>
+</div>
+
+<script>
+/* Data contoh untuk demo v2 (belum tersambung ke engine). */
+(function () {
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var CAT = { M: "Men", W: "Women", X: "Mixed" };
+  var DIVN = { D1: "D1 · Beginner", D2: "D2 · Bronze", D3: "D3 · Silver" };
+  var SESS = [
+    { day: "Senin · 6 Oktober", time: "19:00–22:00", venue: "Venue A · Kemang", cat: "M", div: "D2", left: 2, cap: 9, price: "Rp150.000", prize: "Voucher Rp500rb" },
+    { day: "Selasa · 7 Oktober", time: "19:00–22:00", venue: "Venue B · BSD", cat: "W", div: "D1", left: 3, cap: 12, price: "Rp125.000", prize: "Raket padel" },
+    { day: "Rabu · 8 Oktober", time: "20:00–23:00", venue: "Venue C · PIK", cat: "X", div: "D2", left: 0, cap: 9, price: "Rp175.000", prize: "Voucher Rp750rb" },
+    { day: "Kamis · 9 Oktober", time: "19:00–22:00", venue: "Venue A · Kemang", cat: "M", div: "D1", left: 7, cap: 18, price: "Rp150.000", prize: "" },
+    { day: "Jumat · 10 Oktober", time: "19:30–22:30", venue: "Venue D · Bandung", cat: "M", div: "D3", left: 5, cap: 9, price: "Rp160.000", prize: "Gear pack sponsor" },
+    { day: "Sabtu · 11 Oktober", time: "10:00–13:00", venue: "Venue B · BSD", cat: "X", div: "D1", left: 6, cap: 12, price: "Rp140.000", prize: "" },
+  ];
+  var cur = "all";
+  function render() {
+    var tabs = document.getElementById("tabs");
+    tabs.innerHTML = [["all", "Semua"], ["M", "Men"], ["W", "Women"], ["X", "Mixed"]].map(function (t) {
+      return '<button type="button" role="tab" class="v2-tab' + (t[0] === cur ? " on" : "") + '" aria-selected="' + (t[0] === cur) + '" data-k="' + t[0] + '">' + t[1] + "</button>";
+    }).join("");
+    tabs.onclick = function (e) { var b = e.target.closest("[data-k]"); if (b) { cur = b.getAttribute("data-k"); render(); } };
+    document.getElementById("sess").innerHTML = SESS.filter(function (s) { return cur === "all" || s.cat === cur; }).map(function (s) {
+      var full = s.left <= 0;
+      return '<article class="v2-s">' +
+        '<div class="v2-s__day"><span>' + esc(s.day) + '</span><em>' + (full ? "Penuh" : s.left + " slot") + "</em></div>" +
+        '<div class="v2-s__body">' +
+          '<div class="v2-s__div">' + DIVN[s.div] + "</div>" +
+          '<div class="v2-s__line"><b>' + CAT[s.cat] + "</b> · " + esc(s.time) + "</div>" +
+          '<div class="v2-s__line">📍 ' + esc(s.venue) + "</div>" +
+          '<div class="v2-s__meta"><span class="tk-chip tk-chip--v">8 match</span><span class="tk-chip">' + s.cap + " player</span>" + (s.prize ? '<span class="tk-chip tk-chip--g">🎁 ' + esc(s.prize) + "</span>" : "") + "</div>" +
+        "</div>" +
+        '<div class="v2-s__foot"><div class="v2-s__price">' + esc(s.price) + "<small>" + (s.cat === "X" ? "per player" : "per sesi") + "</small></div>" +
+          '<a class="btn ' + (full ? "" : "btn--primary") + '" href="/sessions">' + (full ? "Cadangan" : "Daftar") + "</a></div>" +
+        "</article>";
+    }).join("");
+  }
+  render();
+})();
+</script>
+<script src="/trekkr-nav.js" defer></script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+<script src="/nav-account.js" defer></script>
+</body>
+</html>
