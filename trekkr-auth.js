@@ -41,13 +41,16 @@
   // ---- session storage ----
   function saveSession(d) {
     if (!d || !d.access_token) return false;
+    if (ls(TK) !== d.access_token && !d.refreshed) dropMe();
     ls(TK, d.access_token);
     if (d.refresh_token) ls(RK, d.refresh_token);
     var exp = d.expires_at ? Number(d.expires_at) * 1000 : (Date.now() + (Number(d.expires_in) || 3600) * 1000);
     ls(EK, String(exp));
     return true;
   }
-  function clear() { ls(TK, null); ls(RK, null); ls(EK, null); }
+  // The site nav caches the signed-in player's name/photo; drop it on any change.
+  function dropMe() { ls("trekkr_player_me", null); try { w.sessionStorage.removeItem("trekkr_me_at"); } catch (e) {} }
+  function clear() { ls(TK, null); ls(RK, null); ls(EK, null); dropMe(); }
   var _refreshing = null;
   // Current access token, refreshed when it is about to expire (or already has).
   function token() {
@@ -56,7 +59,7 @@
     if (!rt || !exp || exp - Date.now() > 90 * 1000) return Promise.resolve(at);
     if (!_refreshing) {
       _refreshing = gotrue("token?grant_type=refresh_token", { refresh_token: rt })
-        .then(function (d) { saveSession(d); return d.access_token; })
+        .then(function (d) { d.refreshed = true; saveSession(d); return d.access_token; })
         .catch(function () { return exp > Date.now() ? at : (clear(), ""); })
         .then(function (t) { _refreshing = null; return t; });
     }
