@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Liga Trekkr — Every player has a chance to win</title>
-<meta name="description" content="Tonight's winner, the winner of the month, or the most loyal player at your venue. 8 matches a night, simple points, and Promotion to the next division."/>
+<meta name="description" content="Tonight's winner, the winner of the month, or the most loyal player at your venue. 8 matches a night, ranked by wins, and Promotion to the next division."/>
 <meta name="robots" content="noindex"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -58,6 +58,15 @@
 .v2-mixed b{color:var(--ink)}
 
 .v2-points{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.v2-rank{grid-template-columns:repeat(4,1fr)}
+.v2-rank .v2-pt{position:relative}
+.v2-rank .v2-pt b{font-size:clamp(44px,5.5vw,64px)}
+.v2-rank .o{position:absolute;top:10px;right:12px;font:800 12px var(--mono);border:2px solid var(--ink);background:var(--paper);width:24px;height:24px;display:grid;place-items:center}
+.v2-tbl{width:100%;max-width:640px;border-collapse:collapse;background:var(--paper);border:3px solid var(--ink);box-shadow:var(--shadow)}
+.v2-tbl th{font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:#fff;text-align:left;padding:9px 12px}
+.v2-tbl td{padding:9px 12px;border-top:1px solid var(--border-soft);font-size:14px}
+.v2-tbl .n{text-align:right;font-family:var(--mono);font-weight:800;font-variant-numeric:tabular-nums}
+.v2-tbl tr.top td{background:#FFF7EE}
 .v2-pt{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:8px}
 .v2-pt b{font:800 clamp(64px,9vw,104px)/.9 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
 .v2-pt .t{font:800 14px var(--mono);letter-spacing:.06em;text-transform:uppercase}
@@ -112,6 +121,8 @@
 
 @media(max-width:960px){
   .v2-prizes{grid-template-columns:1fr}
+  .v2-rank{grid-template-columns:1fr 1fr}
+  .v2-rank .v2-pt{flex-direction:column;align-items:flex-start;gap:8px}
   .v2-intro{grid-template-columns:1fr}
   .v2-how,.v2-points{grid-template-columns:1fr}
   .v2-pt{flex-direction:row;align-items:center;gap:18px}
@@ -152,29 +163,41 @@
     </div>
   </section>
 
-  <!-- 2. COLLECT YOUR POINTS -->
-  <section class="v2-sec" id="points">
-    <div class="v2-head"><span class="no">02</span><h2>Collect your points</h2></div>
-    <div class="v2-points">
-      <div class="v2-pt win"><b>+3</b><div><div class="t">Win</div><div class="s">Every match you win.</div></div></div>
-      <div class="v2-pt close"><b>+1</b><div><div class="t">Close loss</div><div class="s">Lose 3–4. Fighting to the end counts.</div></div></div>
-      <div class="v2-pt loss"><b>0</b><div><div class="t">Loss</div><div class="s">Lose 0–4, 1–4 or 2–4.</div></div></div>
+  <!-- 2. WIN YOUR MATCHES -->
+  <section class="v2-sec" id="ranking">
+    <div class="v2-head"><span class="no">02</span><h2>Win your matches</h2></div>
+    <p class="v2-lead">No complicated scoring. Your rank is decided by your results, in this order:</p>
+    <div class="v2-points v2-rank">
+      <div class="v2-pt win"><span class="o">1</span><b>W–L</b><div><div class="t">Win – Loss</div><div class="s">Most wins ranks highest.</div></div></div>
+      <div class="v2-pt"><span class="o">2</span><b>PD</b><div><div class="t">Point difference</div><div class="s">Points won minus points lost.</div></div></div>
+      <div class="v2-pt"><span class="o">3</span><b>PA</b><div><div class="t">Points against</div><div class="s">Fewer points conceded is better.</div></div></div>
+      <div class="v2-pt"><span class="o">4</span><b>PF</b><div><div class="t">Points for</div><div class="s">More points won is better.</div></div></div>
     </div>
+    <div class="v2-sub">Example · tonight's leaderboard</div>
+    <table class="v2-tbl" aria-label="Example leaderboard">
+      <thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n">PA</th><th class="n">PF</th></tr></thead>
+      <tbody>
+        <tr class="top"><td>🏆</td><td>Bayu P.</td><td class="n">7–1</td><td class="n">+15</td><td class="n">14</td><td class="n">29</td></tr>
+        <tr><td>2</td><td>Andre W.</td><td class="n">6–2</td><td class="n">+11</td><td class="n">16</td><td class="n">27</td></tr>
+        <tr><td>3</td><td>Rizky H.</td><td class="n">6–2</td><td class="n">+9</td><td class="n">17</td><td class="n">26</td></tr>
+        <tr><td>4</td><td>Dimas S.</td><td class="n">5–3</td><td class="n">+4</td><td class="n">20</td><td class="n">24</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- 3. WIN THE PRIZE & GET PROMOTED -->
   <section class="v2-sec" id="win">
     <div class="v2-head"><span class="no">03</span><h2>Win the prize &amp; get promoted</h2></div>
     <div class="v2-prizes">
-      <div class="v2-prize"><span class="ic">🏆</span><h3>Tonight's winner</h3><p>Most points in your session wins the night.</p></div>
-      <div class="v2-prize k"><span class="ic">🥇</span><h3>Winner of the month</h3><p>Most points across every session this month.</p></div>
+      <div class="v2-prize"><span class="ic">🏆</span><h3>Tonight's winner</h3><p>Best record in your session wins the night.</p></div>
+      <div class="v2-prize k"><span class="ic">🥇</span><h3>Winner of the month</h3><p>Best record across every session this month.</p></div>
       <div class="v2-prize"><span class="ic">❤️</span><h3>Most loyal player</h3><p>Most matches played at one venue this month.</p></div>
     </div>
     <div class="v2-promo">
       <div class="rk">🚀</div>
       <div>
         <h3>Keep winning? Get Promoted!</h3>
-        <p>You move up to the next division and <b>start fresh with 0 points</b> to compete at your new, higher level.</p>
+        <p>You move up to the next division and <b>start fresh with a clean record</b> to compete at your new, higher level.</p>
       </div>
       <div class="v2-path" aria-label="Division path"><span>D1</span>→<span class="on">D2</span>→<span>D3</span></div>
     </div>
@@ -190,7 +213,7 @@
   <!-- FINAL CTA -->
   <section class="v2-final">
     <h2>Tonight could be <span>your night.</span></h2>
-    <p>8 matches. +3 for every win. One step closer to your next level.</p>
+    <p>8 matches. Every win counts. One step closer to your next level.</p>
     <a class="btn btn--primary" href="/rankings">Leaderboard →</a>
   </section>
 
