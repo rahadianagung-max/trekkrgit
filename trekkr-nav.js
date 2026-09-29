@@ -94,6 +94,7 @@
       '.tk-wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}' +
       '.tk-brand{display:inline-flex;align-items:center;font:900 italic 25px/1 "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:-.04em;text-transform:uppercase;color:#090D14;text-decoration:none;flex:0 0 auto}' +
       '.tk-brand i{font-style:normal;background:#FF5900;color:#fff;padding:1px 7px;margin-left:3px}' +
+      '.tk-logo{height:28px;width:auto;display:block}@media(max-width:560px){.tk-logo{height:22px}}' +
       '.tk-nav{display:flex;align-items:center;gap:2px;flex:1}' +
       '.tk-drop{position:relative}' +
       '.tk-dt,.tk-solo{display:inline-flex;align-items:center;gap:5px;font:800 11.5px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:#090D14;background:none;border:none;padding:10px 11px;cursor:pointer;text-decoration:none}' +
@@ -138,7 +139,7 @@
     if (!el) return;
     el.innerHTML = css() +
       '<header class="tk-header"><div class="tk-in">' +
-        '<a class="tk-brand" href="' + (SITE || "/") + '" aria-label="Trekkr home">Trekkr<i>//</i></a>' +
+        '<a class="tk-brand" href="' + (SITE || "/") + '" aria-label="Trekkr home"><img src="' + SITE + '/trekkr-logo.png" alt="Trekkr" class="tk-logo"></a>' +
         desktopNav() +
         '<div class="tk-act">' +
           '<a class="tk-getapp" href="' + SITE + '/app">Get the App</a>' +

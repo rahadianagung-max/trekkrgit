@@ -324,7 +324,7 @@
       '<div class="welcome">' +
         '<div class="wc-theme">' + themeBtnHTML("wc-theme-btn") + '</div>' +
         '<div class="wc-top">' +
-          '<div class="wc-logo">Trekk<b>r</b></div>' +
+          '<div class="wc-logo"><img src="/trekkr-logo.png" alt="Trekkr" style="height:52px;width:auto;display:block;max-width:86%;height:auto;max-height:52px"></div>' +
           '<p class="wc-tag">Your padel passport — every match builds your journey.</p>' +
         '</div>' +
         '<ul class="wc-list">' +
@@ -353,7 +353,7 @@
     setHTML(
       '<div class="login-wrap">' +
         '<button class="link" id="lback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
-        '<div class="brand">Trekk<b>r</b></div>' +
+        '<div class="brand"><img src="/trekkr-logo.png" alt="Trekkr" style="height:38px;width:auto;display:block;max-width:80%;height:auto;max-height:38px"></div>' +
         '<p class="sub">Sign in to your player account — no password needed.</p>' +
         '<div id="pwless" style="margin-top:14px"></div>' +
         '<div style="text-align:center;margin-top:14px"><button class="link" id="pwToggle">Sign in with password</button></div>' +
@@ -407,7 +407,7 @@
     setHTML(
       '<div class="login-wrap" style="justify-content:flex-start;padding-top:calc(var(--safe-t) + 20px)">' +
         '<button class="link" id="jback" style="align-self:flex-start;padding-left:0;margin-bottom:8px">‹ Back</button>' +
-        '<div class="brand">Trekk<b>r</b></div>' +
+        '<div class="brand"><img src="/trekkr-logo.png" alt="Trekkr" style="height:38px;width:auto;display:block;max-width:80%;height:auto;max-height:38px"></div>' +
         '<p class="sub">Enter your name — we\'ll check if you\'re already on Trekkr. If so you can <b>claim</b> your profile; if not, <b>register</b> as a new player.</p>' +
         '<div class="field"><label class="label">Full name</label>' +
           '<input class="input" id="jname" placeholder="e.g. Budi Santoso" autocomplete="name"/>' +
@@ -559,7 +559,7 @@
   /* ---------- SHELL ---------- */
   function renderShell() {
     var header = S.session ? "" :
-      '<div class="appheader"><span class="ah-brand">Trekk<b>r</b></span>' +
+      '<div class="appheader"><span class="ah-brand"><img src="/trekkr-logo.png" alt="Trekkr" style="height:24px;width:auto;display:block"></span>' +
       '<div class="ah-right">' + themeBtnHTML("ah-theme") +
       '<button class="ah-signin" id="ah-signin">Sign in</button></div></div>';
     setHTML(header + '<div id="view"></div>' + tabbarHTML());
