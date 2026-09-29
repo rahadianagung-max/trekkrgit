@@ -70,7 +70,7 @@
 .v2-lead b{color:var(--ink)}
 .v2-divs{display:grid;grid-template-columns:repeat(3,1fr) .8fr;border:3px solid var(--ink);box-shadow:var(--shadow);background:var(--paper)}
 .v2-div{padding:22px 20px;border-right:2px solid var(--ink)}
-.v2-div .code{font:800 44px/1 var(--mono);color:var(--ink)}
+.v2-div .code{font:800 clamp(22px,2.6vw,30px)/1 var(--mono);color:var(--ink);text-transform:uppercase;letter-spacing:-.02em}
 .v2-div h3{margin:8px 0 6px;font:700 22px/1 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
 .v2-div .r{font:700 13.5px var(--mono);color:#334155}
 .v2-div.open{border-right:0;background:#F1F5F9;display:flex;flex-direction:column;justify-content:center;gap:4px}
@@ -145,9 +145,9 @@
     <div class="v2-head"><span class="no">01</span><h2>Play at your own level</h2></div>
     <p class="v2-lead">You only play against people <b>at your level</b>, based on your Trekkr Rating.</p>
     <div class="v2-divs">
-      <div class="v2-div"><span class="code">D1</span><h3>Beginner</h3><div class="r">Rating under <span class="tk-elo">1200</span></div></div>
-      <div class="v2-div"><span class="code">D2</span><h3>Bronze</h3><div class="r">Rating <span class="tk-elo">1200</span> – <span class="tk-elo">1799</span></div></div>
-      <div class="v2-div"><span class="code">D3</span><h3>Silver</h3><div class="r">Rating <span class="tk-elo">1800</span> – <span class="tk-elo">2499</span></div></div>
+      <div class="v2-div"><span class="code">Division 1</span><h3>Beginner</h3><div class="r">Rating under <span class="tk-elo">1200</span></div></div>
+      <div class="v2-div"><span class="code">Division 2</span><h3>Bronze</h3><div class="r">Rating <span class="tk-elo">1200</span> – <span class="tk-elo">1799</span></div></div>
+      <div class="v2-div"><span class="code">Division 3</span><h3>Silver</h3><div class="r">Rating <span class="tk-elo">1800</span> – <span class="tk-elo">2499</span></div></div>
       <div class="v2-div open"><span class="code">OPEN</span><span>Coming soon</span></div>
     </div>
   </section>
