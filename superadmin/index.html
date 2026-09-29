@@ -116,6 +116,12 @@ footer span{color:var(--lime)}
       <div class="field"><label class="field-label">Password</label><input class="field-input" id="loginPass" type="password" placeholder="••••••"></div>
       <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
       <div class="status-msg" id="loginStatus"></div>
+      <div style="margin-top:14px;text-align:center"><a href="#" onclick="document.getElementById('saForgot').style.display='block';return false" style="font-size:12px;color:var(--muted2)">Lupa password?</a></div>
+      <div id="saForgot" style="display:none;margin-top:12px">
+        <div class="field"><label class="field-label">Email akun admin</label><input class="field-input" id="saForgotEmail" type="email" placeholder="email@contoh.com" autocomplete="email"></div>
+        <button class="btn btn-ghost btn-full" onclick="saForgot()">Kirim link reset</button>
+        <div class="status-msg" id="saForgotStatus"></div>
+      </div>
     </div>
   </div>
   <div id="adminScreen" style="display:none">
@@ -318,6 +324,7 @@ let allPC=[];let allVenues=[];
 function AK(){return (TrekkrAPI.getSession()||{}).adminKey||''}
 // Tanpa kunci admin bertanda tangan (login lama) → minta login ulang.
 function checkAuth(){const s=TrekkrAPI.getSession();if(s.token&&s.role==='superadmin'&&s.adminKey)showDash(s)}
+async function saForgot(){var st=document.getElementById('saForgotStatus'),e=(document.getElementById('saForgotEmail').value||'').trim();if(!e){st.className='status-msg error';st.textContent='Isi email dulu';return}try{await fetch(crApi()+'/venue/forgot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});st.className='status-msg success';st.textContent='Kalau email terdaftar, link reset sudah dikirim (cek juga folder spam).';}catch(x){st.className='status-msg error';st.textContent='Gagal mengirim.';}}
 async function doLogin(){const u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value,st=document.getElementById('loginStatus');try{const d=await TrekkrAPI.login(u,p);if(d.role!=='superadmin'){st.className='status-msg error';st.textContent='Superadmin only';return}showDash(d)}catch(e){st.className='status-msg error';st.textContent=e.message||'Login failed'}}
 function showDash(s){document.getElementById('loginScreen').style.display='none';document.getElementById('adminScreen').style.display='block';document.getElementById('userLabel').textContent=`Logged in as ${s.username||''}`;loadAll()}
 function doLogout(){TrekkrAPI.logout();location.reload()}

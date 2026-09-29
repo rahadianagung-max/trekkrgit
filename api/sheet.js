@@ -6311,6 +6311,15 @@ async function adminByUsername(u) {
   const rows = await supaRest("GET", `admins?username=ilike.${encodeURIComponent(String(u).trim())}&limit=1`);
   return (rows && rows[0]) || null;
 }
+// Password reset: find the account by its login email OR its email column, so
+// accounts whose username isn't an email (e.g. "Superadmin") can reset too.
+async function adminByEmail(email) {
+  const e = String(email || "").trim();
+  if (!e || /[,()]/.test(e)) return null;
+  const q = encodeURIComponent(e);
+  const rows = await supaRest("GET", `admins?or=(username.ilike.${q},email.ilike.${q})&limit=1`);
+  return (rows && rows[0]) || null;
+}
 // Approve a venue lead: create/prime the venue + a pending venue-admin account,
 // then email a one-time onboarding link (set info + password).
 async function approveVenueLead(body) {
@@ -6366,7 +6375,7 @@ async function rejectVenueLead(body) {
 }
 // Verify a token of a given kind against an admin row; returns the admin or null.
 async function verifyAdminToken(email, token, kind) {
-  const a = await adminByUsername(email);
+  const a = await adminByEmail(email);
   if (!a || a.token_kind !== kind || !a.token_hash) return null;
   if (a.token_hash !== hashToken(token)) return null;
   if (!a.token_exp || Date.now() > Number(a.token_exp)) return null;
@@ -6420,13 +6429,14 @@ async function venueForgot(body) {
   const email = normEmail(body && body.email);
   if (!validEmail(email)) return respond(200, { success: true });
   try {
-    const a = await adminByUsername(email);
+    const a = await adminByEmail(email);
     if (a && String(a.status) !== "pending") {
       const token = makeToken();
-      await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`,
+      await supaRest("PATCH", `admins?id=eq.${encodeURIComponent(a.id)}`,
         { token_hash: hashToken(token), token_exp: Date.now() + VENUE_RESET_TTL, token_kind: "reset" });
       const link = `${appBaseUrl()}/venue-reset?token=${token}&e=${encodeURIComponent(email)}`;
-      try { await sendBrevoEmail(email, `Reset your Trekkr venue admin password`, tplVenueReset(a.venue, link)); } catch (e) { console.error("[venue] reset email:", e.message); }
+      const who = a.role === "superadmin" ? `Superadmin (${a.username})` : a.venue;
+      try { await sendBrevoEmail(email, `Reset your Trekkr admin password`, tplVenueReset(who, link)); } catch (e) { console.error("[venue] reset email:", e.message); }
     }
   } catch (e) { console.error("[venue] forgot:", e.message); }
   return respond(200, { success: true }); // always ok — don't reveal whether the email exists
@@ -6446,7 +6456,7 @@ async function venueResetSubmit(body) {
   const a = await verifyAdminToken(email, String(b.token || ""), "reset").catch(() => null);
   if (!a) return respond(400, { error: "This reset link is invalid or has expired." });
   try {
-    await supaRest("PATCH", `admins?username=ilike.${encodeURIComponent(email)}`,
+    await supaRest("PATCH", `admins?id=eq.${encodeURIComponent(a.id)}`,
       { password: pwStore(password), status: "active", token_hash: null, token_exp: null, token_kind: null });
   } catch (e) { return respond(500, { error: "Could not reset password" }); }
   return respond(200, { success: true });
