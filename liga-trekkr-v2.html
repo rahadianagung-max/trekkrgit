@@ -15,26 +15,32 @@
 .v2-demo{background:var(--volt);border-bottom:2px solid var(--ink);font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:7px 12px;color:var(--ink)}
 .v2-demo a{text-decoration:underline}
 
-/* Hero: three questions */
-.v2-hero{padding:44px 0 0}
-.v2-q{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
-.v2-qc{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px 20px;display:flex;flex-direction:column;gap:10px;min-height:210px}
-.v2-qc .ic{font-size:40px;line-height:1}
-.v2-qc .pre{font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
-.v2-qc h2{margin:0;font:700 clamp(26px,3.3vw,36px)/.98 var(--disp);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink)}
+/* Hero: three questions (compact, hug the text) */
+.v2-hero{padding:40px 0 0}
+.v2-q{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.v2-qc{display:inline-flex;align-items:center;gap:10px;border:2px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:10px 14px}
+.v2-qc .ic{font-size:22px;line-height:1}
+.v2-qc h2{margin:0;font:700 clamp(16px,1.9vw,20px)/1.1 var(--disp);letter-spacing:-.02em;text-transform:uppercase;color:var(--ink)}
 .v2-qc h2 span{color:var(--orange)}
-.v2-qc p{margin:auto 0 0;font-size:13.5px;line-height:1.5;color:#475569}
-.v2-qc.k{background:var(--ink);box-shadow:8px 8px 0 var(--orange)}
+.v2-qc.k{background:var(--ink)}
 .v2-qc.k h2{color:#fff}
 .v2-qc.k h2 span{color:var(--volt)}
-.v2-qc.k .pre{color:#94A3B8}
-.v2-qc.k p{color:#CBD5E1}
-.v2-intro{margin-top:34px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;border-top:3px solid var(--ink);padding-top:26px}
+.v2-intro{margin-top:30px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;border-top:3px solid var(--ink);padding-top:26px}
 .v2-intro p{margin:0;font:700 clamp(20px,2.6vw,28px)/1.25 var(--disp);letter-spacing:-.02em;color:var(--ink);max-width:30ch}
 .v2-intro p em{font-style:normal;background:var(--volt);padding:0 4px}
 .v2-intro h1{margin:10px 0 0;font:700 clamp(46px,8vw,92px)/.88 var(--disp);letter-spacing:-.055em;text-transform:uppercase;color:var(--ink)}
 .v2-intro h1 span{color:var(--orange)}
 .v2-intro .btn{padding:15px 22px;font-size:13px}
+
+/* Prizes (section 03) */
+.v2-prizes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.v2-prize{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:20px}
+.v2-prize .ic{font-size:32px;line-height:1}
+.v2-prize h3{margin:10px 0 6px;font:700 22px/1.05 var(--disp);letter-spacing:-.03em;text-transform:uppercase}
+.v2-prize p{margin:0;font-size:14px;line-height:1.55;color:#475569}
+.v2-prize.k{background:var(--ink);color:#fff;box-shadow:8px 8px 0 var(--orange)}
+.v2-prize.k p{color:#CBD5E1}
+.v2-sub{margin:26px 0 12px;font:800 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
 
 /* Numbered sections */
 .v2-sec{margin-top:64px}
@@ -105,8 +111,7 @@
 .v2-final .btn{margin-top:22px;padding:16px 26px;font-size:14px}
 
 @media(max-width:960px){
-  .v2-q{grid-template-columns:1fr}
-  .v2-qc{min-height:0}
+  .v2-prizes{grid-template-columns:1fr}
   .v2-intro{grid-template-columns:1fr}
   .v2-how,.v2-points{grid-template-columns:1fr}
   .v2-pt{flex-direction:row;align-items:center;gap:18px}
@@ -128,24 +133,9 @@
   <section class="v2-hero">
     <span class="eyebrow">Liga Trekkr · weekly padel league</span>
     <div class="v2-q">
-      <div class="v2-qc">
-        <span class="ic">🏆</span>
-        <span class="pre">Are you</span>
-        <h2>Tonight's <span>winner?</span></h2>
-        <p>Most points in your session wins the night.</p>
-      </div>
-      <div class="v2-qc k">
-        <span class="ic">🥇</span>
-        <span class="pre">Or</span>
-        <h2>The winner of <span>the month?</span></h2>
-        <p>Most points across every session this month.</p>
-      </div>
-      <div class="v2-qc">
-        <span class="ic">❤️</span>
-        <span class="pre">Or</span>
-        <h2>The most <span>loyal player</span> in this venue?</h2>
-        <p>Most matches played at one venue this month.</p>
-      </div>
+      <div class="v2-qc"><span class="ic">🏆</span><h2>Are you tonight's <span>winner?</span></h2></div>
+      <div class="v2-qc k"><span class="ic">🥇</span><h2>Or the winner of <span>the month?</span></h2></div>
+      <div class="v2-qc"><span class="ic">❤️</span><h2>Or the most <span>loyal player</span> in this venue?</h2></div>
     </div>
 
     <div class="v2-intro">
@@ -157,9 +147,21 @@
     </div>
   </section>
 
-  <!-- 1. HOW IT WORKS -->
-  <section class="v2-sec" id="how">
-    <div class="v2-head"><span class="no">01</span><h2>How it works</h2></div>
+  <!-- 1. PLAY AT YOUR OWN LEVEL -->
+  <section class="v2-sec" id="level">
+    <div class="v2-head"><span class="no">01</span><h2>Play at your own level</h2></div>
+    <p class="v2-lead">You only play against people <b>at your level</b>, based on your Trekkr Rating.</p>
+    <div class="v2-divs">
+      <div class="v2-div"><span class="code">D1</span><h3>Beginner</h3><div class="r">Rating under <span class="tk-elo">1200</span></div></div>
+      <div class="v2-div"><span class="code">D2</span><h3>Bronze</h3><div class="r">Rating <span class="tk-elo">1200</span> – <span class="tk-elo">1799</span></div></div>
+      <div class="v2-div"><span class="code">D3</span><h3>Silver</h3><div class="r">Rating <span class="tk-elo">1800</span> – <span class="tk-elo">2499</span></div></div>
+      <div class="v2-div open"><span class="code">OPEN</span><span>Coming soon</span></div>
+    </div>
+  </section>
+
+  <!-- 2. COLLECT YOUR POINTS -->
+  <section class="v2-sec" id="points">
+    <div class="v2-head"><span class="no">02</span><h2>Collect your points</h2></div>
     <div class="v2-how">
       <div class="v2-card">
         <span class="ic">🎾</span>
@@ -173,11 +175,7 @@
       </div>
       <div class="v2-mixed"><span style="font-size:20px">👫</span><div><b>Mixed category:</b> you bring a partner and play together the whole night.</div></div>
     </div>
-  </section>
-
-  <!-- 2. SIMPLE POINTS -->
-  <section class="v2-sec">
-    <div class="v2-head"><span class="no">02</span><h2>Simple points</h2></div>
+    <div class="v2-sub">Every match counts</div>
     <div class="v2-points">
       <div class="v2-pt win"><b>+3</b><div><div class="t">Win</div><div class="s">Every match you win.</div></div></div>
       <div class="v2-pt close"><b>+1</b><div><div class="t">Close loss</div><div class="s">Lose 3–4. Fighting to the end counts.</div></div></div>
@@ -185,15 +183,13 @@
     </div>
   </section>
 
-  <!-- 3. DIVISIONS & PROMOTION -->
-  <section class="v2-sec" id="divisions">
-    <div class="v2-head"><span class="no">03</span><h2>Divisions &amp; Promotion 🚀</h2></div>
-    <p class="v2-lead">You only play against people <b>at your level</b>, based on your Trekkr Rating.</p>
-    <div class="v2-divs">
-      <div class="v2-div"><span class="code">D1</span><h3>Beginner</h3><div class="r">Rating under <span class="tk-elo">1200</span></div></div>
-      <div class="v2-div"><span class="code">D2</span><h3>Bronze</h3><div class="r">Rating <span class="tk-elo">1200</span> – <span class="tk-elo">1799</span></div></div>
-      <div class="v2-div"><span class="code">D3</span><h3>Silver</h3><div class="r">Rating <span class="tk-elo">1800</span> – <span class="tk-elo">2499</span></div></div>
-      <div class="v2-div open"><span class="code">OPEN</span><span>Coming soon</span></div>
+  <!-- 3. WIN THE PRIZE & GET PROMOTED -->
+  <section class="v2-sec" id="win">
+    <div class="v2-head"><span class="no">03</span><h2>Win the prize &amp; get promoted</h2></div>
+    <div class="v2-prizes">
+      <div class="v2-prize"><span class="ic">🏆</span><h3>Tonight's winner</h3><p>Most points in your session wins the night.</p></div>
+      <div class="v2-prize k"><span class="ic">🥇</span><h3>Winner of the month</h3><p>Most points across every session this month.</p></div>
+      <div class="v2-prize"><span class="ic">❤️</span><h3>Most loyal player</h3><p>Most matches played at one venue this month.</p></div>
     </div>
     <div class="v2-promo">
       <div class="rk">🚀</div>
