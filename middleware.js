@@ -2,7 +2,7 @@
 // karena rewrite di vercel.json kalah oleh index.html untuk root.
 export const config = { matcher: '/' };
 
-const LIGA_HOSTS = new Set(['liga.trekkr.online', 'trekkrgit-git-claude-keen-johnson-7avuwl-trekkr1.vercel.app']);
+const LIGA_HOSTS = new Set(['liga.trekkr.online']);
 
 export default function middleware(request) {
   const url = new URL(request.url);
