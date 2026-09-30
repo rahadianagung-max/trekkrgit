@@ -41,5 +41,25 @@
     { "source": "/biz", "destination": "/kalkulator-bisnis.html" },
     { "source": "/akun", "destination": "/akun.html" },
     { "source": "/klaim-admin", "destination": "/klaim-admin.html" }
+  ],
+  "redirects": [
+    { "source": "/liga-trekkr", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/liga-trekkr.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/season", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/season.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/series", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/series.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-admin", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-admin.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-player", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-player.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-public", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-public.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-scorer", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-scorer.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-scorer-all", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/re-scorer-all.html", "destination": "https://liga.trekkr.online", "permanent": false },
+    { "source": "/tourney", "destination": "https://turnamenpadel.com", "permanent": false },
+    { "source": "/tourney/:path*", "destination": "https://turnamenpadel.com", "permanent": false }
   ]
 }

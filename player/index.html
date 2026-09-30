@@ -955,7 +955,7 @@ body.pp-locked .lk-ov{display:flex;position:absolute;inset:0;margin:auto;width:m
         <div class="calib-step-num">4</div>
         <div>
           <div class="calib-step-title">Then you become Rated</div>
-          <div class="calib-step-text">After 15 matches, your Calibrating badge becomes <strong>Rated</strong>. Your ELO is now a trusted reflection of your skill. The tier you land in — T3, T2, T1 — is earned, not assigned.</div>
+          <div class="calib-step-text">After 15 matches, your Calibrating badge becomes <strong>Rated</strong>. Your ELO is now a trusted reflection of your skill. The Liga division you land in — Division 1, 2 or 3 — is earned, not assigned.</div>
         </div>
       </div>
     </div>
@@ -1123,9 +1123,9 @@ function ibbFallback(img){
   img.onerror=null; img.src=IBB_PH;
 }
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-// Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
-function tcCls(e){if(e>=2000)return'T1 · Open';if(e>=1500)return'T2 · Contender';return'T3 · Rising'}
-function tierProg(e){const t=[{name:'T3 · Rising',min:0,max:1499},{name:'T2 · Contender',min:1500,max:1999},{name:'T1 · Open',min:2000,max:9999}];const c=t.find(x=>e>=x.min&&e<=x.max)||t[0];const p=((e-c.min)/(c.max-c.min+1))*100;const ni=t.indexOf(c)+1;const n=ni<t.length?t[ni]:null;return{current:c.name,progress:Math.min(p,100),next:n,ptsAway:n?n.min-e:0}}
+// Liga Trekkr divisions — fixed ELO bands (same as liga.trekkr.online).
+function tcCls(e){if(e>=2500)return'Open';if(e>=1800)return'Division 3';if(e>=1200)return'Division 2';return'Division 1'}
+function tierProg(e){const t=[{name:'Division 1',min:0,max:1199},{name:'Division 2',min:1200,max:1799},{name:'Division 3',min:1800,max:2499},{name:'Open',min:2500,max:9999}];const c=t.find(x=>e>=x.min&&e<=x.max)||t[0];const p=((e-c.min)/(c.max-c.min+1))*100;const ni=t.indexOf(c)+1;const n=ni<t.length?t[ni]:null;return{current:c.name,progress:Math.min(p,100),next:n,ptsAway:n?n.min-e:0}}
 
 async function loadPlayer(){
   const parts=window.location.pathname.split('/').filter(Boolean);
@@ -1440,7 +1440,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
       +'<div class="pp2-elo"><div class="v">'+eloDisp+tri+'</div><div class="k">ELO</div></div></div>'
       +'<div class="pp2-bar lk"><span style="width:'+st.progress+'%"></span></div>'
       +'<div class="pp2-next lk">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
-      +'<div class="pp2-next" style="margin-top:4px">Series Tier: <b>'+series.current+'</b></div>';
+      +'<div class="pp2-next" style="margin-top:4px">Liga division: <b>'+series.current+'</b></div>';
     if(pend){
       h+='<div class="pp2-div"></div>'+sk('60%','14px');
     } else if(venueRanks && venueRanks.length){

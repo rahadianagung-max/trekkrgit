@@ -37,9 +37,8 @@
       ["Tourney & League overview", "/tournament"],
       ["Tournaments", VENUE + "/?tab=tn"],
       ["Leagues", VENUE + "/?tab=lg"],
-      ["Liga Trekkr", "/liga-trekkr"],
-      ["Season calendar", "/season"],
-      ["Trekkr Series", "/series"],
+      ["Liga Trekkr", "https://liga.trekkr.online"],
+      ["Liga leaderboard", "https://liga.trekkr.online/leaderboard"],
     ], venueGroup: "tl" },
   ];
 
