@@ -624,7 +624,8 @@
     S.myName = (S.me && S.me.player && S.me.player.name) || "";
     return S.me;
   }
-  async function ensureCut() { if (!S.cut) { try { S.cut = await API.getTierBoundaries(); } catch (e) { S.cut = { t1: 2000, t2: 1500 }; } } return S.cut; }
+  // Divisions use fixed ELO bands now (no percentile cutoffs to fetch); kept so callers stay unchanged.
+  async function ensureCut() { if (!S.cut) S.cut = {}; return S.cut; }
 
   /* ---------- PASSPORT ---------- */
   async function renderPassport() {
@@ -662,7 +663,7 @@
       var streak = st.streak && st.streak !== "0" ? st.streak : "—";
       var last = hist.length ? hist[hist.length - 1] : null;
       var dir = last && last.delta > 0 ? "up" : (last && last.delta < 0 ? "down" : "flat");
-      var tier = unrated ? null : API.tierName(elo, cut);          // Series tier T1/T2/T3
+      var tier = unrated ? null : API.tierName(elo, cut);          // Liga division
       var stier = skillTier(elo || 0);                             // skill ladder Bronze→Platinum
       var bp = bestPartner(matchesArr, [name, display]);
       var resultsAll = matchResults(matchesArr, [name, display]);
@@ -724,7 +725,7 @@
         '<div class="s2-elo"><b>' + elo + triHTML + '</b><span>ELO</span></div></div>' +
         '<div class="s2-bar"><span style="width:' + stier.progress + '%"></span></div>' +
         '<div class="s2-next">' + (stier.next ? ('<b>' + stier.ptsAway + ' pts</b> to ' + esc(stier.next) + ' · ' + stier.progress + '%') : "Top tier reached 🏆") + '</div>' +
-        (tier ? '<div class="s2-next" style="margin-top:3px">Series Tier: <b>' + esc(tier) + '</b></div>' : "") +
+        (tier ? '<div class="s2-next" style="margin-top:3px">Division: <b>' + esc(tier) + '</b></div>' : "") +
         (venueRanks.length ? ('<div class="s2-div"></div><div class="s2-rh">Your standing · vs ' + venueRanks[0].gender + '</div>' + venueRanks.map(vrankRow).join("")) : "") +
         '</div>');
 
@@ -1020,7 +1021,7 @@
       var r = await Promise.all([API.getLeaderboard({ limit: 100000 }), ensureCut(), ensureMe().catch(function () { return null; })]);
       var raw = ((r[0] && r[0].leaderboard) || []).filter(function (p) { return !isWalkout(p.name) && !isWalkout(p.displayName); });
       var cut = r[1];
-      function tierOf(elo) { return elo >= ((cut && cut.t1) || 2000) ? "T1" : elo >= ((cut && cut.t2) || 1500) ? "T2" : "T3"; }
+      function tierOf(elo) { return elo >= 2500 ? "OPEN" : elo >= 1800 ? "D3" : elo >= 1200 ? "D2" : "D1"; }
       var g = S.rankGender, mode = S.rankMode, f = S.rankFilter;
 
       // Gender pool, then split calibrated (15+) vs calibrating (1–14).
@@ -1038,7 +1039,7 @@
       var poolSeg = '<div class="seg" id="poolSeg" style="margin-top:8px">' +
         '<button data-m="rated"' + (mode === "rated" ? ' class="on"' : "") + '>Calibrated <span class="segn">' + rated.length + '</span></button>' +
         '<button data-m="calib"' + (mode === "calib" ? ' class="on"' : "") + '>Calibrating <span class="segn">' + calib.length + '</span></button></div>';
-      var chips = [["all", "All"], ["T1", "T1"], ["T2", "T2"], ["T3", "T3"]].map(function (c) {
+      var chips = [["all", "All"], ["D1", "Div 1"], ["D2", "Div 2"], ["D3", "Div 3"], ["OPEN", "Open"]].map(function (c) {
         return '<button class="chip' + (f === c[0] ? " on" : "") + '" data-f="' + c[0] + '">' + c[1] + '</button>';
       }).join("");
 
@@ -1573,27 +1574,25 @@
 
   /* ---------- HOW TO GET RANKED (education) ---------- */
   async function renderRankedInfo() {
-    var cut = await ensureCut();
-    var t1 = (cut && cut.t1) || 2000, t2 = (cut && cut.t2) || 1500;
     function row(a, b2) { return '<tr><td>' + a + '</td><td class="r">' + b2 + '</td></tr>'; }
     viewEl().innerHTML = '<div class="screen">' +
       '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
       '<h1 class="page" style="margin-top:4px">How to get ranked</h1>' +
-      '<div class="plain"><h3>3 steps</h3><p>1 · Register or claim your profile.<br>2 · Play at a PlayRank session / partner venue — the host records results and your ELO is computed automatically.<br>3 · After 15+ matches (calibration done), your official rating &amp; Series Tier appear.</p></div>' +
+      '<div class="plain"><h3>3 steps</h3><p>1 · Register or claim your profile.<br>2 · Play at a PlayRank session / partner venue — the host records results and your ELO is computed automatically.<br>3 · After 15+ matches (calibration done), your official rating &amp; Liga division appear.</p></div>' +
       '<div class="plain"><h3>What is ELO?</h3><p>A strength number that goes up/down each match based on your opponents and the score margin. Beating stronger opponents or winning big moves you up more. During calibration (your first 15 matches) it moves faster.</p></div>' +
       '<div class="plain"><h3>Skill ladder — ELO Tier</h3>' +
         '<table class="ttable"><tr><th>Tier</th><th class="r">ELO</th></tr>' +
         row("Beginner", "< 900") + row("Upper Beginner", "900–1199") + row("Lower Bronze", "1200–1499") +
         row("Bronze", "1500–1799") + row("Upper Bronze", "1800–2099") + row("Silver", "2100–2499") +
         row("Gold", "2500–2999") + row("Platinum", "≥ 3000") + '</table></div>' +
-      '<div class="plain"><h3>Competitive divisions — T1 / T2 / T3</h3>' +
-        '<p>Used for Trekkr Series &amp; League. Set by your position among active players (percentile), so the cutoffs shift and are recomputed periodically. <b>T1 is Open.</b></p>' +
-        '<table class="ttable" style="margin-top:10px"><tr><th>Tier</th><th>Current cutoff</th><th>≈ level</th></tr>' +
-        '<tr><td style="font-weight:800;color:var(--or)">T1 · Open</td><td>ELO ≥ ' + t1 + '</td><td>Bronze+</td></tr>' +
-        '<tr><td style="font-weight:800">T2</td><td>' + t2 + '–' + (t1 - 1) + '</td><td>Lower Bronze</td></tr>' +
-        '<tr><td style="font-weight:800">T3</td><td>&lt; ' + t2 + '</td><td>Beginner–L.Bronze</td></tr>' +
-        '</table>' +
-        '<p style="margin-top:10px;font-size:12px;color:var(--faint)">The Bronze mapping is just an easy reference — not the rule; it shifts as the population changes.</p></div>' +
+      '<div class="plain"><h3>Liga Trekkr divisions</h3>' +
+        '<p>The league groups the ladder into divisions with <b>fixed</b> ELO bands. You only play people in your division; keep winning and you get <b>Promoted</b>.</p>' +
+        '<table class="ttable" style="margin-top:10px"><tr><th>Division</th><th>ELO</th><th>Tiers</th></tr>' +
+        '<tr><td style="font-weight:800">Division 1</td><td>&lt; 1200</td><td>Beginner – Upper Beginner</td></tr>' +
+        '<tr><td style="font-weight:800">Division 2</td><td>1200–1799</td><td>Lower Bronze – Bronze</td></tr>' +
+        '<tr><td style="font-weight:800">Division 3</td><td>1800–2499</td><td>Upper Bronze – Silver</td></tr>' +
+        '<tr><td style="font-weight:800;color:var(--or)">Open</td><td>≥ 2500</td><td>Gold+ (coming soon)</td></tr>' +
+        '</table></div>' +
       '</div>';
     d.getElementById("back").onclick = function () { S.view = S.prev || "passport"; refreshTabbar(); renderView(); w.scrollTo(0, 0); };
   }

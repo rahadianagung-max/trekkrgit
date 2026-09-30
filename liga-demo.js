@@ -4,9 +4,9 @@
 (function () {
   var CAT = { M: "Men", W: "Women", X: "Mixed" };
   var DIV = {
-    D1: { name: "Division 1", tier: "Beginner", lo: 850, hi: 1199 },
-    D2: { name: "Division 2", tier: "Bronze", lo: 1200, hi: 1799 },
-    D3: { name: "Division 3", tier: "Silver", lo: 1800, hi: 2499 },
+    D1: { name: "Division 1", tier: "Beginner – Upper Beginner", lo: 850, hi: 1199 },
+    D2: { name: "Division 2", tier: "Lower Bronze – Bronze", lo: 1200, hi: 1799 },
+    D3: { name: "Division 3", tier: "Upper Bronze – Silver", lo: 1800, hi: 2499 },
   };
   var VENUES = [
     { slug: "venue-a", name: "Venue A · Kemang", city: "Jakarta Selatan", area: "Jakarta", cats: [["M", "D1"], ["M", "D2"], ["W", "D2"]] },

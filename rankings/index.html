@@ -116,7 +116,7 @@
       <button data-scope="region" role="tab" aria-selected="false">By region</button>
     </div>
     <div class="select hidden" id="regionWrap"><select id="regionSel" aria-label="Region"><option value="">All regions</option></select></div>
-    <div class="select"><select id="levelSel" aria-label="Tier"><option value="">All tiers</option></select></div>
+    <div class="select"><select id="levelSel" aria-label="Division"><option value="">All divisions</option></select></div>
   </div>
 
   <div id="tierNote"></div>
@@ -155,7 +155,7 @@
   <a href="/app">Get the App</a>
   <a href="/rankings">Rankings</a>
   <a href="/venues">Venues</a>
-  <a href="/liga-trekkr">Liga Trekkr</a>
+  <a href="https://liga.trekkr.online">Liga Trekkr</a>
   <a href="/how-trekkr-works">How it works</a>
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
@@ -171,13 +171,10 @@
   function _rankReveal(){ if(!_rankFirst)return; _rankFirst=false; if(_rankL)_rankL.stop();
     var rl=document.getElementById('rankLoad'); if(rl)rl.hidden=true;
     var cg=document.getElementById('cols'); if(cg)cg.hidden=false; }
-  // Championship tiers (Wave 1). Cutoffs: T3 < 1500 | T2 1500-1999 | T1 >= 2000.
-  // Series Tier cutoffs — percentile-based, fetched from /tiers/boundaries at load.
-  // Defaults below are the absolute fallback (used until that resolves / if it fails).
-  var T1CUT=2000, T2CUT=1500;
-  function buildTiers(){return [{v:'T1',label:'T1 · Open',min:T1CUT,max:Infinity},{v:'T2',label:'T2 · Contender',min:T2CUT,max:T1CUT-1},{v:'T3',label:'T3 · Rising',min:0,max:T2CUT-1}];}
+  // Liga Trekkr divisions — fixed ELO bands (same as liga.trekkr.online).
+  function buildTiers(){return [{v:'D1',label:'Division 1',min:0,max:1199},{v:'D2',label:'Division 2',min:1200,max:1799},{v:'D3',label:'Division 3',min:1800,max:2499},{v:'OPEN',label:'Open',min:2500,max:Infinity}];}
   var TIERS=buildTiers();
-  function tierName(elo){elo=Number(elo)||0;if(elo>=T1CUT)return'T1 · Open';if(elo>=T2CUT)return'T2 · Contender';return'T3 · Rising';}
+  function tierName(elo){elo=Number(elo)||0;if(elo>=2500)return'Open';if(elo>=1800)return'Division 3';if(elo>=1200)return'Division 2';return'Division 1';}
   function tierBand(v){for(var i=0;i<TIERS.length;i++){if(TIERS[i].v===v)return TIERS[i];}return null;}
   // Tier eligibility: a player is only ranked once calibrated (>= MIN_TIER_MATCHES
   // matches). REPLAY_COMPLETE flips true after the season ELO replay.
@@ -288,7 +285,7 @@
     n.innerHTML='<div style="margin:14px 0 0;padding:10px 14px;border:2px dashed var(--ink);'
       +'background:var(--warm);font-size:12.5px;line-height:1.5;color:#334155">'
       +'Ranked players are calibrated (15+ matches); those still calibrating are listed below each column as <strong>provisional</strong>.'
-      +(REPLAY_COMPLETE?'':' Tiers firm up after the season ELO replay is complete.')
+      +(REPLAY_COMPLETE?'':' Divisions firm up after the ELO replay is complete.')
       +'</div>';})();
 
   /* Filters */
@@ -335,14 +332,7 @@
   fi.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
   fi.addEventListener('input',function(){clearTimeout(ft);ft=setTimeout(search,300);});
 
-  // Fetch dynamic Series Tier cutoffs first, then load the boards so filtering &
-  // labels use the percentile boundaries (falls back to defaults if it fails).
-  function loadTiers(){
-    return fetch(BASE+'/tiers/boundaries').then(function(r){return r.json();}).then(function(d){
-      if(d&&Number(d.t1)&&Number(d.t2)){T1CUT=Number(d.t1);T2CUT=Number(d.t2);TIERS=buildTiers();}
-    }).catch(function(){}).then(loadAll);
-  }
-  loadTiers();
+  loadAll();
 })();
 </script>
 <script src="/trekkr-nav.js" defer></script>

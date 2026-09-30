@@ -101,12 +101,12 @@
     claimProfile: function (body) { return this.send("account/claim", body); },
   };
 
-  // Series Tier label from ELO + dynamic cutoffs (fallback to absolute).
-  API.tierName = function (elo, cut) {
-    var t1 = (cut && cut.t1) || 2000, t2 = (cut && cut.t2) || 1500;
-    if (elo >= t1) return "T1 · Open";
-    if (elo >= t2) return "T2 · Contender";
-    return "T3 · Rising";
+  // Liga Trekkr division (fixed ELO bands, same as liga.trekkr.online). `cut` is ignored.
+  API.tierName = function (elo) {
+    if (elo >= 2500) return "Open";
+    if (elo >= 1800) return "Division 3";
+    if (elo >= 1200) return "Division 2";
+    return "Division 1";
   };
   // 8-level ELO tier name (absolute skill ladder).
   API.eloTier = function (elo) {

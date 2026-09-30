@@ -31,18 +31,11 @@ const TrekkrAPI = (() => {
     }
   }
 
-  // Series Tier cutoffs (T1/T2/T3) — percentile-based, fetched from the API.
-  // Defaults are the absolute fallback used until loadTierBoundaries() resolves
-  // (and if the fetch ever fails).
-  let _tierCut = { t1: 2000, t2: 1500 };
-  async function loadTierBoundaries() {
-    try {
-      const d = await request("tiers/boundaries");
-      if (d && Number(d.t1) && Number(d.t2)) _tierCut = { t1: Number(d.t1), t2: Number(d.t2) };
-    } catch (e) { /* keep defaults */ }
-    return { ..._tierCut };
-  }
-  loadTierBoundaries();
+  // Liga Trekkr divisions — fixed ELO bands (Division 1 <1200 · 2 1200–1799 ·
+  // 3 1800–2499 · Open 2500+). The old percentile T1/T2/T3 cutoffs are retired;
+  // t1/t2 stay here only so older callers of getTierCutoffs() keep working.
+  const _tierCut = { t1: 1800, t2: 1200 };
+  async function loadTierBoundaries() { return { ..._tierCut }; }
 
   return {
     loadTierBoundaries,
@@ -182,21 +175,22 @@ const TrekkrAPI = (() => {
     },
 
     getTierName(elo) {
-      // Championship tiers (Series). Cutoffs percentile-based via loadTierBoundaries();
-      // defaults are the absolute fallback (T2 1500 / T1 2000).
-      if (elo >= _tierCut.t1) return "T1 · Open";
-      if (elo >= _tierCut.t2) return "T2 · Contender";
-      return "T3 · Rising";
+      // Liga Trekkr division from ELO (fixed bands, same as liga.trekkr.online).
+      if (elo >= 2500) return "Open";
+      if (elo >= 1800) return "Division 3";
+      if (elo >= 1200) return "Division 2";
+      return "Division 1";
     },
     getTierClass(elo) {
-      if (elo >= _tierCut.t1) return "tier-t1";
-      if (elo >= _tierCut.t2) return "tier-t2";
+      if (elo >= 1800) return "tier-t1";
+      if (elo >= 1200) return "tier-t2";
       return "tier-t3";
     },
     getNextTier(elo) {
       const tiers = [
-        { name: "T2 · Contender", min: _tierCut.t2 },
-        { name: "T1 · Open", min: _tierCut.t1 },
+        { name: "Division 2", min: 1200 },
+        { name: "Division 3", min: 1800 },
+        { name: "Open", min: 2500 },
       ];
       for (const t of tiers) {
         if (elo < t.min) return { name: t.name, ptsAway: t.min - elo };
