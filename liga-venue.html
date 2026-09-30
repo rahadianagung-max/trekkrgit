@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Liga Trekkr — Venue leaderboard</title>
+<meta name="description" content="Liga Trekkr monthly leaderboard for one venue: category, division, sessions and results."/>
+<meta name="robots" content="noindex"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
+<style>
+/* ── Liga Trekkr leaderboard: one venue (PlayRank League theme) ── */
+.vn-demo{background:var(--volt);border-bottom:2px solid var(--ink);font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:7px 12px;color:var(--ink)}
+.vn-back{display:inline-block;margin-top:24px;font:800 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--orange)}
+.vn-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:10px}
+.vn-head h1{margin:6px 0 0;font:700 clamp(38px,6vw,68px)/.92 var(--disp);letter-spacing:-.05em;text-transform:uppercase;color:var(--ink)}
+.vn-head p{margin:8px 0 0;font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#64748B}
+.vn-month{display:flex;gap:6px}
+.vn-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px}
+.vn-tab{font:800 12px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:9px 13px;border:2px solid var(--ink);background:var(--paper);color:var(--ink)}
+.vn-tab.on{background:var(--ink);color:var(--volt)}
+.vn-tabs.sub .vn-tab.on{background:var(--orange);color:#fff}
+.vn-title{margin:22px 0 12px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+.vn-title b{font:700 clamp(24px,3.4vw,34px)/1 var(--disp);letter-spacing:-.03em;text-transform:uppercase}
+.vn-title span{font:800 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+
+.vn-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr);gap:22px;align-items:start}
+.vn-wrap{overflow-x:auto;padding:0 6px 6px 0}
+.vn-tbl{width:100%;border-collapse:collapse;background:var(--paper);border:3px solid var(--ink);box-shadow:var(--shadow)}
+.vn-tbl th{font:800 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:#fff;text-align:left;padding:9px 10px;white-space:nowrap}
+.vn-tbl td{padding:9px 10px;border-top:1px solid var(--border-soft);font-size:14px;vertical-align:middle}
+.vn-tbl .n{text-align:right;font-family:var(--mono);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vn-tbl tr.top td{background:#FFF7EE}
+.vn-rk{font:800 14px var(--mono);width:30px}
+.vn-pl{display:flex;align-items:center;gap:10px}
+.vn-pl .tk-ph{width:34px;height:34px;font-size:11px}
+.vn-pl b{display:block;font:700 15px var(--disp)}
+.vn-pl small{display:block;font-size:11.5px;color:#64748B}
+.vn-tie{display:inline-block;margin-top:2px;font:800 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;border:1.5px solid #CBD5E1;color:#64748B;padding:1px 5px}
+.vn-elo{text-align:right;white-space:nowrap}
+.vn-elo .tk-elo{font-size:15px}
+.vn-elo small{display:block;font:700 10px var(--mono);color:#64748B}
+.vn-legend{margin-top:10px;font:700 11px var(--mono);color:#64748B;line-height:1.6}
+
+.vn-side{display:flex;flex-direction:column;gap:18px}
+.vn-box{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow)}
+.vn-box h3{margin:0;padding:10px 14px;border-bottom:2px solid var(--ink);font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.vn-box .in{padding:12px 14px}
+.vn-box.k{background:var(--ink);color:#fff}
+.vn-box.k h3{border-color:#334155;color:var(--volt)}
+.vn-li{display:flex;align-items:center;gap:10px;padding:6px 0}
+.vn-li b{font:700 15px var(--disp)}
+.vn-li small{display:block;font-size:12px;color:#94A3B8}
+.vn-li .to{margin-left:auto;font:800 12px var(--mono);color:var(--volt);white-space:nowrap}
+.vn-next b{display:block;font:700 20px var(--disp)}
+.vn-next p{margin:4px 0 12px;font-size:13.5px;color:#475569}
+
+.vn-hist{margin:34px 0 44px}
+.vn-hist details{border:2px solid var(--ink);background:var(--paper);margin-bottom:10px}
+.vn-hist summary{cursor:pointer;list-style:none;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.vn-hist summary::-webkit-details-marker{display:none}
+.vn-hist summary b{font:700 16px var(--disp)}
+.vn-hist summary span{font:800 11px var(--mono);color:#64748B;text-transform:uppercase}
+.vn-hist summary::after{content:'+';font:800 18px var(--mono);color:var(--orange)}
+.vn-hist details[open] summary::after{content:'–'}
+.vn-hist .vn-tbl{box-shadow:none;border-width:0;border-top:2px solid var(--ink)}
+.vn-empty{border:2px dashed var(--ink);padding:16px;font:700 12px var(--mono);color:#64748B}
+@media(max-width:900px){.vn-cols{grid-template-columns:1fr}}
+@media(max-width:560px){.vn-tbl .hs{display:none}.vn-tbl td,.vn-tbl th{padding:8px 6px}.vn-pl .tk-ph{display:none}.vn-pl b{font-size:14px}}
+</style>
+</head>
+<body>
+
+<div id="tk-nav"></div>
+<div class="vn-demo">Demo · venues, players &amp; results are samples</div>
+
+<main class="container">
+  <a class="vn-back" href="/leaderboard">← All venues</a>
+  <section class="vn-head">
+    <div>
+      <span class="eyebrow">Liga Trekkr · Venue leaderboard</span>
+      <h1 id="vName">Venue</h1>
+      <p id="vCity"></p>
+    </div>
+    <div class="vn-month" id="months"></div>
+  </section>
+
+  <div class="vn-tabs" id="cats" role="tablist"></div>
+  <div class="vn-tabs sub" id="divs" role="tablist"></div>
+
+  <div class="vn-title"><b id="bTitle"></b><span id="bSub"></span></div>
+
+  <section class="vn-cols">
+    <div>
+      <div class="vn-wrap"><table class="vn-tbl" aria-label="Monthly leaderboard">
+        <thead><tr><th>#</th><th>Player</th><th class="n hs">Sessions</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PA</th><th class="n hs">PF</th><th class="n">ELO</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <div class="vn-legend">Ranked by W–L → PD (points won − lost) → PA (fewer is better) → PF (more is better).<br>ELO = Trekkr Rating · the gap shows how far each player is from Promotion.</div>
+    </div>
+    <aside class="vn-side">
+      <div class="vn-box k"><h3>🚀 Promoted this month</h3><div class="in" id="promo"></div></div>
+      <div class="vn-box"><h3>❤️ Most loyal · this category</h3><div class="in" id="loyal"></div></div>
+      <div class="vn-box"><h3>📅 Next session</h3><div class="in vn-next" id="next"></div></div>
+    </aside>
+  </section>
+
+  <section class="vn-hist">
+    <div class="tk-sec"><span class="tk-sec__t">Sessions this month · tonight's results</span></div>
+    <div id="hist"></div>
+  </section>
+</main>
+
+<div data-eco-footer>
+  <a href="https://trekkr.online/app">Get the App</a>
+  <a href="https://trekkr.online/rankings">Rankings</a>
+  <a href="/">Liga Trekkr</a>
+  <a href="/leaderboard">Leaderboard</a>
+</div>
+
+<script src="/liga-demo.js"></script>
+<script>
+(function () {
+  var L = window.LigaDemo, esc = L.esc, $ = function (id) { return document.getElementById(id); };
+  var qs = new URLSearchParams(location.search);
+  var m = location.pathname.match(/^\/v\/([^/]+)/);
+  var slug = (m && m[1]) || qs.get("v") || L.VENUES[0].slug;
+  var venue = L.VENUES.filter(function (v) { return v.slug === slug; })[0] || L.VENUES[0];
+  var cats = []; venue.cats.forEach(function (c) { if (cats.indexOf(c[0]) < 0) cats.push(c[0]); });
+  var st = { cat: qs.get("cat") || cats[0], div: qs.get("div") || "", month: L.MONTHS[0].key };
+  if (cats.indexOf(st.cat) < 0) st.cat = cats[0];
+
+  $("vName").textContent = venue.name;
+  $("vCity").textContent = venue.city + " · " + venue.cats.length + " leagues";
+  document.title = "Liga Trekkr — " + venue.name;
+
+  function tabs(el, cls, items, cur, key) {
+    el.innerHTML = items.map(function (it) { return '<button type="button" role="tab" class="vn-tab' + (it[0] === cur ? " on" : "") + '" aria-selected="' + (it[0] === cur) + '" data-k="' + it[0] + '">' + esc(it[1]) + "</button>"; }).join("");
+    el.onclick = function (e) { var b = e.target.closest("[data-k]"); if (b) { st[key] = b.getAttribute("data-k"); if (key === "cat") st.div = ""; render(); } };
+  }
+
+  function playerCell(r) {
+    var main = r.partner ? esc(r.name) + ' <span class="tk-chip tk-chip--k" title="Captain">C</span>' : esc(r.name);
+    return '<div class="vn-pl"><span class="tk-ph">' + L.ini(r.name) + "</span><div><b>" + main + "</b>" +
+      (r.partner ? "<small>with " + esc(r.partner) + "</small>" : "") + (r.note ? '<span class="vn-tie">' + r.note + "</span>" : "") + "</div></div>";
+  }
+
+  function render() {
+    var divs = venue.cats.filter(function (c) { return c[0] === st.cat; }).map(function (c) { return c[1]; });
+    if (divs.indexOf(st.div) < 0) st.div = divs[0];
+    tabs($("cats"), "", cats.map(function (c) { return [c, L.CAT[c]]; }), st.cat, "cat");
+    tabs($("divs"), "", divs.map(function (d) { return [d, L.DIV[d].name]; }), st.div, "div");
+    tabs($("months"), "", L.MONTHS.map(function (x) { return [x.key, x.label]; }), st.month, "month");
+
+    var b = L.board(venue, st.cat, st.div, st.month), d = L.DIV[st.div];
+    var mLabel = L.MONTHS.filter(function (x) { return x.key === st.month; })[0].label;
+    $("bTitle").textContent = L.CAT[st.cat] + " · " + d.name;
+    $("bSub").textContent = d.tier + " · " + mLabel + " · " + b.rows.length + " players";
+
+    $("tbody").innerHTML = b.rows.map(function (r) {
+      var gap = d.hi + 1 - r.elo;
+      var delta = r.eloDelta ? '<span class="' + (r.eloDelta > 0 ? "tk-up" : "tk-dn") + '">' + (r.eloDelta > 0 ? "▲" : "▼") + Math.abs(r.eloDelta) + "</span> " : "";
+      return '<tr class="' + (r.rank === 1 ? "top" : "") + '"><td class="vn-rk">' + (r.rank === 1 ? "🥇" : r.rank) + "</td><td>" + playerCell(r) + "</td>" +
+        '<td class="n hs">' + r.sessions + '</td><td class="n">' + r.w + "–" + r.l + '</td><td class="n">' + L.pd(r.pd) + '</td><td class="n hs">' + r.pa + '</td><td class="n hs">' + r.pf + "</td>" +
+        '<td class="vn-elo">' + delta + '<span class="tk-elo">' + r.elo + "</span><small>" + (st.div === "D3" ? "top division" : gap + " to promo") + "</small></td></tr>";
+    }).join("");
+
+    $("promo").innerHTML = b.promoted.length ? b.promoted.map(function (p) {
+      return '<div class="vn-li"><span class="tk-ph">' + L.ini(p.name) + "</span><div><b>" + esc(p.name) + "</b><small>" + esc(p.when) + ' · record here reset</small></div><span class="to">→ ' + esc(p.to) + "</span></div>";
+    }).join("") : '<div style="font-size:13px;color:#94A3B8">No promotions yet this month.</div>';
+
+    var ly = b.loyal;
+    $("loyal").innerHTML = '<div class="vn-li"><span style="font-size:22px">❤️</span><div><b>' + esc(ly.name) + '</b><small style="color:#64748B">' + ly.matches + " matches · " + ly.sessions + ' sessions</small></div></div>';
+
+    var nx = L.nextSession(venue, st.cat, st.div);
+    $("next").innerHTML = "<b>" + esc(nx.day) + " · " + nx.time + "</b><p>" + L.CAT[st.cat] + " · " + d.name + " · 8 matches · " + (st.cat === "X" ? Math.floor(nx.cap / 2) + " pairs" : nx.cap + " players") + " · " +
+      (nx.left ? nx.left + (nx.left === 1 ? " spot" : " spots") + " left" : "full, join the hold list") + '</p><a class="btn btn--primary" href="/#schedule">' + (nx.left ? "Join →" : "Join hold list →") + "</a>";
+
+    var ss = L.sessions(venue, st.cat, st.div, st.month);
+    $("hist").innerHTML = ss.length ? ss.slice().reverse().map(function (s, i) {
+      var win = s.players[0];
+      return "<details" + (i === 0 ? " open" : "") + "><summary><div><b>" + esc(s.date) + " · 🏆 " + esc(win.name) + (win.partner ? " (C)" : "") + "</b></div><span>" + s.players.length + " players · " + win.w + "–" + win.l + "</span></summary>" +
+        '<table class="vn-tbl"><thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PA</th><th class="n hs">PF</th></tr></thead><tbody>' +
+        s.players.map(function (p) {
+          return '<tr class="' + (p.rank === 1 ? "top" : "") + '"><td class="vn-rk">' + (p.rank === 1 ? "🏆" : p.rank) + "</td><td>" + playerCell(p) + '</td><td class="n">' + p.w + "–" + p.l + '</td><td class="n">' + L.pd(p.pd) + '</td><td class="n hs">' + p.pa + '</td><td class="n hs">' + p.pf + "</td></tr>";
+        }).join("") + "</tbody></table></details>";
+    }).join("") : '<div class="vn-empty">No sessions yet this month.</div>';
+  }
+  render();
+})();
+</script>
+<script src="/trekkr-nav.js" defer></script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+<script src="/nav-account.js" defer></script>
+</body>
+</html>
