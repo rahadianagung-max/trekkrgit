@@ -95,10 +95,10 @@
   <section class="vn-cols">
     <div>
       <div class="vn-wrap"><table class="vn-tbl" aria-label="Monthly leaderboard">
-        <thead><tr><th>#</th><th>Player</th><th class="n hs">Sessions</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PA</th><th class="n hs">PF</th><th class="n">ELO</th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th class="n hs">Sessions</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PF</th><th class="n hs">PA</th><th class="n">ELO</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table></div>
-      <div class="vn-legend">Ranked by W–L → PD (points won − lost) → PA (fewer is better) → PF (more is better).<br>ELO = Trekkr Rating · the gap shows how far each player is from Promotion.</div>
+      <div class="vn-legend">Ranked by W–L → H2H (head-to-head among players tied on wins) → PD (points won − lost) → PF (more is better) → PA (fewer is better).<br>ELO = Trekkr Rating · the gap shows how far each player is from Promotion.</div>
     </div>
     <aside class="vn-side">
       <div class="vn-box k"><h3>🚀 Promoted this month</h3><div class="in" id="promo"></div></div>
@@ -163,7 +163,7 @@
       var gap = d.hi + 1 - r.elo;
       var delta = r.eloDelta ? '<span class="' + (r.eloDelta > 0 ? "tk-up" : "tk-dn") + '">' + (r.eloDelta > 0 ? "▲" : "▼") + Math.abs(r.eloDelta) + "</span> " : "";
       return '<tr class="' + (r.rank === 1 ? "top" : "") + '"><td class="vn-rk">' + (r.rank === 1 ? "🥇" : r.rank) + "</td><td>" + playerCell(r) + "</td>" +
-        '<td class="n hs">' + r.sessions + '</td><td class="n">' + r.w + "–" + r.l + '</td><td class="n">' + L.pd(r.pd) + '</td><td class="n hs">' + r.pa + '</td><td class="n hs">' + r.pf + "</td>" +
+        '<td class="n hs">' + r.sessions + '</td><td class="n">' + r.w + "–" + r.l + '</td><td class="n">' + L.pd(r.pd) + '</td><td class="n hs">' + r.pf + '</td><td class="n hs">' + r.pa + "</td>" +
         '<td class="vn-elo">' + delta + '<span class="tk-elo">' + r.elo + "</span><small>" + (st.div === "D3" ? "top division" : gap + " to promo") + "</small></td></tr>";
     }).join("");
 
@@ -182,9 +182,9 @@
     $("hist").innerHTML = ss.length ? ss.slice().reverse().map(function (s, i) {
       var win = s.players[0];
       return "<details" + (i === 0 ? " open" : "") + "><summary><div><b>" + esc(s.date) + " · 🏆 " + esc(win.name) + (win.partner ? " (C)" : "") + "</b></div><span>" + s.players.length + " players · " + win.w + "–" + win.l + "</span></summary>" +
-        '<table class="vn-tbl"><thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PA</th><th class="n hs">PF</th></tr></thead><tbody>' +
+        '<table class="vn-tbl"><thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n hs">PF</th><th class="n hs">PA</th></tr></thead><tbody>' +
         s.players.map(function (p) {
-          return '<tr class="' + (p.rank === 1 ? "top" : "") + '"><td class="vn-rk">' + (p.rank === 1 ? "🏆" : p.rank) + "</td><td>" + playerCell(p) + '</td><td class="n">' + p.w + "–" + p.l + '</td><td class="n">' + L.pd(p.pd) + '</td><td class="n hs">' + p.pa + '</td><td class="n hs">' + p.pf + "</td></tr>";
+          return '<tr class="' + (p.rank === 1 ? "top" : "") + '"><td class="vn-rk">' + (p.rank === 1 ? "🏆" : p.rank) + "</td><td>" + playerCell(p) + '</td><td class="n">' + p.w + "–" + p.l + '</td><td class="n">' + L.pd(p.pd) + '</td><td class="n hs">' + p.pf + '</td><td class="n hs">' + p.pa + "</td></tr>";
         }).join("") + "</tbody></table></details>";
     }).join("") : '<div class="vn-empty">No sessions yet this month.</div>';
   }
