@@ -58,7 +58,7 @@
 .v2-mixed b{color:var(--ink)}
 
 .v2-points{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.v2-rank{grid-template-columns:repeat(4,1fr)}
+.v2-rank{grid-template-columns:repeat(5,1fr)}
 .v2-rank .v2-pt{position:relative}
 .v2-rank .v2-pt b{font-size:clamp(44px,5.5vw,64px)}
 .v2-rank .o{position:absolute;top:10px;right:12px;font:800 12px var(--mono);border:2px solid var(--ink);background:var(--paper);width:24px;height:24px;display:grid;place-items:center}
@@ -67,6 +67,8 @@
 .v2-tbl td{padding:9px 12px;border-top:1px solid var(--border-soft);font-size:14px}
 .v2-tbl .n{text-align:right;font-family:var(--mono);font-weight:800;font-variant-numeric:tabular-nums}
 .v2-tbl tr.top td{background:#FFF7EE}
+.v2-tbl small{display:block;font:800 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+.v2-note{margin:12px 0 0;max-width:640px;font-size:13.5px;line-height:1.5;color:#475569}
 .v2-pt{border:3px solid var(--ink);background:var(--paper);box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:8px}
 .v2-pt b{font:800 clamp(64px,9vw,104px)/.9 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
 .v2-pt .t{font:800 14px var(--mono);letter-spacing:.06em;text-transform:uppercase}
@@ -122,6 +124,7 @@
 @media(max-width:960px){
   .v2-prizes{grid-template-columns:1fr}
   .v2-rank{grid-template-columns:1fr 1fr}
+  .v2-rank .v2-pt.win{grid-column:1/-1}
   .v2-rank .v2-pt{flex-direction:column;align-items:flex-start;gap:8px}
   .v2-intro{grid-template-columns:1fr}
   .v2-how,.v2-points{grid-template-columns:1fr}
@@ -169,20 +172,22 @@
     <p class="v2-lead">No complicated scoring. Your rank is decided by your results, in this order:</p>
     <div class="v2-points v2-rank">
       <div class="v2-pt win"><span class="o">1</span><b>W–L</b><div><div class="t">Win – Loss</div><div class="s">Most wins ranks highest.</div></div></div>
-      <div class="v2-pt"><span class="o">2</span><b>PD</b><div><div class="t">Point difference</div><div class="s">Points won minus points lost.</div></div></div>
-      <div class="v2-pt"><span class="o">3</span><b>PA</b><div><div class="t">Points against</div><div class="s">Fewer points conceded is better.</div></div></div>
+      <div class="v2-pt"><span class="o">2</span><b>H2H</b><div><div class="t">Head-to-head</div><div class="s">Tied on wins? Whoever won when you faced each other ranks higher.</div></div></div>
+      <div class="v2-pt"><span class="o">3</span><b>PD</b><div><div class="t">Point difference</div><div class="s">Points won minus points lost.</div></div></div>
       <div class="v2-pt"><span class="o">4</span><b>PF</b><div><div class="t">Points for</div><div class="s">More points won is better.</div></div></div>
+      <div class="v2-pt"><span class="o">5</span><b>PA</b><div><div class="t">Points against</div><div class="s">Fewer points conceded is better.</div></div></div>
     </div>
     <div class="v2-sub">Example · tonight's leaderboard</div>
     <table class="v2-tbl" aria-label="Example leaderboard">
-      <thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n">PA</th><th class="n">PF</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th class="n">W–L</th><th class="n">PD</th><th class="n">PF</th><th class="n">PA</th></tr></thead>
       <tbody>
-        <tr class="top"><td>🏆</td><td>Bayu P.</td><td class="n">7–1</td><td class="n">+15</td><td class="n">14</td><td class="n">29</td></tr>
-        <tr><td>2</td><td>Andre W.</td><td class="n">6–2</td><td class="n">+11</td><td class="n">16</td><td class="n">27</td></tr>
-        <tr><td>3</td><td>Rizky H.</td><td class="n">6–2</td><td class="n">+9</td><td class="n">17</td><td class="n">26</td></tr>
-        <tr><td>4</td><td>Dimas S.</td><td class="n">5–3</td><td class="n">+4</td><td class="n">20</td><td class="n">24</td></tr>
+        <tr class="top"><td>🏆</td><td>Bayu P.</td><td class="n">7–1</td><td class="n">+15</td><td class="n">29</td><td class="n">14</td></tr>
+        <tr><td>2</td><td>Rizky H.<small>won H2H</small></td><td class="n">6–2</td><td class="n">+9</td><td class="n">26</td><td class="n">17</td></tr>
+        <tr><td>3</td><td>Andre W.</td><td class="n">6–2</td><td class="n">+11</td><td class="n">27</td><td class="n">16</td></tr>
+        <tr><td>4</td><td>Dimas S.</td><td class="n">5–3</td><td class="n">+4</td><td class="n">24</td><td class="n">20</td></tr>
       </tbody>
     </table>
+    <p class="v2-note">Rizky and Andre are both 6–2. Rizky beat Andre when they faced each other, so he ranks higher even with a lower PD.</p>
   </section>
 
   <!-- 3. WIN THE PRIZE & GET PROMOTED -->
