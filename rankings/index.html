@@ -46,6 +46,7 @@
 
 /* Columns */
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:24px}
+.cols>div{min-width:0}
 .col-head{display:flex;align-items:center;gap:8px;margin:0 0 10px}
 .col-head .dot{width:14px;height:14px;border:2px solid var(--ink);border-radius:0}
 .col-head .label{font:800 13px var(--mono);letter-spacing:.12em}
@@ -74,10 +75,16 @@
 .rrow .who .meta{display:block;font:700 10px var(--mono);color:var(--subtle);text-transform:uppercase}
 .rrow .elo{font:800 15px var(--mono);color:var(--orange);font-variant-numeric:tabular-nums}
 
-.see-full{margin-top:14px;width:100%;justify-content:center;background:#fff;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);display:inline-flex;align-items:center;gap:6px;padding:11px}
 .state{font:700 11.5px var(--mono);color:var(--subtle);padding:18px;border:2px dashed var(--ink);text-transform:uppercase}
-.calib-head{font:800 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin:20px 0 8px}
-.prov-pill{display:inline-block;font:800 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--volt);border:1.5px solid var(--ink);padding:1px 5px;vertical-align:middle;margin-left:4px}
+.prov-pill,.cal-pill{display:inline-block;font:800 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--ink);padding:1px 5px;vertical-align:1px;margin-right:6px}
+.prov-pill{color:var(--ink);background:var(--volt)}
+.cal-pill{color:#fff;background:var(--ink)}
+.pager{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:14px}
+.pager button{min-width:34px;height:34px;padding:0 8px;background:#fff;border:2px solid var(--ink);font:800 11px var(--mono);color:var(--ink);cursor:pointer}
+.pager button.on{background:var(--ink);color:var(--volt)}
+.pager button:disabled{opacity:.35;cursor:default}
+.pager .gap{font:800 11px var(--mono);color:var(--subtle);padding:0 2px}
+.pager .info{margin-left:auto;font:700 10.5px var(--mono);color:var(--subtle);text-transform:uppercase}
 .skeleton{height:52px;border:2px solid var(--ink);background:repeating-linear-gradient(90deg,#F4F6F9 0 12px,#fff 12px 24px)}
 
 /* How rankings work */
@@ -126,12 +133,12 @@
     <div>
       <div class="col-head"><span class="dot" style="background:var(--orange)"></span><span class="label">MEN</span><span class="count" id="countM"></span></div>
       <div id="colM"><div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div></div>
-      <button class="see-full" id="moreM" hidden>See full men's ranking <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+      <nav class="pager" id="pagerM" aria-label="Men's ranking pages" hidden></nav>
     </div>
     <div>
       <div class="col-head"><span class="dot" style="background:var(--volt)"></span><span class="label">WOMEN</span><span class="count" id="countF"></span></div>
       <div id="colF"><div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div></div>
-      <button class="see-full" id="moreF" hidden>See full women's ranking <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+      <nav class="pager" id="pagerF" aria-label="Women's ranking pages" hidden></nav>
     </div>
   </div>
 
@@ -196,6 +203,9 @@
     return '<span class="'+cls+'">'+esc(initials(disp(p)))+'</span>';
   }
   function meta(p){var parts=[tierName(p.elo)];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
+  // Label: Calibrated (15+ matches) or Provisional (still calibrating, 1–14).
+  function badge(p){var m=Number(p.totalMatches)||0;
+    return isEligible(p)?'<span class="cal-pill">Calibrated</span>':'<span class="prov-pill" title="'+m+'/'+MIN_TIER_MATCHES+' matches">Provisional '+m+'/'+MIN_TIER_MATCHES+'</span>';}
   // The website always shows the player's full name (aliases are app-only).
   function disp(p){return (p&&(p.name||p.display))||'';}
   function passportUrl(p){return '/player/'+String(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
@@ -203,51 +213,52 @@
   function rowHTML(p,rank){
     return '<a class="rrow'+(rank===2?' r2':rank===3?' r3':'')+'" href="'+passportUrl(p)+'">'
       +'<span class="rank">'+String(rank).padStart(2,'0')+'</span>'+avatar(p)
-      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+badge(p)+esc(meta(p))+'</span></span>'
       +'<span class="elo">'+p.elo+'</span></a>';
   }
   function championHTML(p){
     return '<a class="champion" href="'+passportUrl(p)+'">'
       +'<span class="rank">01</span>'+avatar(p,true)
-      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+badge(p)+esc(meta(p))+'</span></span>'
       +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
   }
-  // Provisional row — a player still in calibration (1–14 matches). No firm rank.
-  function provRowHTML(p){
-    var fc=firstClub(p.clubs);
-    return '<a class="rrow" href="'+passportUrl(p)+'">'
-      +'<span class="rank" style="color:var(--muted)">·</span>'+avatar(p)
-      +'<span class="who"><span class="name">'+esc(disp(p))+' <span class="prov-pill">Provisional</span></span>'
-      +'<span class="meta">'+(Number(p.totalMatches)||0)+'/15 matches'+(fc?' · '+esc(fc):'')+'</span></span>'
-      +'<span class="elo" style="color:var(--muted)">'+p.elo+'</span></a>';
-  }
+  // One merged board: calibrated + provisional players, ranked by ELO, 10 per page.
+  var PER_PAGE=10, data={M:[],F:[]}, page={M:1,F:1};
 
-  var data={M:{rated:[],calib:[]},F:{rated:[],calib:[]}}, expanded={M:false,F:false};
+  function pagerHTML(cur,total,count){
+    var nums=[],out='';
+    for(var i=1;i<=total;i++){ if(i===1||i===total||Math.abs(i-cur)<=1) nums.push(i); else if(nums[nums.length-1]!=='…') nums.push('…'); }
+    out+='<button type="button" data-p="'+(cur-1)+'"'+(cur===1?' disabled':'')+' aria-label="Previous page">‹</button>';
+    nums.forEach(function(n){ out+= n==='…' ? '<span class="gap">…</span>' : '<button type="button" data-p="'+n+'"'+(n===cur?' class="on" aria-current="page"':'')+'>'+n+'</button>'; });
+    out+='<button type="button" data-p="'+(cur+1)+'"'+(cur===total?' disabled':'')+' aria-label="Next page">›</button>';
+    var a=(cur-1)*PER_PAGE+1, b=Math.min(cur*PER_PAGE,count);
+    return out+'<span class="info">'+a+'–'+b+' of '+count+'</span>';
+  }
 
   function render(g){
     var box=document.getElementById(g==='M'?'colM':'colF');
-    var moreBtn=document.getElementById(g==='M'?'moreM':'moreF');
-    var rated=(data[g]&&data[g].rated)||[], calib=(data[g]&&data[g].calib)||[];
-    // Calibrating players are shown only when no specific tier is selected
-    // (their tier isn't settled yet).
-    var showCalib=calib.length && !document.getElementById('levelSel').value;
-    if(!rated.length && !showCalib){box.innerHTML='<div class="state">No players found for this filter.</div>';moreBtn.hidden=true;return;}
-    var html='';
-    if(rated.length){
-      var show=expanded[g]?rated:rated.slice(0,5);
+    var pager=document.getElementById(g==='M'?'pagerM':'pagerF');
+    var list=data[g]||[];
+    if(!list.length){box.innerHTML='<div class="state">No players found for this filter.</div>';pager.hidden=true;return;}
+    var total=Math.ceil(list.length/PER_PAGE), cur=Math.min(Math.max(page[g],1),total); page[g]=cur;
+    var start=(cur-1)*PER_PAGE, show=list.slice(start,start+PER_PAGE), html='';
+    if(cur===1){
       html+=championHTML(show[0]);
-      if(show.length>1){html+='<div class="col-list">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';}
-    }
-    if(showCalib){
-      html+='<div class="calib-head">Still calibrating</div>';
-      html+='<div class="col-list">'+calib.map(provRowHTML).join('')+'</div>';
+      if(show.length>1) html+='<div class="col-list">'+show.slice(1).map(function(p,i){return rowHTML(p,i+2);}).join('')+'</div>';
+    } else {
+      html+='<div class="col-list">'+show.map(function(p,i){return rowHTML(p,start+i+1);}).join('')+'</div>';
     }
     box.innerHTML=html;
-    if(rated.length>5){
-      moreBtn.hidden=false;
-      moreBtn.innerHTML=(expanded[g]?'Show top 5':'See full '+(g==='M'?"men's":"women's")+' ranking')+' <i class="ti ti-arrow-right" aria-hidden="true"></i>';
-    } else { moreBtn.hidden=true; }
+    if(total>1){ pager.hidden=false; pager.innerHTML=pagerHTML(cur,total,list.length); } else { pager.hidden=true; pager.innerHTML=''; }
   }
+  ['M','F'].forEach(function(g){
+    document.getElementById(g==='M'?'pagerM':'pagerF').addEventListener('click',function(e){
+      var b=e.target.closest('button[data-p]'); if(!b||b.disabled) return;
+      page[g]=parseInt(b.getAttribute('data-p'),10)||1; render(g);
+      var head=document.getElementById(g==='M'?'colM':'colF').previousElementSibling;
+      if(head&&head.getBoundingClientRect().top<0) head.scrollIntoView({block:'start'});
+    });
+  });
 
   function params(){
     // Eligibility + tier filtering are applied client-side, so pull the full list
@@ -263,28 +274,26 @@
     var qs=new URLSearchParams(Object.assign({gender:g},params())).toString();
     return fetch(BASE+'/elo/leaderboard?'+qs).then(function(r){return r.json();}).then(function(d){
       var all=((d&&d.leaderboard)||[]).filter(function(p){return !isWalkout(p.name)&&!isWalkout(p.displayName);});
-      // Ranked = calibrated (tier settled); apply the tier-band filter to these.
-      var rated=all.filter(isEligible);
+      // Everyone with at least one recorded match, calibrated or provisional,
+      // on one board ranked by ELO; the division filter applies to all of them.
+      var list=all.filter(function(p){return (Number(p.totalMatches)||0)>=1;});
       var band=tierBand(document.getElementById('levelSel').value);
-      if(band){rated=rated.filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
-      // Calibrating = 1–14 matches (provisional, tier not settled yet).
-      var calib=all.filter(function(p){var m=Number(p.totalMatches)||0;return m>=1&&m<MIN_TIER_MATCHES;})
-                   .sort(function(a,b){return (Number(b.elo)||0)-(Number(a.elo)||0);});
-      data[g]={rated:rated,calib:calib};
-      document.getElementById(g==='M'?'countM':'countF').textContent=rated.length+' players'+(calib.length?(' · '+calib.length+' calibrating'):'');
-      expanded[g]=false; render(g); _rankReveal();
+      if(band){list=list.filter(function(p){var e=Number(p.elo)||0;return e>=band.min&&e<=band.max;});}
+      list.sort(function(a,b){return (Number(b.elo)||0)-(Number(a.elo)||0);});
+      var nCal=list.filter(isEligible).length;
+      data[g]=list;
+      document.getElementById(g==='M'?'countM':'countF').textContent=list.length+' players · '+nCal+' calibrated';
+      page[g]=1; render(g); _rankReveal();
     }).catch(function(){ _rankReveal(); box.innerHTML='<div class="state">Couldn\'t load rankings. Please try again.</div>';});
   }
   function loadAll(){loadGender('M');loadGender('F');}
 
-  document.getElementById('moreM').addEventListener('click',function(){expanded.M=!expanded.M;render('M');});
-  document.getElementById('moreF').addEventListener('click',function(){expanded.F=!expanded.F;render('F');});
 
-  /* Provisional note: rankings only list calibrated players; tiers firm up after the replay. */
+  /* Label note: one board for everyone; the label shows how settled a rating is. */
   (function(){var n=document.getElementById('tierNote');if(!n)return;
     n.innerHTML='<div style="margin:14px 0 0;padding:10px 14px;border:2px dashed var(--ink);'
       +'background:var(--warm);font-size:12.5px;line-height:1.5;color:#334155">'
-      +'Ranked players are calibrated (15+ matches); those still calibrating are listed below each column as <strong>provisional</strong>.'
+      +'Everyone who has played is ranked by ELO. <strong>Calibrated</strong> = 15+ matches, rating settled. <strong>Provisional</strong> = still calibrating (under 15 matches), so the rating can still move fast.'
       +(REPLAY_COMPLETE?'':' Divisions firm up after the ELO replay is complete.')
       +'</div>';})();
 
