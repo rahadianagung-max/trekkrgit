@@ -95,6 +95,11 @@
 .v2-path{display:flex;align-items:center;gap:6px;font:800 16px var(--mono);white-space:nowrap}
 .v2-path span{background:#fff;color:var(--ink);border:2px solid var(--ink);padding:6px 9px}
 .v2-path span.on{background:var(--volt)}
+.v2-down{margin-top:14px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--paper);border:2px dashed var(--ink);padding:16px 20px}
+.v2-down .rk{font-size:32px;line-height:1}
+.v2-down h3{margin:0;font:700 clamp(18px,2.2vw,22px)/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em;color:var(--ink)}
+.v2-down p{margin:6px 0 0;font-size:14.5px;line-height:1.55;color:#475569;max-width:70ch}
+.v2-down p b{color:var(--ink)}
 
 /* Sessions */
 .v2-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -205,6 +210,13 @@
         <p>You move up to the next division and <b>start fresh with a clean record</b> to compete at your new, higher level.</p>
       </div>
       <div class="v2-path" aria-label="Division path"><span>D1</span>→<span class="on">D2</span>→<span>D3</span></div>
+    </div>
+    <div class="v2-down">
+      <div class="rk" aria-hidden="true">🔄</div>
+      <div>
+        <h3>Not your month?</h3>
+        <p>If your rating ends the month <b>more than 50 below your division</b>, you move to the division that fits your level, with a clean record and a fresh shot at the prize. Division 1 never moves down.</p>
+      </div>
     </div>
   </section>
 
