@@ -100,6 +100,7 @@
 .v2-down h3{margin:0;font:700 clamp(18px,2.2vw,22px)/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em;color:var(--ink)}
 .v2-down p{margin:6px 0 0;font-size:14.5px;line-height:1.55;color:#475569;max-width:70ch}
 .v2-down p b{color:var(--ink)}
+.v2-down__ex{display:flex;flex-direction:column;gap:4px;font:700 13px var(--mono)!important;color:#334155!important}
 
 /* Sessions */
 .v2-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -215,7 +216,8 @@
       <div class="rk" aria-hidden="true">🔄</div>
       <div>
         <h3>Not your month?</h3>
-        <p>If your rating ends the month <b>more than 50 below your division</b>, you move to the division that fits your level, with a clean record and a fresh shot at the prize. Division 1 never moves down.</p>
+        <p>We give you a <b>50-point cushion</b> below your division. Only if your rating ends the month under it do you move down one division, with a clean record and a fresh shot at the prize.</p>
+        <p class="v2-down__ex"><span><b>Division 2:</b> below <span class="tk-elo">1150</span></span><span><b>Division 3:</b> below <span class="tk-elo">1750</span></span><span><b>Division 1:</b> never moves down</span></p>
       </div>
     </div>
   </section>
