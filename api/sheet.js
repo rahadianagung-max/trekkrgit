@@ -247,8 +247,12 @@ function hashPassword(password, saltHex) {
 }
 function verifyPassword(password, saltHex, hashHex) {
   if (!saltHex || !hashHex) return false;
-  const h = crypto.scryptSync(String(password), saltHex, 64).toString("hex");
-  const a = Buffer.from(h, "hex"), b = Buffer.from(hashHex, "hex");
+  // Derive the scrypt key length from the STORED hash so a hash written by another
+  // app sharing the Admins table (mis. TurnamenPadel pakai keylen 32, app ini 64)
+  // still verifies. Accept only the known lengths.
+  const b = Buffer.from(hashHex, "hex");
+  if (b.length !== 32 && b.length !== 64) return false;
+  const a = crypto.scryptSync(String(password), saltHex, b.length);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
