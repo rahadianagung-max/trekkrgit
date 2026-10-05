@@ -3755,7 +3755,7 @@ async function getHomeSummary() {
     .map((p) => ({ name: p.name, display: p.display || publicName(p.name, p.displayName), photoUrl: p.photoUrl || "", totalMatches: p.totalMatches || 0, elo: p.elo || 0, level: p.level || "", region: p.region || "" }));
 
   // Homepage hero passport card: highest-rated calibrated player (additive field).
-  const tr = leaderboard.find((p) => (p.totalMatches || 0) >= 15) || null;
+  const tr = leaderboard.find((p) => (p.totalMatches || 0) >= CALIB_MATCHES) || null;
   const topRated = tr ? { name: tr.name, display: tr.display || publicName(tr.name, tr.displayName), photoUrl: tr.photoUrl || "", elo: tr.elo || 0, level: tr.level || "", region: tr.region || "", gender: tr.gender || "M", totalMatches: tr.totalMatches || 0 } : null;
 
   const lbMap = {};

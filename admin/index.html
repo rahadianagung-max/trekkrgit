@@ -2099,20 +2099,20 @@ function rmTogglePlayer(name) {
 const ANCHOR_MIN = 2;   // minimal anchor saat ada pemain kalibrasi (tunable)
 function rmIsAnchor(p){
   const v = String(p.verified).toUpperCase()==='TRUE' || p.verified===true;
-  return v || (Number(p.matchCount)||0) >= 15;   // established: verified atau sudah ≥15 match
+  return v || (Number(p.matchCount)||0) >= 16;   // established: verified atau sudah ≥16 match
 }
 function rmUpdateAnchorRec(){
   const banner=document.getElementById('rm-anchor-banner');
   if(!banner) return;
   const sel=RM.selectedPlayers;
-  const calibrating=sel.filter(p=>(Number(p.matchCount)||0)<15).length;
+  const calibrating=sel.filter(p=>(Number(p.matchCount)||0)<16).length;
   const anchors=sel.filter(rmIsAnchor).length;
   const target=Math.max(ANCHOR_MIN, RM.courts||1);
   if(calibrating>0 && anchors<target){
     const need=target-anchors;
     document.getElementById('rm-anchor-text').innerHTML=
       `This session has <strong>${calibrating} new/calibrating players</strong> but only <strong>${anchors} established players</strong>. `+
-      `Add at least <strong>${need} more</strong> (verified or ≥15 matches) so new players' ratings anchor accurately. You can still continue.`;
+      `Add at least <strong>${need} more</strong> (verified or ≥16 matches) so new players' ratings anchor accurately. You can still continue.`;
     banner.style.display='block';
   } else {
     banner.style.display='none';

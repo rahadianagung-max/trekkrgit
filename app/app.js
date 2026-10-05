@@ -179,7 +179,7 @@
     var now = Date.now(), recent = history.filter(function (h) { return h.date && (now - Date.parse(h.date)) <= 2592000000; });
     var eloGain30d = recent.length >= 2 ? recent[recent.length - 1].elo - recent[0].elo : (history.length >= 2 ? history[history.length - 1].elo - history[0].elo : 0);
     var ctx = { stats: s, history: history, matchesRaw: matchesRaw, partnerStats: partnerStats, bestStreak: bestStreak, venueCount: venueCount, eloGain30d: eloGain30d };
-    var calibrating = (s.totalMatches || 0) < 15;
+    var calibrating = (s.totalMatches || 0) < 16;
     return BADGE_DEFS.map(function (def) {
       var earned = false; if (!calibrating) { try { earned = !!def.compute(ctx); } catch (e) {} }
       var prog = null; if (!earned && def.progress) { try { prog = def.progress(ctx); } catch (e) {} }
@@ -721,7 +721,7 @@
           (rk.rank <= 3 ? '<span class="vr-m">' + (rk.rank === 1 ? "🥇" : rk.rank === 2 ? "🥈" : "🥉") + '</span>' : "") + '</div>';
       }
       var stand = unrated ? "" : ('<div class="stand2"><div class="stand2-top">' +
-        '<div class="s2-tier">' + esc(stier.name) + '<span>Skill tier' + (matches < 15 ? " · calibrating" : " · calibrated") + '</span></div>' +
+        '<div class="s2-tier">' + esc(stier.name) + '<span>Skill tier' + (matches < 16 ? " · calibrating" : " · calibrated") + '</span></div>' +
         '<div class="s2-elo"><b>' + elo + triHTML + '</b><span>ELO</span></div></div>' +
         '<div class="s2-bar"><span style="width:' + stier.progress + '%"></span></div>' +
         '<div class="s2-next">' + (stier.next ? ('<b>' + stier.ptsAway + ' pts</b> to ' + esc(stier.next) + ' · ' + stier.progress + '%') : "Top tier reached 🏆") + '</div>' +
@@ -745,7 +745,7 @@
           '<div class="lsx-insight">' + ip.join(" · ") + '.</div></div>';
       }
 
-      var calib = (!unrated && matches < 15)
+      var calib = (!unrated && matches < 16)
         ? '<div class="calib"><b>Calibrating:</b> ' + Math.max(0, 15 - matches) + ' more matches until your tier is set. Your ELO moves faster during this window.</div>'
         : "";
 
@@ -1024,12 +1024,12 @@
       function tierOf(elo) { return elo >= 2500 ? "OPEN" : elo >= 1800 ? "D3" : elo >= 1200 ? "D2" : "D1"; }
       var g = S.rankGender, mode = S.rankMode, f = S.rankFilter;
 
-      // Gender pool, then split calibrated (15+) vs calibrating (1–14).
+      // Gender pool, then split calibrated (16+) vs calibrating (1–15).
       var pool = raw.filter(function (p) { return (String(p.gender || "M").toUpperCase() === "F" ? "F" : "M") === g; });
-      var rated = pool.filter(function (p) { return (Number(p.totalMatches) || 0) >= 15; })
+      var rated = pool.filter(function (p) { return (Number(p.totalMatches) || 0) >= 16; })
         .map(function (p) { return { name: p.name, disp: p.display || p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl }; })
         .sort(function (a, b) { return b.elo - a.elo; });
-      var calib = pool.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 15; })
+      var calib = pool.filter(function (p) { var m = Number(p.totalMatches) || 0; return m >= 1 && m < 16; })
         .map(function (p) { return { name: p.name, disp: p.display || p.name, elo: Number(p.elo) || 0, region: p.region, photo: p.photoUrl, m: Number(p.totalMatches) || 0 }; })
         .sort(function (a, b) { return b.elo - a.elo; });
 
@@ -1061,11 +1061,11 @@
           return '<div class="rrow' + (mine ? " me" : "") + '" data-name="' + esc(p.name) + '" role="button">' +
             '<span class="rk">·</span>' + rowAvatar(p.photo, p.disp || p.name) +
             '<span class="who"><span class="nm"><span class="nmtxt">' + esc(p.disp || p.name) + (mine ? " · you" : "") + '</span>' + checkBadge(false) + '</span>' +
-            '<span class="mt">' + (p.region ? esc(p.region) + " · " : "") + p.m + '/15 matches</span></span>' +
+            '<span class="mt">' + (p.region ? esc(p.region) + " · " : "") + p.m + '/16 matches</span></span>' +
             '<span class="el prov-el">' + p.elo + '</span><span class="rchev">›</span></div>';
         }).join("");
         body = crows
-          ? '<div class="rsub" style="margin:2px 4px 10px">Rating firms up after 15 matches — grey check until then.</div>' + crows
+          ? '<div class="rsub" style="margin:2px 4px 10px">Rating firms up after 16 matches — grey check until then.</div>' + crows
           : '<div class="emptybig"><div class="em">⏳</div><p>No players calibrating in this filter.</p></div>';
       }
 
@@ -1112,7 +1112,7 @@
       var region = pd.region || "";
       var gender = String(pd.gender || "").toUpperCase() === "F" ? "Female" : (pd.gender ? "Male" : "");
       var ig = String(pd.ig || "").replace(/^@+/, "");
-      var calibrated = !unrated && matches >= 15;
+      var calibrated = !unrated && matches >= 16;
       var mine = S.myName && norm(name) === norm(S.myName);
 
       function infoRow(label, val) { return '<div class="inforow"><span class="il">' + label + '</span><span class="iv">' + val + '</span></div>'; }
@@ -1578,7 +1578,7 @@
     viewEl().innerHTML = '<div class="screen">' +
       '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
       '<h1 class="page" style="margin-top:4px">How to get ranked</h1>' +
-      '<div class="plain"><h3>3 steps</h3><p>1 · Register or claim your profile.<br>2 · Play at a PlayRank session / partner venue — the host records results and your ELO is computed automatically.<br>3 · After 15+ matches (calibration done), your official rating &amp; Liga division appear.</p></div>' +
+      '<div class="plain"><h3>3 steps</h3><p>1 · Register or claim your profile.<br>2 · Play at a PlayRank session / partner venue — the host records results and your ELO is computed automatically.<br>3 · After 16+ matches (calibration done), your official rating &amp; Liga division appear.</p></div>' +
       '<div class="plain"><h3>What is ELO?</h3><p>A strength number that goes up/down each match based on your opponents and the score margin. Beating stronger opponents or winning big moves you up more. During calibration (your first 15 matches) it moves faster.</p></div>' +
       '<div class="plain"><h3>Skill ladder — ELO Tier</h3>' +
         '<table class="ttable"><tr><th>Tier</th><th class="r">ELO</th></tr>' +

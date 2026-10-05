@@ -15,7 +15,7 @@
     '<b>Margin matters:</b> a decisive win boosts your ELO change by up to <b>+30%</b> vs a nail-biter.',
     'Padel is <b>2v2</b>, so Trekkr rates you against the <b>average</b> of the other team.',
     'A <b>400-point</b> ELO gap means the favourite is expected to win about <b>90%</b> of the time.',
-    'Your rating is <b>provisional for your first 15 matches</b> — new players move faster, then settle.',
+    'Your rating is <b>provisional for your first 16 matches</b> — new players move faster, then settle.',
     'Tiers <b>T1 · T2 · T3</b> are cut from the <b>percentile of active players</b>, not fixed numbers.',
     'Lose <b>narrowly to a strong team</b> and it barely costs you — you were the underdog on paper.',
     'Win it <b>6–0</b> and you climb more than the same win at <b>6–4</b>.',

@@ -151,7 +151,7 @@
       <li>Play a recorded match at any Trekkr venue or community.</li>
       <li>The engine compares the result to each pair's expected outcome.</li>
       <li>Your ELO rating moves — more for upsets and dominant wins.</li>
-      <li>After 15 matches your rating is calibrated and board-ready.</li>
+      <li>After 16 matches your rating is calibrated and board-ready.</li>
       <li>Men's and women's national boards update automatically.</li>
     </ol>
     <div style="margin-top:16px"><a class="btn btn--outline" href="https://trekkr.online/how-trekkr-works">How Trekkr Works</a></div>
@@ -186,7 +186,7 @@
   function tierBand(v){for(var i=0;i<TIERS.length;i++){if(TIERS[i].v===v)return TIERS[i];}return null;}
   // Tier eligibility: a player is only ranked once calibrated (>= MIN_TIER_MATCHES
   // matches). REPLAY_COMPLETE flips true after the season ELO replay.
-  var MIN_TIER_MATCHES=15, REPLAY_COMPLETE=false;
+  var MIN_TIER_MATCHES=16, REPLAY_COMPLETE=false;
   function isEligible(p){return (Number(p.totalMatches)||0)>=MIN_TIER_MATCHES;}
   // Placeholder names used for walkovers / byes — never real players.
   function isWalkout(n){var s=String(n||'').toLowerCase().replace(/[^a-z]/g,'');return s==='walkout'||s==='walkover'||s==='wo'||s==='bye';}
@@ -204,7 +204,7 @@
     return '<span class="'+cls+'">'+esc(initials(disp(p)))+'</span>';
   }
   function meta(p){var parts=[tierName(p.elo)];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
-  // Label: Calibrated (15+ matches) or Provisional (still calibrating, 1–14).
+  // Label: Calibrated (16+ matches) or Provisional (still calibrating, 1–15).
   // Badge COACH (pelatih berlisensi Stellar Squad Academy).
   function coachPill(p){var b=p.badges||[];return b.indexOf('certified-coach')>-1?'<span class="coach-pill">Certified Coach</span>':(b.indexOf('coach')>-1?'<span class="coach-pill">Coach</span>':'');}
   function badge(p){var m=Number(p.totalMatches)||0;
@@ -296,7 +296,7 @@
   (function(){var n=document.getElementById('tierNote');if(!n)return;
     n.innerHTML='<div style="margin:14px 0 0;padding:10px 14px;border:2px dashed var(--ink);'
       +'background:var(--warm);font-size:12.5px;line-height:1.5;color:#334155">'
-      +'Everyone who has played is ranked by ELO. <strong>Calibrated</strong> = 15+ matches, rating settled. <strong>Provisional</strong> = still calibrating (under 15 matches), so the rating can still move fast.'
+      +'Everyone who has played is ranked by ELO. <strong>Calibrated</strong> = 16+ matches, rating settled. <strong>Provisional</strong> = still calibrating (under 16 matches), so the rating can still move fast.'
       +(REPLAY_COMPLETE?'':' Divisions firm up after the ELO replay is complete.')
       +'</div>';})();
 
