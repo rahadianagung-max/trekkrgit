@@ -765,6 +765,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
               <button class="btn btn-primary" style="padding:14px 30px;font-size:14px" onclick="rmStartSetup('individual')">▶ Start new PlayRank</button>
               <button class="btn btn-ghost" style="padding:14px 24px;font-size:14px" onclick="rmStartSetup('league')">🏆 PlayRank League · Fixed Partner</button>
+              <button class="btn btn-ghost" style="padding:14px 24px;font-size:14px" onclick="rmStartSetup('liga')">⚡ Liga Trekkr session</button>
               <button class="btn btn-ghost" style="padding:14px 24px;font-size:14px" onclick="toggleSchedForm()">＋ Add PlayRank sched</button>
             </div>
 
@@ -824,6 +825,18 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
           <div class="rm-setup">
             <button class="rm-back" onclick="rmGo('intro')">← Back</button>
             <p class="rm-section-title" id="rm-setup-title">Match Setup</p>
+
+            <!-- Liga Trekkr — only visible for a Liga session -->
+            <div class="rm-card rm-liga-only" id="rm-liga-card" style="display:none">
+              <div class="rm-card-label">Liga Trekkr · Division</div>
+              <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">Every player plays <b>8 matches</b>, race to 4. Men/Women rotate partners; Mixed plays in fixed pairs (the first player is the <b>Captain</b>). Ranked by W–L → H2H → PD → PF → PA.</p>
+              <div class="rm-segment" id="rm-liga-divs">
+                <button class="rm-seg-btn" id="rm-liga-D1" onclick="rmLigaSetDiv('D1')">Division 1</button>
+                <button class="rm-seg-btn active" id="rm-liga-D2" onclick="rmLigaSetDiv('D2')">Division 2</button>
+                <button class="rm-seg-btn" id="rm-liga-D3" onclick="rmLigaSetDiv('D3')">Division 3</button>
+              </div>
+              <p class="rm-hint" id="rm-liga-hint"></p>
+            </div>
 
             <!-- PlayRank League (fixed partner) — only visible in league mode -->
             <div class="rm-card rm-league-only" id="rm-league-card" style="display:none">
@@ -907,7 +920,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <p class="rm-hint" id="rm-gender-hint">Men or Women. One session = one gender (for clean rankings &amp; qualification).</p>
             </div>
 
-            <div class="rm-card">
+            <div class="rm-card rm-noliga">
               <div class="rm-card-label">Score Format</div>
               <div class="rm-segment" style="margin-bottom:12px">
                 <button class="rm-seg-btn active" id="rm-sfmt-race" onclick="rmSetScoreFormat('race')">Race To</button>
@@ -924,7 +937,7 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <p class="rm-hint" id="rm-score-hint">Race to 4 — first to reach 4 wins</p>
             </div>
 
-            <div class="rm-card">
+            <div class="rm-card rm-noliga">
               <div class="rm-card-label">Game Level</div>
               <p style="font-size:13px;color:var(--txt2);margin:-6px 0 12px">What level is this match played at?</p>
               <select class="rm-input" id="rm-level" onchange="rmSetLevel(this.value)" style="appearance:auto;cursor:pointer">
@@ -1257,6 +1270,8 @@ const RM = { // shared state for ranked match
   _inited: false, _savedToRestore: null, _serverLive: [],
   // PlayRank League (fixed partner): planner inputs + the pre-built schedule.
   league: { pairs: 14, hours: 4, mins: 17, start: '19:00', k: 4, kAuto: true, winners: 3, schedule: [] },
+  // Liga Trekkr session: division + fixed rules (8 matches, race to 4).
+  liga: { on: false, div: 'D2' },
 };
 const API_BASE = (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
 
@@ -1835,17 +1850,26 @@ async function rmApi(path, opts = {}) {
 /* ══════════════════════════════════════════════════════════════════════
    RANKED MATCH — ELO ENGINE
    ══════════════════════════════════════════════════════════════════════ */
+// Preview only — the server (api/sheet.js "TREKKR ELO ENGINE") is the ELO
+// authority and its numbers replace these at End Match. Same rules: calibration
+// < CALIB_MATCHES matches (K=60), settled players damped vs calibrating opponents.
+const CALIB_MATCHES = 16, CALIB_K = 60, CALIB_DAMP = 0.6;
 function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
+function rmIsCalibrating(p) { if (!p) return false; return p.calibrating != null ? !!p.calibrating : ((p.matchCount || 0) < CALIB_MATCHES); }
+function rmEffectiveK(p) { return rmIsCalibrating(p) ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
 function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
   const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
-  const margin = 1 + Math.min(Math.abs(s1-s2)*.04, .3);
-  const exp1 = 1/(1+Math.pow(10,(t2a-t1a)/400)), exp2 = 1-exp1;
-  const upd = (p, r, e) => {
-    const k = rmKFactor(p.matchCount||0)*margin;
-    return {name:p.name, newElo:p.elo+Math.round(k*(r-e)), delta:Math.round(k*(r-e)), w:r===1?1:0, l:r===0?1:0};
+  const margin = 1 + Math.min(Math.abs(s1 - s2) * .04, .3);
+  const exp1 = 1 / (1 + Math.pow(10, (t2a - t1a) / 400)), exp2 = 1 - exp1;
+  const cal = (p) => (rmIsCalibrating(p) ? 1 : 0);
+  const oppFracT1 = (cal(p1t2) + cal(p2t2)) / 2, oppFracT2 = (cal(p1t1) + cal(p2t1)) / 2;
+  const upd = (p, r, e, oppFrac) => {
+    let k = rmEffectiveK(p) * margin;
+    if (!rmIsCalibrating(p)) k *= (1 - CALIB_DAMP * oppFrac);
+    return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
   };
-  return [upd(p1t1,t1r,exp1),upd(p2t1,t1r,exp1),upd(p1t2,t2r,exp2),upd(p2t2,t2r,exp2)];
+  return [upd(p1t1, t1r, exp1, oppFracT1), upd(p2t1, t1r, exp1, oppFracT1), upd(p1t2, t2r, exp2, oppFracT2), upd(p2t2, t2r, exp2, oppFracT2)];
 }
 function rmTier(elo) {
   if(elo>=3000)return'Platinum';if(elo>=2500)return'Gold';if(elo>=2100)return'Silver';
@@ -1911,6 +1935,11 @@ function rmChangeCourts(d) {
   rmUpdateRec();
 }
 function rmSetGender(g) {
+  // Liga: Men/Women rotate partners (individual), Mixed = fixed pairs (league).
+  if (rmLiga()) {
+    const want = g === 'MIXED' ? 'league' : 'individual';
+    if (RM.format !== want) { rmSetFormat(want); rmLigaApplyUi(); }
+  }
   // Individual sessions are single-gender; Fixed Mixed only exists in League.
   if (g === 'MIXED' && RM.format !== 'league') g = 'M';
   RM.gender = g;
@@ -1934,23 +1963,133 @@ function rmSetFormat(f) {
   RM.format = f === 'league' ? 'league' : 'individual';
   const lg = RM.format === 'league';
   document.querySelectorAll('.rm-league-only').forEach(el => { el.style.display = lg ? '' : 'none'; });
-  const mx = document.getElementById('rm-gender-MIXED'); if (mx) mx.style.display = lg ? '' : 'none';
-  const gg = document.getElementById('rm-gender-grid'); if (gg) gg.classList.toggle('three', lg);
+  const mx = document.getElementById('rm-gender-MIXED'); if (mx) mx.style.display = (lg || rmLiga()) ? '' : 'none';
+  const gg = document.getElementById('rm-gender-grid'); if (gg) gg.classList.toggle('three', lg || rmLiga());
   const title = document.getElementById('rm-setup-title'); if (title) title.textContent = lg ? 'League Setup' : 'Match Setup';
   const gh = document.getElementById('rm-gender-hint');
   if (gh) gh.innerHTML = lg
     ? 'Men, Women, or Mixed (every pair = 1 man + 1 woman). Mixed results go to the Mixed ranking.'
     : 'Men or Women. One session = one gender (for clean rankings &amp; qualification).';
-  if (!lg && RM.gender === 'MIXED') rmSetGender('M');
+  if (!lg && RM.gender === 'MIXED' && !rmLiga()) rmSetGender('M');
   if (lg) { if (RM.scoreFormat === 'bestof' && RM.scoreTarget !== 5) { RM.scoreTarget = 5; } }
   rmChangeCourts(0);
   rmPrlSync();
 }
 function rmStartSetup(f) {
-  rmSetFormat(f);
+  RM.liga.on = (f === 'liga');
+  rmSetFormat(f === 'liga' ? 'individual' : f);
   if (f === 'league') rmLeagueRenderSetup();
+  rmLigaApplyUi();
   rmGo('setup');
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LIGA TREKKR — division, fixed rules (8 matches · race to 4), ranking
+   W–L → H2H → PD → PF → PA. Men/Women = rotating partners (individual
+   engine), Mixed = fixed pairs (league engine) with player 1 as Captain.
+   ══════════════════════════════════════════════════════════════════════ */
+const LIGA_MATCHES = 8;
+const LIGA_DIVS = {
+  D1: { name: 'Division 1', lo: 0,    hi: 1199, seed: 1000 },
+  D2: { name: 'Division 2', lo: 1200, hi: 1799, seed: 1600 },
+  D3: { name: 'Division 3', lo: 1800, hi: 2499, seed: 2300 },
+};
+function rmLiga(){ return RM.liga && RM.liga.on; }
+function rmLigaDiv(){ return LIGA_DIVS[RM.liga.div] || LIGA_DIVS.D2; }
+function rmLigaCatName(){ return RM.gender==='F' ? 'Women' : RM.gender==='MIXED' ? 'Mixed' : 'Men'; }
+function rmLigaSetDiv(d){
+  RM.liga.div = LIGA_DIVS[d] ? d : 'D2';
+  rmLigaApplyUi();
+}
+// Show/hide the Liga card, lock race to 4, and seed new players at the
+// division ceiling − 200 (D1 1000 · D2 1600 · D3 2300).
+function rmLigaApplyUi(){
+  const on = rmLiga();
+  document.querySelectorAll('.rm-liga-only').forEach(el => { el.style.display = on ? '' : 'none'; });
+  document.querySelectorAll('.rm-noliga').forEach(el => { el.style.display = on ? 'none' : ''; });
+  const mx = document.getElementById('rm-gender-MIXED'); if (mx) mx.style.display = (on || RM.format==='league') ? '' : 'none';
+  const gg = document.getElementById('rm-gender-grid'); if (gg) gg.classList.toggle('three', on || RM.format==='league');
+  if (!on) { rmSetLevel(RM.level); return; }
+  RM.scoreFormat = 'race'; RM.scoreTarget = 4;
+  const dv = rmLigaDiv();
+  RM.startElo = dv.seed;
+  ['D1','D2','D3'].forEach(x => { const b=document.getElementById('rm-liga-'+x); if(b) b.classList.toggle('active', x===RM.liga.div); });
+  const h = document.getElementById('rm-liga-hint');
+  if (h) h.innerHTML = `Rating ${dv.lo?dv.lo+'–':'under '}${dv.hi+1-(dv.lo?1:0)} · players above ${dv.hi} can't join · new players start at ${dv.seed}`;
+  const title = document.getElementById('rm-setup-title'); if (title) title.textContent = 'Liga Trekkr Setup';
+  const gh = document.getElementById('rm-gender-hint');
+  if (gh) gh.innerHTML = 'Men or Women: partners rotate every round. Mixed: fixed pairs (1 man + 1 woman), the first player is the Captain.';
+  if (RM.format === 'league') {
+    RM.league.k = LIGA_MATCHES; RM.league.kAuto = false;
+    if (RM.league.mins === 17) RM.league.mins = 20;
+    rmLeagueRenderSetup();
+  }
+}
+// Rated players above the division ceiling can't join this Liga session.
+function rmLigaBlocked(p){
+  if (!rmLiga() || !p) return false;
+  return (Number(p.matchCount)||0) > 0 && (Number(p.elo)||0) > rmLigaDiv().hi;
+}
+// Head-to-head wins among individuals: a beat b when they were on opposite teams.
+function rmLigaH2H(){
+  const h={};
+  RM.rounds.filter(r=>r.submitted).forEach(r=>r.matches.forEach(m=>{
+    if(m.score1==null||m.score2==null||Number(m.score1)===Number(m.score2)) return;
+    const w=Number(m.score1)>Number(m.score2)?m.team1:m.team2, l=w===m.team1?m.team2:m.team1;
+    w.forEach(a=>l.forEach(b=>{ h[a.name]=h[a.name]||{}; h[a.name][b.name]=(h[a.name][b.name]||0)+1; }));
+  }));
+  return h;
+}
+// Liga order: W → H2H (mini-table among players/pairs tied on wins) → PD → PF → PA → ELO.
+function rmLigaSort(list, key, h2h, get){
+  const W=x=>get(x).w, PD=x=>get(x).pd, PF=x=>get(x).pf, PA=x=>get(x).pa, E=x=>get(x).elo||0;
+  const byW=list.slice().sort((a,b)=>W(b)-W(a));
+  const out=[]; let i=0;
+  while(i<byW.length){
+    let j=i+1; while(j<byW.length&&W(byW[j])===W(byW[i])) j++;
+    const g=byW.slice(i,j), ids=new Set(g.map(key));
+    g.forEach(x=>{ const row=h2h[key(x)]||{}; x._h2h=g.length>1?Object.keys(row).filter(o=>ids.has(o)).reduce((s,o)=>s+row[o],0):0; });
+    g.sort((a,b)=>b._h2h-a._h2h||PD(b)-PD(a)||PF(b)-PF(a)||PA(a)-PA(b)||E(b)-E(a));
+    out.push(...g); i=j;
+  }
+  return out;
+}
+// Who plays next in a rotating Liga round: only players still under 8 matches,
+// fewest played first (then most byes), so everyone ends on exactly 8.
+function rmGenerateLigaRound(isFirst=false){
+  const players=[...RM.selectedPlayers].map(p=>({...p,...(RM.playerStats[p.name]||{})}))
+    .filter(p=> RM.playerStats[p.name] ? RM.playerStats[p.name].active!==false : true);
+  const played={}; players.forEach(p=>played[p.name]=0);
+  RM.rounds.filter(r=>r.submitted).forEach(r=>r.matches.forEach(m=>[...m.team1,...m.team2].forEach(p=>{ if(played[p.name]!==undefined) played[p.name]++; })));
+  const open=players.filter(p=>played[p.name]<LIGA_MATCHES);
+  if(open.length<4) return {matches:[],byePlayers:players.map(p=>p.name),leagueDone:true};
+  const {byeCount,partnerCount,opponentCount}=rmBuildHistory();
+  const order=open.sort((a,b)=>(played[a.name]-played[b.name])||((byeCount[b.name]||0)-(byeCount[a.name]||0))||((b.elo||0)-(a.elo||0)));
+  const courts=Math.min(RM.courts,Math.floor(order.length/4));
+  const playing=order.slice(0,courts*4), playSet=new Set(playing.map(p=>p.name));
+  const byePlayers=players.filter(p=>!playSet.has(p.name)).map(p=>p.name);
+  // Group the players on court by current Liga standing (first round: by ELO).
+  const ranked=isFirst ? playing.sort((a,b)=>(b.elo||0)-(a.elo||0))
+    : rmLigaSort(playing,p=>p.name,rmLigaH2H(),p=>({w:p.wins||0,pd:p.pointDiff||0,pf:p.pointsFor||0,pa:p.pointsAgainst||0,elo:p.elo}));
+  const partnered=(a,b)=>((partnerCount[a]&&partnerCount[a][b])||0);
+  const opposed=(a,b)=>((opponentCount[a]&&opponentCount[a][b])||0);
+  const cost=(t1,t2)=>3*(partnered(t1[0].name,t1[1].name)+partnered(t2[0].name,t2[1].name))
+    +opposed(t1[0].name,t2[0].name)+opposed(t1[0].name,t2[1].name)+opposed(t1[1].name,t2[0].name)+opposed(t1[1].name,t2[1].name);
+  const matches=[];
+  for(let c=0;c<courts;c++){
+    const g=ranked.slice(c*4,c*4+4);
+    const opts=[{t1:[g[0],g[3]],t2:[g[1],g[2]],bal:0},{t1:[g[0],g[2]],t2:[g[1],g[3]],bal:1},{t1:[g[0],g[1]],t2:[g[2],g[3]],bal:2}]
+      .map(o=>({...o,cost:cost(o.t1,o.t2)})).sort((a,b)=>a.cost-b.cost||a.bal-b.bal);
+    matches.push({court:c+1,team1:opts[0].t1,team2:opts[0].t2,score1:null,score2:null});
+  }
+  return {matches,byePlayers};
+}
+function rmLigaPlayedCounts(){
+  const c={}; Object.keys(RM.playerStats).filter(n=>RM.playerStats[n].active!==false).forEach(n=>{c[n]=0;});
+  RM.rounds.filter(r=>r.submitted).forEach(r=>r.matches.forEach(m=>[...m.team1,...m.team2].forEach(p=>{ if(c[p.name]!==undefined) c[p.name]++; })));
+  return c;
+}
+function rmLigaSource(){ return `Liga Trekkr · ${RM.liga.div} · ${rmLigaCatName()}`; }
 function rmIsTeamMode() { return RM.format === 'league'; }
 function rmSetScoreFormat(sf) {
   RM.scoreFormat = sf;
@@ -2064,6 +2203,7 @@ function rmRenderPlayers() {
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
           <span class="rm-player-gender">${p.gender==='F'?'♀ F':'♂ M'}</span>
           <span class="rm-player-tier">${rmTier(p.elo)}</span>
+          ${rmLigaBlocked(p)?`<span style="font-size:10.5px;font-weight:700;color:var(--red);background:rgba(239,68,68,.1);border-radius:5px;padding:1px 5px">Above ${rmLigaDiv().name}</span>`:''}
           ${(RM.flagged&&RM.flagged.has(p.name.toLowerCase()))?`<span title="Performa dominan saat kalibrasi — tinjau/re-seed" style="font-size:10.5px;font-weight:700;color:var(--gold);background:var(--gold-lt);border-radius:5px;padding:1px 5px">⚠ kalibrasi</span>`:''}
         </div>
       </div>
@@ -2083,6 +2223,10 @@ function rmTogglePlayer(name) {
   const p = RM.allPlayers.find(x => x.name===name);
   if (!p) return;
   const idx = RM.selectedPlayers.findIndex(x => x.name===name);
+  if (idx < 0 && rmLigaBlocked(p)) {
+    rmShowErr('rm-players-error', `${p.displayName||p.name} (${p.elo}) is above ${rmLigaDiv().name} (max ${rmLigaDiv().hi}) and can't join this Liga session.`);
+    return;
+  }
   if (idx >= 0) RM.selectedPlayers.splice(idx,1);
   else RM.selectedPlayers.push({...p});
   rmRenderChips();
@@ -2281,6 +2425,7 @@ function rmGenerateAmericanoRound(isFirst=false) {
 // partners everyone, bye-fair), 2+ courts = Mexicano (rank-based courts).
 function rmGenerateRound(isFirst=false) {
   if (RM.format === 'league') return rmGenerateLeagueRound(RM.rounds.filter(r=>r.submitted).length);
+  if (rmLiga()) return rmGenerateLigaRound(isFirst);
   if (RM.courts === 1) return rmGenerateAmericanoRound(isFirst);
   // MEXICANO (2+ courts): sort by standings, group per court by rank, pair 1+4 vs 2+3.
   const courts=RM.courts, maxPlay=courts*4;
@@ -2398,6 +2543,7 @@ function rmLeaguePlan(T){
   let k=L.kAuto?kMax:Math.min(L.k,kMax);
   if(T%2&&k%2) k--;
   k=Math.max(0,k);
+  if(rmLiga()){ k=LIGA_MATCHES; kMax=LIGA_MATCHES; }
   const matches=T*k/2;
   return {T,courts,slots,kMax,k,matches,slotsNeeded:Math.ceil(matches/courts)};
 }
@@ -2412,10 +2558,12 @@ function rmLeaguePlanText(plan){
   if(plan.k<1) return `Not enough time: ${L.hours} h fits only ${plan.slots} slots per court. Add time or courts.`;
   const end=rmLeagueClock(plan.slotsNeeded);
   let t=`<strong>${plan.T} pairs · ${plan.courts} courts · ${L.hours} h</strong> → ${plan.slots} slots per court (${L.mins} min each).<br>`
-    +`Every pair plays <strong>${plan.k} matches</strong> against ${plan.k} different opponents — <strong>${plan.matches} matches</strong> total, `
+    +`Every pair plays <strong>${plan.k} matches</strong>${plan.k<=plan.T-1?` against ${plan.k} different opponents`:''} — <strong>${plan.matches} matches</strong> total, `
     +`${L.start}–±${end}.`;
   if(plan.k<plan.kMax) t+=`<br><span style="color:var(--txt2)">Max that fits: ${plan.kMax} per pair.</span>`;
-  if(plan.T%2) t+=`<br><span style="color:var(--txt2)">Odd number of pairs → matches per pair must be even.</span>`;
+  if(plan.T%2&&!rmLiga()) t+=`<br><span style="color:var(--txt2)">Odd number of pairs → matches per pair must be even.</span>`;
+  if(rmLiga()&&plan.T-1<LIGA_MATCHES) t+=`<br><span style="color:var(--txt2)">Liga: ${LIGA_MATCHES} matches per pair with ${plan.T} pairs → some pairs meet twice.</span>`;
+  if(rmLiga()&&plan.slotsNeeded>plan.slots) t+=`<br><span style="color:var(--red)">Not enough time for ${LIGA_MATCHES} matches per pair — add time or courts.</span>`;
   if(RM.courts>plan.courts) t+=`<br><span style="color:var(--txt2)">Only ${plan.courts} courts can be used with ${plan.T} pairs.</span>`;
   return t;
 }
@@ -2437,6 +2585,7 @@ function rmLeagueChange(field,d){
   else if(field==='hours') L.hours=Math.max(0.5,Math.min(12,L.hours+d));
   else if(field==='mins') L.mins=Math.max(6,Math.min(60,L.mins+d));
   else if(field==='winners') L.winners=Math.max(1,Math.min(5,(L.winners||3)+d));
+  else if(field==='k'&&rmLiga()){ /* Liga: fixed at 8 matches per pair */ }
   else if(field==='k'){
     const plan=rmLeaguePlan(L.pairs), step=(L.pairs%2)?2:1;
     L.k=Math.max(step,Math.min(plan.kMax,plan.k+d*step));
@@ -2460,7 +2609,7 @@ function rmOrdinal(n){ return n+(n===1?'st':n===2?'nd':n===3?'rd':'th'); }
 // Place label for winner index i (0-based): Champion, Runner-up, 3rd place, 4th place, 5th place.
 function rmPlaceName(i){ return i===0?'Champion':i===1?'Runner-up':rmOrdinal(i+1)+' place'; }
 function rmWinnerBadge(i,n){ return i<n?`<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--gold-lt);color:var(--gold);margin-left:6px;vertical-align:middle">${rmPlaceName(i).toUpperCase()}</span>`:''; }
-function rmTeamName(t){ return (t&&t.players?t.players:[]).map(n=>String(n).split(' ')[0]).join(' & '); }
+function rmTeamName(t){ return (t&&t.players?t.players:[]).map((n,i)=>String(n).split(' ')[0]+(rmLiga()&&i===0?' (C)':'')).join(' & '); }
 function rmTeamElo(t){ return t.players.reduce((s,n)=>s+(((RM.playerStats[n]||RM.selectedPlayers.find(p=>p.name===n)||{}).elo)||RM.startElo),0); }
 
 // Matches for T pairs, k each, all opponents distinct.
@@ -2555,6 +2704,7 @@ function rmLeagueTable(){
   }));
   const list=Object.values(rows);
   list.forEach(t=>{t.pd=t.pf-t.pa; t.elo=rmTeamElo(t);});
+  if(rmLiga()){ const h={}; list.forEach(t=>{h[t.id]=t.h2h;}); return rmLigaSort(list,t=>t.id,h,t=>t); }
   list.sort((a,b)=>b.w-a.w||b.pd-a.pd||b.pf-a.pf);
   const out=[]; let i=0;
   while(i<list.length){
@@ -3091,7 +3241,15 @@ function rmUpdateScore(courtIdx) {
 
 function rmUpdateFairBar() {
   const bar=document.getElementById('rm-fair-bar');
-  const lg=RM.format==='league', canEnd=!lg||rmLeagueCanEnd();
+  const lg=RM.format==='league';
+  if(!lg&&rmLiga()){
+    const v=Object.values(rmLigaPlayedCounts()), mn=v.length?Math.min(...v):0, mx=v.length?Math.max(...v):0, done=v.length>0&&mn>=LIGA_MATCHES;
+    document.querySelectorAll('.rm-end-btn').forEach(b=>{ b.disabled=!done; b.style.opacity=done?'':'.45'; });
+    if(done){ bar.className='rm-fair-bar ok'; bar.innerHTML=`<span>✅</span><span>Everyone has played ${LIGA_MATCHES} matches — End Match is unlocked.</span>`; }
+    else { bar.className='rm-fair-bar info'; bar.innerHTML=`<span>⚡</span><span>Liga: players have played ${mn}–${mx} of ${LIGA_MATCHES} matches. End Match unlocks at ${LIGA_MATCHES} each.</span>`; }
+    return;
+  }
+  const canEnd=!lg||rmLeagueCanEnd();
   document.querySelectorAll('.rm-end-btn').forEach(b=>{ b.disabled=!canEnd; b.style.opacity=canEnd?'':'.45'; });
   if(lg){
     const v=Object.values(rmLeaguePlayedCounts()), mn=v.length?Math.min(...v):0, mx=v.length?Math.max(...v):0;
@@ -3138,7 +3296,7 @@ async function rmSubmitRound() {
   if(!round||round.submitted) return;
   const incomplete=round.matches.filter(m=>m.score1===null||m.score2===null);
   if(incomplete.length){rmSetStatus('failed',`${incomplete.length} court(s) missing a score.`);return;}
-  if(RM.format==='league'){
+  if(RM.format==='league'||rmLiga()){
     const bad=round.matches.map(m=>({m,e:rmLeagueScoreError(Number(m.score1),Number(m.score2))})).filter(x=>x.e);
     if(bad.length){rmSetStatus('failed',bad.map(x=>`Court ${x.m.court}: ${x.m.score1}–${x.m.score2} (${x.e})`).join('<br>'));return;}
   }
@@ -3200,11 +3358,12 @@ async function rmSubmitRound() {
 
 /* LEADERBOARD */
 function rmGetLeaderboard(){
+  if(rmLiga()) return rmLigaSort(Object.values(RM.playerStats),p=>p.name,rmLigaH2H(),p=>({w:p.wins||0,pd:p.pointDiff||0,pf:p.pointsFor||0,pa:p.pointsAgainst||0,elo:p.elo}));
   return Object.values(RM.playerStats).sort((a,b)=>b.wins-a.wins||b.pointDiff-a.pointDiff||b.elo-a.elo);
 }
 function rmRenderLeagueLeaderboard(el){
   const rows=rmLeagueTable(), W=rmLeagueWinners(rows.length);
-  el.innerHTML=`<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Standings</span><span class="prl-chip g">W → PD → PF → H2H</span></div>`
+  el.innerHTML=`<div class="prl-sec"><span class="t"><span class="prl-sq"></span>Standings</span><span class="prl-chip g">${rmLiga()?'W → H2H → PD → PF → PA':'W → PD → PF → H2H'}</span></div>`
     +rmPrlTable(rows,W,rows.length)
     +`<p class="prl-note">Orange line = winners cut-off (top ${W}) · ELO = pair average, Δ this session</p>`;
 }
@@ -3267,6 +3426,10 @@ function rmRenderHistory(){
    RANKED MATCH — END MATCH
    ══════════════════════════════════════════════════════════════════════ */
 function rmShowEndConfirm(){
+  if(RM.format!=='league'&&rmLiga()){
+    const v=Object.values(rmLigaPlayedCounts());
+    if(!v.length||Math.min(...v)<LIGA_MATCHES){ rmSetStatus('failed',`Liga: End Match unlocks when every player has played ${LIGA_MATCHES} matches.`); return; }
+  }
   if(RM.format==='league'){
     if(!rmLeagueCanEnd()){ rmSetStatus('failed','End Match unlocks when every pair has played the same number of matches.'); return; }
     const tbl=rmLeagueTable(), W=rmLeagueWinners(tbl.length);
@@ -3319,7 +3482,7 @@ async function rmEndMatch(){
         p1t2:(m.team2[0].gender||'M').toUpperCase(), p2t2:(m.team2[1].gender||'M').toUpperCase(),
       },
       gender:rmMatchGender([...m.team1,...m.team2]),
-      sourceUrl:'Trekkr Ranked Match',
+      sourceUrl:rmLiga()?rmLigaSource():'Trekkr Ranked Match',
     }));
     try {
       if(allMatches.length) await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:allMatches})});
@@ -3328,8 +3491,10 @@ async function rmEndMatch(){
       // Kirim match mentah juga: server yang jadi wasit ELO (Option C) — angka
       // kalibrasi (K agresif) dihitung server, elo_results cuma fallback/preview.
       const resp=await rmApi('sessions',{method:'POST',body:JSON.stringify({
-        sessionName:RM.format==='league'?`PlayRank League – ${RM.venue} – ${now}`:`Ranked Match Daily – ${RM.venue} – ${now}`,
-        format:RM.format==='league'?('PlayRank League Fixed '+(RM.gender==='F'?'Women':RM.gender==='MIXED'?'Mixed':'Men'))
+        sessionName:rmLiga()?`Liga Trekkr – ${RM.venue} – ${rmLigaDiv().name} ${rmLigaCatName()} – ${now}`
+          :RM.format==='league'?`PlayRank League – ${RM.venue} – ${now}`:`Ranked Match Daily – ${RM.venue} – ${now}`,
+        sourceUrl:rmLiga()?rmLigaSource():undefined,
+        format:rmLiga()?`Liga Trekkr ${RM.liga.div} ${rmLigaCatName()}`:RM.format==='league'?('PlayRank League Fixed '+(RM.gender==='F'?'Women':RM.gender==='MIXED'?'Mixed':'Men'))
           :RM.courts===1?'Ranked Match Americano':'Ranked Match Mexicano',
         courts:RM.courts, venue:RM.venue,
         players:RM.selectedPlayers.map(p=>p.name), rounds:[],
@@ -3869,7 +4034,7 @@ function rmSaveState(screen){
       playerStats:RM.playerStats,selectedPlayers:RM.selectedPlayers,
       courts:RM.courts,format:RM.format,scoreFormat:RM.scoreFormat,
       scoreTarget:RM.scoreTarget,partners:RM.partners,teams:RM.teams,
-      level:RM.level,startElo:RM.startElo,league:RM.league,
+      level:RM.level,startElo:RM.startElo,league:RM.league,liga:RM.liga,
       token:RM.token,venue:RM.venue,username:RM.username,gender:RM.gender,
       liveCode:RM_LIVE.code,liveKey:RM_LIVE.key,savedAt:Date.now(),
     }));
@@ -3882,7 +4047,7 @@ function rmResumeState(){
     playerStats:RM.playerStats, selectedPlayers:RM.selectedPlayers,
     courts:RM.courts, format:RM.format, scoreFormat:RM.scoreFormat,
     scoreTarget:RM.scoreTarget, partners:RM.partners, teams:RM.teams,
-    level:RM.level, startElo:RM.startElo, league:RM.league, venue:RM.venue,
+    level:RM.level, startElo:RM.startElo, league:RM.league, liga:RM.liga, venue:RM.venue,
     gender:RM.gender, savedAt:Date.now() };
 }
 function rmClearStorage(){
@@ -4003,6 +4168,7 @@ function rmApplySaved(saved){
     gender:saved.gender||'M',
   });
   if(saved.league) RM.league=Object.assign({}, RM.league, saved.league);
+  RM.liga=Object.assign({on:false,div:'D2'}, saved.liga||{});
   if(RM.format==='fixed') RM.format='individual';
   RM_LIVE={code:saved.liveCode||'',key:saved.liveKey||'',busy:false};
 }
