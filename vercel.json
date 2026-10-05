@@ -1,4 +1,5 @@
 {
+  "regions": ["syd1"],
   "rewrites": [
     { "source": "/leaderboard", "has": [{ "type": "host", "value": "liga.trekkr.online" }], "destination": "/liga-leaderboard.html" },
     { "source": "/v/:slug", "has": [{ "type": "host", "value": "liga.trekkr.online" }], "destination": "/liga-venue.html" },
