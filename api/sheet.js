@@ -1944,6 +1944,21 @@ async function login({ username, password }) {
 }
 
 // ── PLAYERS ──
+// Badge pemain (kolom players.badges, dipisah koma — mis. "coach" dari Stellar
+// Squad Academy). Additive: dibaca langsung dari Supabase; tanpa Supabase → kosong.
+async function playerBadgeMap() {
+  if (!supaOn()) return {};
+  try {
+    const rows = await supaRest("GET", "players?badges=not.is.null&select=name,badges") || [];
+    const out = {};
+    for (const r of rows) {
+      const list = String(r.badges || "").split(",").map((b) => b.trim().toLowerCase()).filter(Boolean);
+      if (r.name && list.length) out[normName(r.name)] = list;
+    }
+    return out;
+  } catch (e) { return {}; }
+}
+
 async function getPlayers(params) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:K` });
@@ -2003,6 +2018,7 @@ async function getPlayerDetail(name) {
     // Claim_Email (col L) set => profile has been claimed; the passport then gates
     // further edits behind the registered email. We never expose the email itself.
     claimed: !!String(pRow[11] || "").trim(),
+    badges: (await playerBadgeMap())[normName(pRow[0])] || [],
   };
   // A profile is also claimed once a Trekkr account is linked (players.user_id),
   // even with no claim_email — match the /live page's definition so the passport
@@ -3670,6 +3686,7 @@ async function getNationalLeaderboard(params) {
   }
   if (!playerStats) playerStats = await legacyEloScan(sheets);
 
+  const badgeMap = await playerBadgeMap();
   let leaderboard = Object.keys(playerStats).map((k) => {
     const ps  = playerStats[k];
     const elo = ps.elo;
@@ -3677,6 +3694,7 @@ async function getNationalLeaderboard(params) {
     return {
       ...info,
       display:      publicName(info.name, info.displayName),
+      badges:       badgeMap[normName(info.name)] || [],
       elo,
       level:        getTierName(elo),
       totalMatches: ps.totalMatches,

@@ -79,6 +79,7 @@
 .prov-pill,.cal-pill{display:inline-block;font:800 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--ink);padding:1px 5px;vertical-align:1px;margin-right:6px}
 .prov-pill{color:var(--ink);background:var(--volt)}
 .cal-pill{color:#fff;background:var(--ink)}
+.coach-pill{display:inline-block;font:800 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--ink);padding:1px 5px;vertical-align:1px;margin-right:6px;color:#fff;background:var(--orange)}
 .pager{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:14px}
 .pager button{min-width:34px;height:34px;padding:0 8px;background:#fff;border:2px solid var(--ink);font:800 11px var(--mono);color:var(--ink);cursor:pointer}
 .pager button.on{background:var(--ink);color:var(--volt)}
@@ -204,6 +205,8 @@
   }
   function meta(p){var parts=[tierName(p.elo)];var fc=firstClub(p.clubs);if(fc)parts.push(fc);return parts.filter(Boolean).join(' · ');}
   // Label: Calibrated (15+ matches) or Provisional (still calibrating, 1–14).
+  // Badge COACH (pelatih berlisensi Stellar Squad Academy).
+  function coachPill(p){return (p.badges||[]).indexOf('coach')>-1?'<span class="coach-pill">Coach</span>':'';}
   function badge(p){var m=Number(p.totalMatches)||0;
     return isEligible(p)?'<span class="cal-pill">Calibrated</span>':'<span class="prov-pill" title="'+m+'/'+MIN_TIER_MATCHES+' matches">Provisional '+m+'/'+MIN_TIER_MATCHES+'</span>';}
   // The website always shows the player's full name (aliases are app-only).
@@ -213,13 +216,13 @@
   function rowHTML(p,rank){
     return '<a class="rrow'+(rank===2?' r2':rank===3?' r3':'')+'" href="'+passportUrl(p)+'">'
       +'<span class="rank">'+String(rank).padStart(2,'0')+'</span>'+avatar(p)
-      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+badge(p)+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+coachPill(p)+badge(p)+esc(meta(p))+'</span></span>'
       +'<span class="elo">'+p.elo+'</span></a>';
   }
   function championHTML(p){
     return '<a class="champion" href="'+passportUrl(p)+'">'
       +'<span class="rank">01</span>'+avatar(p,true)
-      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+badge(p)+esc(meta(p))+'</span></span>'
+      +'<span class="who"><span class="name">'+esc(disp(p))+'</span><span class="meta">'+coachPill(p)+badge(p)+esc(meta(p))+'</span></span>'
       +'<span class="elo"><span class="cap">ELO</span><span class="val">'+p.elo+'</span></span></a>';
   }
   // One merged board: calibrated + provisional players, ranked by ELO, 10 per page.
