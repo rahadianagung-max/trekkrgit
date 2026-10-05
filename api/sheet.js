@@ -3304,8 +3304,9 @@ async function recordManualMatch(body) {
   let eloRows = [];
   try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
   const latest = {}, mcount = {};
-  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = nm.toLowerCase(); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + 1; });
-  const mk = (name) => { const k = name.toLowerCase(); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(lv[name]), matchCount: 0 }; };
+  // matchCount = Σ(menang+kalah) karier (sama dengan computeSessionElo), bukan jumlah baris.
+  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = normName(nm); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0); });
+  const mk = (name) => { const k = normName(name); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(lv[name]), matchCount: 0 }; };
   const P = names.map(mk);
   const results = rmCalcElo(P[0], P[1], P[2], P[3], s1, s2);
 
@@ -3388,7 +3389,8 @@ async function importMatches(body) {
   let eloRows = [];
   try { const er = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A2:G` }); eloRows = er.data.values || []; } catch (e) {}
   const latest = {}, mcount = {};
-  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = nm.toLowerCase(); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + 1; });
+  // matchCount = Σ(menang+kalah) karier (sama dengan computeSessionElo), bukan jumlah baris.
+  eloRows.forEach((r) => { const nm = r[1] || ""; if (!nm) return; const k = normName(nm); latest[k] = parseInt(r[2], 10) || 1350; mcount[k] = (mcount[k] || 0) + (parseInt(r[4], 10) || 0) + (parseInt(r[5], 10) || 0); });
   const existingPlayers = new Set();
   try { const pr = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:A` }); (pr.data.values || []).forEach((r) => { if (r[0]) existingPlayers.add(r[0].toLowerCase()); }); } catch (e) {}
   const existingVenues = new Set();
@@ -3406,14 +3408,14 @@ async function importMatches(body) {
   const dateStr = new Date().toISOString().split("T")[0], tsNow = new Date().toISOString();
   const sessionId = `SES_IMP_${Date.now()}`;
   const eloLogRows = [], venueRows = {}, venueDisplay = {}, newPlayerRows = [], newVenueRows = [], stat = {};
-  const mk = (name) => { const k = name.toLowerCase(); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(newPlayerLevel), matchCount: 0 }; };
+  const mk = (name) => { const k = normName(name); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(newPlayerLevel), matchCount: 0 }; };
 
   for (const m of matches) {
     const [n1, n2, n3, n4] = m.names;
     const results = rmCalcElo(mk(n1), mk(n2), mk(n3), mk(n4), m.s1, m.s2);
     results.forEach((r) => {
-      const k = r.name.toLowerCase();
-      latest[k] = r.newElo; mcount[k] = (mcount[k] || 0) + 1;
+      const k = normName(r.name);
+      latest[k] = r.newElo; mcount[k] = (mcount[k] || 0) + r.w + r.l;
       eloLogRows.push([sessionId, r.name, r.newElo, r.delta, r.w, r.l, tsNow]);
       if (!stat[r.name]) stat[r.name] = { w: 0, l: 0, played: 0, elo: r.newElo };
       stat[r.name].w += r.w; stat[r.name].l += r.l; stat[r.name].played += 1; stat[r.name].elo = r.newElo;
@@ -5222,18 +5224,26 @@ async function tPublicEvent(eventId, opts) {
 // ==============================================================
 // TOURNAMENT HANDLERS (Phase 6: end-of-tournament ELO replay)
 // ==============================================================
-// --- Ranked Match ELO engine (calibration-aware). Base curve mirrors the client
-// engines in admin/mexicano; margin-of-victory multiplier is unchanged. Adds an
-// OPT-IN aggressive K during a player's calibration window, applied only when a
-// caller sets p.calibrating=true (see computeSessionElo). Callers that don't set
-// it — tournament finalize, superadmin import, single venue submit — keep the
-// exact previous behavior, so this change is safe for those paths. ---
-const CALIB_MATCHES = 15;   // "calibrating" until this many career matches (tunable)
+// ==== TREKKR ELO ENGINE — single source of truth ===========================
+// Blok ini IDENTIK di trekkrgit/api/sheet.js dan turnamenpadel/api/sheet.js.
+// Semua jalur yang menulis ELO_Log (PlayRank, turnamen, Ranked Event, import,
+// submit satu match) menghitung lewat rmCalcElo di sini — jangan buat rumus
+// lain, dan kalau mengubah blok ini ubah KEDUA repo sekaligus.
+// - Rata-rata ELO tim, skala 400, bonus margin 1+min(|selisih skor|*0.04, 0.3).
+// - Kalibrasi: pemain dengan < CALIB_MATCHES match karier memakai K=CALIB_K;
+//   pemain mapan memakai rmKFactor(matchCount), diredam CALIB_DAMP x porsi lawan
+//   yang masih kalibrasi. Kalau caller tidak mengirim p.calibrating, status
+//   kalibrasi diturunkan dari p.matchCount (Σ menang+kalah dari ELO_Log).
+const CALIB_MATCHES = 16;   // "calibrating" until this many career matches (= 2 sesi Liga)
 const CALIB_K = 60;         // aggressive K during calibration (vs 40 normal early)
 const CALIB_DAMP = 0.6;     // how much a settled player's K is dampened when the
                             // opposing team is unrated/calibrating (uncertain rating)
 function rmKFactor(n) { return n < 10 ? 40 : n < 30 ? 32 : n < 60 ? 24 : 20; }
-function rmEffectiveK(p) { return p && p.calibrating ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
+function rmIsCalibrating(p) {
+  if (!p) return false;
+  return p.calibrating != null ? !!p.calibrating : ((p.matchCount || 0) < CALIB_MATCHES);
+}
+function rmEffectiveK(p) { return rmIsCalibrating(p) ? CALIB_K : rmKFactor((p && p.matchCount) || 0); }
 function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   const t1a = (p1t1.elo + p2t1.elo) / 2, t2a = (p1t2.elo + p2t2.elo) / 2;
   const t1r = s1 > s2 ? 1 : s1 < s2 ? 0 : .5, t2r = 1 - t1r;
@@ -5243,16 +5253,17 @@ function rmCalcElo(p1t1, p2t1, p1t2, p2t2, s1, s2) {
   // still uncertain) carries less information, so a SETTLED player's rating moves
   // less against them — calibrating players keep their full (fast) K so they still
   // converge quickly. oppFrac = share of the OPPOSING team that is calibrating.
-  const cal = (p) => (p && p.calibrating) ? 1 : 0;
+  const cal = (p) => (rmIsCalibrating(p) ? 1 : 0);
   const oppFracT1 = (cal(p1t2) + cal(p2t2)) / 2; // team 1 faces team 2
   const oppFracT2 = (cal(p1t1) + cal(p2t1)) / 2; // team 2 faces team 1
   const upd = (p, r, e, oppFrac) => {
     let k = rmEffectiveK(p) * margin;
-    if (!(p && p.calibrating)) k *= (1 - CALIB_DAMP * oppFrac);
+    if (!rmIsCalibrating(p)) k *= (1 - CALIB_DAMP * oppFrac);
     return { name: p.name, newElo: p.elo + Math.round(k * (r - e)), delta: Math.round(k * (r - e)), w: r === 1 ? 1 : 0, l: r === 0 ? 1 : 0 };
   };
   return [upd(p1t1, t1r, exp1, oppFracT1), upd(p2t1, t1r, exp1, oppFracT1), upd(p1t2, t2r, exp2, oppFracT2), upd(p2t2, t2r, exp2, oppFracT2)];
 }
+// ==== END TREKKR ELO ENGINE ================================================
 // Write a tournament's completed matches into its venue match-log tab so player
 // passports show match history + best-performing-partner (both derived from venue
 // matches). Registers the venue + creates the tab if missing. Idempotent: rows are
