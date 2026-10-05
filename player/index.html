@@ -1428,7 +1428,8 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     +(unrated?'<span class="ppc gray">Unrated</span>'
        :('<span class="ppc tier">'+tierEmoji(st.name)+' '+st.name+'</span><span class="ppc elo">ELO<b>'+eloDisp+'</b>'+tri+'</span>'))
     +(bestRank?('<span class="ppc rank lk">⭐ #'+bestRank.rank+' '+bestRank.venue+'</span>'):'')
-    +(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih berlisensi Stellar Squad Academy">Coach</span>':'')
+    +(((p.badges||[]).indexOf('certified-coach')>-1)?'<span class="ppc coach" title="Pelatih bersertifikat Stellar Squad Academy">Certified Coach</span>'
+      :(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih Stellar Squad Academy">Coach</span>':''))
     +'</div>'
     +'<button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()" style="margin-top:12px">Edit</button>'
     +'</div></article>';
