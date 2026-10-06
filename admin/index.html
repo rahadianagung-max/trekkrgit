@@ -3484,9 +3484,21 @@ async function rmEndMatch(){
       gender:rmMatchGender([...m.team1,...m.team2]),
       sourceUrl:rmLiga()?rmLigaSource():'Trekkr Ranked Match',
     }));
-    try {
-      if(allMatches.length) await rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:allMatches})});
-    } catch(e){console.warn('Final venue write warn:',e.message);}
+    // The match rows are the player's Playing History — never let them be lost
+    // silently. Retry once; if it still fails, stop BEFORE the ELO is written and
+    // keep the session so End can be pressed again (nothing is half-saved).
+    if(allMatches.length){
+      const writeRows=()=>rmApi('venues/'+encodeURIComponent(RM.venue)+'/matches',{method:'POST',body:JSON.stringify({matches:allMatches})});
+      try { await writeRows(); }
+      catch(e1){
+        console.warn('Final venue write failed, retrying:',e1.message);
+        try { await new Promise(r=>setTimeout(r,1500)); await writeRows(); }
+        catch(e2){
+          alert('Match results could not be saved ('+(e2.message||'network error')+'). Nothing was recorded yet — check the connection and press End Match again.');
+          btn.textContent='Yes, End'; btn.disabled=false; return;
+        }
+      }
+    }
     try {
       // Kirim match mentah juga: server yang jadi wasit ELO (Option C) — angka
       // kalibrasi (K agresif) dihitung server, elo_results cuma fallback/preview.
