@@ -2067,7 +2067,27 @@ async function getPlayerDetail(name) {
     achievements.sort((a, b) => (RANK[a.placement] || 9) - (RANK[b.placement] || 9) || String(b.date).localeCompare(String(a.date)));
   } catch (e) { achievements = []; }
 
-  return respond(200, { player, stats: { currentElo, unrated, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history, achievements });
+  // Tournament history computed from the recorded matches (system tournaments +
+  // imported tournaments), so the passport no longer depends on the hand-typed
+  // Players.Tournaments / Winner_At columns. Additive field; best placement from
+  // the Achievements rows of the same event is attached when known.
+  let tournamentHistory = [];
+  if (supaOn()) {
+    try {
+      const names = [pRow[0], pRow[3]].filter((x) => String(x || "").trim());
+      const rows = await supaRest("POST", "rpc/player_tournament_history", { p_names: names }) || [];
+      const RANKP = { "Juara 1": 1, "Juara 2": 2, "Juara 3": 3, "Peringkat 4": 4, "Semifinalis": 5, "Perempatfinalis": 6 };
+      const bestByEvent = {};
+      achievements.forEach((a) => { const cur = bestByEvent[a.eventId]; if (!cur || (RANKP[a.placement] || 9) < (RANKP[cur] || 9)) bestByEvent[a.eventId] = a.placement; });
+      tournamentHistory = rows.map((r) => ({
+        eventId: r.event_id || "", eventName: r.event_name || r.venue || "", venue: r.venue || "",
+        date: r.played_on || "", matches: r.matches || 0, w: r.wins || 0, l: r.losses || 0,
+        placement: (r.event_id && bestByEvent[r.event_id]) || "",
+      }));
+    } catch (e) { console.error("[passport] tournament history:", e.message); tournamentHistory = []; }
+  }
+
+  return respond(200, { player, stats: { currentElo, unrated, totalMatches, totalW, totalL, winRate, streak: `${streak}${streakType}` }, history, achievements, tournamentHistory });
 }
 
 // Return a single player's matches across all venue tabs, de-duplicated, in ONE

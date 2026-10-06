@@ -720,6 +720,7 @@ canvas#shareCanvas{display:none}
 .pp2-hrow .hp{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pp2-hrow .hsub{font-size:11.5px;color:var(--on-surface-variant);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pp2-hrow .hd{font-size:10.5px;color:var(--on-surface-variant);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp2-hrow .hsc{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;color:var(--on-surface)}
 .pp2-hrow .hright{flex-shrink:0;text-align:right;min-width:52px}
 .pp2-hrow .hscore{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:17px;line-height:1}
 .pp2-hrow .hdelta{font-size:11.5px;font-weight:800;margin-top:3px;color:var(--on-surface-variant)}
@@ -1155,6 +1156,7 @@ async function loadPlayer(){
   // Use the canonical name from the record for every follow-up call (the URL may
   // be a slug such as /player/mattmcmahon that the backend resolved for us).
   if (d && d.player && d.player.name) name = d.player.name;
+  ppMergeTournaments(d);
   playerData = d;
   d._pending = true; ppTopbar(true);
   // Fast first paint: show the core passport (identity, ELO, stats, chart) immediately.
@@ -1185,6 +1187,11 @@ async function loadPlayer(){
 
       let partnerStats = {};
       let historyTable = [];
+      // Venue tabs come back venue-by-venue; order the history by date (stable)
+      // so "latest first" and the ELO alignment below follow real play order.
+      myMatches = myMatches.map((m, i) => ({ m, i }))
+          .sort((a, b) => String(a.m.date || '').slice(0, 10).localeCompare(String(b.m.date || '').slice(0, 10)) || a.i - b.i)
+          .map(x => x.m);
 
       myMatches.forEach(m => {
           const p1t1 = (m.p1t1 || "").toLowerCase().trim();
@@ -1248,11 +1255,20 @@ async function loadPlayer(){
       // Memasukkan hasil hitungan ke object Player Data utama
       d.bestPartner = { name: bestPartner, score: bestPartnerScore };
       // Sejajarkan perubahan ELO (sumber sheet) ke tiap match — buang bye (w+l==0), align dari terbaru
+      // One ELO_Log row can cover a whole session (w+l matches), so expand each row
+      // into that many match slots and put the change on the session's last match
+      // (marked "session" when it covers more than one) — never one row per match.
       try {
           const eloReal = (d.history||[]).filter(e=>e && e.sessionId!=='INITIAL' && ((e.w||0)+(e.l||0))>0);
-          for (let k=1;k<=historyTable.length;k++){
-              const row=historyTable[historyTable.length-k], e=eloReal[eloReal.length-k];
-              if(e){ row.delta=Number(e.delta||0); row.newElo=e.elo; }
+          const slots = [];
+          eloReal.forEach(e => {
+              const k = (e.w||0) + (e.l||0);
+              for (let j = 1; j < k; j++) slots.push(null);
+              slots.push({ delta: Number(e.delta||0), elo: e.elo, k });
+          });
+          for (let k=1;k<=historyTable.length && k<=slots.length;k++){
+              const row=historyTable[historyTable.length-k], e=slots[slots.length-k];
+              if(e){ row.delta=e.delta; row.newElo=e.elo; row.deltaSession=e.k>1; }
           }
       } catch(_){}
       d.historyTable = historyTable;
@@ -1397,6 +1413,28 @@ function ppRankItem(r){
     +(medal?'<div style="font-size:17px">'+medal+'</div>':'')+'</div>';
 }
 function ppListArr(str){return String(str||'').split(',').map(function(x){return x.trim();}).filter(function(x){return x && x.toUpperCase()!=='N/A';});}
+// Tournament label from a recorded event: "Women's Category" events read as
+// "<venue> – Women's Category" so the tournament is recognisable.
+function ppEventLabel(t){
+  var n=String((t&&t.eventName)||'').trim(), v=String((t&&t.venue)||'').trim();
+  if(!n) return v; if(v && n.toLowerCase()!==v.toLowerCase() && /categor|kategori/i.test(n)) return v+' – '+n;
+  return n;
+}
+// Tournaments / Winner-at = the hand-typed profile lists PLUS everything the
+// system recorded (tournaments played from match history, podiums from results),
+// de-duplicated case-insensitively. Stored on the player object for every renderer.
+function ppMergeTournaments(d){
+  if(!d||!d.player) return;
+  var p=d.player, seen={}, tl=[], wl=[], wseen={};
+  var add=function(arr,map,x){ var k=String(x||'').trim(); if(!k) return; var key=k.toLowerCase(); if(map[key]) return; map[key]=1; arr.push(k); };
+  ppListArr(p.tournaments).forEach(function(x){add(tl,seen,x);});
+  // Short list: category-named events ("Women's Category") count as their tournament.
+  (d.tournamentHistory||[]).forEach(function(t){ var lab=ppEventLabel(t); add(tl,seen,(t.venue&&lab.indexOf(t.venue+' – ')===0)?t.venue:lab); });
+  ppListArr(p.winnerAt).forEach(function(x){add(wl,wseen,x);});
+  var ORD={'Juara 1':'1st','Juara 2':'2nd','Juara 3':'3rd'};
+  (d.achievements||[]).forEach(function(a){ if(ORD[a.placement]) add(wl,wseen,ORD[a.placement]+' at '+(a.eventName||'')+(a.category?' ('+a.category+')':'')); });
+  p._tournList=tl; p._winList=wl;
+}
 
 function ppTopbar(on){
   var b=document.getElementById('ppTopbar');
@@ -1522,6 +1560,23 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     if(hasBadges && !badges.some(function(b){return b.earned;})) abody+='<div class="pp2-exp-t">No badges earned yet — keep playing!</div>';
     h+='<div class="pp2-acc'+late+'"><div class="pp2-exp" onclick="ppTog(this,\'ppBadges\')"><div class="t"><span class="em">🏅</span> Achievements &amp; badges</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppBadges" hidden>'+abody+'</div></div>';
   }
+  // Tournament history — every tournament with recorded matches (W–L + best placement).
+  var th=(d&&d.tournamentHistory)||[];
+  if(th.length){
+    var ppE2=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    var EMO2={"Juara 1":"🥇","Juara 2":"🥈","Juara 3":"🥉","Peringkat 4":"4️⃣","Semifinalis":"🎖️","Perempatfinalis":"🎾"};
+    var trows=th.map(function(t){
+      var lab=ppEventLabel(t), sub=[t.venue&&t.venue!==lab&&lab.indexOf(t.venue)<0?t.venue:'', t.date?ppFmtDate(t.date):''].filter(Boolean).join(' · ');
+      return '<div class="pp2-hrow">'
+        +'<div class="hres" style="background:rgba(255,106,0,.1);color:var(--primary);font-size:'+(t.placement?'20px':'15px')+'">'+(EMO2[t.placement]||'🏆')+'</div>'
+        +'<div class="hmid"><div class="hp">'+ppE2(lab)+'</div>'
+        +'<div class="hsub">'+ppE2(t.placement||(t.matches+' matches'))+'</div>'
+        +(sub?'<div class="hd">'+ppE2(sub)+'</div>':'')+'</div>'
+        +'<div class="hsc">'+(t.w||0)+'–'+(t.l||0)+'</div></div>';
+    }).join('');
+    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppTH\')"><div class="t"><span class="em">🎾</span> Tournament history <span class="ct">· '+th.length+'</span></div><span class="cv">›</span></div>'
+      +'<div class="pp2-accbody" id="ppTH" hidden><div class="pp2-hist">'+trows+'</div></div></div>';
+  }
   // Tournament results (podium + round reached) — recorded by turnamenpadel.
   var achs=(d&&d.achievements)||[];
   if(achs.length){
@@ -1550,7 +1605,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
       historyTable.slice().reverse().forEach(function(hItem){
         var dv=(hItem.delta==null)?null:Number(hItem.delta);
         var dcls=dv==null?'':(dv>0?'up':(dv<0?'dn':''));
-        var dtxt=dv==null?'':((dv>0?'+':'')+dv+' ELO');
+        var dtxt=dv==null?'':((dv>0?'+':'')+dv+' ELO'+(hItem.deltaSession?' · session':''));
         var rl=(hItem.resText||'D');                 // W / L / D
         var rc=rl==='W'?'w':(rl==='L'?'l':'d');
         var venue=hItem.venue?(' · '+hItem.venue):'';
@@ -1570,7 +1625,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   if(pend){ document.getElementById('content').innerHTML=h; refreshEditBtn(); return; }
   // About & venues
   var venuePills=ppListArr((playedVenues||[]).join(','));
-  var tourns=ppListArr(p.tournaments), winners=ppListArr(p.winnerAt);
+  var tourns=p._tournList||ppListArr(p.tournaments), winners=p._winList||ppListArr(p.winnerAt);
   var pill=function(x,st,ic){return '<span style="display:inline-flex;align-items:center;gap:4px;'+st+';padding:3px 10px;border-radius:99px;margin:2px 3px 0 0;font-size:12px">'+ic+' '+x+'</span>';};
   var NA='<span style="color:var(--on-surface-variant);font-size:12px;font-weight:600">N/A</span>';
   var aboutBody='<div style="display:flex;flex-direction:column;gap:12px">'
@@ -1634,8 +1689,8 @@ function renderPlayerLegacyUNUSED({player:p, stats:s, history, bestPartner, hist
   const ppNA = `<span style="color:var(--on-surface-variant);font-size:12px;font-weight:600">N/A</span>`;
   const ppRow = (label, items, style, icon) => `<div class="pp-info-item" style="grid-column:1/-1"><p class="pp-info-label">${label}</p><p class="pp-info-value" style="font-size:13px;font-weight:600;line-height:1.6">${items.length?ppPills(items,style,icon):ppNA}</p></div>`;
   const rowVenue  = ppRow('🏟 Venue / Community', (playedVenues||[]).slice(), 'background:var(--surface-container)', '🏟');
-  const rowTourn  = ppRow('🏆 Tournaments', ppList(p.tournaments), 'background:rgba(255,106,0,0.1);border:1px solid rgba(255,106,0,0.35);color:var(--primary)', '🏆');
-  const rowWinner = ppRow('🥇 Winner at', ppList(p.winnerAt), 'background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);color:#7a5800', '🥇');
+  const rowTourn  = ppRow('🏆 Tournaments', p._tournList||ppList(p.tournaments), 'background:rgba(255,106,0,0.1);border:1px solid rgba(255,106,0,0.35);color:var(--primary)', '🏆');
+  const rowWinner = ppRow('🥇 Winner at', p._winList||ppList(p.winnerAt), 'background:rgba(253,203,110,0.2);border:1px solid rgba(253,203,110,0.5);color:#7a5800', '🥇');
 
   h+=`<div class="pp-dual"><div class="pp-card"><p class="pp-card-title">Tier Progress</p><p class="pp-tier-name">${ti.current}</p>
     ${tierFlag(s.totalMatches)}
