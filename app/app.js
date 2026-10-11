@@ -1579,7 +1579,7 @@
       '<button class="link" id="back" style="padding-left:0">‹ Back</button>' +
       '<h1 class="page" style="margin-top:4px">How to get ranked</h1>' +
       '<div class="plain"><h3>3 steps</h3><p>1 · Register or claim your profile.<br>2 · Play at a PlayRank session / partner venue — the host records results and your ELO is computed automatically.<br>3 · After 16+ matches (calibration done), your official rating &amp; Liga division appear.</p></div>' +
-      '<div class="plain"><h3>What is ELO?</h3><p>A strength number that goes up/down each match based on your opponents and the score margin. Beating stronger opponents or winning big moves you up more. During calibration (your first 15 matches) it moves faster.</p></div>' +
+      '<div class="plain"><h3>What is ELO?</h3><p>A strength number that goes up/down each match based on your opponents and the score margin. Beating stronger opponents or winning big moves you up more. During calibration (your first 16 matches) it moves faster.</p></div>' +
       '<div class="plain"><h3>Skill ladder — ELO Tier</h3>' +
         '<table class="ttable"><tr><th>Tier</th><th class="r">ELO</th></tr>' +
         row("Beginner", "< 900") + row("Upper Beginner", "900–1199") + row("Lower Bronze", "1200–1499") +
