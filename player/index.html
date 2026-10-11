@@ -924,6 +924,19 @@ body{background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05)
 .pp3-x[open] summary::after{content:'–'}
 .pp3-x[open]{box-shadow:3px 3px 0 var(--tk-or,#FF5900)}
 .pp3-x>div{padding:0 12px 12px;font-size:13px;line-height:1.55;color:#334155}
+/* Summary must fit the first phone screen: compact page header + hero on small screens. */
+@media(max-width:640px){
+  .pp-header{padding:14px 0 12px !important}
+  .pp-header .pp-intro{display:none}
+  .pp-header .pp-title{font-size:28px !important;margin-top:6px}
+  .pp3-hero{margin-top:12px;padding:14px 14px 16px}
+  .pp3-hero .pp3-q{margin-bottom:8px}
+  .pp3-id .pp-photo{width:64px;height:64px}
+  .pp3-name{font-size:24px}
+  .pp3-rating{margin-top:10px}
+  .pp3-rating .num{font-size:44px}
+  .pp3-tiles{margin-top:12px}
+}
 </style>
 </head>
 <body>
@@ -1433,15 +1446,22 @@ function ppComputeExtras(d, historyTable, canonName){
     var ld=lastRow.date, lv=lastRow.venue||'';
     var games=[];
     for(var i=ht.length-1;i>=0;i--){ var r=ht[i]; if(r.date===ld && (!lv || (r.venue||'')===lv)) games.unshift(r); else break; }
+    // Walkovers were never played or rated: keep them out of the session summary
+    // (W–L, games, share card) and report how many there were.
+    var woN=games.filter(function(g){return g.wo;}).length;
+    games=games.filter(function(g){return !g.wo;});
     var w=games.filter(function(g){return g.resText==='W';}).length;
     var l=games.filter(function(g){return g.resText==='L';}).length;
     var wins=games.filter(function(g){return g.resText==='W';});
     var bw=null; wins.forEach(function(g){var m=Number(g.scoreFor)-Number(g.scoreAgainst); if(!bw||m>bw.m)bw={m:m,g:g};});
-    // Total ELO change of the session (sum of its rows), not just the last match.
-    var sessDelta=eloReal.filter(function(e){return e.sessionId===last.sessionId;}).reduce(function(t,e){return t+Number(e.delta||0);},0);
+    // Rating change of that day: one session can be written as several ELO rows /
+    // import batches on the same date, so sum every rated row of that date.
+    var day=String(ld||'').slice(0,10);
+    var sameDay=eloReal.filter(function(e){return String(e.timestamp||'').slice(0,10)===day;});
+    var sessDelta=(sameDay.length?sameDay:eloReal.filter(function(e){return e.sessionId===last.sessionId;})).reduce(function(t,e){return t+Number(e.delta||0);},0);
     d.lastSession={
       venue:lv, date:ld, delta:Number(last.delta||0), sessionDelta:sessDelta, newElo:last.elo,
-      w:w, l:l, games:games, bestWin:bw?bw.g:null
+      w:w, l:l, games:games, bestWin:bw?bw.g:null, walkovers:woN
     };
   }
 }
@@ -1677,7 +1697,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
       +'<div class="pp2-ls-title">'+(ls.venue?ls.venue+' · ':'')+(ppFmtDate(ls.date)||ls.date||'')+'</div>'
       +'<div class="pp2-ls-chips">'
       +'<span class="pp2-ls-chip lk '+dcls+'">'+dsign+dl+' ELO</span>'
-      +'<span class="pp2-ls-chip">'+wins+'W · '+losses+'L</span>'
+      +'<span class="pp2-ls-chip">'+wins+'W · '+losses+'L'+(ls.walkovers?' · +'+ls.walkovers+' WO':'')+'</span>'
       +(rn?('<span class="pp2-ls-chip or lk">Rank #'+rn.rank+' at '+rn.venue+'</span>'):'')
       +'</div>'
       +'<div class="pp2-ls-insight lk">'+ip.join(' · ')+'.</div>'
@@ -1987,7 +2007,7 @@ function drawChart(history){const canvas=document.getElementById('eloChart');if(
 
 function shareIG(){downloadNightCard();}
 function copyLink(){const url=`https://trekkr.online/player/${(playerData?.player?.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`;navigator.clipboard.writeText(url).then(()=>showToast('Link copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Link copied!')})}
-function shareWA(){if(!playerData)return;const p=playerData.player,s=playerData.stats,tier=TrekkrAPI.getTierName(s.currentElo),url=`https://trekkr.online/player/${(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`,text=`🎾 ${p.name} — Trekkr Rating ${s.currentElo} (${tier})\nMatches: ${s.totalMatches} · Win rate: ${s.winRate}%\n${url}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank')}
+function shareWA(){if(!playerData)return;const p=playerData.player,s=playerData.stats,tier=PPI.tierOf(Number(s.currentElo)||0).name,url=`https://trekkr.online/player/${(p.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'')}`,text=`🎾 ${p.name} — Trekkr Rating ${s.currentElo} (${tier})\nMatches: ${s.totalMatches} · Win rate: ${s.winRate}%\n${url}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank')}
 
 function renderDemo(name){
   playerData={
