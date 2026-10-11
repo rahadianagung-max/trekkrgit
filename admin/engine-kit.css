@@ -1,0 +1,95 @@
+/* ==========================================================================
+   engine-kit.css — PlayRank League theme for the PlayRank engine UI
+   (venue admin / playrank-demo: setup, courts, scoring, leaderboard, recap).
+   The engine pages carry their own legacy kit (--pr / --blue tokens, rounded
+   cards, gradient brand). Link this AFTER the page's own <style> so it
+   re-values that kit into the site theme: ink #090D14 · orange #FF5900 ·
+   volt #D2F802, Space Grotesk + JetBrains Mono, grid paper, square corners,
+   2px ink borders and hard offset shadows. League screens keep their own
+   .prl skin (playrank-league.css), which is more specific and wins.
+   A copy lives in admin/ (separate Vercel project); keep them identical.
+   ========================================================================== */
+:root{
+  --ek-ink:#090D14; --ek-or:#FF5900; --ek-volt:#D2F802; --ek-line:#E2E8F0; --ek-mute:#475569;
+  --ek-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ek-disp:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;
+  --ek-sh:4px 4px 0 #090D14;
+  /* legacy engine tokens, re-valued */
+  --pr:#FF5900; --pr2:#FF5900; --sec:#FF5900;
+  --blue:#FF5900; --blue-dk:#E04E00; --blue-lt:#FFF1E8; --blue-mid:#FFC9A8;
+  --on:#090D14; --txt:#090D14; --on-v:#475569; --txt2:#475569; --txt3:#64748B;
+  --sur-lo:#F4F6F9; --sur-ct:#F4F6F9; --sur-hi:#E2E8F0; --bdr:#E2E8F0; --bg-rm:#FFFFFF;
+  --r-sm:0px; --r-md:0px; --r-lg:0px; --r-xl:0px; --r-pill:0px; --r-rm-sm:0px; --r-rm:0px;
+  --sh:4px 4px 0 #090D14;
+}
+/* Grid paper + body type */
+body{background-color:#fff !important;
+  background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px) !important;
+  background-size:24px 24px !important;color:var(--ek-ink)}
+::selection{background:var(--ek-volt);color:var(--ek-ink)}
+/* Square corners everywhere, except live dots and spinners */
+*:not(.rm-live-dot):not(.rm-spinner):not(.tk-round),*::before,*::after{border-radius:0 !important}
+
+/* Brand (simulation bar) */
+.sim-top{background:#fff !important;border-bottom:3px solid var(--ek-ink) !important;box-shadow:none !important}
+.sim-brand{background:none !important;-webkit-text-fill-color:currentColor !important;color:var(--ek-ink) !important;
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif !important;font-weight:900 !important;letter-spacing:-.04em}
+.sim-brand::after{content:'//';font-style:normal;background:var(--ek-or);color:#fff;padding:0 5px;margin-left:4px;font-size:.75em;vertical-align:.1em}
+.sim-tag{font-family:var(--ek-mono) !important;border:1.5px solid var(--ek-ink) !important;background:var(--ek-volt) !important;color:var(--ek-ink) !important}
+.sim-note{background:#FFF7EE !important;border:2px solid var(--ek-ink) !important;box-shadow:var(--ek-sh)}
+
+/* Type */
+.rm-section-title,.rm-card-label,.sc-title,.sc-label,.dash-eyebrow,.login-eyebrow,.rm-intro-eyebrow,.rm-input-label,.f-label,.rm-chip-label,.rm-done-card-title,.htu-sec-label{
+  font-family:var(--ek-mono) !important;letter-spacing:.12em;text-transform:uppercase}
+.dash-title,.login-title,.rm-intro-title,.rm-done-title,.rm-basic-title,.rm-modal-title,.htu-head-title,.rm-court-hdr,.rm-gender-card-label{
+  font-family:var(--ek-disp) !important;font-style:normal !important;letter-spacing:-.02em}
+.rm-player-elo,.rm-lb-elo,.rm-rank-diff,.rm-lb-diff,.rm-score-input,.rm-counter-val,.mh-score,.mh-erow .el{
+  font-family:var(--ek-mono) !important;font-variant-numeric:tabular-nums}
+.rm-player-elo,.rm-lb-elo{color:var(--ek-or) !important;font-weight:800}
+
+/* Cards */
+.section-card,.rm-card,.login-card,.rm-court-card,.rm-done-card,.rm-bye-card,.rm-modal,.htu-modal,.rm-gender-card,
+.rm-lb-row,.rm-rank-row,.rm-live-bar,#apanel-edits .er-card,.mh-row,.mh-sess,.rm-intro,.rm-rule{
+  border:2px solid var(--ek-ink) !important;box-shadow:var(--ek-sh) !important;background-color:#fff}
+.rm-lb-row,.rm-rank-row{box-shadow:none !important;margin-bottom:6px}
+.rm-gender-card.active,.rm-player-item.selected,.rm-sched-m.sel{background:#FFF1E8 !important;border-color:var(--ek-ink) !important;box-shadow:4px 4px 0 var(--ek-or) !important}
+.rm-player-item{border:1.5px solid var(--ek-line)}
+.rm-lb-row.rank1{background:var(--ek-volt) !important}
+
+/* Buttons */
+.btn-primary,.rm-btn-primary,.rm-live-btn.primary,.rm-new-match-btn,.sim-btn:not(.ghost),.rm-add-btn{
+  background:var(--ek-or) !important;color:#fff !important;border:2px solid var(--ek-ink) !important;box-shadow:var(--ek-sh) !important;
+  font-family:var(--ek-mono) !important;font-weight:800 !important;text-transform:uppercase;letter-spacing:.06em}
+.btn-ghost,.rm-btn-secondary,.rm-btn-ghost,.rm-live-btn,.rm-share-btn,.sim-btn.ghost,.rm-counter-btn,.htu-btn{
+  background:#fff !important;color:var(--ek-ink) !important;border:2px solid var(--ek-ink) !important;box-shadow:var(--ek-sh) !important;
+  font-family:var(--ek-mono) !important;font-weight:800 !important}
+.btn-danger,.rm-btn-danger{background:#fff !important;color:#DC2626 !important;border:2px solid #DC2626 !important;box-shadow:4px 4px 0 #DC2626 !important}
+.btn-primary:active,.rm-btn-primary:active,.sim-btn:active,.rm-new-match-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ek-ink) !important}
+
+/* Tabs and segmented controls */
+.rm-segment,.tab-nav,.rm-tabs,.mh-tabs{background:#fff !important;border:2px solid var(--ek-ink) !important;padding:0 !important;gap:0 !important}
+.rm-seg-btn,.tab-btn,.rm-tab,.mh-tab{font-family:var(--ek-mono) !important;font-weight:800 !important;text-transform:uppercase;letter-spacing:.06em;
+  background:#fff !important;color:var(--ek-ink) !important;box-shadow:none !important;border:0 !important}
+.rm-seg-btn.active,.tab-btn.is-active,.rm-tab.active,.mh-tab.is-active{background:var(--ek-ink) !important;color:#fff !important}
+
+/* Inputs */
+.f-input,.rm-input,.rm-search,.rm-score-input{border:2px solid var(--ek-ink) !important;background:#fff !important;box-shadow:none !important}
+.f-input:focus,.rm-input:focus,.rm-search:focus,.rm-score-input:focus{outline:none;box-shadow:3px 3px 0 var(--ek-or) !important}
+.rm-score-input.win{background:var(--ek-volt) !important}
+
+/* Chips, badges, alerts */
+.rm-chip,.rm-court-badge,.rm-round-pill,.rm-live-badge,.rm-intro-badge{border:1.5px solid var(--ek-ink) !important;font-family:var(--ek-mono) !important}
+.rm-court-badge,.rm-round-pill{background:var(--ek-ink) !important;color:#fff !important}
+.rm-alert,.rm-fair-bar{border:2px solid var(--ek-ink) !important}
+.rm-bottom-bar{border-top:3px solid var(--ek-ink) !important;box-shadow:none !important;background:#fff !important}
+
+/* Venue-admin chrome (header, login, dashboard hero, how-to CTA) */
+.site-header{background:#fff !important;backdrop-filter:none !important;border-bottom:3px solid var(--ek-ink) !important}
+.menu-toggle{border:2px solid var(--ek-ink) !important;background:#fff !important}
+.htu-btn{background:#FFF7EE !important;font-family:inherit !important;font-weight:inherit !important}
+.htu-btn-ic{background:var(--ek-or) !important;border:2px solid var(--ek-ink)}
+.htu-btn-title{font-family:var(--ek-disp) !important}
+.dash-hero{background:var(--ek-ink) !important;border-bottom:4px solid var(--ek-or)}
+.dash-hero .dash-eyebrow{color:var(--ek-volt) !important}
+.login-card{background:#fff !important}
+.tab-nav,.mh-tabs{overflow-x:auto;max-width:100%;scrollbar-width:none}.tab-nav::-webkit-scrollbar{display:none}

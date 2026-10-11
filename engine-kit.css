@@ -82,3 +82,14 @@ body{background-color:#fff !important;
 .rm-court-badge,.rm-round-pill{background:var(--ek-ink) !important;color:#fff !important}
 .rm-alert,.rm-fair-bar{border:2px solid var(--ek-ink) !important}
 .rm-bottom-bar{border-top:3px solid var(--ek-ink) !important;box-shadow:none !important;background:#fff !important}
+
+/* Venue-admin chrome (header, login, dashboard hero, how-to CTA) */
+.site-header{background:#fff !important;backdrop-filter:none !important;border-bottom:3px solid var(--ek-ink) !important}
+.menu-toggle{border:2px solid var(--ek-ink) !important;background:#fff !important}
+.htu-btn{background:#FFF7EE !important;font-family:inherit !important;font-weight:inherit !important}
+.htu-btn-ic{background:var(--ek-or) !important;border:2px solid var(--ek-ink)}
+.htu-btn-title{font-family:var(--ek-disp) !important}
+.dash-hero{background:var(--ek-ink) !important;border-bottom:4px solid var(--ek-or)}
+.dash-hero .dash-eyebrow{color:var(--ek-volt) !important}
+.login-card{background:#fff !important}
+.tab-nav,.mh-tabs{overflow-x:auto;max-width:100%;scrollbar-width:none}.tab-nav::-webkit-scrollbar{display:none}
