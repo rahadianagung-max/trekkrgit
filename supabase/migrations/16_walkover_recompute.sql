@@ -32,4 +32,4 @@
 --     overriding system value
 --     select id, session_id, player, new_elo, elo_change, wins, losses, timestamp
 --     from elo_log_walkover_backup_20261011;
---   insert into players select * from players_walkover_backup_20261011;
+--   insert into players overriding system value select * from players_walkover_backup_20261011;
