@@ -7,7 +7,7 @@
 <meta name="description" content="Trekkr venues across Indonesia — find your home court and its ranked-match leaderboard."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <script src="https://trekkr.online/trekkr-nav.js" defer></script>
@@ -227,6 +227,75 @@
   .vmode-b.on{background:var(--orange);border-color:var(--ink,#090D14);color:#fff;box-shadow:3px 3px 0 var(--ink,#090D14)}
   .vmode-b:hover:not(.on){border-color:var(--ink,#090D14);background:#F4F6F9;color:var(--ink,#090D14)}
   .searchbar{border:2px solid var(--ink,#090D14)}
+  /* League page (Overall / Series / ELO rank): hero gelap, podium top 3, tabel 4–10, akordion sisanya */
+  .lg2-hero{margin-top:10px;background:var(--ink,#090D14);color:#fff;border:2px solid var(--ink,#090D14);box-shadow:6px 6px 0 var(--orange);padding:18px 16px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+  .lg2-logo{width:72px;height:72px;background:#fff;border:2px solid #fff;display:grid;place-items:center;overflow:hidden;color:var(--ink,#090D14);font:800 20px var(--mono,'JetBrains Mono',monospace)}
+  .lg2-logo img{width:100%;height:100%;object-fit:contain}
+  .lg2-badge{font:800 10px var(--mono,'JetBrains Mono',monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--ink,#090D14);background:var(--volt,#D2F802);padding:3px 7px;display:inline-block}
+  .lg2-hero h1{font:700 clamp(24px,6vw,40px)/1 'Space Grotesk',var(--display);text-transform:uppercase;letter-spacing:-.03em;margin:8px 0 0;color:#fff}
+  .lg2-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font:700 11px var(--mono,'JetBrains Mono',monospace);text-transform:uppercase;color:#C9CFD9}
+  .lg2-tags span+span::before{content:'·';margin-right:6px;color:var(--orange)}
+  .lg2-tags .lv{color:var(--volt,#D2F802)}
+  .lg2-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));border-top:1.5px solid #2A3140;margin-top:4px}
+  .lg2-stats div{padding:10px 4px 0;text-align:center}
+  .lg2-stats b{display:block;font:800 22px var(--mono,'JetBrains Mono',monospace);color:var(--orange);font-variant-numeric:tabular-nums}
+  .lg2-stats small{font-size:11px;color:#C9CFD9}
+  .lg2-nav{margin-top:18px;display:grid;gap:8px}
+  .lg2-seg{display:grid;border:2px solid var(--ink,#090D14);background:#fff;box-shadow:3px 3px 0 var(--ink,#090D14)}
+  .lg2-seg button{border:0;background:#fff;padding:11px 6px;font:800 11px var(--mono,'JetBrains Mono',monospace);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--ink,#090D14)}
+  .lg2-seg button+button{border-left:2px solid var(--ink,#090D14)}
+  .lg2-seg button.on{background:var(--ink,#090D14);color:#fff}
+  .lg2-series{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+  .lg2-series[hidden]{display:none}
+  .lg2-series::-webkit-scrollbar{display:none}
+  .lg2-series button{flex:none;min-width:58px;border:2px solid var(--ink,#090D14);background:#fff;color:var(--ink,#090D14);padding:7px 8px 6px;cursor:pointer;text-align:center;font-family:var(--mono,'JetBrains Mono',monospace)}
+  .lg2-series button b{display:block;font-size:15px;font-weight:800}
+  .lg2-series button small{display:block;font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+  .lg2-series button.on{background:var(--orange);color:#fff;box-shadow:3px 3px 0 var(--ink,#090D14)}
+  .lg2-series button.on small{color:#fff}
+  .lg2-series .new{display:block;font-size:8px;font-weight:800;background:var(--volt,#D2F802);color:var(--ink,#090D14);margin-top:3px;letter-spacing:.08em;text-transform:uppercase}
+  .lg2-hint{font-size:12px;font-weight:600;line-height:1.4;color:var(--muted)}
+  .lg2-gsw{display:none;border:2px solid var(--ink,#090D14);width:max-content}
+  .lg2-gsw button{border:0;background:#fff;color:var(--ink,#090D14);padding:8px 16px;font:800 11px var(--mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+  .lg2-gsw button+button{border-left:2px solid var(--ink,#090D14)}
+  .lg2-gsw button.on{background:var(--ink,#090D14);color:#fff}
+  .lg2-boards{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:18px}
+  .lg2-board{min-width:0}
+  .lg2-board h2{font:700 18px 'Space Grotesk',var(--display);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:0 0 16px}
+  .lg2-board h2 i{width:12px;height:12px;border:2px solid var(--ink,#090D14);display:inline-block;background:var(--orange)}
+  .lg2-board h2 i.women{background:var(--red)}
+  .lg2-board h2 small{margin-left:auto;font:700 11px var(--mono,'JetBrains Mono',monospace);color:var(--muted)}
+  .lg2-podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin-bottom:12px}
+  .lg2-pod{display:block;background:#fff;color:var(--ink,#090D14);border:2px solid var(--ink,#090D14);box-shadow:3px 3px 0 var(--ink,#090D14);padding:12px 6px 10px;text-align:center;position:relative;text-decoration:none}
+  .lg2-pod.p1{background:var(--volt,#D2F802);box-shadow:4px 4px 0 var(--orange);padding-top:16px}
+  .lg2-pod .rk{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--ink,#090D14);color:#fff;font:800 11px var(--mono,'JetBrains Mono',monospace);padding:2px 7px}
+  .lg2-pod.p1 .rk{background:var(--orange)}
+  .lg2-pod .av{width:46px;height:46px;margin:0 auto;border:2px solid var(--ink,#090D14);background:#F4F6F9;display:grid;place-items:center;font:800 14px var(--mono,'JetBrains Mono',monospace);overflow:hidden}
+  .lg2-pod.p1 .av{width:58px;height:58px}
+  .lg2-pod .av img,.lg2-row .a img{width:100%;height:100%;object-fit:cover}
+  .lg2-pod .nm{display:block;font-weight:800;font-size:12.5px;line-height:1.2;margin-top:6px;min-height:30px;word-break:break-word}
+  .lg2-pod .wl{display:block;font:800 13px var(--mono,'JetBrains Mono',monospace);margin-top:4px}
+  .lg2-pod .gd{display:block;font:700 11px var(--mono,'JetBrains Mono',monospace);color:var(--muted)}
+  .lg2-rows{border:2px solid var(--ink,#090D14);background:#fff}
+  .lg2-row{display:grid;grid-template-columns:30px 30px minmax(0,1fr) 54px 50px;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid #E2E8F0;font-size:13.5px}
+  .lg2-row:first-child{border-top:0}
+  .lg2-row.hd{background:var(--ink,#090D14);color:#fff;font:800 9.5px var(--mono,'JetBrains Mono',monospace);letter-spacing:.1em;text-transform:uppercase;padding:7px 10px}
+  .lg2-row .r{font:800 13px var(--mono,'JetBrains Mono',monospace);color:var(--muted)}
+  .lg2-row .a{width:30px;height:30px;border:1.5px solid var(--ink,#090D14);background:#F4F6F9;display:grid;place-items:center;font:800 10px var(--mono,'JetBrains Mono',monospace);overflow:hidden}
+  .lg2-row .n{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lg2-row .w{font:700 13px var(--mono,'JetBrains Mono',monospace);text-align:right;font-variant-numeric:tabular-nums}
+  .lg2-d{font:800 13px var(--mono,'JetBrains Mono',monospace);text-align:right;font-variant-numeric:tabular-nums}
+  .lg2-d.pos{color:#059669}.lg2-d.neg{color:#DC2626}.lg2-d.zero{color:var(--muted)}
+  .lg2-elo{color:var(--orange);font-family:var(--mono,'JetBrains Mono',monospace);font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+  .lg2-row .lg2-elo{font-size:13px}
+  .lg2-more{border:2px solid var(--ink,#090D14);border-top:0;background:#F4F6F9}
+  .lg2-more summary{list-style:none;cursor:pointer;padding:11px 12px;font:800 11px var(--mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between}
+  .lg2-more summary::-webkit-details-marker{display:none}
+  .lg2-more summary::after{content:'+';font-size:14px}
+  .lg2-more[open] summary::after{content:'–'}
+  .lg2-more .lg2-rows{border:0;border-top:2px solid var(--ink,#090D14)}
+  .lg2-note{margin-top:22px;font-size:12px;color:var(--muted);border:2px dashed #B8B2A5;padding:10px 12px;background:#fff}
+  @media(max-width:760px){.lg2-boards{grid-template-columns:1fr}.lg2-gsw{display:flex}.lg2-hide{display:none}}
   /* Tournaments by month */
   .mon{margin-top:30px}
   .mon-h{display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--ink,#090D14);padding-bottom:8px}
@@ -643,13 +712,20 @@
 
   /* ---- League (standalone result page) ---- */
   function cap(s){s=String(s||'');return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
-  function leagueHdr(d){
+  function leagueBack(){return '<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div>';}
+  // Hero gelap: logo, nama, lokasi/status, plus strip angka (series, pemain ranked).
+  function leagueHdr(d,nSeries,nMen,nWomen){
     var tags='';
-    if(d.location)tags+='<span class="vtag"><i class="ti ti-map-pin"></i>'+esc(d.location)+'</span>';
-    if(d.status)tags+='<span class="vtag"><i class="ti ti-flag"></i>'+esc(cap(d.status))+'</span>';
-    return '<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div>'
-      +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge tb-league"><i class="ti ti-medal"></i>League · Season</span>'
-      +'<div class="vname">'+esc(d.name)+'</div><div class="vtags">'+tags+'</div></div></div>';
+    if(d.location)tags+='<span>'+esc(d.location)+'</span>';
+    if(d.status)tags+='<span'+(/ongoing|live|berjalan/i.test(d.status)?' class="lv"':'')+'>'+(/ongoing|live|berjalan/i.test(d.status)?'● ':'')+esc(cap(d.status))+'</span>';
+    if(nSeries)tags+='<span>'+nSeries+' series</span>';
+    var logo=d.logoUrl?'<span class="lg2-logo"><img src="'+esc(d.logoUrl)+'" alt="" onerror="this.parentNode.textContent=\''+esc(initials(d.name))+'\'"/></span>':'<span class="lg2-logo">'+esc(initials(d.name))+'</span>';
+    var stats='';
+    if(nMen!=null||nWomen!=null){
+      stats='<div class="lg2-stats">'+(nSeries?'<div><b>'+nSeries+'</b><small>series played</small></div>':'')
+        +'<div><b>'+(nMen||0)+'</b><small>men ranked</small></div><div><b>'+(nWomen||0)+'</b><small>women ranked</small></div></div>';
+    }
+    return leagueBack()+'<section class="lg2-hero">'+logo+'<div><span class="lg2-badge">League</span><h1>'+esc(d.name)+'</h1><div class="lg2-tags">'+tags+'</div></div>'+stats+'</section>';
   }
   // Slot "[Walk Over] N" = pemain bayangan untuk WO, bukan pemain sungguhan:
   // sembunyikan dari ranking dan rapatkan ulang nomor peringkat (tie tetap tie).
@@ -663,62 +739,79 @@
       var q={};for(var k in p)q[k]=p[k];q.rank=(p.rank||0)-above;return q;
     });
   }
-  function leagueBoard(title,list){
-    list=dropWalkover(list);
-    if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
-    var rows=list.map(function(p){
-      return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td><td>'+p.wins+'</td><td>'+p.losses+'</td><td>'+pdText(p.gd)+'</td></tr>';
-    }).join('');
-    return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
-      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div></div>';
+  function isEloView(v){return !!v&&(v.kind==='elo'||v.key==='ELO');}
+  function isTotalView(v){return !!v&&!isEloView(v)&&(v.key==='TOTAL'||/total|overall/i.test(v.label||''));}
+  function lgElo(p){return '<span class="lg2-elo">'+(p.elo!=null&&p.elo!==''?Math.round(Number(p.elo)).toLocaleString('en-US'):'—')+'</span>';}
+  function lgDiff(gd){gd=Number(gd)||0;return '<span class="lg2-d '+(gd>0?'pos':(gd<0?'neg':'zero'))+'">'+pdText(gd)+'</span>';}
+  // Avatar dengan fallback inisial bila foto gagal dimuat (URL foto lama/putus).
+  function lgAv(p,cls){var ini=esc(initials(p&&p.name||'').replace(/'/g,''));if(p&&p.photo)return '<span class="'+cls+'"><img src="'+esc(p.photo)+'" alt="" loading="lazy" onerror="this.parentNode.textContent=\''+ini+'\'"/></span>';return '<span class="'+cls+'">'+ini+'</span>';}
+  function lgRow(p,elo){
+    return '<div class="lg2-row"><span class="r">'+p.rank+'</span>'+lgAv(p,'a')+'<span class="n">'+nameLink(p)+'</span>'
+      +'<span class="w">'+(p.wins||0)+'–'+(p.losses||0)+'</span>'+(elo?lgElo(p):lgDiff(p.gd))+'</div>';
   }
-  function leagueEloCol(title,list){
-    list=dropWalkover(list);
-    if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
-    var rows=list.map(function(p){
-      return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td>'
-        +'<td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td>'
-        +'<td>'+(p.wins||0)+'</td><td>'+(p.losses||0)+'</td><td class="eloc">'+(p.elo||'—')+'</td></tr>';
-    }).join('');
-    return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div>'
-      +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>ELO</th></tr>'+rows+'</table></div></div>';
-  }
-  function leagueEloBody(v){
-    return '<div class="lg-boards">'
-      +leagueEloCol('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
-      +leagueEloCol('<span class="dot" style="background:var(--red)"></span> Women', v.women)
-      +'</div>';
-  }
-  function leagueViewBody(v){
-    if(v&&(v.kind==='elo'||v.key==='ELO'))return leagueEloBody(v);
-    return '<div class="lg-boards">'
-      +leagueBoard('<span class="dot" style="background:var(--orange)"></span> Men', v.men)
-      +leagueBoard('<span class="dot" style="background:var(--red)"></span> Women', v.women)
-      +'</div>';
+  function lgHead(elo){return '<div class="lg2-row hd"><span>#</span><span></span><span>Player</span><span class="w">W–L</span><span class="w">'+(elo?'ELO':'Diff')+'</span></div>';}
+  // Satu papan per gender: podium top 3, tabel 4–10, sisanya di akordion.
+  function leagueBoard(g,list,elo,hide){
+    list=dropWalkover(list)||[];
+    var label=g==='men'?'Men':'Women';
+    var h='<section class="lg2-board'+(hide?' lg2-hide':'')+'" data-g="'+g+'"><h2><i class="'+g+'"></i>'+label+'<small>'+list.length+' players</small></h2>';
+    if(!list.length)return h+'<div class="state">No matches.</div></section>';
+    var top=list.slice(0,3), order=[top[1],top[0],top[2]];
+    h+='<div class="lg2-podium">'+order.map(function(p){
+      if(!p)return '<div></div>';
+      return '<a class="lg2-pod'+(p.rank===1?' p1':'')+'" href="'+passHref(p.slug)+'"><span class="rk">#'+p.rank+'</span>'+lgAv(p,'av')
+        +'<span class="nm">'+esc(p.name)+'</span><span class="wl">'+(p.wins||0)+'–'+(p.losses||0)+'</span>'
+        +'<span class="gd">'+(elo?lgElo(p)+' ELO':pdText(p.gd)+' diff')+'</span></a>';
+    }).join('')+'</div>';
+    var mid=list.slice(3,10), rest=list.slice(10);
+    if(mid.length)h+='<div class="lg2-rows">'+lgHead(elo)+mid.map(function(p){return lgRow(p,elo);}).join('')+'</div>';
+    if(rest.length)h+='<details class="lg2-more"><summary>See ranks 11–'+list.length+' ('+rest.length+' more)</summary><div class="lg2-rows">'+rest.map(function(p){return lgRow(p,elo);}).join('')+'</div></details>';
+    return h+'</section>';
   }
   function loadLeaguePage(cslug){
     content.innerHTML=loader('Loading league');
     fetch(BASE+'/competition/'+encodeURIComponent(cslug)).then(function(r){return r.json();}).then(function(d){
-      if(!d||d.error||!d.name){content.innerHTML='<div class="page-head"><a class="back" href="https://trekkr.online/tournament"><i class="ti ti-arrow-left"></i>Tourney &amp; League</a></div><div class="state" style="margin-top:24px">League not found.</div>';return;}
-      var html=leagueHdr(d);
+      if(!d||d.error||!d.name){content.innerHTML=leagueBack()+'<div class="state" style="margin-top:24px">League not found.</div>';return;}
       var views=d.views||[];
       if(!views.length){
-        html+='<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu series di-input.</div>';
-        content.innerHTML=html;return;
+        content.innerHTML=leagueHdr(d,0)+'<div class="state" style="margin-top:24px">Hasil belum tersedia. Data akan muncul begitu series di-input.</div>';
+        return;
       }
-      var defIdx=views.length-1;
-      for(var di=views.length-1;di>=0;di--){if(views[di].kind!=='elo'&&views[di].key!=='ELO'){defIdx=di;break;}}
-      html+='<div class="vmode lgviews" style="margin-top:16px">'+views.map(function(v,i){return '<button class="vmode-b'+(i===defIdx?' on':'')+'" data-vi="'+i+'">'+esc(v.label)+'</button>';}).join('')+'</div>';
-      html+='<div id="lgBody"></div>';
+      var total=null, eloV=null, series=[];
+      views.forEach(function(v){ if(isEloView(v))eloV=eloV||v; else if(isTotalView(v))total=total||v; else series.push(v); });
+      var modes=[];
+      if(total)modes.push({m:'TOTAL',label:'Overall'});
+      if(series.length)modes.push({m:'SERIES',label:'Series'});
+      if(eloV)modes.push({m:'ELO',label:'ELO rank'});
+      var st={mode:modes[0].m, ser:series.length-1, g:'men'};
+      var base=total||series[series.length-1]||eloV;
+      var nMen=(dropWalkover(base.men)||[]).length, nWomen=(dropWalkover(base.women)||[]).length;
+      var html=leagueHdr(d,series.length,nMen,nWomen)+'<div class="lg2-nav">';
+      if(modes.length>1)html+='<div class="lg2-seg" style="grid-template-columns:repeat('+modes.length+',1fr)">'+modes.map(function(x){return '<button data-m="'+x.m+'">'+x.label+'</button>';}).join('')+'</div>';
+      if(series.length)html+='<div class="lg2-series" hidden>'+series.map(function(v,i){return '<button data-s="'+i+'" title="'+esc(v.label)+'"><small>Series</small><b>'+(i+1)+'</b>'+(i===series.length-1&&series.length>1?'<span class="new">Latest</span>':'')+'</button>';}).join('')+'</div>';
+      html+='<div class="lg2-hint"></div><div class="lg2-gsw"><button data-g="men">Men</button><button data-g="women">Women</button></div></div>'
+        +'<div class="lg2-boards"></div>'
+        +'<p class="lg2-note">Top 10 per gender shown; tap "See ranks 11–…" for the rest. League tables rank by wins, then game difference, then fewest losses. ELO rank sorts by current Trekkr Rating.</p>';
       content.innerHTML=html;
-      var body=document.getElementById('lgBody');
-      function renderView(i){ body.innerHTML=leagueViewBody(views[i]); }
-      renderView(defIdx);
-      var vb=content.querySelectorAll('.lgviews .vmode-b[data-vi]');
-      Array.prototype.forEach.call(vb,function(b){b.addEventListener('click',function(){
-        Array.prototype.forEach.call(vb,function(x){x.classList.toggle('on',x===b);});
-        renderView(parseInt(b.getAttribute('data-vi'),10));
-      });});
+      var segB=content.querySelectorAll('.lg2-seg button'), serWrap=content.querySelector('.lg2-series'),
+          serB=content.querySelectorAll('.lg2-series button'), gB=content.querySelectorAll('.lg2-gsw button'),
+          hint=content.querySelector('.lg2-hint'), boards=content.querySelector('.lg2-boards');
+      function each(l,f){Array.prototype.forEach.call(l,f);}
+      function render(){
+        var v=st.mode==='TOTAL'?total:(st.mode==='ELO'?eloV:series[st.ser]), elo=isEloView(v);
+        each(segB,function(b){b.classList.toggle('on',b.getAttribute('data-m')===st.mode);});
+        if(serWrap)serWrap.hidden=st.mode!=='SERIES';
+        each(serB,function(b){b.classList.toggle('on',+b.getAttribute('data-s')===st.ser);});
+        each(gB,function(b){b.classList.toggle('on',b.getAttribute('data-g')===st.g);});
+        hint.textContent=st.mode==='TOTAL'?(series.length?'All '+series.length+' series combined':'All matches')+' · ranked by wins, then game difference.'
+          :(elo?'Everyone who played this league, ranked by current Trekkr Rating.':(v.label||'Series')+' · ranked by wins, then game difference.');
+        boards.innerHTML=leagueBoard('men',v.men,elo,st.g!=='men')+leagueBoard('women',v.women,elo,st.g!=='women');
+      }
+      each(segB,function(b){b.addEventListener('click',function(){st.mode=b.getAttribute('data-m');render();});});
+      each(serB,function(b){b.addEventListener('click',function(){st.ser=+b.getAttribute('data-s');render();});});
+      each(gB,function(b){b.addEventListener('click',function(){st.g=b.getAttribute('data-g');render();});});
+      render();
+      if(serWrap)serWrap.scrollLeft=serWrap.scrollWidth;
     }).catch(function(){content.innerHTML='<div class="state" style="margin-top:30px">Couldn\'t load league.</div>';});
   }
 
