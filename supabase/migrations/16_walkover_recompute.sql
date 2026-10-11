@@ -1,0 +1,35 @@
+-- 16 · Walkover tidak dihitung ke rating (keputusan owner, 11 Okt 2026).
+-- Sudah DITERAPKAN langsung ke database produksi; file ini adalah catatan
+-- + cara rollback. Jangan dijalankan ulang.
+--
+-- Latar: import Patriot Padel Series (Jul–Okt 2026) mencatat 66 match melawan
+-- slot walkover/walk out ("[Walk Over] N", "Walk Out N", "- Walk Out 1 -",
+-- "Nama [walk Out]") sebagai match berating. Pemenangnya mendapat +1..+38 poin
+-- tergantung waktu. Mulai PR #137 import tidak lagi memberi rating untuk WO.
+--
+-- Langkah yang dijalankan:
+-- 1. Backup:
+--    elo_log_walkover_backup_20261011  (914 baris: semua baris ELO milik 98 nama
+--      yang terlibat; kolom is_wo_row = baris match walkover, 264 baris = 66 match × 4)
+--    players_walkover_backup_20261011  (1 baris: pemain bayangan "[Walk Over] 2")
+-- 2. Satu pernyataan atomik:
+--    a. new_elo setiap baris setelah match WO digeser sebesar total poin WO yang
+--       sudah diterima pemain itu sebelumnya (197 baris; elo_change tidak diubah).
+--    b. Hapus 264 baris match WO + semua baris ELO pemain bayangan.
+--    c. Hapus pemain bayangan dari tabel players.
+-- 3. 7 pemain yang semua match-nya WO diberi baris INITIAL di rating awalnya
+--    (Alfi Yusuf Ananda, Arjun, Faris, Fayat, Jay, Noval = 1200; Qynar = 1500).
+--
+-- Hasil: 91 pemain berubah (88 turun, 3 naik), klasemen W–L liga tidak berubah
+-- (match WO tetap ada di venue_matches/match_ledger).
+--
+-- Rollback (urut):
+--   delete from elo_log where session_id='INITIAL' and player in
+--     ('Alfi Yusuf Ananda','Arjun','Faris','Fayat','Jay','Noval','Qynar')
+--     and timestamp in (select timestamp from elo_log_walkover_backup_20261011);
+--   delete from elo_log where id in (select id from elo_log_walkover_backup_20261011);
+--   insert into elo_log (id, session_id, player, new_elo, elo_change, wins, losses, timestamp)
+--     overriding system value
+--     select id, session_id, player, new_elo, elo_change, wins, losses, timestamp
+--     from elo_log_walkover_backup_20261011;
+--   insert into players overriding system value select * from players_walkover_backup_20261011;
