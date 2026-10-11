@@ -3385,6 +3385,14 @@ async function recordManualMatch(body) {
 // Batch import: read ELO/state ONCE, compute ALL matches in memory in order (identical
 // to running record-match sequentially), then write in a few batched calls. Validates
 // everything up-front — nothing is written unless every row is valid (all-or-nothing).
+// Walkover / walk-out: slot placeholder ("[Walk Over] 1", "Walk Out 2", "- Walk Out 1 -")
+// atau pemain asli bertanda walk out ("Nama [walk Out]"). Standar rating: match WO
+// tetap tercatat (klasemen liga menghitungnya), tapi TIDAK mengubah rating siapa pun
+// dan placeholder tidak dibuat sebagai pemain.
+const WALKOVER_RE = /walk\s*-?\s*(over|out)|\bw\/o\b/i;
+function isWalkoverName(n) { return WALKOVER_RE.test(String(n || "")); }
+function isWalkoverMatch(names) { return (names || []).some(isWalkoverName); }
+
 async function importMatches(body) {
   const raw = (body && body.matches) || [];
   const newPlayerLevel = String((body && body.newPlayerLevel) || "Lower Bronze");
@@ -3430,9 +3438,12 @@ async function importMatches(body) {
   const eloLogRows = [], venueRows = {}, venueDisplay = {}, newPlayerRows = [], newVenueRows = [], stat = {};
   const mk = (name) => { const k = normName(name); return latest[k] != null ? { name, elo: latest[k], matchCount: mcount[k] || 0 } : { name, elo: levelToElo(newPlayerLevel), matchCount: 0 }; };
 
+  let walkovers = 0;
   for (const m of matches) {
     const [n1, n2, n3, n4] = m.names;
-    const results = rmCalcElo(mk(n1), mk(n2), mk(n3), mk(n4), m.s1, m.s2);
+    const wo = isWalkoverMatch(m.names);
+    if (wo) walkovers++;
+    const results = wo ? [] : rmCalcElo(mk(n1), mk(n2), mk(n3), mk(n4), m.s1, m.s2);
     results.forEach((r) => {
       const k = normName(r.name);
       latest[k] = r.newElo; mcount[k] = (mcount[k] || 0) + r.w + r.l;
@@ -3440,7 +3451,7 @@ async function importMatches(body) {
       if (!stat[r.name]) stat[r.name] = { w: 0, l: 0, played: 0, elo: r.newElo };
       stat[r.name].w += r.w; stat[r.name].l += r.l; stat[r.name].played += 1; stat[r.name].elo = r.newElo;
     });
-    m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", venueRegion[String(m.venue).toLowerCase()] || "", "", m.venue, tsNow]); } });
+    m.names.forEach((n, i) => { const k = n.toLowerCase(); if (!isWalkoverName(n) && !existingPlayers.has(k)) { existingPlayers.add(k); newPlayerRows.push([n, "", "FALSE", n, m.pg[i] || "M", venueRegion[String(m.venue).toLowerCase()] || "", "", m.venue, tsNow]); } });
     const tab = venueTabName(m.venue);
     if (!venueRows[tab]) { venueRows[tab] = []; venueDisplay[tab] = m.venue; }
     const wk = m.week || batchWeek || defaultWeek;
@@ -3468,11 +3479,11 @@ async function importMatches(body) {
   }
   try {
     await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED", requestBody: { values: [[sessionId, "Tournament Import", "", "Import", "N/A", Object.values(venueDisplay).join(", ").slice(0, 80), Object.keys(stat).length, matches.length, tsNow]] } });
-    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: eloLogRows } });
+    if (eloLogRows.length) await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED", requestBody: { values: eloLogRows } });
   } catch (e) { return respond(500, { error: "ELO write failed: " + e.message }); }
 
   const players = Object.keys(stat).map((n) => ({ name: n, elo: stat[n].elo, w: stat[n].w, l: stat[n].l, played: stat[n].played })).sort((a, b) => b.elo - a.elo);
-  return respond(200, { success: true, imported: matches.length, sessionId, players });
+  return respond(200, { success: true, imported: matches.length, walkovers, sessionId, players });
 }
 
 // ── ELO / LEADERBOARD ──
