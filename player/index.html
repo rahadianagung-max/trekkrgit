@@ -841,6 +841,71 @@ body{background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05)
 .state-panel{border:2px dashed var(--tk-ink);background:#fff}
 @media(max-width:560px){.pp-hero{padding:16px}.pp2-elo .v{font-size:34px}}
 </style>
+<style id="pp3css">
+/* ===== Passport 2.0 — "your padel journey" layers (option B: white profile) ===== */
+.pp3-hero{margin-top:18px;background:#fff;border:2px solid var(--tk-ink,#090D14);box-shadow:6px 6px 0 var(--tk-ink,#090D14);border-top:6px solid var(--tk-or,#FF5900);padding:18px 16px}
+.pp3-q{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.pp3-q h3{margin:0;font:700 13px var(--tk-disp,'Space Grotesk',sans-serif);letter-spacing:.14em;text-transform:uppercase;color:var(--tk-ink,#090D14)}
+.pp3-q h3 b{color:var(--tk-or,#FF5900)}
+.pp3-id{display:flex;gap:14px;align-items:center}
+.pp3-id .pp-photo{width:84px;height:84px;object-fit:cover;border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-or,#FF5900);border-radius:0;flex:none;margin:0}
+.pp3-name{margin:0;font:700 clamp(24px,6vw,34px)/1 var(--tk-disp,'Space Grotesk',sans-serif);text-transform:uppercase;letter-spacing:-.01em;word-break:break-word}
+.pp3-sub{font-size:12.5px;color:#5B6270;margin-top:5px}
+.pp3-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pp3-lvlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.pp3-lvl{font:700 20px var(--tk-disp,'Space Grotesk',sans-serif);background:var(--tk-or,#FF5900);color:var(--tk-ink,#090D14);padding:4px 10px;text-transform:uppercase;box-shadow:3px 3px 0 var(--tk-ink,#090D14)}
+.pp3-conf{font:700 10px var(--tk-mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;border:1.5px solid var(--tk-ink,#090D14);background:var(--tk-volt,#D2F802);cursor:pointer}
+.pp3-conf.find{background:#FFE1CF}
+.pp3-rating{margin-top:14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pp3-rating .num{font:700 50px/1 var(--tk-mono,'JetBrains Mono',monospace);color:var(--tk-or,#FF5900);font-variant-numeric:tabular-nums}
+.pp3-rating .lab{font:700 10px var(--tk-mono,'JetBrains Mono',monospace);letter-spacing:.12em;color:#5B6270;text-transform:uppercase}
+.pp3-d{font:700 13px var(--tk-mono,'JetBrains Mono',monospace)}
+.pp3-d.up{color:#1F8A4C}.pp3-d.dn{color:#C53030}.pp3-d.fl{color:#5B6270}
+.pp3-bar{margin-top:12px}
+.pp3-track{position:relative;height:10px;background:#E7E3D9;border:1.5px solid var(--tk-ink,#090D14)}
+.pp3-track span{position:absolute;left:0;top:0;bottom:0;background:var(--tk-or,#FF5900)}
+.pp3-ends{display:flex;justify-content:space-between;font:500 10px var(--tk-mono,'JetBrains Mono',monospace);color:#5B6270;margin-top:5px;text-transform:uppercase}
+.pp3-goal{font-size:13px;margin-top:6px}.pp3-goal b{color:var(--tk-or,#FF5900);font-family:var(--tk-mono,'JetBrains Mono',monospace)}
+.pp3-tiles{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;border:2px solid var(--tk-ink,#090D14);box-shadow:3px 3px 0 var(--tk-ink,#090D14);background:#fff}
+.pp3-tile{padding:9px 4px;border-right:1.5px solid #E7E3D9;text-align:center;min-width:0}
+.pp3-tile:last-child{border-right:0}
+.pp3-tile .v{font:700 18px var(--tk-mono,'JetBrains Mono',monospace);font-variant-numeric:tabular-nums}
+.pp3-tile .k{font-size:10px;color:#5B6270;line-height:1.2;margin-top:2px}
+.pp3-sec{margin-top:16px;background:#fff;border:2px solid var(--tk-ink,#090D14);box-shadow:4px 4px 0 var(--tk-ink,#090D14);padding:16px}
+.pp3-stand{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pp3-st{border:2px solid var(--tk-ink,#090D14);padding:10px 6px;text-align:center;background:#F4F1EA}
+.pp3-st .v{font:700 22px var(--tk-mono,'JetBrains Mono',monospace)}
+.pp3-st .k{font-size:11px;color:#5B6270;line-height:1.25}
+.pp3-fine{font-size:11.5px;color:#5B6270;margin-top:8px;line-height:1.45}
+.pp3-verdict{border:2px solid var(--tk-ink,#090D14);background:#fff;box-shadow:3px 3px 0 var(--tk-ink,#090D14);padding:12px;margin-bottom:12px}
+.pp3-verdict.hot{background:var(--tk-volt,#D2F802)}
+.pp3-verdict.warn{background:#FFE1CF}
+.pp3-verdict .h{font:700 18px var(--tk-disp,'Space Grotesk',sans-serif);text-transform:uppercase}
+.pp3-verdict p{font-size:13px;margin:4px 0 0}
+.pp3-verdict .so{font:500 11.5px/1.45 var(--tk-mono,'JetBrains Mono',monospace);margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--tk-ink,#090D14)}
+.pp3-form{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.pp3-form span{width:22px;height:22px;display:grid;place-items:center;font:700 11px var(--tk-mono,'JetBrains Mono',monospace);border:1.5px solid var(--tk-ink,#090D14)}
+.pp3-form .w{background:var(--tk-ink,#090D14);color:var(--tk-volt,#D2F802)}
+.pp3-form .l{background:#fff;color:#C53030}
+.pp3-form .d{background:#E7E3D9}
+.pp3-link{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--tk-ink,#090D14);text-decoration:underline;text-decoration-color:var(--tk-or,#FF5900);text-underline-offset:3px}
+.pp3-goalbox{background:var(--tk-ink,#090D14);color:#fff;padding:14px;border:2px solid var(--tk-ink,#090D14);box-shadow:4px 4px 0 var(--tk-or,#FF5900)}
+.pp3-goalbox .h{font:700 20px var(--tk-disp,'Space Grotesk',sans-serif);text-transform:uppercase}
+.pp3-goalbox .pts{font:700 34px/1.1 var(--tk-mono,'JetBrains Mono',monospace);color:var(--tk-volt,#D2F802);margin-top:6px}
+.pp3-goalbox p{font-size:12.5px;color:#C9CFD9;margin:6px 0 0}
+.pp3-acts{display:grid;gap:8px;margin-top:12px}
+.pp3-act{display:flex;gap:10px;align-items:center;background:#fff;border:2px solid var(--tk-ink,#090D14);padding:10px;box-shadow:3px 3px 0 var(--tk-ink,#090D14);color:var(--tk-ink,#090D14);text-decoration:none}
+.pp3-act:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--tk-or,#FF5900)}
+.pp3-act .no{font:700 13px var(--tk-mono,'JetBrains Mono',monospace);background:var(--tk-or,#FF5900);width:26px;height:26px;display:grid;place-items:center;flex:none}
+.pp3-act .w{font-size:12.5px;line-height:1.35;min-width:0}.pp3-act .w b{display:block;font-size:13.5px}
+.pp3-act .cta{margin-left:auto;font:700 10px var(--tk-mono,'JetBrains Mono',monospace);border:1.5px solid var(--tk-ink,#090D14);padding:5px 7px;white-space:nowrap}
+.pp3-full{margin:26px 0 4px;font:700 13px var(--tk-disp,'Space Grotesk',sans-serif);letter-spacing:.14em;text-transform:uppercase}
+.pp3-gloss{margin-top:18px;padding:14px;border:2px dashed #B8B2A5;font-size:12px;color:#5B6270}
+.pp3-gloss dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0}
+.pp3-gloss dt{font:700 11px var(--tk-mono,'JetBrains Mono',monospace);color:var(--tk-ink,#090D14)}
+.pp3-gloss dd{margin:0}
+@media(max-width:380px){.pp3-tile .v{font-size:15px}.pp3-rating .num{font-size:42px}}
+</style>
 </head>
 <body>
 <div id="tk-nav"></div>
@@ -1300,6 +1365,7 @@ async function loadPlayer(){
         });
       } catch(e) {}
       d.badges = computeBadges(d, myMatches, myMatches, [eloMapForBadges]);
+      d._eloMap = eloMapForBadges;
 
       // ===== v2 extras: venue ranks · last session · highlights · ELO direction =====
       try { ppComputeExtras(d, historyTable, name); } catch(e){ console.warn('extras', e); }
@@ -1369,9 +1435,9 @@ function ppComputeExtras(d, historyTable, canonName){
 // One leaderboard read → this player's rank at each venue, vs same gender.
 async function ppComputeVenueRanks(d, canonName){
   var venues=(d.playedVenues||[]).filter(Boolean);
-  if(!venues.length){ d.venueRanks=[]; return; }
   var lbRes=null; try{ lbRes=await TrekkrAPI.getNationalLeaderboard({limit:100000}); }catch(e){}
   var lb=(lbRes&&lbRes.leaderboard)||[];
+  try{ d.standing=lb.length?pp3Standing(lb, d, canonName):null; }catch(e){ d.standing=null; }
   if(!lb.length){ d.venueRanks=[]; return; }
   var p=d.player||{};
   var mine=new Set([ppNN(p.name),ppNN(p.displayName),ppNN(canonName)].filter(Boolean));
@@ -1441,6 +1507,84 @@ function ppTopbar(on){
   if(on&&!b){b=document.createElement('div');b.id='ppTopbar';b.className='pp-topbar';b.setAttribute('role','progressbar');b.setAttribute('aria-label','Loading match history');document.body.appendChild(b);}
   if(!on&&b)b.remove();
 }
+// ===== Passport 2.0 — turn the numbers into answers ("so what?") =====
+function pp3Fmt(n){ n=Number(n); return isFinite(n)?Math.round(n).toLocaleString('en-US'):'—'; }
+function pp3Esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function pp3IsWO(n){ return /walk\s*-?\s*(over|out)|\bw\/o\b/i.test(String(n||'')); }
+// Rating change over the last `days` days (vs the last rating recorded before the window).
+function pp3Change(history, cur, days){
+  var cutoff=Date.now()-days*864e5, base=null, any=false;
+  (history||[]).forEach(function(e){ var t=Date.parse(e.timestamp||''); if(isNaN(t)) return; if(t<=cutoff) base=Number(e.elo); else if(e.sessionId!=='INITIAL') any=true; });
+  if(base==null && history && history.length) base=Number(history[0].elo);
+  return { delta: (base==null?0:Math.round(cur-base)), active:any };
+}
+// Average rating points per win: early wins vs the last 5 (session rows split per match).
+function pp3WinValue(history){
+  var w=[]; (history||[]).forEach(function(e){ var ww=Number(e.w||0), ll=Number(e.l||0), dd=Number(e.delta||0);
+    if(e.sessionId==='INITIAL'||ww<1||ll>0||dd<=0) return; for(var i=0;i<ww;i++) w.push(dd/ww); });
+  if(w.length<8) return null;
+  var avg=function(a){ return a.reduce(function(t,x){return t+x;},0)/a.length; };
+  var recent=w.slice(-5), early=w.slice(0,Math.max(3,Math.floor((w.length-5)/2)));
+  return { early:Math.round(avg(early)), recent:Math.round(avg(recent)*10)/10, n:w.length };
+}
+// Average current rating of the opponents in the player's last `k` real matches.
+function pp3OppAvg(historyTable, eloMap, k){
+  if(!eloMap) return null; var v=[];
+  (historyTable||[]).slice(-k).forEach(function(r){ String(r.opponents||'').split(' & ').forEach(function(n){ n=String(n||'').trim(); if(!n||pp3IsWO(n)) return; var e=eloMap[n.toLowerCase()]; if(e) v.push(Number(e)); }); });
+  return v.length>=3 ? Math.round(v.reduce(function(t,x){return t+x;},0)/v.length) : null;
+}
+// Short verdicts: the first is the headline, an optional second adds the "but…".
+function pp3Verdicts(d, st, ch){
+  var s=d.stats||{}, ht=d.historyTable||[], out=[], n=Number(s.totalMatches||0);
+  if(s.unrated) return out;
+  if(isCalibrating(n)){
+    var left=CALIB_THRESHOLD-n;
+    out.push({cls:'warn', h:'Finding your level', p:n+' of '+CALIB_THRESHOLD+' matches played. '+left+' more and your level is confirmed.',
+      so:'SO WHAT? Early ratings move fast. Every match now tells Trekkr more about where you really belong.'});
+    return out;
+  }
+  var m=String(s.streak||'').match(/^(\d+)([WL])$/i), sk=m?Number(m[1]):0, sw=m&&m[2].toUpperCase()==='W';
+  var lastT=0; (d.history||[]).forEach(function(e){ var t=Date.parse(e.timestamp||''); if(!isNaN(t)&&e.sessionId!=='INITIAL') lastT=Math.max(lastT,t); });
+  var idle=lastT?Math.floor((Date.now()-lastT)/864e5):0;
+  if(idle>45) out.push({cls:'', h:'Time to get back on court', p:'Your last rated match was '+idle+' days ago. Your rating is waiting for you.', so:'SO WHAT? Ratings only move when you play. One session is enough to get going again.'});
+  else if(sw && sk>=5) out.push({cls:'hot', h:'You\'re on fire 🔥', p:'You haven\'t lost in '+sk+' matches.'});
+  else if(ch.delta>=20) out.push({cls:'hot', h:'You\'re getting better', p:'Your rating is up '+ch.delta+' points in the last 30 days.'});
+  else if(ch.delta<=-20) out.push({cls:'warn', h:'Tough month', p:'Your rating is down '+Math.abs(ch.delta)+' points in the last 30 days.', so:'SO WHAT? Dips are normal when you take on stronger players. You\'re still '+st.name+'.'});
+  else if(!sw && sk>=3) out.push({cls:'warn', h:'Rough patch', p:sk+' losses in a row.', so:'SO WHAT? Streaks end. Try a partner you win with, or a match closer to your level.'});
+  else {
+    var recent=(d.history||[]).filter(function(e){return e.sessionId!=='INITIAL';}).slice(-12);
+    var net=recent.reduce(function(t,e){return t+Number(e.delta||0);},0);
+    if(recent.length>=8 && Math.abs(net)<15) out.push({cls:'', h:'You\'re holding steady', p:'Your rating has barely moved over your last '+recent.length+' rated results.', so:'SO WHAT? To move up you need wins against stronger players.'});
+    else out.push({cls:'', h:'Steady progress', p:(ch.delta? (ch.delta>0?'+':'')+ch.delta+' points in the last 30 days.':'No rating change in the last 30 days.')});
+  }
+  var wv=pp3WinValue(d.history);
+  if(wv && wv.recent<=wv.early*0.4 && wv.recent<8){
+    var opp=pp3OppAvg(ht, d._eloMap, 5);
+    out.push({cls:'', h:'…but your wins are getting smaller', p:'Early on, a win earned you +'+wv.early+' pts. Your last 5 wins earned +'+wv.recent+' each.',
+      so:'SO WHAT? '+(opp?'Your recent opponents average '+pp3Fmt(opp)+', so the system expects you to win. ':'You\'re mostly beating lower-rated players, so the system expects you to win. ')+'To climb, you need tougher matches.'});
+  }
+  return out;
+}
+// National standing among confirmed players (16+ matches): gender, region, overall.
+function pp3NormRegion(r){ return String(r||'').toLowerCase().replace(/\b(kota|kab\.?|kabupaten)\b/g,' ').replace(/\s+/g,' ').trim(); }
+function pp3Standing(lb, d, canonName){
+  var p=d.player||{}, mine=new Set([ppNN(p.name),ppNN(p.displayName),ppNN(canonName)].filter(Boolean));
+  var isMe=function(e){ return mine.has(ppNN(e.name))||mine.has(ppNN(e.display))||mine.has(ppNN(e.displayName)); };
+  var me=lb.filter(isMe)[0]; if(!me) return null;
+  if(Number(me.totalMatches||0)<CALIB_THRESHOLD) return { notYet: CALIB_THRESHOLD-Number(me.totalMatches||0) };
+  var conf=lb.filter(function(e){ return Number(e.totalMatches||0)>=CALIB_THRESHOLD && !pp3IsWO(e.name); });
+  var rankIn=function(pop){ var i=pop.findIndex(isMe); return i<0?null:{rank:i+1,total:pop.length}; };
+  var g=String(me.gender||'M').toUpperCase()==='F'?'F':'M', out=[];
+  var gr=rankIn(conf.filter(function(e){return String(e.gender||'M').toUpperCase()===g;}));
+  if(gr) out.push({rank:gr.rank,total:gr.total,a:g==='F'?'Women':'Men',b:'Indonesia'});
+  var rg=pp3NormRegion(me.region);
+  if(rg){ var rp=conf.filter(function(e){return pp3NormRegion(e.region)===rg;}); var rr=rankIn(rp); if(rr && rp.length>=5) out.push({rank:rr.rank,total:rr.total,a:'All players',b:me.region}); }
+  var ov=rankIn(conf); if(ov) out.push({rank:ov.rank,total:ov.total,a:'All players',b:'Indonesia'});
+  return { items: out.slice(0,3) };
+}
+// Liga division band for the "what next" action (same bands as tierProg).
+function pp3Division(elo){ if(elo>=2500) return {name:'Open',next:null,ceil:null}; if(elo>=1800) return {name:'Division 3',next:'Open',ceil:2500}; if(elo>=1200) return {name:'Division 2',next:'Division 3',ceil:1800}; return {name:'Division 1',next:'Division 2',ceil:1200}; }
+
 function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues,venueRanks,lastSession,highlights,d){
   var pend=!!(d&&d._pending), late=(d&&d._late)?' pp-late':'';
   var sk=function(w,h){return '<span class="pp-sk" style="width:'+w+';height:'+(h||'20px')+'"></span>';};
@@ -1458,43 +1602,71 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   var verified=p.verified?'<span class="pp-verified">Verified</span>':'';
 
   var h='';
-  // ---- HERO ----
-  h+='<article class="pp-hero"><div style="text-align:center">'+photo+'<br>'+verified+'</div>'
-    +'<div style="min-width:0">'+realLine
-    +'<h2 class="pp-name">'+(alias).toUpperCase()+'</h2>'
-    +'<div class="pp-chips">'
-    +(unrated?'<span class="ppc gray">Unrated</span>'
-       :('<span class="ppc tier">'+tierEmoji(st.name)+' '+st.name+'</span><span class="ppc elo">ELO<b>'+eloDisp+'</b>'+tri+'</span>'))
-    +(bestRank?('<span class="ppc rank lk">⭐ #'+bestRank.rank+' '+bestRank.venue+'</span>'):'')
-    +(((p.badges||[]).indexOf('certified-coach')>-1)?'<span class="ppc coach" title="Pelatih bersertifikat Stellar Squad Academy">Certified Coach</span>'
-      :(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih Stellar Squad Academy">Coach</span>':''))
-    +'</div>'
-    +'<button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()" style="margin-top:12px">Edit</button>'
-    +'</div></article>';
-
+  var cur=Number(s.currentElo||0), ch=pp3Change(history, cur, 30), n0=Number(s.totalMatches||0), calib=isCalibrating(n0);
+  var club=ppListArr(p.clubs)[0]||'', sub=[club,p.region].filter(Boolean).map(pp3Esc).join(' · ');
+  var coach=((p.badges||[]).indexOf('certified-coach')>-1)?'<span class="ppc coach" title="Pelatih bersertifikat Stellar Squad Academy">Certified Coach</span>'
+      :(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih Stellar Squad Academy">Coach</span>':'');
+  var stand=(d&&d.standing)||null, top=stand&&stand.items&&stand.items[0];
+  // ---- LAYER 1 · WHO AM I? (public) ----
+  h+='<article class="pp3-hero"><div class="pp3-q"><h3>Who am I<b>?</b></h3>'+verified+'</div>'
+    +'<div class="pp3-id">'+photo+'<div style="min-width:0">'+realLine+'<h2 class="pp3-name">'+pp3Esc(alias).toUpperCase()+'</h2>'
+    +(sub?'<div class="pp3-sub">'+sub+'</div>':'')
+    +(coach?'<div class="pp3-chips">'+coach+'</div>':'')
+    +'<button class="pp-edit-btn" id="ppEditBtn" onclick="onEditBtn()" style="margin-top:10px">Edit</button></div></div>';
   if(unrated){
-    h+='<div class="pp-unrated"><i class="ti ti-bolt" aria-hidden="true"></i><div><b>You\'re not rated yet.</b> Your ELO appears after your first <b>PlayRank</b> match. Play at any Trekkr-powered venue, league, or tournament to earn your rating.</div></div>';
+    h+='</article><div class="pp-unrated"><i class="ti ti-bolt" aria-hidden="true"></i><div><b>You\'re not rated yet.</b> Your Trekkr Rating appears after your first <b>PlayRank</b> match. Play at any Trekkr-powered venue, league, or tournament to earn it.</div></div>';
   } else {
-    // ---- WHERE YOU STAND ----
-    h+='<div class="pp2-stand"><div class="pp2-stand-top">'
-      +'<div class="pp2-tier">'+st.name+'<small>Skill tier'+(isCalibrating(s.totalMatches)?' · calibrating':' · calibrated')+'</small></div>'
-      +'<div class="pp2-elo"><div class="v">'+eloDisp+tri+'</div><div class="k">ELO</div></div></div>'
-      +'<div class="pp2-bar lk"><span style="width:'+st.progress+'%"></span></div>'
-      +'<div class="pp2-next lk">'+(st.next?('<b>'+st.ptsAway+' pts</b> to '+st.next+' · '+st.progress+'% there'):'Top tier reached 🏆')+'</div>'
-      +'<div class="pp2-next" style="margin-top:4px">Liga division: <b>'+series.current+'</b></div>';
+    var dCls=ch.delta>0?'up':(ch.delta<0?'dn':'fl'), dTxt=ch.delta>0?('↑ +'+ch.delta+' last 30 days'):(ch.delta<0?('↓ '+ch.delta+' last 30 days'):'No change in the last 30 days');
+    var mm=String(s.streak||'').match(/^(\d+)([WL])$/i);
+    var stV=mm?(mm[1]+(mm[2].toUpperCase()==='W'?'🔥':'')):'—', stK=mm?(mm[2].toUpperCase()==='W'?'wins in a row':'losses in a row'):'streak';
+    var wr=Number(s.winRate||0);
+    var tile=function(v,k){return '<div class="pp3-tile"><div class="v">'+(pend?sk('34px','18px'):v)+'</div><div class="k">'+k+'</div></div>';};
+    var rankTile=top?tile('#'+top.rank, pp3Esc(top.a)+', '+pp3Esc(top.b)):(stand&&stand.notYet?tile('—','not ranked yet'):(bestRank?tile('#'+bestRank.rank,pp3Esc(bestRank.venue)):tile('—','rank')));
+    h+='<div class="pp3-lvlrow"><span class="pp3-lvl">'+st.name+'</span>'
+      +(calib?'<span class="pp3-conf find" onclick="openCalibModal()" title="How Trekkr finds your level">Finding your level · '+n0+'/'+CALIB_THRESHOLD+'</span>'
+             :'<span class="pp3-conf" onclick="openCalibModal()" title="Level confirmed after '+CALIB_THRESHOLD+'+ matches">✓ Confirmed level · '+n0+' matches</span>')+'</div>'
+      +'<div class="pp3-rating"><span class="num">'+pp3Fmt(cur)+'</span><span><span class="lab">Trekkr Rating</span><br><span class="pp3-d '+dCls+'">'+dTxt+'</span></span></div>'
+      +'<div class="pp3-bar"><div class="pp3-track"><span style="width:'+st.progress+'%"></span></div>'
+      +'<div class="pp3-ends"><span>'+st.name+'</span><span>'+(st.next?st.next+' '+pp3Fmt(cur+st.ptsAway):'Top tier')+'</span></div>'
+      +'<div class="pp3-goal">'+(st.next?'You\'re <b>'+st.ptsAway+' pts</b> away from '+st.next+'.':'Top tier reached 🏆')+'</div></div>'
+      +'<div class="pp3-tiles">'+tile(n0,'matches played')+tile(wr+'%', 'wins'+(n0?' · ~'+Math.round(wr/10)+' of 10':''))+tile(stV,stK)+rankTile+'</div>'
+      +'</article>';
+
+    // ---- LAYER 2 · WHERE DO I STAND? (public) ----
     if(pend){
-      h+='<div class="pp2-div"></div>'+sk('60%','14px');
-    } else if(venueRanks && venueRanks.length){
-      h+='<div class="pp2-div"></div>';
-      if(venueRanks.length===1){
-        h+='<div class="pp2-exp-t">Your standing · vs '+venueRanks[0].gender+'</div><div class="pp2-rankbody lk">'+ppRankItem(venueRanks[0])+'</div>';
+      h+='<div class="pp3-sec"><div class="pp3-q"><h3>Where do I stand<b>?</b></h3></div>'+sk('70%','40px')+'</div>';
+    } else if(stand && (stand.items||stand.notYet!=null)){
+      h+='<div class="pp3-sec'+late+'"><div class="pp3-q"><h3>Where do I stand<b>?</b></h3></div>';
+      if(stand.notYet!=null){
+        h+='<p style="margin:0;font-size:13.5px">Not on the national ranking yet. Play <b>'+stand.notYet+' more match'+(stand.notYet===1?'':'es')+'</b> to confirm your level and get ranked.</p>';
       } else {
-        h+='<div class="pp2-exp lk" onclick="ppTog(this,\'ppRanks\')"><span class="pp2-rank-lead"><span class="pos">#'+bestRank.rank+'</span>Best rank · '+bestRank.venue+'</span><span style="display:flex;gap:9px;align-items:center"><span class="pp2-exp-t">'+venueRanks.length+' venues</span><span class="cv">›</span></span></div>'
+        h+='<div class="pp3-stand">'+stand.items.map(function(r){return '<div class="pp3-st"><div class="v">#'+r.rank+'</div><div class="k">'+pp3Esc(r.a)+'<br>'+pp3Esc(r.b)+'</div></div>';}).join('')+'</div>'
+          +'<div class="pp3-fine">Ranked among players with a confirmed level ('+CALIB_THRESHOLD+'+ matches).</div>';
+      }
+      if(venueRanks && venueRanks.length){
+        h+='<div class="pp2-exp" style="margin-top:10px" onclick="ppTog(this,\'ppRanks\')"><span class="pp2-rank-lead"><span class="pos">#'+bestRank.rank+'</span>Best at a venue · '+pp3Esc(bestRank.venue)+'</span><span style="display:flex;gap:9px;align-items:center"><span class="pp2-exp-t">'+venueRanks.length+' venue'+(venueRanks.length>1?'s':'')+'</span><span class="cv">›</span></span></div>'
           +'<div class="pp2-rankbody" id="ppRanks" hidden>'+venueRanks.map(ppRankItem).join('')+'</div>';
       }
+      h+='</div>';
+    }
+
+    // ---- LAYER 3 · AM I GETTING BETTER? (verdicts public, chart for free accounts) ----
+    h+='<div class="pp3-sec'+late+'"><div class="pp3-q"><h3>Am I getting better<b>?</b></h3></div>';
+    if(pend){ h+=sk('90%','60px'); }
+    else {
+      var vs=pp3Verdicts(d, st, ch);
+      var form=(historyTable||[]).slice(-10).map(function(r){var x=(r.resText||'D');return '<span class="'+(x==='W'?'w':(x==='L'?'l':'d'))+'">'+x+'</span>';}).join('');
+      vs.forEach(function(v,i){
+        h+='<div class="pp3-verdict '+(v.cls||'')+'"><div class="h">'+v.h+'</div><p>'+v.p+'</p>'
+          +(i===0&&form?'<div class="pp3-form" title="Last '+Math.min(10,(historyTable||[]).length)+' matches, oldest → newest">'+form+'</div>':'')
+          +(v.so?'<div class="so">'+v.so+'</div>':'')+'</div>';
+      });
+      if(history && history.length>1){
+        h+='<div class="lk-wrap"><div class="pp-chart lk" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div><button type="button" class="lk-ov" onclick="ppOpenUnlock()">🔒 Masuk gratis untuk lihat grafik rating</button></div>';
+      }
+      h+='<a class="pp3-link" href="/how-trekkr-works">How is my rating calculated?</a>';
     }
     h+='</div>';
-    if(!pend) h+=ppLockCta(alias, bestRank);
   }
 
   // ---- LAST SESSION ----
@@ -1521,24 +1693,34 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
       +'</div>';
   }
 
-  // ---- KEY STATS (deduped: no ELO) ----
-  var sv=function(v){return pend?sk('44px','22px'):v;};
-  if(pend){
-    // Last-session card placeholder (filled once the match history arrives).
-    h+='<div class="pp-sk-card" aria-hidden="true">'+sk('40%','12px')+'<span class="pp-sk pp-sk-line" style="width:70%;height:18px"></span><span class="pp-sk pp-sk-line" style="width:90%"></span></div>';
-  }
-  h+='<div class="pp-stats'+late+'" style="margin-top:12px">'
-    +'<div class="pp-stat"><p class="pp-stat-label">Matches</p><p class="pp-stat-val">'+sv(s.totalMatches)+'</p></div>'
-    +'<div class="pp-stat pp-stat--hl"><p class="pp-stat-label">Win Rate</p><p class="pp-stat-val lk">'+sv(s.winRate+'%')+'</p></div>'
-    +'<div class="pp-stat"><p class="pp-stat-label">W / L</p><p class="pp-stat-val">'+sv(s.totalW+'/'+s.totalL)+'</p></div>'
-    +'<div class="pp-stat"><p class="pp-stat-label">Streak</p><p class="pp-stat-val lk">'+sv(s.streak||'—')+'</p></div>'
-    +'</div>';
+  // ---- LAYER 4 · WHAT SHOULD I DO NEXT? (public) ----
   if(pend){
     h+='<div class="pp-loadnote" role="status"><i></i>Loading match history…</div>';
     for(var q=0;q<3;q++) h+='<div class="pp-sk-card" aria-hidden="true">'+sk((50-q*8)+'%','14px')+'</div>';
+  } else if(!unrated){
+    var curN=Number(s.currentElo||0), nN=Number(s.totalMatches||0), dv=pp3Division(curN), wv2=pp3WinValue(history);
+    var acts=[], A=function(t,sub,cta,href){acts.push('<a class="pp3-act" href="'+href+'"'+(/^https?:/.test(href)?' target="_blank" rel="noopener"':'')+'><span class="no">'+(acts.length+1)+'</span><span class="w"><b>'+t+'</b>'+sub+'</span><span class="cta">'+cta+' →</span></a>');};
+    var gh;
+    if(isCalibrating(nN)){
+      var left2=CALIB_THRESHOLD-nN;
+      gh='<div class="pp3-goalbox"><div class="h">Confirm your level</div><div class="pts">'+left2+' match'+(left2===1?'':'es')+' to go</div><p>After '+CALIB_THRESHOLD+' matches your level is confirmed and you appear on the national ranking.</p></div>';
+      A('Play a PlayRank session','Every match at a Trekkr venue counts toward your level.','PLAY','/playrank');
+    } else if(st.next){
+      var est=(wv2&&wv2.recent>=1)?Math.ceil(st.ptsAway/wv2.recent):null;
+      gh='<div class="pp3-goalbox"><div class="h">Reach '+st.next+'</div><div class="pts">'+st.ptsAway+' pts to go</div>'
+        +'<p>'+(est?('At +'+wv2.recent+' per win against your usual opponents, that\'s about '+est+' more wins. Beating stronger pairs gets you there faster.'):'Wins against players rated above you are worth the most.')+'</p></div>';
+    } else {
+      gh='<div class="pp3-goalbox"><div class="h">Defend the top</div><div class="pts">'+st.name+'</div><p>You\'re in the highest tier. Keep playing the best to stay here.</p></div>';
+    }
+    if(dv.next) A('Play Liga Trekkr · '+dv.name, 'Cross '+pp3Fmt(dv.ceil)+' and you move up to '+dv.next+'.', 'JOIN', 'https://liga.trekkr.online');
+    else A('Play Liga Trekkr · Open', 'Weekly league nights against the strongest players.', 'JOIN', 'https://liga.trekkr.online');
+    A('Find ranked events &amp; leagues','Play stronger pairs to earn more per win.','EVENTS','/tournament');
+    var tn=(st.next||st.name); A('Enter '+(/^[AEIOU]/i.test(tn)?'an ':'a ')+tn+' tournament','Categories by level on TurnamenPadel.','FIND','https://www.turnamenpadel.com');
+    var isStellar=/stellar/i.test(String(p.clubs||''));
+    A('Train at Stellar Squad Academy', isStellar?'Your club. Coaching built around your level.':'Coaching built around your level.','BOOK','https://stellarsquadacademy.com');
+    h+='<div class="pp3-sec'+late+'"><div class="pp3-q"><h3>What should I do next<b>?</b></h3></div>'+gh+'<div class="pp3-acts">'+acts.join('')+'</div></div>';
+    h+=ppLockCta(alias, bestRank);
   }
-
-  if(!pend && !unrated && isCalibrating(s.totalMatches)) h+=buildCalibBanner(s.totalMatches);
 
   // ---- ACHIEVEMENT STRIP ----
   if(highlights && !unrated){
@@ -1550,6 +1732,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   }
 
   // ---- ACCORDIONS ----
+  if(!unrated) h+='<div class="pp3-full">The full numbers</div>';
   // Achievements & badges
   var hasPartner=bestPartner && bestPartner.name && bestPartner.name!=='No Data';
   var hasBadges=badges && badges.length;
@@ -1594,10 +1777,6 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppAch\')"><div class="t"><span class="em">🏆</span> Tournament results <span class="ct">· '+achs.length+'</span></div><span class="cv">›</span></div>'
       +'<div class="pp2-accbody" id="ppAch" hidden><div class="pp2-hist">'+arows+'</div></div></div>';
   }
-  // ELO progress
-  if(history && history.length>1){
-    h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppEloAcc\')"><div class="t"><span class="em">📊</span> ELO progress</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppEloAcc" hidden><div class="lk-wrap"><div class="pp-chart lk" style="margin-top:0"><canvas class="pp-chart-canvas" id="eloChart"></canvas></div><button type="button" class="lk-ov" onclick="ppOpenUnlock()">🔒 Masuk gratis untuk lihat grafik ELO</button></div></div></div>';
-  }
   // Playing history — compact mobile-first rows (no wide table; nothing clipped)
   if(historyTable){
     var histRows='';
@@ -1638,6 +1817,12 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     +'</div>';
   h+='<div class="pp2-acc"><div class="pp2-exp" onclick="ppTog(this,\'ppAbout\')"><div class="t"><span class="em">🏟</span> About &amp; venues</div><span class="cv">›</span></div><div class="pp2-accbody" id="ppAbout" hidden>'+aboutBody+'</div></div>';
 
+  // ---- Glossary: the words we use ----
+  h+='<div class="pp3-gloss"><dl>'
+    +'<dt>Trekkr Rating</dt><dd>Your skill number. It goes up when you win, and more when you beat stronger players. (Also known as ELO.)</dd>'
+    +'<dt>Level</dt><dd>Your rating band: Beginner → Upper Beginner → Lower Bronze → Bronze → Upper Bronze → Silver → Gold → Platinum.</dd>'
+    +'<dt>Confirmed level</dt><dd>'+CALIB_THRESHOLD+'+ matches played. Before that you\'re still finding your level.</dd>'
+    +'</dl></div>';
   // ---- SHARE ----
   h+='<div class="pp-share-v2"><div class="pp-share-v2-title">'
     +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.7"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share your passport</div>'
@@ -1648,6 +1833,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
 
   document.getElementById('content').innerHTML=h;
   refreshEditBtn();
+  if(!unrated && history && history.length>1) requestAnimationFrame(function(){ try{ drawChart(history); }catch(e){} });
 }
 
 function renderPlayerLegacyUNUSED({player:p, stats:s, history, bestPartner, historyTable, badges, playedVenues}){
