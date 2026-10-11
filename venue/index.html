@@ -651,7 +651,20 @@
       +'<div class="vhero">'+compLogo(d)+'<div class="vinfo"><span class="tbadge tb-league"><i class="ti ti-medal"></i>League · Season</span>'
       +'<div class="vname">'+esc(d.name)+'</div><div class="vtags">'+tags+'</div></div></div>';
   }
+  // Slot "[Walk Over] N" = pemain bayangan untuk WO, bukan pemain sungguhan:
+  // sembunyikan dari ranking dan rapatkan ulang nomor peringkat (tie tetap tie).
+  function isWalkover(p){return /walk\s*-?\s*over/i.test(String((p&&p.name)||''));}
+  function dropWalkover(list){
+    if(!list)return list;
+    var wo=list.filter(isWalkover);
+    if(!wo.length)return list;
+    return list.filter(function(p){return !isWalkover(p);}).map(function(p){
+      var above=wo.filter(function(w){return (w.rank||0)<(p.rank||0);}).length;
+      var q={};for(var k in p)q[k]=p[k];q.rank=(p.rank||0)-above;return q;
+    });
+  }
   function leagueBoard(title,list){
+    list=dropWalkover(list);
     if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
     var rows=list.map(function(p){
       return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td><td class="pairc"><span class="pl-inline">'+pAv(p)+nameLink(p)+'</span></td><td>'+p.wins+'</td><td>'+p.losses+'</td><td>'+pdText(p.gd)+'</td></tr>';
@@ -660,6 +673,7 @@
       +'<div style="overflow-x:auto"><table class="tbl"><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th></tr>'+rows+'</table></div></div>';
   }
   function leagueEloCol(title,list){
+    list=dropWalkover(list);
     if(!list||!list.length)return '<div class="lg-col"><div class="sec-label" style="margin-top:0">'+title+'</div><div class="state">No matches.</div></div>';
     var rows=list.map(function(p){
       return '<tr'+(p.rank===1?' class="top"':'')+'><td class="rkn">'+p.rank+'</td>'
