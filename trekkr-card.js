@@ -32,7 +32,10 @@
     var games = ls && ls.games ? ls.games : [];
     var w = ls ? ls.w : (s.totalW || 0), l = ls ? ls.l : (s.totalL || 0);
     var gf = 0, ga = 0; games.forEach(function (g) { gf += Number(g.scoreFor) || 0; ga += Number(g.scoreAgainst) || 0; });
-    var vr = (pd.venueRanks || [])[0] || null;
+    // National rank (confirmed players, by gender) when known; else the best venue rank.
+    var ns = pd.standing && pd.standing.items && pd.standing.items.filter(function (x) { return x.scope === 'gender'; })[0];
+    var vr = ns ? { pct: Math.max(1, Math.round(ns.rank / ns.total * 100)), rank: ns.rank, total: ns.total, gender: ns.a, venue: ns.b }
+               : ((pd.venueRanks || [])[0] || null);
     var partner = '';
     if (games.length) { var cnt = {}; games.forEach(function (g) { cnt[g.partner] = (cnt[g.partner] || 0) + 1; });
       partner = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0] || ''; if (cnt[partner] < games.length) partner = ''; }

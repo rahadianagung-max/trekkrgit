@@ -1752,7 +1752,11 @@ const ADMIN_KEY_DENIED = { error: "Sesi admin tidak valid / kedaluwarsa. Silakan
 
 // ── Funnel kampanye klaim (Passport terkunci → klik → mulai masuk → masuk) ──
 // Anonim: hanya nama event, nama profil yang dilihat, dan id acak per browser.
-const FUNNEL_EVENTS = new Set(["lock_view", "lock_click", "auth_start", "auth_done", "card_share", "card_download"]);
+const FUNNEL_EVENTS = new Set(["lock_view", "lock_click", "auth_start", "auth_done", "card_share", "card_download",
+  // Player Passport 2.0 (progress → next action). Only the passport's public name is sent.
+  "player_passport_view", "player_progress_view", "player_stats_explanation_open", "player_next_goal_click",
+  "player_match_cta_click", "player_league_cta_click", "player_tournament_cta_click", "player_academy_cta_click",
+  "player_passport_share"]);
 async function funnelLog(body) {
   const b = body || {};
   const event = String(b.event || "");
