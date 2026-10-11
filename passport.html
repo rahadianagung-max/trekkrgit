@@ -4,27 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Player passport — Trekkr</title>
-<meta name="description" content="Your rating, your matches, your road to the Championship — all in one place.">
+<meta name="description" content="Your padel identity: level, Trekkr Rating, progress and what to play next. Find any player's passport.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/wave1/tokens.css">
+<script>
+// Signed-in players go straight to their own passport (same cache the site nav keeps).
+(function(){try{var me=JSON.parse(localStorage.getItem("trekkr_player_me")||"null");
+  var n=me&&me.player&&me.player.name;if(n&&localStorage.getItem("trekkr_player_token"))
+  location.replace("/player/"+String(n).toLowerCase().replace(/[^a-z0-9]+/g,""));}catch(e){}})();
+</script>
+<style>
+.pf-search{width:100%;margin-top:18px;padding:14px;font:600 16px var(--body,inherit);border:2px solid var(--ink);background:#fff;box-shadow:4px 4px 0 var(--ink)}
+.pf-search:focus{outline:none;box-shadow:4px 4px 0 var(--flare)}
+.pf-hint{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--flare);font-weight:800;margin-top:10px;min-height:14px}
+.pf-list{margin-top:10px;display:grid;gap:8px}
+.pf-row{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ink);padding:9px 10px;color:var(--ink);text-decoration:none}
+.pf-row:hover{box-shadow:4px 4px 0 var(--flare);transform:translate(-1px,-1px)}
+.pf-row img,.pf-row .ph{width:42px;height:42px;object-fit:cover;flex:none;background:#E2E8F0;border:1.5px solid var(--ink)}
+.pf-row .nm{font-weight:800;font-size:14.5px;line-height:1.2}
+.pf-row .lv{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-top:2px}
+.pf-row .elo{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:16px;color:var(--flare);font-variant-numeric:tabular-nums}
+.pf-what{display:grid;gap:8px;margin-top:22px}
+.pf-what div{background:#fff;border:2px solid var(--ink);padding:10px 12px;font-size:13.5px}
+.pf-what b{font-family:var(--mono);color:var(--flare);margin-right:6px}
+.pf-cta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.pf-cta .btn{margin:0}
+</style>
 </head>
 <body>
 <div id="tk-nav"></div>
 <main class="w1-shell">
-  <span class="soon" style="margin-top:8px">Coming soon</span>
+  <div class="eyebrow" style="margin-top:12px">Your padel identity</div>
   <h1>PLAYER<br>PASSPORT</h1>
-  <p class="lede">Your rating, your matches, your road to the Championship — all in one place.</p>
-  <div class="card teal mt16">
-    <div style="font-size:13px;color:var(--mute);line-height:1.55">
-      This opens in the next wave, once enough players are ranked. In the meantime, <a href="/claim" style="color:var(--flare)">find and claim your profile</a>.</div>
+  <p class="lede">Your level, your Trekkr Rating, how you're progressing and what to play next. Find any player below.</p>
+
+  <input id="q" class="pf-search" type="search" placeholder="Search a player's name…" autocomplete="off" aria-label="Search a player">
+  <div id="hint" class="pf-hint">Type at least 2 letters</div>
+  <div id="list" class="pf-list" aria-live="polite"></div>
+
+  <div class="pf-cta">
+    <a class="btn" href="/login">Masuk</a>
+    <a class="btn ghost" href="/claim">Claim my profile</a>
   </div>
-  <a class="btn ghost mt16" href="/">Back home</a>
+
+  <div class="pf-what">
+    <div><b>01</b>Who am I? Your level and rating at a glance.</div>
+    <div><b>02</b>Where do I stand? Your rank nationally and in your city.</div>
+    <div><b>03</b>Am I getting better? Your form, streaks and progress.</div>
+    <div><b>04</b>What next? Points to your next level and where to play.</div>
+  </div>
 </main>
 <footer class="w1-footer">
-  Trekkr · Ranked padel, Indonesia · <a href="https://liga.trekkr.online">Liga Trekkr</a>
+  Trekkr · Ranked padel, Indonesia · <a href="/rankings">Rankings</a>
 </footer>
+<script>
+(function(){
+  var API=(location.hostname==="trekkr.online"||(location.hostname.endsWith(".vercel.app")&&location.hostname.startsWith("trekkrgit")))?"/api":"https://trekkr.online/api";
+  var q=document.getElementById("q"), list=document.getElementById("list"), hint=document.getElementById("hint"), t=null, seq=0;
+  var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});};
+  var slug=function(n){return String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"");};
+  function run(){
+    var v=q.value.trim(); list.innerHTML="";
+    if(v.length<2){hint.textContent="Type at least 2 letters";return;}
+    hint.textContent="Searching…"; var my=++seq;
+    fetch(API+"/elo/leaderboard?limit=8&search="+encodeURIComponent(v)).then(function(r){return r.json();}).then(function(d){
+      if(my!==seq) return;
+      var rows=((d&&d.leaderboard)||[]).filter(function(p){return !/walk\s*-?\s*(over|out)/i.test(p.name||"");});
+      hint.textContent=rows.length?"":"No player found — check the spelling, or claim your profile.";
+      list.innerHTML=rows.map(function(p){
+        var ph=p.photoUrl?'<img src="'+esc(p.photoUrl)+'" alt="" loading="lazy" onerror="this.outerHTML=\'<span class=ph></span>\'">':'<span class="ph"></span>';
+        return '<a class="pf-row" href="/player/'+slug(p.name)+'">'+ph+'<span><div class="nm">'+esc(p.display||p.displayName||p.name)+'</div><div class="lv">'+esc(p.level||"")+(p.region?' · '+esc(p.region):'')+'</div></span><span class="elo">'+(Math.round(Number(p.elo)||0)).toLocaleString("en-US")+'</span></a>';
+      }).join("");
+    }).catch(function(){ if(my===seq) hint.textContent="Couldn't search right now — try again."; });
+  }
+  q.addEventListener("input",function(){clearTimeout(t);t=setTimeout(run,250);});
+})();
+</script>
 <script src="/trekkr-nav.js" defer></script>
 </body>
 </html>
