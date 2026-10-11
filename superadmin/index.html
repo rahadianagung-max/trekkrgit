@@ -105,6 +105,31 @@ footer span{color:var(--lime)}
   .imp-sim-b button{border:1px solid var(--border);background:#fff;border-radius:99px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted2)}
   .imp-sim-b button.on{background:var(--lime);border-color:var(--lime);color:#fff}
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet"/>
+<style id="tk-skin">
+/* PlayRank League theme skin for superadmin: re-values the page kit (ink · orange · volt,
+   Space Grotesk + JetBrains Mono, grid paper, square corners, hard shadows). */
+:root{--lime:#FF5900;--lime2:#E04E00;--coral:#DC2626;--text:#090D14;--muted:#64748B;--muted2:#475569;--border:#E2E8F0;--s1:#FFFFFF;--s2:#F4F6F9;--s3:#E2E8F0}
+body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px);background-size:24px 24px;color:#090D14}
+*:not(.tk-round),*::before,*::after{border-radius:0 !important}
+::selection{background:#D2F802;color:#090D14}
+.page-title,.login-title{font-family:'Space Grotesk',sans-serif !important;font-style:normal !important;font-weight:700;letter-spacing:-.03em !important;color:#090D14 !important}
+.page-title::after{content:'//';background:#FF5900;color:#fff;padding:0 6px;margin-left:6px;font-size:.6em;vertical-align:.25em}
+.page-sub,.field-label,.a-tab,.data-table th,.section-title,.badge,footer{font-family:'JetBrains Mono',monospace !important;letter-spacing:.1em !important}
+.login-card,.section{background:#fff !important;border:2px solid #090D14 !important;box-shadow:4px 4px 0 #090D14}
+.field-input,.field-select,.field-textarea{border:2px solid #090D14 !important;background:#fff !important}
+.field-input:focus,.field-select:focus,.field-textarea:focus{box-shadow:3px 3px 0 #FF5900;outline:none}
+.btn{font-family:'JetBrains Mono',monospace !important;font-weight:800 !important;text-transform:uppercase;letter-spacing:.06em;border:2px solid #090D14 !important;box-shadow:3px 3px 0 #090D14}
+.btn-primary{background:#FF5900 !important;color:#fff !important}
+.btn-ghost{background:#fff !important;color:#090D14 !important}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #090D14}
+.admin-tabs{border-bottom:3px solid #090D14 !important;gap:0 !important}
+.a-tab{font-weight:800 !important;color:#090D14 !important;border-bottom:0 !important}
+.a-tab.active{background:#090D14 !important;color:#fff !important}
+.data-table th{background:#090D14;color:#fff !important;padding:8px 10px !important}
+.badge-lime{background:#D2F802 !important;color:#090D14 !important;border:1.5px solid #090D14}
+.imp-sim-b button.on{background:#090D14 !important;border-color:#090D14 !important}
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
