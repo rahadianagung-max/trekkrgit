@@ -78,6 +78,9 @@ tr.cut td{border-top:2px solid var(--ink)}
 .aw .ic{font-size:26px}.aw h3{font:700 18px/1.1 var(--disp);text-transform:uppercase;margin:6px 0 4px}
 .aw .who{font:800 17px var(--body)}.aw small{display:block;font:700 11px var(--mono);color:var(--mute);margin-top:2px}
 .aw.k small{color:#C9CFD9}
+.mv{display:inline-block;font:800 13px var(--mono);margin-left:6px;vertical-align:middle;line-height:1}
+.mv.up{color:var(--grn)}.mv.dn{color:var(--red)}
+.mvl{font:800 9.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-left:3px}
 .hidden{display:none}
 .foot{margin-top:28px;font-size:12px;color:var(--mute);border-top:2px solid var(--ink);padding-top:10px;line-height:1.6}
 </style></head><body><div class="wrap">
@@ -184,7 +187,9 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function fmt(n){return Math.round(n).toLocaleString('en-US');}
 function eloH(n){return '<span class="elo">'+fmt(n)+'</span>';}
 function dH(n){return '<span class="d '+(n>0?'up':n<0?'dn':'z')+'">'+(n>0?'+':'')+n+'</span>';}
-function nmH(p){return '<span class="av">'+ini(p.name)+'</span><span class="nm">'+esc(p.name)+'</span>';}
+function mvOf(e){return e>=1800?'up':e<1150?'dn':'';}
+function mvH(e,lbl){var m=mvOf(e);if(!m)return '';return '<span class="mv '+m+'" title="'+(m==='up'?'Promoted to Division 3':'Moved down to Division 1')+'">'+(m==='up'?'▲':'▼')+(lbl?'<span class="mvl">'+(m==='up'?'D3':'D1')+'</span>':'')+'</span>';}
+function nmH(p,x){return '<span style="white-space:nowrap"><span class="av">'+ini(p.name)+'</span><span class="nm">'+esc(p.name)+'</span>'+(x||'')+'</span>';}
 var LBL={FITS:'<span class="chip ok">✓ fits</span>',PLAYS_UP:'<span class="chip w">plays up</span>',NEW:'<span class="chip w">new · 1,600</span>',CALIBRATING:'<span class="chip w">calibrating</span>',ABOVE:'<span class="chip no">✕ above D2</span>'};
 
 function init(){
@@ -350,7 +355,7 @@ function render6(){
   var ps=P.filter(function(p){return p.month.m>0;});
   ps.sort(function(a,b){return(b.month.w-a.month.w)||((b.month.pf-b.month.pa)-(a.month.pf-a.month.pa))||(b.month.pf-a.month.pf)||(a.month.pa-b.month.pa);});
   tbl.innerHTML='<tr><th>#</th><th>Pemain</th><th class="n">Sesi</th><th class="n">W–L</th><th class="n">PD</th><th class="n">Rating awal</th><th class="n">Rating akhir</th><th class="n">±</th></tr>'+
-    ps.map(function(p,i){var pd=p.month.pf-p.month.pa;return '<tr'+(i===0?' class="top"':'')+'><td>'+(i===0?'🥇':i+1)+'</td><td>'+nmH(p)+'</td><td class="n">'+p.month.s+'</td><td class="n">'+p.month.w+'–'+p.month.l+'</td><td class="n">'+(pd>0?'+':'')+pd+'</td><td class="n">'+eloH(p.start)+'</td><td class="n">'+eloH(p.elo)+'</td><td class="n">'+dH(p.elo-p.start)+'</td></tr>';}).join('');
+    ps.map(function(p,i){var pd=p.month.pf-p.month.pa;return '<tr'+(i===0?' class="top"':'')+'><td>'+(i===0?'🥇':i+1)+'</td><td>'+nmH(p,mvH(p.elo,true))+'</td><td class="n">'+p.month.s+'</td><td class="n">'+p.month.w+'–'+p.month.l+'</td><td class="n">'+(pd>0?'+':'')+pd+'</td><td class="n">'+eloH(p.start)+'</td><td class="n">'+eloH(p.elo)+'</td><td class="n">'+dH(p.elo-p.start)+'</td></tr>';}).join('');
   var loyal=ps.slice().sort(function(a,b){return b.month.m-a.month.m||b.month.w-a.month.w;})[0];
   var wins=MONTH.sessions.map(function(s){return '#'+s.n+' '+s.winner.split(' ')[0];}).join(' · ');
   aw.innerHTML='<div class="aw k"><div class="ic">🥇</div><h3>Winner of the month</h3><div class="who">'+esc(ps[0].name)+'</div><small>'+ps[0].month.w+'–'+ps[0].month.l+' dari '+ps[0].month.s+' sesi</small></div>'+
@@ -360,8 +365,8 @@ function render6(){
   document.getElementById('monthLbl').textContent='Bulan selesai · rating akhir dipakai untuk promosi';
   var mv=ps.map(function(p){var to=p.elo>=1800?'D3':p.elo<1150?'D1':'D2';return{p:p,to:to};});
   pr.innerHTML='<tr><th>Pemain</th><th class="n">Rating akhir</th><th>Bulan depan</th></tr>'+mv.sort(function(a,b){return b.p.elo-a.p.elo;}).map(function(m){
-    var c=m.to==='D3'?'<span class="chip v">🚀 Promoted → Division 3</span>':m.to==='D1'?'<span class="chip no">🔄 Moved down → Division 1</span>':'<span class="chip">Tetap Division 2</span>';
-    return '<tr><td>'+nmH(m.p)+'</td><td class="n">'+eloH(m.p.elo)+'</td><td>'+c+'</td></tr>';}).join('');
+    var c=m.to==='D3'?'<span class="chip ok"><span class="mv up" style="margin:0 4px 0 0">▲</span>Promoted → Division 3</span>':m.to==='D1'?'<span class="chip no"><span class="mv dn" style="margin:0 4px 0 0">▼</span>Moved down → Division 1</span>':'<span class="chip">– Tetap Division 2</span>';
+    return '<tr><td>'+nmH(m.p,mvH(m.p.elo))+'</td><td class="n">'+eloH(m.p.elo)+'</td><td>'+c+'</td></tr>';}).join('');
 }
 
 /* ---------- flow ---------- */
