@@ -667,6 +667,7 @@ const SCHEDULE_HEADER = [
   "id", "type", "venue", "area", "date", "startTime", "endTime",
   "courts", "capacity", "booked", "pricePerPlayer", "status", "whatsappUrl", "note",
   "level", "gender", "prizePool", "freebies", "gameName", "courtName", "mapsUrl", "address",
+  "division",
 ];
 async function ensureScheduleTab(sheets) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
@@ -691,7 +692,7 @@ async function getSchedule(params) {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
   const res = await sheets.spreadsheets.values
-    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` })
+    .get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:W` })
     .catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const from = params && params.from ? String(params.from).slice(0, 10) : null;
@@ -726,6 +727,7 @@ async function getSchedule(params) {
         courtName: (r[19] || "").trim(),
         mapsUrl: (r[20] || "").trim(),
         address: (r[21] || "").trim(),
+        division: (r[22] || "").trim().toUpperCase(),
         spotsLeft: Math.max(0, capacity - booked),
       };
     })
@@ -877,11 +879,12 @@ async function getVenuePage(slug, params) {
     const bs = bySession[s.id] || [];
     const confirmed = bs.filter((b) => b.status === "CONFIRMED");
     const waiting = bs.filter((b) => b.status === "WAITING");
+    const used = confirmed.reduce((a, b) => a + bkSpots(b), 0);
     let myStatus = null, myBookingId = null;
-    if (me) { const mb = bs.find((b) => BK_ACTIVE.includes(b.status) && normName(b.player_name) === normName(me.name)); if (mb) { myStatus = mb.status; myBookingId = mb.booking_id; } }
+    if (me) { const mb = bs.find((b) => BK_ACTIVE.includes(b.status) && (normName(b.player_name) === normName(me.name) || normName(b.partner_name) === normName(me.name))); if (mb) { myStatus = mb.status; myBookingId = mb.booking_id; } }
     return Object.assign({}, s, {
-      confirmedCount: confirmed.length,
-      spotsLeft: Math.max(0, (s.capacity || 0) - confirmed.length),
+      confirmedCount: used,
+      spotsLeft: Math.max(0, (s.capacity || 0) - used),
       joined: confirmed.map(roster),
       waiting: waiting.map(roster),
       myStatus, myBookingId,
@@ -907,6 +910,151 @@ async function bookingPlayer(token) {
     verified: p.verified === true || String(p.verified).toUpperCase() === "TRUE", email: user.email };
 }
 
+// ============================================================
+// LIGA TREKKR — division eligibility for session bookings (type "LIGA").
+// Additive: only sessions with type LIGA use these rules; RANKPLAY booking is
+// unchanged. Rules (owner decision, Oct 2026):
+//  - Rating above the division ceiling → rejected (also while calibrating):
+//    a player may play their own division or higher, never lower.
+//  - Rating below the division (plays up) → allowed, labelled for the admin.
+//  - New player (0 matches) → allowed anywhere; their rating starts at the
+//    division's starting rating (same seeds the admin Liga engine uses).
+//  - Mixed → booked as a pair; the pair AVERAGE is checked against the ceiling.
+// Reads ratings only — no ELO is written or recalculated here.
+// ============================================================
+const LIGA_DIVS = {
+  D1: { code: "D1", name: "Division 1", lo: 0, hi: 1199, seed: 1000 },
+  D2: { code: "D2", name: "Division 2", lo: 1200, hi: 1799, seed: 1600 },
+  D3: { code: "D3", name: "Division 3", lo: 1800, hi: 2499, seed: 2300 },
+};
+function ligaDivCode(v) {
+  const d = String(v || "").trim().toUpperCase().replace(/^DIVISION\s*/, "D").replace(/^DIV\s*/, "D");
+  return LIGA_DIVS[d] ? d : "";
+}
+function ligaDivOfRating(e) { return e > LIGA_DIVS.D3.hi ? "OPEN" : e >= LIGA_DIVS.D3.lo ? "D3" : e >= LIGA_DIVS.D2.lo ? "D2" : "D1"; }
+function isLigaSession(s) { return !!s && String(s.type || "").toUpperCase() === "LIGA"; }
+function isMixedSession(s) { return /^mix/i.test(String((s && s.gender) || "")); }
+function bkSpots(b) { return b && b.partner_name ? 2 : 1; }
+
+// Current rating + career matches for one player name (case-insensitive).
+async function ligaPlayerRating(name) {
+  const out = { name, elo: null, matches: 0 };
+  if (!name || !supaOn()) return out;
+  const pat = String(name).trim().replace(/[\\%_]/g, (c) => "\\" + c);
+  try {
+    const rows = await supaRest("GET", `elo_log?player=ilike.${encodeURIComponent(pat)}&select=new_elo,wins,losses&order=id.asc`) || [];
+    rows.forEach((r) => {
+      const e = Math.round(Number(r.new_elo));
+      if (Number.isFinite(e) && e > 0) out.elo = e;
+      out.matches += (parseInt(r.wins, 10) || 0) + (parseInt(r.losses, 10) || 0);
+    });
+  } catch (e) { console.error("[liga] rating:", e.message); }
+  return out;
+}
+
+// entries: [{ name, elo, matches }] — one player, or a Mixed pair.
+// → { ok, code, label, rating, playerDiv, division, entries[] }
+function ligaVerdict(divCode, entries) {
+  const dv = LIGA_DIVS[divCode] || LIGA_DIVS.D2;
+  const rated = entries.map((e) => {
+    const isNew = !(e.matches > 0) || !(e.elo > 0);
+    return Object.assign({}, e, { isNew, calibrating: !isNew && e.matches < CALIB_MATCHES, rating: isNew ? dv.seed : e.elo });
+  });
+  const rating = Math.round(rated.reduce((a, e) => a + e.rating, 0) / Math.max(1, rated.length));
+  const base = { division: dv.code, divisionName: dv.name, lo: dv.lo, hi: dv.hi, seed: dv.seed, rating, playerDiv: ligaDivOfRating(rating), entries: rated };
+  if (rating > dv.hi) return Object.assign(base, { ok: false, code: "ABOVE", label: "ABOVE" });
+  const label = rated.some((e) => e.isNew) ? "NEW" : rating < dv.lo ? "PLAYS_UP" : rated.some((e) => e.calibrating) ? "CALIBRATING" : "FITS";
+  return Object.assign(base, { ok: true, code: "OK", label });
+}
+
+// Shared by POST /api/liga/check (dry run) and POST /api/venue/book.
+// → { error?, status?, verdict?, partner? }
+async function ligaEligibility(session, player, partnerName) {
+  const div = ligaDivCode(session.division) || "D2";
+  const me = await ligaPlayerRating(player.name);
+  me.display = player.display; me.gender = player.gender;
+  if (!isMixedSession(session)) return { verdict: ligaVerdict(div, [me]) };
+  const pn = String(partnerName || "").trim();
+  if (!pn) return { error: "Mixed sessions are booked as a pair — choose your partner", status: 400, needPartner: true };
+  const pmap = await playerLookup();
+  const prec = pmap[normName(pn)];
+  if (!prec) return { error: "Partner not found — they need a Trekkr profile", status: 404 };
+  if (normName(prec.name) === normName(player.name)) return { error: "Choose a different partner", status: 400 };
+  const g = (x) => (String(x || "").toUpperCase().startsWith("F") || String(x || "").toUpperCase().startsWith("W")) ? "F" : "M";
+  if (prec.gender && player.gender && g(prec.gender) === g(player.gender)) return { error: "Mixed pairs are 1 man + 1 woman", status: 400 };
+  const pr = await ligaPlayerRating(prec.name);
+  pr.display = prec.display; pr.gender = prec.gender;
+  return { verdict: ligaVerdict(div, [me, pr]), partner: { name: prec.name, display: prec.display, gender: prec.gender } };
+}
+
+// POST /api/liga/check { token, sessionId, partner? } → verdict without booking.
+async function ligaCheck(body) {
+  const b = body || {};
+  const player = await bookingPlayer(b.token);
+  if (!player) return respond(401, { error: "Sign in with your Trekkr profile to join" });
+  const sres = await getSchedule({});
+  const session = ((JSON.parse(sres.body).schedule) || []).find((s) => String(s.id) === String(b.sessionId || ""));
+  if (!session || !isLigaSession(session)) return respond(404, { error: "Liga session not found or no longer open" });
+  if (!isMixedSession(session) && !genderAllowsBooking(session.gender, player.gender)) {
+    return respond(200, { ok: false, code: "GENDER", error: `This session is for ${session.gender} players only`, player: { name: player.name, display: player.display } });
+  }
+  const r = await ligaEligibility(session, player, b.partner);
+  if (r.error) return respond(200, { ok: false, code: r.needPartner ? "NEED_PARTNER" : "PARTNER", error: r.error, player: { name: player.name, display: player.display, gender: player.gender } });
+  return respond(200, Object.assign({ player: { name: player.name, display: player.display, gender: player.gender, verified: player.verified }, partner: r.partner || null }, r.verdict), { "Cache-Control": "no-store" });
+}
+
+// GET /api/liga/sessions?token=<optional> — upcoming LIGA sessions for
+// liga.trekkr.online, with spots counted from confirmed bookings (a Mixed pair
+// takes two spots) and the viewer's own booking status.
+async function ligaSessions(params) {
+  const R = jakartaRanges();
+  const sres = await getSchedule({ from: R.today, type: "LIGA" });
+  const sessions = (JSON.parse(sres.body).schedule) || [];
+  let me = null;
+  if (params && params.token) { try { me = await bookingPlayer(params.token); } catch (e) {} }
+  let bookings = [];
+  if (sessions.length && supaOn()) {
+    const ids = sessions.map((s) => encodeURIComponent(s.id)).join(",");
+    try { bookings = (await supaRest("GET", `session_bookings?session_id=in.(${ids})&select=*`)) || []; } catch (e) {}
+  }
+  let venues = [];
+  try { venues = (JSON.parse((await getVenues()).body).venues) || []; } catch (e) {}
+  const vByName = {}; venues.forEach((v) => { vByName[normName(v.name)] = v; });
+  const out = sessions.map((s) => {
+    const bs = bookings.filter((b) => String(b.session_id) === String(s.id) && BK_ACTIVE.includes(b.status));
+    const used = bs.filter((b) => b.status === "CONFIRMED").reduce((a, b) => a + bkSpots(b), 0);
+    let myStatus = null;
+    if (me) { const mb = bs.find((b) => normName(b.player_name) === normName(me.name) || normName(b.partner_name) === normName(me.name)); if (mb) myStatus = mb.status; }
+    const v = vByName[normName(s.venue)] || {};
+    return Object.assign({}, s, {
+      division: ligaDivCode(s.division) || "D2",
+      confirmedCount: used, waitingCount: bs.filter((b) => b.status !== "CONFIRMED").reduce((a, b) => a + bkSpots(b), 0),
+      spotsLeft: Math.max(0, (s.capacity || 0) - used), myStatus,
+      venueSlug: slugifyVenue(s.venue), adminWa: v.adminWa || "", logoUrl: v.logoUrl || "",
+    });
+  });
+  return respond(200, { sessions: out, me: me ? { name: me.name, display: me.display, gender: me.gender, verified: me.verified } : null, divisions: LIGA_DIVS }, { "Cache-Control": "no-store" });
+}
+
+// GET /api/liga/players?q=<name>&gender=M|F — partner search for Mixed Liga
+// bookings (public fields only: name, display name, gender, photo).
+async function ligaPlayerSearch(params) {
+  const q = normName((params && params.q) || "");
+  if (q.length < 2) return respond(200, { players: [] });
+  const want = String((params && params.gender) || "").toUpperCase().charAt(0);
+  const pmap = await playerLookup();
+  const seen = new Set(), out = [];
+  Object.values(pmap).forEach((p) => {
+    if (seen.has(p.name) || out.length >= 8) return;
+    if (/walk\s*-?\s*(over|out)|\bw\/o\b/i.test(p.name)) return;
+    if (!(normName(p.name).includes(q) || normName(p.display).includes(q))) return;
+    const g = String(p.gender || "").toUpperCase().charAt(0) === "F" || String(p.gender || "").toUpperCase().charAt(0) === "W" ? "F" : "M";
+    if (want && g !== (want === "W" ? "F" : want)) return;
+    seen.add(p.name); out.push({ name: p.name, display: p.display, gender: g, photo: p.photo || "" });
+  });
+  return respond(200, { players: out });
+}
+
 // POST /api/venue/book { token, sessionId }
 async function bookSession(body) {
   const b = body || {};
@@ -922,9 +1070,26 @@ async function bookSession(body) {
     return respond(400, { error: `This session is for ${session.gender} players only` });
   }
 
-  const existing = (await bookingsForVenue(session.venue))
-    .find((x) => String(x.session_id) === sessionId && BK_ACTIVE.includes(x.status) && normName(x.player_name) === normName(player.name));
+  const venueBookings = await bookingsForVenue(session.venue);
+  const existing = venueBookings
+    .find((x) => String(x.session_id) === sessionId && BK_ACTIVE.includes(x.status) && (normName(x.player_name) === normName(player.name) || normName(x.partner_name) === normName(player.name)));
   if (existing) return respond(200, { ok: true, already: true, status: existing.status, bookingId: existing.booking_id });
+
+  // Liga Trekkr: division check (and pair average for Mixed) before booking.
+  let partnerName = null, liga = null;
+  if (isLigaSession(session)) {
+    const r = await ligaEligibility(session, player, b.partner);
+    if (r.error) return respond(r.status || 400, { error: r.error, needPartner: !!r.needPartner });
+    liga = r.verdict;
+    if (!liga.ok) {
+      return respond(400, { error: `This session is ${liga.divisionName} (up to ${liga.hi}). ${r.partner ? "Your pair average" : "Your rating"} ${liga.rating} is ${liga.playerDiv === "OPEN" ? "above Division 3" : "in " + LIGA_DIVS[liga.playerDiv].name}.`, code: "ABOVE", liga });
+    }
+    if (r.partner) {
+      const taken = venueBookings.find((x) => String(x.session_id) === sessionId && BK_ACTIVE.includes(x.status) && (normName(x.player_name) === normName(r.partner.name) || normName(x.partner_name) === normName(r.partner.name)));
+      if (taken) return respond(409, { error: `${r.partner.display || r.partner.name} is already booked in this session` });
+      partnerName = r.partner.name;
+    }
+  }
 
   const status = player.verified ? "WAITING" : "PENDING_VERIFY";
   const bookingId = "BK_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
@@ -932,10 +1097,11 @@ async function bookSession(body) {
     booking_id: bookingId, session_id: sessionId, venue: session.venue,
     player_name: player.name, player_display: player.display, player_email: player.email,
     gender: player.gender, status, created_at: new Date().toISOString(),
+    ...(partnerName ? { partner_name: partnerName } : {}),
   }], "return=minimal");
 
   return respond(200, {
-    ok: true, status, bookingId,
+    ok: true, status, bookingId, ...(liga ? { liga } : {}),
     verifyNeeded: status === "PENDING_VERIFY",
     verifyUrl: status === "PENDING_VERIFY" ? `${appBaseUrl()}/app` : null,
     message: status === "WAITING"
@@ -971,16 +1137,29 @@ async function listVenueBookings(params) {
   const [bookings, sres] = await Promise.all([bookingsForVenue(venue), getSchedule({})]);
   const schedById = {}; ((JSON.parse(sres.body).schedule) || []).forEach((s) => { schedById[String(s.id)] = s; });
   const pmap = await playerLookup();
-  const out = bookings.filter((b) => BK_ACTIVE.includes(b.status)).map((b) => {
+  const active = bookings.filter((b) => BK_ACTIVE.includes(b.status));
+  // Liga sessions: show each booking's rating vs the division (read-only).
+  const ratingCache = {};
+  const rateOf = (n) => (ratingCache[normName(n)] = ratingCache[normName(n)] || ligaPlayerRating(n));
+  const out = await Promise.all(active.map(async (b) => {
     const s = schedById[String(b.session_id)] || {};
+    let liga = null;
+    if (isLigaSession(s)) {
+      const names = [b.player_name].concat(b.partner_name ? [b.partner_name] : []);
+      const rs = await Promise.all(names.map(rateOf));
+      const v = ligaVerdict(ligaDivCode(s.division) || "D2", rs);
+      liga = { label: v.label, rating: v.rating, division: v.division, playerDiv: v.playerDiv, entries: v.entries.map((e) => ({ name: e.name, rating: e.rating, matches: e.matches, isNew: e.isNew, calibrating: e.calibrating })) };
+    }
+    const pp = b.partner_name ? (pmap[normName(b.partner_name)] || {}) : null;
     return {
       bookingId: b.booking_id, sessionId: b.session_id, status: b.status,
       playerName: b.player_name, playerDisplay: b.player_display || b.player_name,
       photo: (pmap[normName(b.player_name)] || {}).photo || "",
       gender: b.gender, createdAt: b.created_at,
-      session: { date: s.date || "", startTime: s.startTime || "", endTime: s.endTime || "", level: s.level || "", gender: s.gender || "", capacity: s.capacity || 0, pricePerPlayer: s.pricePerPlayer || 0, courts: s.courts || 0 },
+      partnerName: b.partner_name || "", partnerDisplay: pp ? (pp.display || b.partner_name) : "", spots: bkSpots(b), liga,
+      session: { date: s.date || "", startTime: s.startTime || "", endTime: s.endTime || "", level: s.level || "", gender: s.gender || "", capacity: s.capacity || 0, pricePerPlayer: s.pricePerPlayer || 0, courts: s.courts || 0, type: s.type || "", division: s.division || "" },
     };
-  });
+  }));
   return respond(200, { bookings: out }, { "Cache-Control": "no-store" });
 }
 
@@ -1005,8 +1184,8 @@ async function decideBooking(body) {
   const sres = await getSchedule({});
   const session = ((JSON.parse(sres.body).schedule) || []).find((s) => String(s.id) === String(bk.session_id));
   const capacity = session ? (session.capacity || 0) : 0;
-  const confirmed = (await bookingsForVenue(bk.venue)).filter((x) => String(x.session_id) === String(bk.session_id) && x.status === "CONFIRMED").length;
-  if (capacity && confirmed >= capacity && !b.override) {
+  const confirmed = (await bookingsForVenue(bk.venue)).filter((x) => String(x.session_id) === String(bk.session_id) && x.status === "CONFIRMED").reduce((a, x) => a + bkSpots(x), 0);
+  if (capacity && confirmed + bkSpots(bk) > capacity && !b.override) {
     return respond(409, { error: "Session is full", full: true, capacity, confirmed });
   }
 
@@ -1032,8 +1211,14 @@ async function getSessionConfirmed(sessionId, params) {
   const pmap = await playerLookup();
   const confirmed = (await bookingsForVenue(session.venue))
     .filter((x) => String(x.session_id) === sessionId && x.status === "CONFIRMED")
-    .map((b) => ({ name: b.player_name, display: b.player_display || b.player_name, gender: b.gender || (pmap[normName(b.player_name)] || {}).gender || "", photo: (pmap[normName(b.player_name)] || {}).photo || "" }));
-  return respond(200, { session: { id: session.id, venue: session.venue, date: session.date, level: session.level, gender: session.gender }, players: confirmed }, { "Cache-Control": "no-store" });
+    .flatMap((b) => {
+      const one = { name: b.player_name, display: b.player_display || b.player_name, gender: b.gender || (pmap[normName(b.player_name)] || {}).gender || "", photo: (pmap[normName(b.player_name)] || {}).photo || "" };
+      if (!b.partner_name) return [one];
+      const pp = pmap[normName(b.partner_name)] || {};
+      // Mixed pair: the booker is the Captain, the partner follows right after.
+      return [Object.assign(one, { pairWith: b.partner_name }), { name: pp.name || b.partner_name, display: pp.display || b.partner_name, gender: pp.gender || "", photo: pp.photo || "", pairWith: b.player_name }];
+    });
+  return respond(200, { session: { id: session.id, venue: session.venue, date: session.date, level: session.level, gender: session.gender, type: session.type, division: session.division }, players: confirmed }, { "Cache-Control": "no-store" });
 }
 
 // ---- booking confirmation email + calendar links ----
@@ -1263,6 +1448,9 @@ const netlifyHandler = async (event) => {
     // --- VENUE PAGE + SESSION BOOKINGS (waiting list → approval → confirmed) ---
     if (path.startsWith("venue/page/") && method === "GET") return await getVenuePage(decodeURIComponent(path.replace("venue/page/", "")), params);
     if (path === "venue/book" && method === "POST") return await bookSession(body);
+    if (path === "liga/sessions" && method === "GET") return await ligaSessions(params);
+    if (path === "liga/check" && method === "POST") return await ligaCheck(body);
+    if (path === "liga/players" && method === "GET") return await ligaPlayerSearch(params);
     if (path === "venue/booking/cancel" && method === "POST") return await cancelBooking(body);
     if (path === "venue/bookings" && method === "GET") return await listVenueBookings(params);
     if (path === "venue/booking/decide" && method === "POST") return await decideBooking(body);
@@ -6226,7 +6414,7 @@ async function getVenueMonthly(venueName, params) {
 async function getScheduleAll() {
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:W` }).catch(() => ({ data: { values: [] } }));
   const schedule = (res.data.values || []).filter((r) => (r[0] || "").trim()).map((r) => {
     const o = {}; SCHEDULE_HEADER.forEach((h, i) => { o[h] = r[i] || ""; }); return o;
   });
@@ -6240,7 +6428,7 @@ async function saveScheduleRow(body) {
   if (!tok) return respond(401, { error: "Login required" });
   const sheets = getSheets();
   await ensureScheduleTab(sheets);
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:V` }).catch(() => ({ data: { values: [] } }));
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A2:W` }).catch(() => ({ data: { values: [] } }));
   const rows = res.data.values || [];
   const id = String(b.id || "").trim();
   const existingRi = id ? rows.findIndex((r) => String(r[0] || "").trim() === id) : -1;
@@ -6273,12 +6461,13 @@ async function saveScheduleRow(body) {
     b.courtName != null ? b.courtName : (existing ? (existing[19] || "") : ""),
     b.mapsUrl != null ? b.mapsUrl : (existing ? (existing[20] || "") : ""),
     b.address != null ? b.address : (existing ? (existing[21] || "") : ""),
+    b.division != null ? String(b.division).toUpperCase() : (existing ? (existing[22] || "") : ""),
   ];
   if (existing) {
-    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:V${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A${existingRi + 2}:W${existingRi + 2}`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
     return respond(200, { success: true, id });
   }
-  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:V`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
+  await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.schedule}!A:W`, valueInputOption: "USER_ENTERED", requestBody: { values: [rowVals] } });
   return respond(200, { success: true, id: rowVals[0] });
 }
 async function deleteScheduleRow(body) {

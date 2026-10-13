@@ -127,6 +127,44 @@
 .v2-final p{margin:16px auto 0;font-size:16px;line-height:1.55;color:#CBD5E1;max-width:40ch}
 .v2-final .btn{margin-top:22px;padding:16px 26px;font-size:14px}
 
+/* Liga sessions (live) + Join sheet */
+.v2-tab--d{border-style:dashed}
+.lg-sep{flex-basis:100%;height:0}
+.lg-r{font:700 11px var(--mono);color:#64748B;letter-spacing:0;text-transform:none}
+.lg-empty{grid-column:1/-1;border:2px dashed var(--ink);background:var(--paper);padding:18px;display:flex;flex-direction:column;gap:4px;font-size:14px;color:#475569}
+.lg-empty b{color:var(--ink);font:700 18px var(--disp);text-transform:uppercase}
+.lg-sheet{position:fixed;inset:0;z-index:200;background:rgba(9,13,20,.55);display:flex;align-items:flex-end;justify-content:center}
+.lg-sheet[hidden]{display:none}
+.lg-sheet__in{position:relative;width:100%;max-width:440px;max-height:92vh;overflow:auto;background:var(--paper);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--orange);padding:18px 16px 20px;margin:0 8px 8px}
+@media(min-width:700px){.lg-sheet{align-items:center}}
+.lg-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border:2px solid var(--ink);background:var(--paper);font:800 14px var(--mono);cursor:pointer}
+.lg-h{margin:0 40px 0 0;font:700 22px/1.05 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.lg-sub{font:700 11px var(--mono);color:#64748B;text-transform:uppercase;letter-spacing:.06em;margin-top:5px}
+.lg-p{font-size:14px;line-height:1.5;color:#334155;margin:12px 0 0}
+.lg-load{margin-top:16px;font:800 12px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:#64748B}
+.lg-who{display:flex;gap:10px;align-items:center;margin-top:12px;border:2px solid var(--ink);padding:9px}
+.lg-av{width:42px;height:42px;border:2px solid var(--ink);background:#F4F6F9;display:grid;place-items:center;font:800 13px var(--mono);flex:none}
+.lg-who .n{font-weight:800}.lg-who .m{font:700 10.5px var(--mono);color:#64748B;text-transform:uppercase;letter-spacing:.06em}
+.lg-who .e{margin-left:auto;font-size:18px}
+.lg-band{margin-top:12px;height:38px;border:2px solid var(--ink);display:grid;grid-template-columns:repeat(3,1fr)}
+.lg-band div{display:grid;place-items:center;font:800 10.5px var(--mono);letter-spacing:.06em;border-right:2px solid var(--ink)}
+.lg-band div:last-child{border-right:0}
+.lg-band .hit,.lg-band .you{background:var(--volt)}.lg-band .cur{background:#FFF1E8}.lg-band .bad{background:#FEE2E2}
+.lg-ok,.lg-no{margin-top:12px;border:2px solid;padding:10px 12px;font-size:13.5px;line-height:1.5}
+.lg-ok{background:#ECFDF5;border-color:#059669}.lg-ok b{color:#065F46}
+.lg-no{background:#FEF2F2;border-color:#DC2626}.lg-no b{color:#991B1B}
+.lg-steps{margin:10px 0 0 18px;font-size:13.5px;line-height:1.6;color:#334155}
+.lg-btn{display:block;width:100%;text-align:center;margin-top:12px}
+.lg-btn--off{background:#E2E8F0!important;color:#64748B!important;border-color:#94A3B8!important;box-shadow:none!important}
+.lg-alt{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;border:2px solid var(--ink);background:var(--paper);padding:9px 10px;text-align:left;cursor:pointer;font:inherit;color:var(--ink)}
+.lg-alt b{font-family:var(--disp);text-transform:uppercase}.lg-alt small{color:#64748B}
+.lg-alt em{font:800 10.5px var(--mono);font-style:normal;color:var(--orange);text-transform:uppercase;white-space:nowrap}
+.lg-l{display:block;margin-top:14px;font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+.lg-in{width:100%;margin-top:6px;padding:12px;font:600 15px var(--body);border:2px solid var(--ink);box-sizing:border-box}
+.lg-pl{display:grid;gap:6px;margin-top:8px}
+.lg-pl button{display:flex;justify-content:space-between;gap:8px;border:2px solid var(--ink);background:var(--paper);padding:10px;text-align:left;cursor:pointer;font:inherit;color:var(--ink)}
+.lg-pl button span{font:700 11px var(--mono);color:#64748B}
+
 @media(max-width:960px){
   .v2-prizes{grid-template-columns:1fr}
   .v2-rank{grid-template-columns:1fr 1fr}
@@ -145,7 +183,6 @@
 <body>
 
 <div id="tk-nav"></div>
-<div class="v2-demo">Demo · schedule &amp; data are samples</div>
 
 <main class="container">
 
@@ -228,6 +265,7 @@
     <div class="v2-tabs" id="tabs" role="tablist"></div>
     <div class="v2-sess" id="sess"></div>
   </section>
+  <div class="lg-sheet" id="lgSheet" hidden role="dialog" aria-modal="true" aria-label="Join a Liga session"><div class="lg-sheet__in" id="lgSheetBody"></div></div>
 
   <!-- FINAL CTA -->
   <section class="v2-final">
@@ -247,43 +285,208 @@
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
 
+<script src="/trekkr-auth.js"></script>
 <script>
-/* Sample data for the v2 demo (not connected to the engine yet). */
+/* Liga Trekkr — real sessions (GET /api/liga/sessions) + Join panel with the
+   division check (POST /api/liga/check) and booking (POST /api/venue/book). */
 (function () {
-  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
-  var CAT = { M: "Men", W: "Women", X: "Mixed" };
-  var DIVN = { D1: "Division 1", D2: "Division 2", D3: "Division 3" };
-  var SESS = [
-    { day: "Mon · 6 Oct", time: "19:00–22:00", venue: "Venue A · Kemang", cat: "M", div: "D2", left: 2, cap: 9, price: "Rp150.000", prize: "Rp500k voucher" },
-    { day: "Tue · 7 Oct", time: "19:00–22:00", venue: "Venue B · BSD", cat: "W", div: "D1", left: 3, cap: 12, price: "Rp125.000", prize: "Padel racket" },
-    { day: "Wed · 8 Oct", time: "20:00–23:00", venue: "Venue C · PIK", cat: "X", div: "D2", left: 0, cap: 9, price: "Rp175.000", prize: "Rp750k voucher" },
-    { day: "Thu · 9 Oct", time: "19:00–22:00", venue: "Venue A · Kemang", cat: "M", div: "D1", left: 7, cap: 18, price: "Rp150.000", prize: "" },
-    { day: "Fri · 10 Oct", time: "19:30–22:30", venue: "Venue D · Bandung", cat: "M", div: "D3", left: 5, cap: 9, price: "Rp160.000", prize: "Sponsor gear pack" },
-    { day: "Sat · 11 Oct", time: "10:00–13:00", venue: "Venue B · BSD", cat: "X", div: "D1", left: 6, cap: 12, price: "Rp140.000", prize: "" },
-  ];
-  var cur = "all";
+  var host = location.hostname;
+  var API = (host === "trekkr.online" || (host.endsWith(".vercel.app") && host.startsWith("trekkrgit"))) ? "/api" : "https://trekkr.online/api";
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var DIV = { D1: { name: "Division 1", r: "under 1200", hi: 1199 }, D2: { name: "Division 2", r: "1200–1799", hi: 1799 }, D3: { name: "Division 3", r: "1800–2499", hi: 2499 } };
+  var elo = function (n) { return '<span class="tk-elo">' + Math.round(Number(n) || 0).toLocaleString("en-US") + "</span>"; };
+  var rp = function (n) { return "Rp" + (Math.round(Number(n) || 0)).toLocaleString("id-ID"); };
+  var cat = function (g) { g = String(g || "").toUpperCase(); return /^MIX/.test(g) ? "X" : (g.charAt(0) === "W" || g.charAt(0) === "F") ? "W" : "M"; };
+  var CATN = { M: "Men", W: "Women", X: "Mixed" };
+  var day = function (d) { try { return new Date(String(d).slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (e) { return d; } };
+  var tok = function () { return (window.TrekkrAuth ? TrekkrAuth.token() : Promise.resolve("")).catch(function () { return ""; }); };
+  var SESS = [], curCat = "all", curDiv = "all";
+
+  function card(s) {
+    var full = s.spotsLeft <= 0, c = cat(s.gender), d = DIV[s.division] || DIV.D2;
+    var mine = s.myStatus ? '<span class="tk-chip tk-chip--ok">' + (s.myStatus === "CONFIRMED" ? "✓ You're in" : "You're on the list") + "</span>" : "";
+    return '<article class="v2-s">' +
+      '<div class="v2-s__day"><span>' + esc(day(s.date)) + "</span><em" + (full ? ' style="color:#F87171"' : "") + ">" + (full ? "Full" : s.spotsLeft + " spot" + (s.spotsLeft === 1 ? "" : "s") + " left") + "</em></div>" +
+      '<div class="v2-s__body">' +
+        '<div class="v2-s__div">' + d.name + ' <small class="lg-r">' + d.r + "</small></div>" +
+        '<div class="v2-s__line"><b>' + CATN[c] + "</b> · " + esc([s.startTime, s.endTime].filter(Boolean).join("–")) + "</div>" +
+        '<div class="v2-s__line">📍 ' + esc(s.courtName || s.venue) + (s.area ? " · " + esc(String(s.area).split(",")[0]) : "") + "</div>" +
+        (s.gameName ? '<div class="v2-s__line">' + esc(s.gameName) + "</div>" : "") +
+        '<div class="v2-s__meta"><span class="tk-chip tk-chip--v">8 matches</span><span class="tk-chip">' + (s.capacity || 0) + " players</span>" +
+          (c === "X" ? '<span class="tk-chip">Pairs</span>' : "") + (s.prizePool ? '<span class="tk-chip tk-chip--g">🎁 ' + esc(s.prizePool) + "</span>" : "") + mine + "</div>" +
+      "</div>" +
+      '<div class="v2-s__foot"><div class="v2-s__price">' + (s.pricePerPlayer ? rp(s.pricePerPlayer) : "Free") + "<small>per player</small></div>" +
+        '<button type="button" class="btn ' + (full ? "" : "btn--primary") + '" data-join="' + esc(s.id) + '">' + (s.myStatus ? "View" : full ? "Waitlist" : "Join") + "</button></div>" +
+      "</article>";
+  }
   function render() {
     var tabs = document.getElementById("tabs");
-    tabs.innerHTML = [["all", "All"], ["M", "Men"], ["W", "Women"], ["X", "Mixed"]].map(function (t) {
-      return '<button type="button" role="tab" class="v2-tab' + (t[0] === cur ? " on" : "") + '" aria-selected="' + (t[0] === cur) + '" data-k="' + t[0] + '">' + t[1] + "</button>";
-    }).join("");
-    tabs.onclick = function (e) { var b = e.target.closest("[data-k]"); if (b) { cur = b.getAttribute("data-k"); render(); } };
-    document.getElementById("sess").innerHTML = SESS.filter(function (s) { return cur === "all" || s.cat === cur; }).map(function (s) {
-      var full = s.left <= 0;
-      return '<article class="v2-s">' +
-        '<div class="v2-s__day"><span>' + esc(s.day) + "</span><em>" + (full ? "Full" : s.left + " spots left") + "</em></div>" +
-        '<div class="v2-s__body">' +
-          '<div class="v2-s__div">' + DIVN[s.div] + "</div>" +
-          '<div class="v2-s__line"><b>' + CAT[s.cat] + "</b> · " + esc(s.time) + "</div>" +
-          '<div class="v2-s__line">📍 ' + esc(s.venue) + "</div>" +
-          '<div class="v2-s__meta"><span class="tk-chip tk-chip--v">8 matches</span><span class="tk-chip">' + s.cap + " players</span>" + (s.prize ? '<span class="tk-chip tk-chip--g">🎁 ' + esc(s.prize) + "</span>" : "") + "</div>" +
-        "</div>" +
-        '<div class="v2-s__foot"><div class="v2-s__price">' + esc(s.price) + "<small>per player</small></div>" +
-          '<a class="btn ' + (full ? "" : "btn--primary") + '" href="/sessions">' + (full ? "Waitlist" : "Join") + "</a></div>" +
-        "</article>";
-    }).join("");
+    var T = [["all", "All"], ["M", "Men"], ["W", "Women"], ["X", "Mixed"]], D = [["all", "All divisions"], ["D1", "D1"], ["D2", "D2"], ["D3", "D3"]];
+    tabs.innerHTML = T.map(function (t) { return '<button type="button" role="tab" class="v2-tab' + (t[0] === curCat ? " on" : "") + '" aria-selected="' + (t[0] === curCat) + '" data-k="' + t[0] + '">' + t[1] + "</button>"; }).join("") +
+      '<span class="lg-sep"></span>' + D.map(function (t) { return '<button type="button" class="v2-tab v2-tab--d' + (t[0] === curDiv ? " on" : "") + '" data-d="' + t[0] + '">' + t[1] + "</button>"; }).join("");
+    var list = SESS.filter(function (s) { return (curCat === "all" || cat(s.gender) === curCat) && (curDiv === "all" || s.division === curDiv); });
+    document.getElementById("sess").innerHTML = list.length ? list.map(card).join("") :
+      '<div class="lg-empty"><b>' + (SESS.length ? "No sessions match this filter." : "No Liga sessions yet.") + "</b><span>" + (SESS.length ? "Try another category or division." : "Venues are setting up their Liga nights — check back soon.") + "</span></div>";
   }
-  render();
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.hasAttribute("data-k")) curCat = b.getAttribute("data-k");
+    if (b.hasAttribute("data-d")) curDiv = b.getAttribute("data-d");
+    render();
+  });
+  document.getElementById("sess").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-join]"); if (b) openJoin(b.getAttribute("data-join"));
+  });
+
+  function load() {
+    document.getElementById("sess").innerHTML = '<div class="lg-empty"><span>Loading sessions…</span></div>';
+    return tok().then(function (t) {
+      return fetch(API + "/liga/sessions" + (t ? "?token=" + encodeURIComponent(t) : "")).then(function (r) { return r.json(); });
+    }).then(function (d) { SESS = (d && d.sessions) || []; render(); })
+      .catch(function () { SESS = []; document.getElementById("sess").innerHTML = '<div class="lg-empty"><b>Couldn\'t load sessions.</b><span>Refresh to try again.</span></div>'; });
+  }
+
+  /* ---------- Join sheet ---------- */
+  var sheet = document.getElementById("lgSheet"), body = document.getElementById("lgSheetBody"), cur = null, partner = null;
+  function close() { sheet.hidden = true; document.body.style.overflow = ""; cur = null; partner = null; }
+  sheet.addEventListener("click", function (e) { if (e.target === sheet || e.target.closest("[data-close]")) close(); });
+  function head(s) {
+    var d = DIV[s.division] || DIV.D2;
+    return '<button type="button" class="lg-x" data-close aria-label="Close">✕</button>' +
+      '<h3 class="lg-h">Join · ' + d.name + " " + CATN[cat(s.gender)] + "</h3>" +
+      '<div class="lg-sub">' + esc(day(s.date)) + " · " + esc(s.startTime || "") + " · " + esc(s.courtName || s.venue) + "</div>";
+  }
+  function band(div, playerDiv) {
+    return '<div class="lg-band">' + ["D1", "D2", "D3"].map(function (k) {
+      var cls = k === div && playerDiv === k ? "hit" : k === div ? (["D1", "D2", "D3"].indexOf(playerDiv) > ["D1", "D2", "D3"].indexOf(div) || playerDiv === "OPEN" ? "bad" : "cur") : k === playerDiv ? "you" : "";
+      return '<div class="' + cls + '">' + k + (k === div ? (cls === "bad" ? " ✕" : " ✓") : k === playerDiv ? " ← you" : "") + "</div>";
+    }).join("") + "</div>";
+  }
+  function openJoin(id) {
+    var s = SESS.find(function (x) { return String(x.id) === String(id); }); if (!s) return;
+    cur = s; partner = null; sheet.hidden = false; document.body.style.overflow = "hidden";
+    body.innerHTML = head(s) + '<div class="lg-load">Checking…</div>';
+    tok().then(function (t) { if (!t) return showLogin(s); check(s, t); });
+  }
+  function showLogin(s) {
+    body.innerHTML = head(s) + '<p class="lg-p">Sign in with your Trekkr account to join. We check your rating against the division automatically.</p><div id="lgAuth"></div>';
+    if (window.TrekkrAuth) TrekkrAuth.renderBox(document.getElementById("lgAuth"), {
+      next: "/liga-trekkr-v2?join=" + encodeURIComponent(s.id),
+      onDone: function () { load().then(function () { openJoin(s.id); }); },
+    });
+  }
+  function check(s, t) {
+    fetch(API + "/liga/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t, sessionId: s.id, partner: partner ? partner.name : "" }) })
+      .then(function (r) { return r.json().then(function (d) { return { st: r.status, d: d }; }); })
+      .then(function (x) {
+        if (cur !== s) return;
+        var d = x.d || {};
+        if (x.st === 401) return noProfile(s, d.error);
+        if (d.code === "NEED_PARTNER") return pickPartner(s, d.player);
+        if (d.code === "GENDER" || d.code === "PARTNER" || (!d.code && d.error)) return fail(s, d.error || "Can't join this session.", d.code === "PARTNER" ? d.player : null);
+        verdict(s, d, t);
+      }).catch(function () { fail(s, "Couldn't check right now — try again."); });
+  }
+  function noProfile(s, err) {
+    body.innerHTML = head(s) + '<div class="lg-no"><b>No Trekkr player profile on this account yet.</b> ' + esc(err || "") + '</div>' +
+      '<a class="btn btn--primary lg-btn" href="https://trekkr.online/join">Create / claim my profile</a>';
+  }
+  function fail(s, msg, player) {
+    body.innerHTML = head(s) + '<div class="lg-no">' + esc(msg) + "</div>" +
+      (player && cat(s.gender) === "X" ? '<button type="button" class="btn lg-btn" id="lgRePick">Choose another partner</button>' : "") +
+      '<button type="button" class="btn lg-btn" data-close>Close</button>';
+    var rb = document.getElementById("lgRePick"); if (rb) rb.onclick = function () { partner = null; pickPartner(s, player); };
+  }
+  function pickPartner(s, me) {
+    var want = me && String(me.gender || "").toUpperCase().charAt(0) === "F" ? "M" : "F";
+    body.innerHTML = head(s) + '<p class="lg-p">Mixed is played in pairs (1 man + 1 woman). You are the <b>Captain</b> — choose your partner. Your <b>pair average</b> must fit the division.</p>' +
+      '<label class="lg-l" for="lgPq">Your partner (' + (want === "F" ? "woman" : "man") + ")</label>" +
+      '<input id="lgPq" class="lg-in" type="search" autocomplete="off" placeholder="Search a player\'s name…"><div id="lgPl" class="lg-pl"></div>';
+    var q = document.getElementById("lgPq"), pl = document.getElementById("lgPl"), tm = null, seq = 0;
+    q.focus();
+    q.addEventListener("input", function () {
+      clearTimeout(tm); tm = setTimeout(function () {
+        var v = q.value.trim(); if (v.length < 2) { pl.innerHTML = ""; return; }
+        var my = ++seq;
+        fetch(API + "/liga/players?q=" + encodeURIComponent(v) + "&gender=" + want).then(function (r) { return r.json(); }).then(function (d) {
+          if (my !== seq) return;
+          var rows = (d && d.players) || [];
+          pl.innerHTML = rows.length ? rows.map(function (p) { return '<button type="button" data-n="' + esc(p.name) + '"><b>' + esc(p.display || p.name) + "</b><span>" + esc(p.name) + "</span></button>"; }).join("") : '<div class="lg-p">No player found — your partner needs a Trekkr profile.</div>';
+        });
+      }, 250);
+    });
+    pl.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-n]"); if (!b) return;
+      partner = { name: b.getAttribute("data-n") };
+      body.innerHTML = head(s) + '<div class="lg-load">Checking your pair…</div>';
+      tok().then(function (t) { check(s, t); });
+    });
+  }
+  function who(e, tag) {
+    var st = e.isNew ? "New · starts at " + Math.round(e.rating) : e.calibrating ? "Calibrating · " + e.matches + " of 16" : e.matches + " matches";
+    var ini = String(e.display || e.name || "?").trim().split(/\s+/).map(function (w) { return w.charAt(0); }).slice(0, 2).join("").toUpperCase();
+    return '<div class="lg-who"><span class="lg-av">' + esc(ini) + '</span><div><div class="n">' + esc(e.display || e.name) + (tag ? ' <span class="tk-chip">' + tag + "</span>" : "") + '</div><div class="m">' + esc(st) + "</div></div>" + (e.isNew ? '<span class="e">—</span>' : '<span class="e">' + elo(e.rating) + "</span>") + "</div>";
+  }
+  function verdict(s, v, t) {
+    var d = DIV[v.division] || DIV.D2, pair = (v.entries || []).length > 1, me = v.player || {};
+    var es = v.entries || [];
+    if (es[0]) es[0].display = me.display || es[0].name;
+    if (es[1] && v.partner) es[1].display = v.partner.display || es[1].name;
+    var h = head(s) + es.map(function (e, i) { return who(e, pair ? (i === 0 ? "Captain" : "Partner") : ""); }).join("") + band(v.division, v.playerDiv);
+    if (s.myStatus) {
+      h += '<div class="lg-ok"><b>' + (s.myStatus === "CONFIRMED" ? "✓ You're confirmed for this session." : "You're on the waiting list.") + "</b> " + (s.myStatus === "CONFIRMED" ? "See you on court!" : "Send your payment proof to the venue on WhatsApp so they can confirm your spot.") + "</div>" + waBtn(s, me) + '<button type="button" class="btn lg-btn" data-close>Close</button>';
+      body.innerHTML = h; return;
+    }
+    if (!v.ok) {
+      var alts = SESS.filter(function (x) { return x.id !== s.id && x.division === v.playerDiv && (cat(x.gender) === cat(s.gender) || cat(x.gender) === "X") && x.spotsLeft > 0; }).slice(0, 3);
+      h += '<div class="lg-no"><b>This session is ' + d.name + " (up to " + d.hi + ").</b> " + (pair ? "Your pair average " : "Your rating ") + elo(v.rating) + " puts you in <b>" + (v.playerDiv === "OPEN" ? "Open (above Division 3)" : DIV[v.playerDiv].name) + "</b> — play there so every match is fair.</div>" +
+        alts.map(function (x) { return '<button type="button" class="lg-alt" data-alt="' + esc(x.id) + '"><span><b>' + DIV[x.division].name + " · " + CATN[cat(x.gender)] + "</b><br><small>" + esc(day(x.date)) + " · " + esc(x.startTime || "") + " · " + esc(x.courtName || x.venue) + '</small></span><em>Join →</em></button>'; }).join("") +
+        (pair ? '<button type="button" class="btn lg-btn" id="lgRePick">Choose another partner</button>' : "") +
+        '<button type="button" class="btn lg-btn lg-btn--off" disabled>Not available for your division</button>';
+      body.innerHTML = h;
+      body.querySelectorAll("[data-alt]").forEach(function (b) { b.onclick = function () { openJoin(b.getAttribute("data-alt")); }; });
+      var rb = document.getElementById("lgRePick"); if (rb) rb.onclick = function () { partner = null; pickPartner(s, me); };
+      return;
+    }
+    var msg = {
+      FITS: "<b>✓ You're eligible.</b> " + (pair ? "Your pair average " + elo(v.rating) + " fits " : "Your rating fits ") + d.name + " (" + d.r + ").",
+      PLAYS_UP: "<b>✓ You can play up.</b> " + (pair ? "Your pair average " : "Your rating ") + elo(v.rating) + " is below " + d.name + " — a tougher night, and a bigger rating gain when you win.",
+      NEW: "<b>✓ Welcome to Liga!</b> " + (pair ? "Pair average " + elo(v.rating) + " fits " + d.name + ". New players start at " : "You start at ") + elo(v.seed) + " — the " + d.name + " starting rating. Every match from here moves it.",
+      CALIBRATING: "<b>✓ You're eligible.</b> You're still calibrating — your rating settles after 16 matches. You can play your division or higher, not lower.",
+    }[v.label] || "<b>✓ You're eligible.</b>";
+    h += '<div class="lg-ok">' + msg + "</div>" +
+      '<ol class="lg-steps"><li>Tap <b>Join waiting list</b>.</li><li>Transfer <b>' + (s.pricePerPlayer ? rp(s.pricePerPlayer) : "the fee") + (pair ? " per player" : "") + "</b> &amp; send proof to the venue on WhatsApp.</li><li>The venue confirms → your spot" + (pair ? "s are" : " is") + " locked.</li></ol>" +
+      '<button type="button" class="btn btn--primary lg-btn" id="lgBook">' + (pair ? "Join as a pair" : "Join waiting list") + "</button>" +
+      (pair ? '<button type="button" class="btn lg-btn" id="lgRePick">Change partner</button>' : "");
+    body.innerHTML = h;
+    var rb = document.getElementById("lgRePick"); if (rb) rb.onclick = function () { partner = null; pickPartner(s, me); };
+    document.getElementById("lgBook").onclick = function () {
+      var b = this; b.disabled = true; b.textContent = "Booking…";
+      fetch(API + "/venue/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t, sessionId: s.id, partner: partner ? partner.name : "" }) })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (x) {
+          if (!x.ok) { b.disabled = false; b.textContent = "Try again"; var m = document.createElement("div"); m.className = "lg-no"; m.textContent = x.d.error || "Booking failed"; b.parentNode.insertBefore(m, b); return; }
+          var pend = x.d.status === "PENDING_VERIFY";
+          s.myStatus = x.d.status;
+          body.innerHTML = head(s) + '<div class="lg-ok"><b>' + (x.d.already ? "You're already on the list." : pend ? "Almost there — verify your profile." : "✓ You're on the waiting list!") + "</b> " + esc(x.d.message || "") + "</div>" +
+            (pend && x.d.verifyUrl ? '<a class="btn btn--primary lg-btn" href="' + esc(x.d.verifyUrl) + '">Verify my profile</a>' : waBtn(s, me)) +
+            '<button type="button" class="btn lg-btn" data-close>Done</button>';
+          render();
+        }).catch(function () { b.disabled = false; b.textContent = "Try again"; });
+    };
+  }
+  function waBtn(s, me) {
+    var wa = String(s.adminWa || s.whatsappUrl || "").trim(); if (!wa) return "";
+    var num = wa.replace(/[^\d]/g, ""); if (num.charAt(0) === "0") num = "62" + num.slice(1);
+    var txt = "Hi, I joined Liga Trekkr " + (DIV[s.division] || DIV.D2).name + " " + CATN[cat(s.gender)] + " on " + day(s.date) + " " + (s.startTime || "") + " as " + (me.display || me.name || "") + ". Here is my payment proof:";
+    var href = /^https?:/.test(wa) ? wa : "https://wa.me/" + num + "?text=" + encodeURIComponent(txt);
+    return '<a class="btn lg-btn" href="' + esc(href) + '" target="_blank" rel="noopener">WhatsApp the venue</a>';
+  }
+
+  load().then(function () {
+    var j = new URLSearchParams(location.search).get("join");
+    if (j) { openJoin(j); var sc = document.getElementById("schedule"); if (sc) sc.scrollIntoView(); }
+  });
 })();
 </script>
 <script src="/trekkr-nav.js" defer></script>
