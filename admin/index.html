@@ -775,6 +775,13 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
               <div class="sc-title"><span class="sc-dot"></span><span class="sc-label" id="sesFormTitle">Add a PlayRank session</span></div>
               <p style="color:var(--txt2);font-size:13px;margin:8px 0 12px">Bookable sessions shown on your venue page. Players book, you approve in the Bookings tab, then start the session here.</p>
               <div class="form-grid">
+                <div class="f-group" style="display:flex;gap:10px">
+                  <div style="flex:1"><label class="f-label" for="sesType">Session type</label>
+                    <select class="f-input" id="sesType" onchange="sesTypeUi()"><option value="RANKPLAY" selected>PlayRank</option><option value="LIGA">⚡ Liga Trekkr</option></select></div>
+                  <div style="flex:1" class="ses-liga-only"><label class="f-label" for="sesDivision">Division</label>
+                    <select class="f-input" id="sesDivision" onchange="sesTypeUi()"><option value="D1">Division 1 · &lt;1200</option><option value="D2" selected>Division 2 · 1200–1799</option><option value="D3">Division 3 · 1800–2499</option></select></div>
+                </div>
+                <div class="f-group ses-liga-only" id="sesLigaHint" style="background:#FFF7EE;border:2px dashed var(--ek-ink,#090D14);padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--txt2)"></div>
                 <div class="f-group"><label class="f-label" for="sesGame">Game name</label><input class="f-input" id="sesGame" placeholder="e.g. Friday Night PlayRank"/></div>
                 <div class="f-group"><label class="f-label" for="sesCourtName">Court name</label><input class="f-input" id="sesCourtName" placeholder="e.g. Pancasona Court 3"/></div>
                 <div class="f-group">
@@ -786,11 +793,11 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <div class="f-group" style="display:flex;gap:10px">
                   <div style="flex:1"><label class="f-label" for="sesStart">Start time</label><input class="f-input" id="sesStart" type="time"/></div>
                   <div style="flex:1"><label class="f-label" for="sesDuration">Duration</label>
-                    <select class="f-input" id="sesDuration"><option value="1">1 hour</option><option value="2" selected>2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option></select></div>
+                    <select class="f-input" id="sesDuration" onchange="sesTypeUi()"><option value="1">1 hour</option><option value="2" selected>2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option></select></div>
                 </div>
                 <div class="f-group" style="display:flex;gap:10px">
-                  <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2"/></div>
-                  <div style="flex:1"><label class="f-label" for="sesCapacity">Capacity</label><input class="f-input" id="sesCapacity" type="number" min="1" placeholder="8"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesCourts">Courts</label><input class="f-input" id="sesCourts" type="number" min="1" placeholder="2" oninput="sesTypeUi()"/></div>
+                  <div style="flex:1"><label class="f-label" for="sesCapacity">Capacity</label><input class="f-input" id="sesCapacity" type="number" min="1" placeholder="8" oninput="sesCapClamp()"/></div>
                 </div>
                 <div class="f-group"><label class="f-label" for="sesPrice">Price per player (Rp)</label><input class="f-input" id="sesPrice" type="number" min="0" placeholder="50000"/></div>
                 <div class="f-group"><label class="f-label" for="sesPrizePool">Prize pool <span style="color:var(--txt3);font-weight:400">(optional)</span></label><input class="f-input" id="sesPrizePool" placeholder="e.g. Rp 500.000 + merchandise"/></div>
@@ -798,10 +805,10 @@ a{color:inherit;text-decoration:none}h1,h2,h3,p{margin:0}
                 <div class="f-group" id="sesRepeatWrap"><label class="f-label" for="sesRepeat">Repeat</label>
                   <select class="f-input" id="sesRepeat"><option value="1">One-off (this date only)</option><option value="2">Weekly · 2 weeks</option><option value="3">Weekly · 3 weeks</option><option value="4">Weekly · 4 weeks (a month)</option></select></div>
                 <div class="f-group" style="display:flex;gap:10px">
-                  <div style="flex:1"><label class="f-label" for="sesLevel">Level</label>
+                  <div style="flex:1" class="ses-noliga"><label class="f-label" for="sesLevel">Level</label>
                     <select class="f-input" id="sesLevel"><option value="">—</option><option>Open</option><option>Beginner</option><option>Lower Bronze</option><option>Bronze</option><option>Upper Bronze</option><option>Silver</option><option>Gold</option></select></div>
                   <div style="flex:1"><label class="f-label" for="sesGender">Gender</label>
-                    <select class="f-input" id="sesGender"><option value="Men" selected>Men</option><option value="Women">Women</option></select></div>
+                    <select class="f-input" id="sesGender" onchange="sesTypeUi()"><option value="Men" selected>Men</option><option value="Women">Women</option><option value="Mixed" class="ses-liga-only">Mixed (pairs)</option></select></div>
                 </div>
                 <div class="f-group"><label class="f-label" for="sesStatus">Status</label>
                   <select class="f-input" id="sesStatus"><option value="OPEN">Open</option><option value="CANCELLED">Cancelled</option><option value="DONE">Done</option></select></div>
@@ -1519,9 +1526,14 @@ async function loadSessions(){
     var byId={}; ((res[1]&&res[1].bookings)||[]).forEach(function(b){ (byId[String(b.sessionId)]=byId[String(b.sessionId)]||[]).push(b); });
     _sessions.forEach(function(s){
       var arr=byId[String(s.id)]||[];
-      s._waiting=arr.filter(function(b){return b.status==='WAITING';}).length;
-      s._confirmed=arr.filter(function(b){return b.status==='CONFIRMED';}).length;
-      s._confirmedNames=arr.filter(function(b){return b.status==='CONFIRMED';}).map(function(b){return b.playerName;});
+      var spots=function(b){return b.spots||(b.partnerName?2:1);};
+      s._waiting=arr.filter(function(b){return b.status==='WAITING';}).reduce(function(a,b){return a+spots(b);},0);
+      s._confirmed=arr.filter(function(b){return b.status==='CONFIRMED';}).reduce(function(a,b){return a+spots(b);},0);
+      s._confirmedNames=[]; s._pairs=[];
+      arr.filter(function(b){return b.status==='CONFIRMED';}).forEach(function(b){
+        s._confirmedNames.push(b.playerName);
+        if(b.partnerName){ s._confirmedNames.push(b.partnerName); s._pairs.push([b.playerName,b.partnerName]); }
+      });
     });
     renderSessions();
   }catch(e){ box.innerHTML='<div style="color:var(--danger);font-size:13px">'+_escB(e.message||'Failed to load')+'</div>'; }
@@ -1531,7 +1543,9 @@ function renderSessions(){
   if(!_sessions.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:6px 0">No sessions scheduled yet — tap “＋ Add PlayRank sched”.</div>'; return; }
   var sorted=_sessions.slice().sort(function(a,c){ var da=(a.date||'')+(a.startTime||''),dc=(c.date||'')+(c.startTime||''); return da<dc?1:da>dc?-1:0; });
   box.innerHTML=sorted.map(function(s){
-    var facts=[(s.courts?s.courts+'c':''),(s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''),(s.level||''),(s.gender||''),'cap '+(s.capacity||0)].filter(Boolean).join(' · ');
+    var isLiga=String(s.type||'').toUpperCase()==='LIGA';
+    var ligaDiv=isLiga?({D1:'Division 1',D2:'Division 2',D3:'Division 3'}[String(s.division||'').toUpperCase()]||'Division 2'):'';
+    var facts=[(isLiga?'⚡ Liga · '+ligaDiv:''),(s.courts?s.courts+'c':''),(s.pricePerPlayer?_rpFmt(s.pricePerPlayer):''),(isLiga?'':(s.level||'')),(s.gender||''),'cap '+(s.capacity||0)].filter(Boolean).join(' · ');
     var st=String(s.status||'OPEN').toUpperCase();
     var stColor=st==='OPEN'?'var(--green)':(st==='CANCELLED'?'var(--danger)':'var(--txt3)');
     var canStart=st==='OPEN';
@@ -1549,7 +1563,7 @@ function renderSessions(){
         '<span style="color:var(--txt2)"><b style="color:var(--gold);font-size:14px">'+(s._waiting||0)+'</b> waiting</span>'+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">'+
-      (canStart?'<button class="btn btn-primary btn-sm" onclick="startPlayrankFromSession(\''+_escB(s.id)+'\')">▶ Start PlayRank</button>':'')+
+      (canStart?(isLiga?'<button class="btn btn-primary btn-sm" onclick="startLigaFromSession(\''+_escB(s.id)+'\')">▶ Start Liga session</button>':'<button class="btn btn-primary btn-sm" onclick="startPlayrankFromSession(\''+_escB(s.id)+'\')">▶ Start PlayRank</button>'):'')+
       '<button class="btn btn-ghost btn-sm" onclick="sessionShare(\''+_escB(s.id)+'\')">↗ Share</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="sessionEdit(\''+_escB(s.id)+'\')">Edit</button>'+
       '<button class="btn btn-danger btn-sm" onclick="sessionDelete(\''+_escB(s.id)+'\')">Delete</button></div></div>';
@@ -1574,6 +1588,39 @@ function sessionShare(id){
   window.open('https://wa.me/?text='+encodeURIComponent(lines.filter(Boolean).join('\n')),'_blank');
 }
 function _sv(id){ return document.getElementById(id).value; }
+// Liga Trekkr sessions: division + Men/Women/Mixed, fixed 8 matches per player.
+// Capacity is capped so everyone can play 8 matches: courts × (minutes ÷ ~20
+// per race-to-4 match) slots × 4 players ÷ 8.
+var SES_LIGA_MATCH_MIN=20, SES_LIGA_MATCHES=8;
+function sesLigaMaxCap(){
+  var c=parseInt(_sv('sesCourts'),10)||0, h=parseInt(_sv('sesDuration'),10)||0;
+  var slots=c*Math.floor(h*60/SES_LIGA_MATCH_MIN);
+  var cap=Math.floor(slots*4/SES_LIGA_MATCHES);
+  if(_sv('sesGender')==='Mixed') cap-=cap%2; // pairs
+  return Math.max(0,cap);
+}
+function sesIsLiga(){ var t=document.getElementById('sesType'); return !!t&&t.value==='LIGA'; }
+function sesCapClamp(){
+  if(!sesIsLiga()) return;
+  var mx=sesLigaMaxCap(), el=document.getElementById('sesCapacity'), v=parseInt(el.value,10);
+  if(mx&&v>mx) el.value=mx;
+}
+function sesTypeUi(){
+  var liga=sesIsLiga();
+  document.querySelectorAll('.ses-liga-only').forEach(function(el){ el.style.display=liga?'':'none'; el.disabled=!liga; });
+  document.querySelectorAll('.ses-noliga').forEach(function(el){ el.style.display=liga?'none':''; });
+  var g=document.getElementById('sesGender'); if(!liga&&g.value==='Mixed') g.value='Men';
+  var cap=document.getElementById('sesCapacity');
+  if(!liga){ cap.removeAttribute('max'); return; }
+  var c=parseInt(_sv('sesCourts'),10)||0, h=parseInt(_sv('sesDuration'),10)||0, mx=sesLigaMaxCap();
+  if(mx){ cap.max=mx; if(!cap.value||parseInt(cap.value,10)>mx) cap.value=mx; }
+  var dv={D1:'Division 1 (rating under 1200)',D2:'Division 2 (rating 1200–1799)',D3:'Division 3 (rating 1800–2499)'}[_sv('sesDivision')]||'';
+  var slots=c*Math.floor(h*60/SES_LIGA_MATCH_MIN);
+  document.getElementById('sesLigaHint').innerHTML='<b>'+dv+'</b> · 8 matches per player, race to 4, ranked W–L → H2H → PD → PF → PA.<br>'+
+    (mx?'<b>Capacity max '+mx+' players</b> so everyone gets 8 matches ('+c+' court'+(c===1?'':'s')+' × '+h+' h ≈ '+slots+' matches). You can set fewer, not more. Need at least '+(4*Math.max(1,c))+' players to start.':'Fill in courts and duration — capacity is calculated so everyone gets 8 matches.')+
+    (_sv('sesGender')==='Mixed'?'<br>Mixed: players book as a pair (1 man + 1 woman); the pair average must fit the division.':'')+
+    '<br>Players above the division can\'t book; players below may play up; new players start at the division rating.';
+}
 // Court address is pasted manually from Google Maps; derive a clickable Maps
 // link from it (or use the value as-is when the admin pastes a full URL).
 function _mapsUrlFromAddress(addr){
@@ -1587,6 +1634,7 @@ function sessionResetForm(){
   document.getElementById('sesDuration').value='2';
   document.getElementById('sesLevel').value=''; document.getElementById('sesGender').value='Men'; document.getElementById('sesStatus').value='OPEN';
   document.getElementById('sesRepeat').value='1'; document.getElementById('sesRepeatWrap').style.display='';
+  document.getElementById('sesType').value='RANKPLAY'; document.getElementById('sesDivision').value='D2'; sesTypeUi();
   document.getElementById('sessionsEditor').dataset.editId='';
   document.getElementById('sesFormTitle').textContent='Add a PlayRank session';
   document.getElementById('sesSaveBtn').textContent='Add session →';
@@ -1605,7 +1653,11 @@ function sessionEdit(id){
   document.getElementById('sesCapacity').value=s.capacity||'';
   document.getElementById('sesPrice').value=s.pricePerPlayer||'';
   document.getElementById('sesLevel').value=s.level||'';
-  document.getElementById('sesGender').value=(s.gender==='Women'?'Women':'Men');
+  document.getElementById('sesType').value=(String(s.type||'').toUpperCase()==='LIGA'?'LIGA':'RANKPLAY');
+  document.getElementById('sesDivision').value=(/^D[123]$/.test(String(s.division||'').toUpperCase())?String(s.division).toUpperCase():'D2');
+  sesTypeUi();
+  document.getElementById('sesGender').value=(s.gender==='Women'?'Women':(/^mix/i.test(s.gender||'')&&sesIsLiga()?'Mixed':'Men'));
+  document.getElementById('sesCapacity').value=s.capacity||''; sesTypeUi();
   document.getElementById('sesStatus').value=String(s.status||'OPEN').toUpperCase();
   document.getElementById('sesPrizePool').value=s.prizePool||'';
   document.getElementById('sesFreebies').value=s.freebies||'';
@@ -1642,10 +1694,18 @@ async function sessionSave(){
   if(editId) repeat=1; // editing touches a single session only
   var start=_sv('sesStart'), dur=_sv('sesDuration')||'2';
   var addr=_sv('sesAddress');
-  var base={ venue:RM.venue, type:'RANKPLAY',
+  var liga=sesIsLiga();
+  if(liga){
+    var mx=sesLigaMaxCap(), cp=parseInt(_sv('sesCapacity'),10)||0;
+    if(!mx){ tStatus(st,'error','Liga: fill in courts and duration.'); return; }
+    if(cp>mx){ tStatus(st,'error','Liga: capacity max '+mx+' so everyone gets 8 matches.'); return; }
+    if(cp<4){ tStatus(st,'error','Liga: capacity must be at least 4 players.'); return; }
+    if(_sv('sesGender')==='Mixed'&&cp%2){ tStatus(st,'error','Liga Mixed: capacity must be an even number (pairs).'); return; }
+  }
+  var base={ venue:RM.venue, type:liga?'LIGA':'RANKPLAY', division:liga?_sv('sesDivision'):'',
     gameName:_sv('sesGame'), courtName:_sv('sesCourtName'), address:addr, mapsUrl:_mapsUrlFromAddress(addr),
     startTime:start, endTime:_endFromStart(start, dur), courts:_sv('sesCourts'), capacity:_sv('sesCapacity'), pricePerPlayer:_sv('sesPrice'),
-    level:_sv('sesLevel'), gender:_sv('sesGender'), status:_sv('sesStatus')||'OPEN',
+    level:liga?'':_sv('sesLevel'), gender:_sv('sesGender'), status:_sv('sesStatus')||'OPEN',
     prizePool:_sv('sesPrizePool'), freebies:_sv('sesFreebies'), token:RM.token };
   document.getElementById('sesSaveBtn').disabled=true;
   try{
@@ -1683,6 +1743,28 @@ async function startPlayrankFromSession(id){
   if(typeof rmRenderChips==='function') rmRenderChips();
 }
 
+// Launch the Liga engine for a scheduled Liga session: division + category from
+// the schedule, courts set, and the confirmed players (Mixed: booked pairs)
+// queued so they are pre-selected/pre-paired on the next screens.
+function startLigaFromSession(id){
+  var s=_sessions.find(function(x){return String(x.id)===String(id);}); if(!s) return;
+  var g=String(s.gender||'').toUpperCase(), mixed=/^MIX/.test(g);
+  rmStartSetup('liga');
+  rmLigaSetDiv(/^D[123]$/.test(String(s.division||'').toUpperCase())?String(s.division).toUpperCase():'D2');
+  rmSetGender(mixed?'MIXED':((g.charAt(0)==='W'||g.charAt(0)==='F')?'F':'M'));
+  var c=parseInt(s.courts,10); if(c>0){ RM.courts=c; rmChangeCourts(0); }
+  if(mixed && RM.league){
+    var h=_durHours((String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0],(String(s.endTime||'').match(/\d{1,2}:\d{2}/)||[''])[0]);
+    if(h) RM.league.hours=h;
+    var st0=(String(s.startTime||'').match(/\d{1,2}:\d{2}/)||[''])[0]; if(st0) RM.league.start=st0;
+    if((s._pairs||[]).length) RM.league.pairs=Math.max(2, s._pairs.length);
+    if(typeof rmLeagueRenderSetup==='function') rmLeagueRenderSetup();
+  }
+  RM._ligaPreselect=(s._confirmedNames||[]).slice();
+  RM._bookedPairs=(s._pairs||[]).slice();
+  RM._inited=true;
+}
+
 /* ---- Bookings (waiting list) ---- */
 async function loadBookings(){
   var box=document.getElementById('bookingsBox'); if(!box) return;
@@ -1706,15 +1788,18 @@ function renderBookings(list){
     var pending=arr.filter(function(b){return b.status==='PENDING_VERIFY';});
     var confirmed=arr.filter(function(b){return b.status==='CONFIRMED';});
     var time=[s.startTime,s.endTime].filter(Boolean).join(' – ');
-    var meta=[s.level,s.gender].filter(Boolean).join(' · ');
+    var bIsLiga=String(s.type||'').toUpperCase()==='LIGA';
+    var meta=[bIsLiga?'⚡ Liga · '+({D1:'Division 1',D2:'Division 2',D3:'Division 3'}[String(s.division||'').toUpperCase()]||'Division 2'):s.level,s.gender].filter(Boolean).join(' · ');
+    var nSpots=function(xs){return xs.reduce(function(a,b){return a+(b.spots||(b.partnerName?2:1));},0);};
     html+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:12px">';
     html+='<div style="font-weight:800;font-size:14px;color:var(--on)">'+_escB(_bkDay(s.date))+(time?' · '+_escB(time):'')+'</div>';
-    html+='<div style="color:var(--txt2);font-size:12px;margin-top:2px">'+_escB(meta)+' · '+confirmed.length+'/'+(s.capacity||0)+' confirmed</div>';
+    html+='<div style="color:var(--txt2);font-size:12px;margin-top:2px">'+_escB(meta)+' · '+nSpots(confirmed)+'/'+(s.capacity||0)+' confirmed</div>';
     function row(b,actions){
       var av=b.photo?'<img src="'+_escB(b.photo)+'" referrerpolicy="no-referrer" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none"/>':'<span style="width:34px;height:34px;border-radius:50%;background:var(--sur-hi);display:grid;place-items:center;font-weight:800;font-size:12px;flex:none;color:var(--on)">'+_escB((b.playerDisplay||b.playerName||'?').slice(0,2).toUpperCase())+'</span>';
       return '<div style="display:flex;align-items:center;gap:11px;margin-top:10px">'+av+
         '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13.5px;color:var(--on)">'+_escB(b.playerDisplay||b.playerName)+'</div>'+
-        '<div style="color:var(--txt3);font-size:11px">'+_escB(b.gender||'')+'</div></div>'+actions+'</div>';
+        (b.partnerName?'<div style="font-size:12px;color:var(--on)">+ '+_escB(b.partnerDisplay||b.partnerName)+' <span style="color:var(--txt3)">(pair)</span></div>':'')+
+        '<div style="color:var(--txt3);font-size:11px">'+_escB(b.gender||'')+_bkLigaTag(b.liga)+'</div></div>'+actions+'</div>';
     }
     if(waiting.length){ html+='<div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-top:14px">Waiting ('+waiting.length+')</div>';
       waiting.forEach(function(b){ html+=row(b,'<div style="display:flex;gap:6px;flex:none"><button class="btn btn-sm" style="background:var(--green);color:#fff" onclick="admDecide(\''+_escB(b.bookingId)+'\',\'approve\',this)">Approve</button><button class="btn btn-danger btn-sm" onclick="admDecide(\''+_escB(b.bookingId)+'\',\'reject\',this)">Reject</button></div>'); }); }
@@ -1725,6 +1810,14 @@ function renderBookings(list){
     html+='</div>';
   });
   box.innerHTML=html;
+}
+// Liga booking label: rating (orange, mono) + how it fits the division.
+function _bkLigaTag(l){
+  if(!l) return '';
+  var T={FITS:['✓ fits','#065F46','#DCFCE7'],PLAYS_UP:['Plays up','#92400E','#FFF1E8'],NEW:['New · starts '+l.rating,'#92400E','#FFF1E8'],CALIBRATING:['Calibrating','#92400E','#FFFBEB'],ABOVE:['Above division','#991B1B','#FEE2E2']}[l.label]||[l.label,'#334155','#F1F5F9'];
+  var cal=(l.entries||[]).filter(function(e){return e.calibrating;}).length&&l.label!=='CALIBRATING'?' · calibrating':'';
+  return ' · <span style="font-family:var(--ek-mono,monospace);font-weight:800;color:var(--ek-or,#FF5900);font-variant-numeric:tabular-nums">'+(l.entries&&l.entries.length>1?'avg ':'')+l.rating+'</span>'+
+    ' <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border:1.5px solid '+T[1]+';color:'+T[1]+';background:'+T[2]+'">'+_escB(T[0])+'</span>'+_escB(cal);
 }
 async function admDecide(bookingId,action,btn){
   if(btn){ btn.disabled=true; btn.style.opacity='.5'; }
@@ -2029,7 +2122,20 @@ function rmLigaApplyUi(){
 // Rated players above the division ceiling can't join this Liga session.
 function rmLigaBlocked(p){
   if (!rmLiga() || !p) return false;
+  if (RM.gender === 'MIXED') return false;   // Mixed: the pair average is checked when pairing
   return (Number(p.matchCount)||0) > 0 && (Number(p.elo)||0) > rmLigaDiv().hi;
+}
+// Liga rating used for division checks: new players (0 matches) count at the
+// division's starting rating — the same seed they start the session with.
+function rmLigaRating(p){
+  if (!p) return rmLigaDiv().seed;
+  return (Number(p.matchCount)||0) > 0 && Number(p.elo) > 0 ? Number(p.elo) : rmLigaDiv().seed;
+}
+// Mixed Liga: a pair may play the division when its AVERAGE rating fits.
+function rmLigaPairOk(a, b){
+  const pa = RM.selectedPlayers.find(p=>p.name===a), pb = RM.selectedPlayers.find(p=>p.name===b);
+  const avg = Math.round((rmLigaRating(pa) + rmLigaRating(pb)) / 2);
+  return { ok: avg <= rmLigaDiv().hi, avg };
 }
 // Head-to-head wins among individuals: a beat b when they were on opposite teams.
 function rmLigaH2H(){
@@ -2157,6 +2263,12 @@ async function rmLoadPlayers() {
         // fall back to last-row w+l for older API responses.
         matchCount: (e ? (e.matches ?? ((e.w||0)+(e.l||0))) : 0),
       }); });
+    // Liga session launched from the schedule: pre-select the confirmed players.
+    if (RM._ligaPreselect && RM._ligaPreselect.length) {
+      const want = RM._ligaPreselect.map(n => String(n).toLowerCase().trim()); RM._ligaPreselect = null;
+      want.forEach(w => { const p = RM.allPlayers.find(x => String(x.name).toLowerCase().trim() === w);
+        if (p && !RM.selectedPlayers.some(x => x.name === p.name)) rmTogglePlayer(p.name); });
+    }
     rmRenderPlayers();
     loadRmConfirmed();
   } catch(e) {
@@ -2229,7 +2341,8 @@ function rmTogglePlayer(name) {
     return;
   }
   if (idx >= 0) RM.selectedPlayers.splice(idx,1);
-  else RM.selectedPlayers.push({...p});
+  // Liga: a new player (0 matches) starts at the division's rating.
+  else RM.selectedPlayers.push(rmLiga() && !((Number(p.matchCount)||0) > 0) ? {...p, elo: RM.startElo} : {...p});
   rmRenderChips();
   rmRenderPlayers();
   rmUpdateStartBtn();
@@ -2781,6 +2894,13 @@ function rmBeginSession() {
 function rmRenderTeamSetup(){
   if(!RM.teams) RM.teams=[];
   const names=new Set(RM.selectedPlayers.map(p=>p.name));
+  // Mixed Liga from the schedule: pairs booked together start paired.
+  if(RM._bookedPairs&&RM._bookedPairs.length){
+    const lc=n=>{const p=RM.selectedPlayers.find(x=>x.name.toLowerCase().trim()===String(n).toLowerCase().trim());return p&&p.name;};
+    const used=new Set(); RM.teams.forEach(t=>t.players.forEach(n=>used.add(n)));
+    RM._bookedPairs.forEach(pr=>{const a=lc(pr[0]),b=lc(pr[1]);if(a&&b&&!used.has(a)&&!used.has(b)){RM.teams.push({id:rmTeamId(),players:[a,b],active:true});used.add(a);used.add(b);}});
+    RM._bookedPairs=null;
+  }
   RM.teams=RM.teams.filter(t=>t.players.every(n=>names.has(n)));
   RM._teamPick=null;
   rmDrawTeams();
@@ -2816,6 +2936,7 @@ function rmTeamPick(name){
   if(RM.gender==='MIXED'){
     const g=n=>((RM.selectedPlayers.find(p=>p.name===n)||{}).gender||'M').toUpperCase()==='F'?'F':'M';
     if(g(RM._teamPick)===g(name)){rmShowErr('rm-teams-error','Mixed: each pair must be 1 man + 1 woman.');return;}
+    if(rmLiga()){ const pc=rmLigaPairOk(RM._teamPick,name); if(!pc.ok){rmShowErr('rm-teams-error',`Pair average ${pc.avg} is above ${rmLigaDiv().name} (max ${rmLigaDiv().hi}).`);RM._teamPick=null;rmDrawTeams();return;} }
     rmHideErr('rm-teams-error');
   }
   RM.teams.push({id:rmTeamId(),players:[RM._teamPick,name],active:true});
@@ -2830,7 +2951,11 @@ function rmAutoPairRest(){
     // Mixed: strongest man with the weakest woman, and so on down the list.
     const men=pool.filter(p=>(p.gender||'M').toUpperCase()!=='F').sort(byElo);
     const women=pool.filter(p=>(p.gender||'M').toUpperCase()==='F').sort(byElo).reverse();
-    while(men.length&&women.length){const a=men.shift(),b=women.shift();RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
+    const over=[];
+    while(men.length&&women.length){const a=men.shift(),b=women.shift();
+      if(rmLiga()&&!rmLigaPairOk(a.name,b.name).ok){over.push(a.name+' + '+b.name);continue;}
+      RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
+    if(over.length) rmShowErr('rm-teams-error',`Not paired — average above ${rmLigaDiv().name}: ${over.join(', ')}. Pair them by hand.`);
   } else {
     pool.sort(byElo); // balance: strongest with weakest
     while(pool.length>=2){const a=pool.shift(),b=pool.pop();RM.teams.push({id:rmTeamId(),players:[a.name,b.name],active:true});}
