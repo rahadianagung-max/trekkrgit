@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liga Trekkr Simulasi</title>
+<meta name="description" content="Simulasi lengkap Liga Trekkr dengan pemain fiktif: jadwal, pendaftaran & cek divisi, sesi 8 match, leaderboard malam itu, leaderboard bulanan, promosi.">
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#090D14;--or:#FF5900;--volt:#D2F802;--mute:#64748B;--line:#E2E8F0;--soft:#F4F6F9;--grn:#059669;--red:#DC2626;--mono:'JetBrains Mono',ui-monospace,monospace;--disp:'Space Grotesk',system-ui,sans-serif;--body:'Plus Jakarta Sans',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);color:var(--ink);background:#fff;background-image:linear-gradient(to right,rgba(9,13,20,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(9,13,20,.05) 1px,transparent 1px);background-size:24px 24px}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 70px}
+.tag{font:800 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;background:var(--volt);border:1.5px solid var(--ink);display:inline-block;padding:3px 7px}
+h1{font:700 clamp(30px,6vw,56px)/.92 var(--disp);text-transform:uppercase;letter-spacing:-.045em;margin:12px 0 8px}
+h1 span{color:var(--or)}
+.lede{max-width:70ch;color:#334155;font-size:15px;line-height:1.55}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);box-shadow:3px 3px 0 var(--ink);padding:10px 14px;font:800 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.btn.p{background:var(--or);color:#fff}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn[disabled]{opacity:.45;cursor:default}
+.seed{font:700 11px var(--mono);color:var(--mute)}
+/* stepper */
+.steps{display:grid;grid-template-columns:repeat(6,1fr);border:2px solid var(--ink);background:#fff;margin-top:20px;position:sticky;top:0;z-index:5;box-shadow:3px 3px 0 var(--ink)}
+.steps button{border:0;background:#fff;padding:9px 4px;font:800 10px var(--mono);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;color:var(--ink);text-align:center;line-height:1.25}
+.steps button+button{border-left:2px solid var(--ink)}
+.steps button b{display:block;font-size:16px}
+.steps button.on{background:var(--ink);color:#fff}
+.steps button.done b{color:var(--or)}
+@media(max-width:640px){.steps button span{display:none}}
+.sec{margin-top:26px}
+.head{display:flex;align-items:baseline;gap:12px;border-bottom:3px solid var(--ink);padding-bottom:8px}
+.head b{font:800 34px/1 var(--mono);color:var(--or)}
+.head h2{font:700 clamp(20px,3.4vw,28px)/1.05 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.head small{display:block;font:600 13px var(--body);color:var(--mute);text-transform:none;letter-spacing:0;margin-top:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:18px;margin-top:16px;align-items:start}
+.card{border:2px solid var(--ink);background:#fff;box-shadow:4px 4px 0 var(--ink)}
+.card .bar{background:var(--ink);color:#fff;padding:9px 12px;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.card .bar em{font-style:normal;color:var(--volt)}
+.pad{padding:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13.5px}
+.kv dt{font:800 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding-top:2px}
+.note{margin-top:12px;background:#FFF7EE;border:2px dashed var(--ink);padding:10px 12px;font-size:13px;line-height:1.5;color:#334155}
+.note b{color:var(--ink)}
+.elo{font-family:var(--mono);font-weight:800;color:var(--or);font-variant-numeric:tabular-nums}
+.d{font-family:var(--mono);font-weight:800;font-variant-numeric:tabular-nums}
+.d.up{color:var(--grn)}.d.dn{color:var(--red)}.d.z{color:var(--mute)}
+.chip{display:inline-block;font:800 9.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;border:1.5px solid var(--ink);padding:2px 6px;background:#fff;white-space:nowrap}
+.chip.v{background:var(--volt)}.chip.ok{background:#DCFCE7;border-color:var(--grn);color:#065F46}.chip.no{background:#FEE2E2;border-color:var(--red);color:#991B1B}.chip.w{background:#FFF1E8;border-color:#B45309;color:#92400E}.chip.k{background:var(--ink);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--ink);color:#fff;font:800 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:left;padding:7px 8px;white-space:nowrap}
+td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.top td{background:var(--volt)}
+tr.cut td{border-top:2px solid var(--ink)}
+.nm{font-weight:700;white-space:nowrap}
+.av{display:inline-grid;place-items:center;width:26px;height:26px;border:1.5px solid var(--ink);background:var(--soft);font:800 9.5px var(--mono);margin-right:6px;vertical-align:middle}
+.tw{overflow-x:auto}
+/* rounds */
+.rounds{display:grid;gap:12px;margin-top:14px}
+.rd{border:2px solid var(--ink);background:#fff}
+.rd .rh{display:flex;justify-content:space-between;gap:8px;background:var(--soft);border-bottom:2px solid var(--ink);padding:7px 10px;font:800 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.mt{display:grid;grid-template-columns:54px 1fr auto 1fr;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);font-size:13px}
+.mt:first-of-type{border-top:0}
+.mt .ct{font:800 10px var(--mono);color:var(--mute);text-transform:uppercase}
+.mt .t{line-height:1.35}.mt .t.r{text-align:right}
+.mt .t.win{font-weight:800}
+.mt .sc{font:800 16px var(--mono);white-space:nowrap;border:2px solid var(--ink);padding:2px 8px;background:#fff}
+.bye{padding:7px 10px;border-top:1px dashed var(--line);font:700 11px var(--mono);color:var(--mute)}
+.prog{height:12px;border:2px solid var(--ink);background:#fff;margin-top:10px;position:relative}
+.prog i{position:absolute;left:0;top:0;bottom:0;background:var(--or)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:800 10.5px var(--mono);text-transform:uppercase;margin-top:10px}
+.flow span{border:2px solid var(--ink);padding:5px 8px;background:#fff}
+.flow span.on{background:var(--volt)}
+.hero2{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+@media(max-width:760px){.hero2{grid-template-columns:1fr}}
+.aw{border:2px solid var(--ink);background:#fff;box-shadow:4px 4px 0 var(--ink);padding:14px}
+.aw.k{background:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--or)}
+.aw .ic{font-size:26px}.aw h3{font:700 18px/1.1 var(--disp);text-transform:uppercase;margin:6px 0 4px}
+.aw .who{font:800 17px var(--body)}.aw small{display:block;font:700 11px var(--mono);color:var(--mute);margin-top:2px}
+.aw.k small{color:#C9CFD9}
+.hidden{display:none}
+.foot{margin-top:28px;font-size:12px;color:var(--mute);border-top:2px solid var(--ink);padding-top:10px;line-height:1.6}
+</style></head><body><div class="wrap">
+<a href="https://liga.trekkr.online" style="display:inline-block;margin-bottom:10px;font:800 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-decoration:none">← Liga Trekkr</a><br><span class="tag">Simulasi · pemain fiktif · tidak tersimpan</span>
+<h1>Liga Trekkr<br><span>dari jadwal sampai leaderboard</span></h1>
+<p class="lede">Satu bulan Liga Trekkr <b>Division 2 · Men</b> di venue fiktif "Arena Demo", dimainkan oleh pemain fiktif. Semua aturan memakai logika yang sama dengan sistem: cek divisi saat daftar, rotasi partner, 8 match per pemain (race to 4), ranking W–L → H2H → PD → PF → PA, dan perubahan ELO.</p>
+<div class="ctrl"><button class="btn p" id="bAll">▶ Jalankan semua</button><button class="btn" id="bSeed">↻ Acak ulang</button><span class="seed" id="seedLbl"></span></div>
+
+<nav class="steps" id="steps">
+  <button data-s="1"><b>1</b><span>Jadwal</span></button>
+  <button data-s="2"><b>2</b><span>Daftar</span></button>
+  <button data-s="3"><b>3</b><span>Approve</span></button>
+  <button data-s="4"><b>4</b><span>Main</span></button>
+  <button data-s="5"><b>5</b><span>Malam ini</span></button>
+  <button data-s="6"><b>6</b><span>Bulanan</span></button>
+</nav>
+
+<!-- 1 -->
+<section class="sec" id="s1"><div class="head"><b>1</b><h2>Venue membuat jadwal<small>admin.trekkr.online → Add PlayRank sched → Session type: Liga Trekkr</small></h2></div>
+<div class="grid">
+  <div class="card"><div class="bar"><span>Form sesi</span><em>Arena Demo</em></div><div class="pad"><dl class="kv" id="form"></dl>
+    <div class="note" id="capNote"></div></div></div>
+  <div class="card"><div class="bar"><span>Jadwal yang terbentuk</span><em>4 sesi</em></div><div class="pad"><div class="tw"><table id="schedTbl"></table></div>
+    <div class="note">Langsung tampil di <b>liga.trekkr.online → Pick your session</b> dengan tombol Join.</div></div></div>
+</div></section>
+
+<!-- 2 -->
+<section class="sec" id="s2"><div class="head"><b>2</b><h2>Pemain mendaftar · cek divisi<small>Sesi #1 · Senin minggu ke-1 · tiap Join dicek otomatis</small></h2></div>
+<div class="card" style="margin-top:16px"><div class="bar"><span>Permintaan Join</span><em id="joinSum"></em></div><div class="tw"><table id="joinTbl"></table></div></div>
+<div class="note">Aturan: rating <b>di atas</b> batas divisi ditolak (juga saat calibrating), <b>di bawah</b> boleh (plays up), <b>pemain baru</b> mulai di rating divisi (D2 = <span class="elo">1,600</span>). Slot penuh → waitlist.</div>
+</section>
+
+<!-- 3 -->
+<section class="sec" id="s3"><div class="head"><b>3</b><h2>Admin approve setelah bayar<small>Tab Bookings · label rating membantu admin memutuskan</small></h2></div>
+<div class="grid">
+  <div class="card"><div class="bar"><span>Bookings · D2 Men</span><em id="bkSum"></em></div><div class="tw"><table id="bkTbl"></table></div></div>
+  <div class="card"><div class="bar"><span>Start Liga session</span><em>hari H</em></div><div class="pad">
+    <div class="flow"><span>Jadwal</span>→<span>▶ Start Liga session</span>→<span class="on">9 pemain terpilih</span>→<span>Start match</span></div>
+    <div class="note" id="startNote"></div></div></div>
+</div></section>
+
+<!-- 4 -->
+<section class="sec" id="s4"><div class="head"><b>4</b><h2>Sesi dimainkan<small>Rotasi partner, race to 4 · ronde berikutnya disusun dari klasemen sementara</small></h2></div>
+<div class="ctrl"><button class="btn p" id="bRound">▶ Ronde berikutnya</button><button class="btn" id="bFinish">⏩ Selesaikan sesi</button><span class="seed" id="roundLbl"></span></div>
+<div class="prog"><i id="progBar" style="width:0"></i></div>
+<div class="rounds" id="rounds"></div>
+</section>
+
+<!-- 5 -->
+<section class="sec" id="s5"><div class="head"><b>5</b><h2>Leaderboard malam ini<small>W–L → H2H → PD → PF → PA · ELO dihitung per match</small></h2></div>
+<div class="hero2" id="nightAw"></div>
+<div class="card" style="margin-top:16px"><div class="bar"><span>Final · Sesi #1</span><em id="nightSum"></em></div><div class="tw"><table id="nightTbl"></table></div></div>
+<div class="note" id="h2hNote"></div>
+</section>
+
+<!-- 6 -->
+<section class="sec" id="s6"><div class="head"><b>6</b><h2>Leaderboard bulanan &amp; promosi<small>4 sesi di bulan yang sama · rating berjalan dari sesi ke sesi</small></h2></div>
+<div class="ctrl"><button class="btn p" id="bMonth">▶ Mainkan sesi #2–#4</button><span class="seed" id="monthLbl"></span></div>
+<div class="hero2" id="monthAw"></div>
+<div class="card" style="margin-top:16px"><div class="bar"><span>Winner of the month · D2 Men</span><em id="monthSum"></em></div><div class="tw"><table id="monthTbl"></table></div></div>
+<div class="card" style="margin-top:16px"><div class="bar"><span>Akhir bulan · promosi &amp; degradasi</span><em>D2</em></div><div class="tw"><table id="promoTbl"></table></div></div>
+<div class="note">Di tengah bulan, pemain yang ratingnya sudah melewati <span class="elo">1,799</span> tidak bisa lagi daftar sesi D2 (cek divisi saat Join) — sisa bulannya main di D3.</div>
+<div class="note">Promosi: rating akhir bulan ≥ <span class="elo">1,800</span> → naik ke Division 3 dengan record bersih. Degradasi: rating di bawah <span class="elo">1,150</span> (bantalan 50 poin) → turun ke Division 1. <i>Asumsi simulasi — leaderboard bulanan &amp; promosi otomatis belum dibangun di sistem.</i></div>
+</section>
+
+<p class="foot">Semua nama, rating, dan skor di halaman ini fiktif dan dibuat acak (bisa diulang dengan tombol "Acak ulang"). Tidak ada data yang dikirim ke server. Aturan rotasi, ranking, cek divisi, dan rumus ELO meniru mesin Liga di admin (pratinjau ELO; angka resmi dihitung server saat End Match).</p>
+</div>
+
+<script>
+(function(){
+/* ---------- rules (mirror of the Liga engine) ---------- */
+var LIGA_MATCHES=8, RACE=4, CALIB_MATCHES=16, CALIB_K=60, CALIB_DAMP=0.6;
+var DIV={D1:{name:'Division 1',lo:0,hi:1199,seed:1000},D2:{name:'Division 2',lo:1200,hi:1799,seed:1600},D3:{name:'Division 3',lo:1800,hi:2499,seed:2300}};
+function kf(n){return n<10?40:n<30?32:n<60?24:20;}
+function isCal(p){return (p.matches||0)<CALIB_MATCHES;}
+function effK(p){return isCal(p)?CALIB_K:kf(p.matches||0);}
+function calcElo(a,b,c,d,s1,s2){
+  var t1=(a.elo+b.elo)/2,t2=(c.elo+d.elo)/2,r1=s1>s2?1:s1<s2?0:.5,r2=1-r1,m=1+Math.min(Math.abs(s1-s2)*.04,.3);
+  var e1=1/(1+Math.pow(10,(t2-t1)/400)),e2=1-e1,cal=function(p){return isCal(p)?1:0;};
+  var f1=(cal(c)+cal(d))/2,f2=(cal(a)+cal(b))/2;
+  function up(p,r,e,f){var k=effK(p)*m;if(!isCal(p))k*=(1-CALIB_DAMP*f);return Math.round(k*(r-e));}
+  return [up(a,r1,e1,f1),up(b,r1,e1,f1),up(c,r2,e2,f2),up(d,r2,e2,f2)];
+}
+function divOf(e){return e>2499?'OPEN':e>=1800?'D3':e>=1200?'D2':'D1';}
+function verdict(div,p){var dv=DIV[div],isNew=!(p.matches>0),r=isNew?dv.seed:p.elo;
+  if(r>dv.hi)return{ok:false,label:'ABOVE',rating:r};
+  return{ok:true,rating:r,label:isNew?'NEW':r<dv.lo?'PLAYS_UP':isCal(p)?'CALIBRATING':'FITS'};}
+
+/* ---------- seeded random ---------- */
+var seed=20261020,rnd;
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+/* ---------- fake players ---------- */
+var BASE=[
+ ['Bima Arsanto',1712,48],['Raka Wibisono',1655,63],['Dimas Prawira',1580,35],['Galih Santoso',1534,22],
+ ['Yoga Kurniawan',1490,40],['Fajar Hidayat',1452,12],['Reza Maulana',1418,27],['Teguh Saputra',1376,55],
+ ['Arif Nugraha',1302,19],['Bagas Pradana',1251,8],['Hendra Wijaya',1150,31],['Ilham Ramadhan',0,0],
+ ['Kevin Siregar',1888,72],['Nanda Pratama',1795,14]
+];
+var P,SESS,R1,MONTH,state;
+function ini(n){var w=n.split(' ');return (w[0][0]+(w[1]?w[1][0]:'')).toUpperCase();}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function fmt(n){return Math.round(n).toLocaleString('en-US');}
+function eloH(n){return '<span class="elo">'+fmt(n)+'</span>';}
+function dH(n){return '<span class="d '+(n>0?'up':n<0?'dn':'z')+'">'+(n>0?'+':'')+n+'</span>';}
+function nmH(p){return '<span class="av">'+ini(p.name)+'</span><span class="nm">'+esc(p.name)+'</span>';}
+var LBL={FITS:'<span class="chip ok">✓ fits</span>',PLAYS_UP:'<span class="chip w">plays up</span>',NEW:'<span class="chip w">new · 1,600</span>',CALIBRATING:'<span class="chip w">calibrating</span>',ABOVE:'<span class="chip no">✕ above D2</span>'};
+
+function init(){
+  rnd=mulberry(seed);
+  document.getElementById('seedLbl').textContent='seed #'+seed;
+  // skill = hidden "true" level that drives match outcomes (rating ± noise)
+  P=BASE.map(function(b){var isNew=!b[2];var elo=isNew?DIV.D2.seed:b[1];return{name:b[0],elo:elo,start:elo,matches:b[2],isNew:isNew,skill:(isNew?1500:b[1])+(rnd()-.5)*240,month:{w:0,l:0,pf:0,pa:0,m:0,s:0}};});
+  state={step:1,round:0};
+  SESS=[0,7,14,21].map(function(d,i){return{n:i+1,date:new Date(2026,9,19+d),cap:9};});
+  R1=null;MONTH=null;
+  render1();render2();render3();prepSession();render4();render5();render6();goto(1,true);
+}
+
+/* ---------- step 1 ---------- */
+function render1(){
+  var f=[['Type','⚡ Liga Trekkr'],['Division','Division 2 · 1200–1799'],['Category','Men'],['Court','Arena Demo · Court 1 & 2'],['Date','Mon 19 Oct · 19:00'],['Duration','3 hours'],['Courts','2'],['Capacity','9 (auto · max)'],['Price','Rp150.000 / player'],['Prize','Voucher Rp500.000'],['Repeat','Weekly · 4 weeks']];
+  document.getElementById('form').innerHTML=f.map(function(x){return '<dt>'+x[0]+'</dt><dd>'+esc(x[1])+'</dd>';}).join('');
+  document.getElementById('capNote').innerHTML='<b>Kapasitas otomatis:</b> 2 lapangan × 3 jam ÷ ±20 menit = <b>18 match</b> × 4 pemain = 72 slot ÷ 8 match = <b>9 pemain</b>. Dengan 9 pemain di 2 lapangan, tiap ronde 1 pemain istirahat (bye) — semuanya tetap dapat 8 match.';
+  document.getElementById('schedTbl').innerHTML='<tr><th>#</th><th>Tanggal</th><th>Divisi</th><th class="n">Kapasitas</th></tr>'+SESS.map(function(s){return '<tr><td>'+s.n+'</td><td>'+s.date.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' · 19:00</td><td><span class="chip v">D2 · Men</span></td><td class="n">'+s.cap+'</td></tr>';}).join('');
+}
+
+/* ---------- step 2 ---------- */
+var joins;
+function render2(){
+  var order=shuffle(P.slice());
+  var taken=0;joins=[];
+  order.forEach(function(p){var v=verdict('D2',p),st;
+    if(!v.ok)st='rejected';else if(taken<9){st='waiting';taken++;}else st='waitlist';
+    joins.push({p:p,v:v,st:st});});
+  var t='<tr><th>#</th><th>Pemain</th><th class="n">Rating</th><th class="n">Match</th><th>Cek divisi</th><th>Hasil</th></tr>';
+  t+=joins.map(function(j,i){var p=j.p;
+    var res=j.st==='rejected'?'<span class="chip no">Ditolak · tawarkan D3</span>':j.st==='waitlist'?'<span class="chip">Penuh · waitlist</span>':'<span class="chip ok">Waiting list</span>';
+    return '<tr><td>'+(i+1)+'</td><td>'+nmH(p)+'</td><td class="n">'+(p.isNew?'<span class="d z">—</span>':eloH(p.elo))+'</td><td class="n">'+p.matches+'</td><td>'+LBL[j.v.label]+'</td><td>'+res+'</td></tr>';}).join('');
+  document.getElementById('joinTbl').innerHTML=t;
+  var c=function(s){return joins.filter(function(j){return j.st===s;}).length;};
+  document.getElementById('joinSum').textContent=c('waiting')+' masuk · '+c('rejected')+' ditolak · '+c('waitlist')+' waitlist';
+}
+
+/* ---------- step 3 ---------- */
+var roster;
+function render3(){
+  roster=joins.filter(function(j){return j.st==='waiting';}).map(function(j){return j.p;});
+  document.getElementById('bkTbl').innerHTML='<tr><th>Pemain</th><th>Label</th><th>Status</th></tr>'+joins.filter(function(j){return j.st==='waiting';}).map(function(j){
+    return '<tr><td>'+nmH(j.p)+'</td><td>'+(j.p.isNew?'':eloH(j.v.rating)+' ')+LBL[j.v.label]+'</td><td><span class="chip ok">✓ Confirmed</span></td></tr>';}).join('');
+  document.getElementById('bkSum').textContent=roster.length+'/9 confirmed';
+  var nw=roster.filter(function(p){return p.isNew;});
+  document.getElementById('startNote').innerHTML='Admin menerima bukti transfer lewat WhatsApp → <b>Approve</b>. Di hari H, tombol <b>▶ Start Liga session</b> membuka mesin Liga (Division 2 · Men · 2 lapangan · race to 4) dan 9 pemain confirmed sudah terpilih.'+
+    (nw.length?' Pemain baru <b>'+esc(nw.map(function(p){return p.name;}).join(', '))+'</b> mulai di '+eloH(1600)+'.':'');
+}
+
+/* ---------- step 4: one Liga session ---------- */
+var S; // session state
+function prepSession(){S=newSession(roster);}
+function newSession(players){
+  var st={};players.forEach(function(p){st[p.name]={p:p,w:0,l:0,pf:0,pa:0,played:0,bye:0,elo0:p.elo,partner:{},opp:{},h2h:{}};});
+  return{players:players,st:st,rounds:[],done:false};
+}
+function ligaSort(list,S){
+  var W=function(x){return S.st[x.name].w;};
+  var byW=list.slice().sort(function(a,b){return W(b)-W(a);}),out=[],i=0;
+  while(i<byW.length){var j=i+1;while(j<byW.length&&W(byW[j])===W(byW[i]))j++;
+    var g=byW.slice(i,j),ids={};g.forEach(function(x){ids[x.name]=1;});
+    g.forEach(function(x){var row=S.st[x.name].h2h;x._h=g.length>1?Object.keys(row).filter(function(o){return ids[o];}).reduce(function(s,o){return s+row[o];},0):0;});
+    g.sort(function(a,b){var A=S.st[a.name],B=S.st[b.name];return b._h-a._h||(B.pf-B.pa)-(A.pf-A.pa)||B.pf-A.pf||A.pa-B.pa||b.elo-a.elo;});
+    out=out.concat(g);i=j;}
+  return out;
+}
+function genRound(S){
+  var open=S.players.filter(function(p){return S.st[p.name].played<LIGA_MATCHES;});
+  if(open.length<4)return null;
+  var order=open.slice().sort(function(a,b){var A=S.st[a.name],B=S.st[b.name];return(A.played-B.played)||(B.bye-A.bye)||(b.elo-a.elo);});
+  var courts=Math.min(2,Math.floor(order.length/4));
+  var playing=order.slice(0,courts*4),inPlay={};playing.forEach(function(p){inPlay[p.name]=1;});
+  var byes=S.players.filter(function(p){return !inPlay[p.name];});
+  var ranked=S.rounds.length?ligaSort(playing,S):playing.slice().sort(function(a,b){return b.elo-a.elo;});
+  var pc=function(a,b){return S.st[a].partner[b]||0;},oc=function(a,b){return S.st[a].opp[b]||0;};
+  var cost=function(t1,t2){return 3*(pc(t1[0].name,t1[1].name)+pc(t2[0].name,t2[1].name))+oc(t1[0].name,t2[0].name)+oc(t1[0].name,t2[1].name)+oc(t1[1].name,t2[0].name)+oc(t1[1].name,t2[1].name);};
+  var ms=[];
+  for(var c=0;c<courts;c++){var g=ranked.slice(c*4,c*4+4);
+    var opts=[{t1:[g[0],g[3]],t2:[g[1],g[2]],b:0},{t1:[g[0],g[2]],t2:[g[1],g[3]],b:1},{t1:[g[0],g[1]],t2:[g[2],g[3]],b:2}].map(function(o){o.c=cost(o.t1,o.t2);return o;}).sort(function(a,b){return a.c-b.c||a.b-b.b;});
+    ms.push({court:c+1,t1:opts[0].t1,t2:opts[0].t2});}
+  return{matches:ms,byes:byes};
+}
+function playMatch(m){
+  // game-by-game race to 4 driven by hidden skill
+  var s1=(m.t1[0].skill+m.t1[1].skill)/2,s2=(m.t2[0].skill+m.t2[1].skill)/2;
+  var pg=.5+(1/(1+Math.pow(10,(s2-s1)/400))-.5)*.75,a=0,b=0;
+  while(a<RACE&&b<RACE){if(rnd()<pg)a++;else b++;}
+  m.s1=a;m.s2=b;
+}
+function applyMatch(S,m){
+  var all=m.t1.concat(m.t2),d=calcElo(m.t1[0],m.t1[1],m.t2[0],m.t2[1],m.s1,m.s2);
+  m.delta=d;
+  all.forEach(function(p,i){var x=S.st[p.name],mine=i<2?m.s1:m.s2,their=i<2?m.s2:m.s1,team=i<2?m.t1:m.t2,oppT=i<2?m.t2:m.t1;
+    x.played++;x.pf+=mine;x.pa+=their;if(mine>their)x.w++;else x.l++;
+    team.forEach(function(q){if(q!==p)x.partner[q.name]=(x.partner[q.name]||0)+1;});
+    oppT.forEach(function(q){x.opp[q.name]=(x.opp[q.name]||0)+1;if(mine>their)x.h2h[q.name]=(x.h2h[q.name]||0)+1;});
+    p.month.m++;p.month.pf+=mine;p.month.pa+=their;if(mine>their)p.month.w++;else p.month.l++;});
+  all.forEach(function(p,i){p.elo+=d[i];p.matches++;});
+}
+function stepRound(S){
+  var r=genRound(S);if(!r){S.done=true;S.players.forEach(function(p){if(S.st[p.name].elo1==null)S.st[p.name].elo1=p.elo;});return null;}
+  r.matches.forEach(function(m){playMatch(m);applyMatch(S,m);});
+  r.byes.forEach(function(p){S.st[p.name].bye++;});
+  S.rounds.push(r);
+  if(!S.players.some(function(p){return S.st[p.name].played<LIGA_MATCHES;})||S.players.filter(function(p){return S.st[p.name].played<LIGA_MATCHES;}).length<4){S.done=true;S.players.forEach(function(p){S.st[p.name].elo1=p.elo;});}
+  return r;
+}
+function render4(){
+  var totalRounds=Math.ceil(S.players.length*LIGA_MATCHES/8);
+  document.getElementById('progBar').style.width=Math.min(100,S.rounds.length/totalRounds*100)+'%';
+  var mn=Math.min.apply(null,S.players.map(function(p){return S.st[p.name].played;}));
+  document.getElementById('roundLbl').textContent=S.done?'Selesai — semua pemain sudah 8 match · End Match terbuka':'Ronde '+S.rounds.length+' · tiap pemain sudah main '+mn+'–'+Math.max.apply(null,S.players.map(function(p){return S.st[p.name].played;}))+' dari 8';
+  document.getElementById('bRound').disabled=S.done;document.getElementById('bFinish').disabled=S.done;
+  var nm=function(t,win){return '<div class="t'+(win?' win':'')+'">'+esc(t[0].name)+'<br>'+esc(t[1].name)+'</div>';};
+  document.getElementById('rounds').innerHTML=S.rounds.length?S.rounds.map(function(r,i){
+    return '<div class="rd"><div class="rh"><span>Ronde '+(i+1)+'</span><span>'+r.matches.length+' lapangan</span></div>'+
+      r.matches.map(function(m){var w1=m.s1>m.s2;return '<div class="mt"><span class="ct">Court '+m.court+'</span>'+nm(m.t1,w1)+'<span class="sc">'+m.s1+'–'+m.s2+'</span><div class="t r'+(!w1?' win':'')+'">'+esc(m.t2[0].name)+'<br>'+esc(m.t2[1].name)+'</div></div>';}).join('')+
+      (r.byes.length?'<div class="bye">Bye: '+esc(r.byes.map(function(p){return p.name;}).join(', '))+'</div>':'')+'</div>';}).reverse().join(''):
+    '<div class="note">Tekan <b>Ronde berikutnya</b> untuk memainkan ronde pertama. Ronde 1 disusun dari rating; ronde berikutnya dari klasemen sementara, dan mesin menghindari pasangan/lawan yang berulang.</div>';
+}
+
+/* ---------- step 5 ---------- */
+function nightRows(S){
+  return ligaSort(S.players.slice(),S).map(function(p){var x=S.st[p.name];return{p:p,x:x,h:p._h};});
+}
+function render5(){
+  var tbl=document.getElementById('nightTbl'),aw=document.getElementById('nightAw');
+  if(!S.done){tbl.innerHTML='<tr><td style="padding:14px">Selesaikan sesi di langkah 4 untuk melihat leaderboard.</td></tr>';aw.innerHTML='';document.getElementById('nightSum').textContent='';document.getElementById('h2hNote').innerHTML='';return;}
+  var rows=nightRows(S);
+  tbl.innerHTML='<tr><th>#</th><th>Pemain</th><th class="n">W–L</th><th class="n">H2H</th><th class="n">PD</th><th class="n">PF</th><th class="n">PA</th><th class="n">ELO</th><th class="n">±</th></tr>'+
+    rows.map(function(r,i){var pd=r.x.pf-r.x.pa;return '<tr'+(i===0?' class="top"':'')+'><td>'+(i===0?'🏆':i+1)+'</td><td>'+nmH(r.p)+'</td><td class="n">'+r.x.w+'–'+r.x.l+'</td><td class="n">'+(r.h||'')+'</td><td class="n">'+(pd>0?'+':'')+pd+'</td><td class="n">'+r.x.pf+'</td><td class="n">'+r.x.pa+'</td><td class="n">'+eloH(r.x.elo1)+'</td><td class="n">'+dH(r.x.elo1-r.x.elo0)+'</td></tr>';}).join('');
+  var best=rows.slice().sort(function(a,b){return(b.x.elo1-b.x.elo0)-(a.x.elo1-a.x.elo0);})[0];
+  aw.innerHTML='<div class="aw k"><div class="ic">🏆</div><h3>Tonight\'s winner</h3><div class="who">'+esc(rows[0].p.name)+'</div><small>'+rows[0].x.w+'–'+rows[0].x.l+' · PD '+(rows[0].x.pf-rows[0].x.pa)+'</small></div>'+
+    '<div class="aw"><div class="ic">📈</div><h3>Biggest climb</h3><div class="who">'+esc(best.p.name)+'</div><small>ELO '+fmt(best.x.elo0)+' → '+fmt(best.x.elo1)+' ('+(best.x.elo1-best.x.elo0>0?'+':'')+(best.x.elo1-best.x.elo0)+')</small></div>'+
+    '<div class="aw"><div class="ic">🎾</div><h3>Every player</h3><div class="who">8 matches</div><small>'+S.rounds.length+' ronde · '+S.rounds.reduce(function(a,r){return a+r.matches.length;},0)+' match · 2 lapangan</small></div>';
+  document.getElementById('nightSum').textContent=S.rounds.length+' ronde';
+  // explain one tie broken by H2H if any
+  var tie=null;for(var i=0;i<rows.length-1;i++){if(rows[i].x.w===rows[i+1].x.w&&(rows[i].h||0)>(rows[i+1].h||0)){tie=[rows[i],rows[i+1]];break;}}
+  document.getElementById('h2hNote').innerHTML=tie?'<b>Contoh tie-break:</b> '+esc(tie[0].p.name)+' dan '+esc(tie[1].p.name)+' sama-sama '+tie[0].x.w+' menang. '+esc(tie[0].p.name)+' unggul head-to-head di antara pemain yang seri, jadi peringkatnya lebih tinggi walau PD-nya '+(tie[0].x.pf-tie[0].x.pa<tie[1].x.pf-tie[1].x.pa?'lebih kecil':'tidak harus lebih besar')+'.':'<b>Tie-break:</b> pemain dengan jumlah menang sama diurutkan dulu dengan head-to-head (menang saat saling berhadapan), lalu PD, PF, PA.';
+}
+
+/* ---------- step 6: rest of the month ---------- */
+function playMonth(){
+  if(!S.done)finishSession();
+  if(MONTH)return;
+  MONTH={sessions:[{n:1,roster:S.players.map(function(p){return p.name;}),winner:nightRows(S)[0].p.name}]};
+  var pool=P.filter(function(p){return verdict('D2',p).ok;});
+  for(var k=2;k<=4;k++){
+    // still-eligible players book again (rating may have moved); 9 per night
+    var elig=shuffle(pool.filter(function(p){return verdict('D2',p).ok;}).slice());
+    var players=elig.slice(0,9);
+    var s=newSession(players);while(!s.done)stepRound(s);
+    players.forEach(function(p){p.month.s++;});
+    MONTH.sessions.push({n:k,roster:players.map(function(p){return p.name;}),winner:nightRows(s)[0].p.name});
+  }
+  S.players.forEach(function(p){p.month.s++;});
+}
+function render6(){
+  var tbl=document.getElementById('monthTbl'),aw=document.getElementById('monthAw'),pr=document.getElementById('promoTbl');
+  document.getElementById('bMonth').disabled=!!MONTH;
+  if(!MONTH){tbl.innerHTML='<tr><td style="padding:14px">Tekan <b>Mainkan sesi #2–#4</b> untuk mensimulasikan sisa bulan.</td></tr>';aw.innerHTML='';pr.innerHTML='';document.getElementById('monthSum').textContent='';document.getElementById('monthLbl').textContent='';return;}
+  var ps=P.filter(function(p){return p.month.m>0;});
+  ps.sort(function(a,b){return(b.month.w-a.month.w)||((b.month.pf-b.month.pa)-(a.month.pf-a.month.pa))||(b.month.pf-a.month.pf)||(a.month.pa-b.month.pa);});
+  tbl.innerHTML='<tr><th>#</th><th>Pemain</th><th class="n">Sesi</th><th class="n">W–L</th><th class="n">PD</th><th class="n">Rating awal</th><th class="n">Rating akhir</th><th class="n">±</th></tr>'+
+    ps.map(function(p,i){var pd=p.month.pf-p.month.pa;return '<tr'+(i===0?' class="top"':'')+'><td>'+(i===0?'🥇':i+1)+'</td><td>'+nmH(p)+'</td><td class="n">'+p.month.s+'</td><td class="n">'+p.month.w+'–'+p.month.l+'</td><td class="n">'+(pd>0?'+':'')+pd+'</td><td class="n">'+eloH(p.start)+'</td><td class="n">'+eloH(p.elo)+'</td><td class="n">'+dH(p.elo-p.start)+'</td></tr>';}).join('');
+  var loyal=ps.slice().sort(function(a,b){return b.month.m-a.month.m||b.month.w-a.month.w;})[0];
+  var wins=MONTH.sessions.map(function(s){return '#'+s.n+' '+s.winner.split(' ')[0];}).join(' · ');
+  aw.innerHTML='<div class="aw k"><div class="ic">🥇</div><h3>Winner of the month</h3><div class="who">'+esc(ps[0].name)+'</div><small>'+ps[0].month.w+'–'+ps[0].month.l+' dari '+ps[0].month.s+' sesi</small></div>'+
+    '<div class="aw"><div class="ic">❤️</div><h3>Most loyal player</h3><div class="who">'+esc(loyal.name)+'</div><small>'+loyal.month.m+' match · '+loyal.month.s+' sesi</small></div>'+
+    '<div class="aw"><div class="ic">🏆</div><h3>Tonight\'s winners</h3><div class="who" style="font-size:14px">'+esc(wins)+'</div><small>pemenang tiap sesi</small></div>';
+  document.getElementById('monthSum').textContent=MONTH.sessions.length+' sesi · '+ps.length+' pemain';
+  document.getElementById('monthLbl').textContent='Bulan selesai · rating akhir dipakai untuk promosi';
+  var mv=ps.map(function(p){var to=p.elo>=1800?'D3':p.elo<1150?'D1':'D2';return{p:p,to:to};});
+  pr.innerHTML='<tr><th>Pemain</th><th class="n">Rating akhir</th><th>Bulan depan</th></tr>'+mv.sort(function(a,b){return b.p.elo-a.p.elo;}).map(function(m){
+    var c=m.to==='D3'?'<span class="chip v">🚀 Promoted → Division 3</span>':m.to==='D1'?'<span class="chip no">🔄 Moved down → Division 1</span>':'<span class="chip">Tetap Division 2</span>';
+    return '<tr><td>'+nmH(m.p)+'</td><td class="n">'+eloH(m.p.elo)+'</td><td>'+c+'</td></tr>';}).join('');
+}
+
+/* ---------- flow ---------- */
+function finishSession(){while(!S.done)stepRound(S);}
+function goto(n,noScroll){
+  state.step=n;
+  document.querySelectorAll('#steps button').forEach(function(b){var s=+b.getAttribute('data-s');b.classList.toggle('on',s===n);b.classList.toggle('done',s<n);});
+  if(!noScroll){var el=document.getElementById('s'+n);if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-60,behavior:'smooth'});}
+}
+document.getElementById('steps').addEventListener('click',function(e){var b=e.target.closest('button');if(b)goto(+b.getAttribute('data-s'));});
+document.getElementById('bRound').onclick=function(){stepRound(S);render4();if(S.done){render5();}};
+document.getElementById('bFinish').onclick=function(){finishSession();render4();render5();goto(5);};
+document.getElementById('bMonth').onclick=function(){playMonth();render4();render5();render6();};
+document.getElementById('bAll').onclick=function(){finishSession();playMonth();render4();render5();render6();goto(6);};
+document.getElementById('bSeed').onclick=function(){seed=Math.floor(Math.random()*9e6)+1e6;init();};
+init();
+})();
+</script>
+</body></html>
