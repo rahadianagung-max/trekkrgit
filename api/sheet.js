@@ -1668,6 +1668,13 @@ const netlifyHandler = async (event) => {
     if (path === "account/register-session" && method === "POST") return await accountRegisterSession(body);
     if (path === "funnel" && method === "POST") return await funnelLog(body);
     if (path === "funnel/stats" && method === "GET") return await funnelStats(params);
+    if (path === "email/overview" && method === "GET") return await emOverview(params);
+    if (path === "email/preview" && method === "POST") return await emPreview(body);
+    if (path === "email/save" && method === "POST") return await emSave(body);
+    if (path === "email/sync" && method === "POST") return await emSync(body);
+    if (path === "email/test" && method === "POST") return await emTest(body);
+    if (path === "email/send" && method === "POST") return await emSend(body);
+    if (path === "email/optin" && method === "POST") return await emOptin(body);
     if (path === "account/change-password" && method === "POST") return await accountChangePassword(body);
     if (path === "account/forgot" && method === "POST") return await accountForgot(body);
     if (path === "account/profile" && method === "PUT") return await accountProfile(body);
@@ -2238,6 +2245,339 @@ function verifyAdminKey(key, roles) {
   return p;
 }
 const ADMIN_KEY_DENIED = { error: "Sesi admin tidak valid / kedaluwarsa. Silakan logout lalu login ulang." };
+
+// ── Email marketing (superadmin Email tab) ──────────────────────────────────
+// Segmen dibangun dari database (akun login, klaim profil, lead TurnamenPadel,
+// lead venue), disinkron ke daftar kontak Brevo, lalu dikirim sebagai campaign
+// Brevo. Kunci Brevo hanya di server (BREVO_API_KEY). Semua endpoint superadmin,
+// kecuali email/optin (publik, ditandatangani HMAC per email).
+const EM_KEY = "email1";
+const EM_SEGS = {
+  A: { label: "Punya akun login", brand: "trekkr", list: "Trekkr · Seg A · Akun login" },
+  B: { label: "Klaim profil, belum login", brand: "trekkr", list: "Trekkr · Seg B · Klaim profil" },
+  C: { label: "Lead TurnamenPadel", brand: "tp", list: "TurnamenPadel · Seg C · Lead" },
+  D: { label: "Lead venue", brand: "trekkr", list: "Trekkr · Seg D · Lead venue" },
+};
+const EM_ATTRS = ["SEGMENT", "CITY", "LEVEL", "MATCHES", "VENUE", "PASSPORT_URL", "OPTIN_URL"];
+const EM_DEFAULTS = {
+  A: { subject: "Cara baru main padel di level kamu", preheader: "Buat match sendiri, ajak pemain selevel, hasilnya masuk rating.",
+    heading: "Halo {nama}, ada yang baru di Trekkr",
+    body: "Sekarang kamu bisa **membuat match sendiri** di lapangan yang kamu booking, mengajak pemain di level yang sama, dan hasilnya masuk ke rating setelah dikonfirmasi lawan.",
+    boxTitle: "Baru di Trekkr", bullets: "➕ Regular Match — buat & bagikan lewat WhatsApp\n⚡ Liga Trekkr — 8 match per malam, sesuai divisi\n📅 Jadwal sesi PlayRank di venue sekitar {kota}",
+    buttonLabel: "Cari match minggu ini →", buttonUrl: "https://trekkr.online/#play", note: "Level kamu sekarang: **{level}**.",
+    optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
+  B: { subject: "Rating padel kamu sudah ada di Trekkr", preheader: "{match} match tercatat atas nama kamu — lihat level & perkembanganmu.",
+    heading: "Halo {nama}, profil padel kamu sudah siap 🎾",
+    body: "Trekkr mencatat **{match} match** atas nama kamu dari sesi PlayRank, turnamen, dan liga di venue seperti **{venue}**.",
+    boxTitle: "Di profil kamu", bullets: "📈 Level & perkembangan rating\n🗂️ Riwayat setiap match & partner\n🎯 Match yang pas dengan level kamu",
+    buttonLabel: "Lihat profil saya →", buttonUrl: "{passport}", note: "Cukup login dengan email ini — tanpa password.",
+    optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
+  C: { subject: "Rencana turnamen padel kamu", preheader: "Hitung ulang biaya, jadwal & jumlah lapangan dalam 1 menit.",
+    heading: "Halo {nama}, masih merencanakan turnamen?",
+    body: "Kamu pernah memakai kalkulator TurnamenPadel. Sekarang kamu bisa menjalankan turnamennya juga: pendaftaran peserta, drawing, skor live, dan hasil yang langsung tercatat ke ranking pemain.",
+    boxTitle: "Yang bisa kamu lakukan", bullets: "🧮 Hitung biaya, durasi & kebutuhan lapangan\n📝 Form pendaftaran & pembayaran peserta\n📺 Skor live & layar TV di venue",
+    buttonLabel: "Buka kalkulator turnamen →", buttonUrl: "https://turnamenpadel.com/calculator", note: "",
+    optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
+  D: { subject: "Liga mingguan untuk venue kamu", preheader: "Pemain datang tiap minggu, main 8 match di level yang sama.",
+    heading: "Halo {nama}, terima kasih sudah tertarik dengan Trekkr",
+    body: "Venue yang sudah memakai Trekkr menjalankan sesi PlayRank dan **Liga Trekkr** — malam liga mingguan per divisi, 8 match per pemain, dengan leaderboard dan promosi tiap bulan.",
+    boxTitle: "Untuk venue", bullets: "📊 Halaman venue + leaderboard pemain\n⚡ Liga mingguan dengan pendaftaran online\n🖥️ Admin skor & layar TV gratis",
+    buttonLabel: "Lihat simulasi satu bulan Liga →", buttonUrl: "https://liga.trekkr.online/simulasi", note: "",
+    optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
+};
+const EM_FIELDS = Object.keys(EM_DEFAULTS.A);
+// {token} → nama atribut kontak Brevo + contoh untuk pratinjau.
+const EM_TOKENS = {
+  nama: ["FIRSTNAME", "kamu", "Budi"], match: ["MATCHES", "beberapa", "24"], kota: ["CITY", "kotamu", "Jakarta"],
+  level: ["LEVEL", "-", "Bronze"], venue: ["VENUE", "venue favoritmu", "Padel Club"],
+  passport: ["PASSPORT_URL", "https://trekkr.online/join", "https://trekkr.online/player/budi"],
+};
+
+function emNorm(e) { const s = String(e || "").trim().toLowerCase(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : ""; }
+function emOptinSig(email) { return crypto.createHmac("sha256", authSecret()).update("optin:" + email).digest("base64url").slice(0, 32); }
+function emOptinUrl(email, seg) {
+  return `https://trekkr.online/kabari?e=${Buffer.from(email).toString("base64url")}&t=${emOptinSig(email)}&s=${seg}`;
+}
+function emUtm(url, seg) {
+  const u = String(url || "");
+  if (!/^https?:\/\//i.test(u)) return u;
+  const [base, hash] = u.split("#");
+  const q = `utm_source=brevo&utm_medium=email&utm_campaign=${EM_KEY}&utm_content=seg${seg}`;
+  return base + (base.includes("?") ? "&" : "?") + q + (hash != null ? "#" + hash : "");
+}
+
+async function brevo(method, path, body) {
+  const key = String(process.env.BREVO_API_KEY || "").trim();
+  if (!key) throw new Error("BREVO_API_KEY belum diset");
+  const r = await fetch("https://api.brevo.com/v3/" + path, {
+    method, headers: { "api-key": key, "Content-Type": "application/json", Accept: "application/json" },
+    body: body == null ? undefined : JSON.stringify(body),
+  });
+  const t = await r.text(); let d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+  if (!r.ok) { const err = new Error((d && d.message) || `Brevo ${path} ${r.status}`); err.status = r.status; err.code = d && d.code; throw err; }
+  return d;
+}
+
+// Build { email → contact } with exactly one segment per email (priority A, B, D, C).
+async function emBuildAudience() {
+  const get = (q) => supaRest("GET", q).catch((e) => { console.error("[email]", e.message); return []; });
+  const [users, players, pclaims, rclaims, calc, calcRes, tl, tll, venues, admins, optins, consents] = await Promise.all([
+    supaAdmin("GET", "users?per_page=1000").then((d) => (d && d.users) || []).catch(() => []),
+    get("players?select=name,display_name,region,clubs,claim_email,user_id&or=(claim_email.not.is.null,user_id.not.is.null)"),
+    get("profile_claims?select=email,player_name"), get("reg_claims?select=email,player_name"),
+    get("calculator_leads?select=email,name"), get("calculator_results?select=email"),
+    get("tournament_leads?select=email,pic_name,location"), get("tournament_leads_legacy?select=email,name,city"),
+    get("venue_leads?select=email,pic_name,region,venue_community"), get("admins?select=email"),
+    get("email_optins?select=email"), get("account_consents?select=email,marketing&marketing=eq.true"),
+  ]);
+  let lb = [];
+  try { lb = JSON.parse((await cached60("leaderboard:" + JSON.stringify({ limit: "5000" }), () => getNationalLeaderboard({ limit: "5000" }))).body).leaderboard || []; } catch (e) {}
+  const lbBy = {}; lb.forEach((p) => { lbBy[normName(p.name)] = p; });
+  const pByUser = {}, pByEmail = {};
+  players.forEach((p) => { if (p.user_id) pByUser[p.user_id] = p; const e = emNorm(p.claim_email); if (e) pByEmail[e] = p; });
+  const adminSet = new Set(admins.map((a) => emNorm(a.email)).filter(Boolean));
+  const optSet = new Set(optins.map((o) => emNorm(o.email)).concat(consents.map((c) => emNorm(c.email))).filter(Boolean));
+  const out = {};
+  const first = (s) => String(s || "").trim().split(/\s+/)[0] || "";
+  function playerAttrs(p) {
+    if (!p) return {};
+    const l = lbBy[normName(p.name)] || {};
+    const n = l.totalMatches || 0;
+    return {
+      name: publicName(p.name, p.display_name || l.displayName), city: String(p.region || l.region || "").split(",")[0].trim(),
+      matches: n, level: n >= CALIB_MATCHES ? (l.level || "") : n ? "Kalibrasi" : "Belum ada rating",
+      venue: String(p.clubs || l.clubs || "").split(/[,;]/)[0].trim(),
+      passport: "https://trekkr.online/player/" + String(p.name || "").toLowerCase().replace(/[^a-z0-9]+/g, ""),
+    };
+  }
+  function add(email, seg, info) {
+    const e = emNorm(email);
+    if (!e || adminSet.has(e) || out[e]) return;
+    out[e] = Object.assign({ email: e, seg, name: "", city: "", matches: 0, level: "", venue: "", passport: "" }, info || {});
+  }
+  users.forEach((u) => { const e = emNorm(u.email); const p = pByUser[u.id] || pByEmail[e];
+    add(e, "A", Object.assign({ name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || "" }, playerAttrs(p))); });
+  players.forEach((p) => { if (p.claim_email) add(p.claim_email, "B", playerAttrs(p)); });
+  const byName = {}; players.forEach((p) => { byName[normName(p.name)] = p; });
+  pclaims.concat(rclaims).forEach((c) => add(c.email, "B", playerAttrs(byName[normName(c.player_name)]) || {}));
+  venues.forEach((v) => add(v.email, "D", { name: v.pic_name || "", city: String(v.region || "").split(",")[0].trim(), venue: v.venue_community || "" }));
+  calc.forEach((c) => add(c.email, "C", { name: c.name || "" }));
+  tl.forEach((c) => add(c.email, "C", { name: c.pic_name || "", city: c.location || "" }));
+  tll.forEach((c) => add(c.email, "C", { name: c.name || "", city: c.city || "" }));
+  calcRes.forEach((c) => add(c.email, "C", {}));
+  Object.values(out).forEach((c) => { c.firstName = first(c.name); c.optin = optSet.has(c.email); });
+  return out;
+}
+
+async function emLists() {
+  const d = await brevo("GET", "contacts/lists?limit=50");
+  const by = {};
+  ((d && d.lists) || []).forEach((l) => { Object.keys(EM_SEGS).forEach((s) => { if (l.name === EM_SEGS[s].list) by[s] = l; }); });
+  return by;
+}
+async function emEnsureList(seg, lists) {
+  if (lists[seg]) return lists[seg].id;
+  const f = await brevo("GET", "contacts/folders?limit=50");
+  let folder = ((f && f.folders) || []).find((x) => x.name === "Trekkr Email") || null;
+  if (!folder) folder = await brevo("POST", "contacts/folders", { name: "Trekkr Email" });
+  const l = await brevo("POST", "contacts/lists", { name: EM_SEGS[seg].list, folderId: folder.id });
+  lists[seg] = { id: l.id, name: EM_SEGS[seg].list, uniqueSubscribers: 0 };
+  return l.id;
+}
+
+async function emTemplates() {
+  const rows = await supaRest("GET", "email_templates?select=seg,fields,brevo_campaign_id,updated_at,updated_by").catch(() => []);
+  const out = {};
+  Object.keys(EM_SEGS).forEach((s) => { out[s] = { seg: s, fields: Object.assign({}, EM_DEFAULTS[s]), campaignId: null, updatedAt: null, updatedBy: null }; });
+  (rows || []).forEach((r) => { if (out[r.seg]) Object.assign(out[r.seg], { fields: Object.assign({}, EM_DEFAULTS[r.seg], r.fields || {}), campaignId: r.brevo_campaign_id || null, updatedAt: r.updated_at, updatedBy: r.updated_by }); });
+  return out;
+}
+
+// Render a template to email HTML. mode "brevo" → Brevo merge tags; "preview" → sample values.
+function emRender(seg, f, mode) {
+  const tp = EM_SEGS[seg].brand === "tp";
+  const accent = tp ? "#0A0A0B" : "#FF6A00";
+  const tok = (s, url) => String(s || "").replace(/\{(\w+)\}/g, (m, k) => {
+    const t = EM_TOKENS[k]; if (!t) return m;
+    if (mode === "preview") return t[2];
+    return `{{ contact.${t[0]} | default : '${t[1]}' }}`;
+  });
+  const txt = (s) => tok(escHtml(s)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  const btnUrl = /^\{passport\}$/.test(String(f.buttonUrl || "").trim())
+    ? (mode === "preview" ? EM_TOKENS.passport[2] : `{{ contact.PASSPORT_URL | default : '${emUtm("https://trekkr.online/join", seg)}' }}`)
+    : emUtm(tok(f.buttonUrl), seg);
+  const optUrl = mode === "preview" ? "#" : `{{ contact.OPTIN_URL }}`;
+  const P = (h) => `<p style="margin:0 0 14px;font-family:${EMAIL_FONT};font-size:15px;line-height:1.6;color:#27272A">${h}</p>`;
+  const body = String(f.body || "").split(/\n\s*\n/).map((p) => P(txt(p).replace(/\n/g, "<br>"))).join("");
+  const bullets = String(f.bullets || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  const box = bullets.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 18px;background:#FAFAFA;border:1px solid #E4E4E7;border-radius:10px"><tr><td style="padding:12px 16px">`
+    + (f.boxTitle ? `<div style="font-family:${EMAIL_FONT};font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#71717A;margin-bottom:6px">${txt(f.boxTitle)}</div>` : "")
+    + bullets.map((b) => `<div style="font-family:${EMAIL_FONT};font-size:14px;line-height:1.5;color:#27272A;padding:4px 0">${txt(b)}</div>`).join("")
+    + `</td></tr></table>` : "";
+  const button = f.buttonLabel ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px"><tr><td align="center" bgcolor="${accent}" style="border-radius:10px;background:${accent}">`
+    + `<a href="${btnUrl}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:${EMAIL_FONT};font-size:15px;font-weight:700;line-height:1;color:${tp ? "#FF6A00" : "#FFFFFF"};text-decoration:none;border-radius:10px">${txt(f.buttonLabel)}</a></td></tr></table>` : "";
+  const note = f.note ? `<p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:13px;line-height:1.5;color:#71717A">${txt(f.note)}</p>` : "";
+  const optin = f.optinLabel ? `<tr><td style="padding:18px 32px 24px;border-top:1px solid #E4E4E7">`
+    + `<p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:14px;font-weight:700;color:#27272A">${txt(f.optinText)}</p>`
+    + `<a href="${optUrl}" target="_blank" style="display:inline-block;padding:9px 16px;border:1.5px solid ${tp ? "#0A0A0B" : "#FF6A00"};border-radius:8px;font-family:${EMAIL_FONT};font-size:13px;font-weight:700;color:${tp ? "#0A0A0B" : "#FF6A00"};text-decoration:none">${txt(f.optinLabel)}</a></td></tr>` : "";
+  const head = tp
+    ? `<tr><td style="background:#0A0A0B;padding:22px 32px"><span style="font-family:${EMAIL_FONT};font-size:20px;font-weight:800;letter-spacing:1px;color:#FF6A00">TURNAMEN PADEL</span></td></tr>`
+    : `<tr><td style="background-color:#FF6A00;background-image:linear-gradient(135deg,#FF6A00,#FF9A3D);padding:22px 32px"><span style="font-family:${EMAIL_FONT};font-size:22px;font-weight:800;letter-spacing:1px;color:#FFFFFF">TREKKR</span><span style="font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:rgba(255,255,255,.9)">&nbsp;&nbsp;Padel Rankings · Indonesia</span></td></tr>`;
+  const unsub = mode === "preview" ? "#" : "{{ unsubscribe }}";
+  const brandLine = tp ? "TurnamenPadel · by Trekkr" : "Trekkr — ELO rankings for padel in Indonesia";
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>`
+    + `<body style="margin:0;padding:0;background:#F5F5F7"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F5F5F7">${tok(escHtml(f.preheader || ""))}</div>`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F5F7"><tr><td align="center" style="padding:28px 14px">`
+    + `<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E4E4E7">`
+    + head
+    + `<tr><td style="padding:30px 32px 22px"><h1 style="margin:0 0 14px;font-family:${EMAIL_FONT};font-size:22px;line-height:1.3;font-weight:800;color:#0D0D0D">${txt(f.heading)}</h1>${body}${box}${button}${note}</td></tr>`
+    + optin
+    + `<tr><td style="padding:18px 32px;border-top:1px solid #E4E4E7;background:#FAFAFA"><p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:12px;font-weight:700;color:#3F3F46">${brandLine}</p>`
+    + `<p style="margin:0;font-family:${EMAIL_FONT};font-size:11px;line-height:1.5;color:#9A9AA2">Trekkr · Emerald View, Bintaro, Tangerang Selatan 15227, Indonesia. Kamu menerima email ini karena alamat ini pernah dipakai di ${tp ? "TurnamenPadel" : "Trekkr"}. <a href="${unsub}" style="color:#9A9AA2">Berhenti berlangganan</a></p></td></tr>`
+    + `</table></td></tr></table></body></html>`;
+}
+
+async function emOverview(params) {
+  if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
+  const aud = await emBuildAudience();
+  const segs = {};
+  Object.keys(EM_SEGS).forEach((s) => { segs[s] = Object.assign({ seg: s, count: 0, optin: 0, brevoListId: null, brevoCount: null }, EM_SEGS[s]); });
+  Object.values(aud).forEach((c) => { segs[c.seg].count++; if (c.optin) segs[c.seg].optin++; });
+  const tpl = await emTemplates();
+  let account = null, brevoErr = null;
+  try {
+    const [acc, lists] = await Promise.all([brevo("GET", "account"), emLists()]);
+    const plan = (acc.plan || []).find((p) => p.creditsType === "sendLimit") || (acc.plan || [])[0] || {};
+    account = { plan: plan.type || "", credits: plan.credits != null ? plan.credits : null };
+    Object.keys(lists).forEach((s) => { segs[s].brevoListId = lists[s].id; segs[s].brevoCount = lists[s].uniqueSubscribers != null ? lists[s].uniqueSubscribers : null; });
+  } catch (e) { brevoErr = e.message; }
+  const camps = {};
+  await Promise.all(Object.keys(tpl).filter((s) => tpl[s].campaignId).map(async (s) => {
+    try {
+      const c = await brevo("GET", `emailCampaigns/${tpl[s].campaignId}?statistics=globalStats`);
+      const g = (c.statistics && c.statistics.globalStats) || {};
+      camps[s] = { id: c.id, name: c.name, status: c.status, sentDate: c.sentDate || null, scheduledAt: c.scheduledAt || null,
+        stats: { sent: g.sent || 0, delivered: g.delivered || 0, opens: g.uniqueViews || 0, clicks: g.uniqueClicks || 0,
+          unsub: g.unsubscriptions || 0, bounces: (g.hardBounces || 0) + (g.softBounces || 0), spam: g.complaints || 0 } };
+    } catch (e) { camps[s] = { id: tpl[s].campaignId, error: e.message }; }
+  }));
+  const optinsBySeg = {};
+  try { (await supaRest("GET", `email_optins?select=seg&source=eq.${EM_KEY}`) || []).forEach((o) => { optinsBySeg[o.seg] = (optinsBySeg[o.seg] || 0) + 1; }); } catch (e) {}
+  return respond(200, {
+    campaignKey: EM_KEY, total: Object.keys(aud).length, optin: Object.values(aud).filter((c) => c.optin).length,
+    segments: Object.values(segs), templates: tpl, campaigns: camps, optinsFromEmail: optinsBySeg, account, brevoError: brevoErr,
+    tokens: Object.keys(EM_TOKENS), sender: { name: process.env.BREVO_SENDER_NAME || "Trekkr", email: process.env.BREVO_SENDER_EMAIL || "" },
+  });
+}
+
+async function emPreview(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
+  const seg = String(body.seg || ""); if (!EM_SEGS[seg]) return respond(400, { error: "Segmen tidak dikenal" });
+  const f = Object.assign({}, EM_DEFAULTS[seg], emCleanFields(body.fields));
+  return respond(200, { html: emRender(seg, f, "preview"), subject: String(f.subject).replace(/\{(\w+)\}/g, (m, k) => (EM_TOKENS[k] ? EM_TOKENS[k][2] : m)) });
+}
+function emCleanFields(x) {
+  const out = {};
+  EM_FIELDS.forEach((k) => { if (x && x[k] != null) out[k] = String(x[k]).slice(0, k === "body" || k === "bullets" ? 3000 : 300); });
+  return out;
+}
+function emBrevoSubject(s) { return String(s || "").replace(/\{(\w+)\}/g, (m, k) => (EM_TOKENS[k] ? `{{ contact.${EM_TOKENS[k][0]} | default : '${EM_TOKENS[k][1]}' }}` : m)); }
+
+// Save template; optionally create/update the Brevo campaign draft for this segment.
+async function emSave(body) {
+  const ak = verifyAdminKey(body && body.adminKey, ["superadmin"]);
+  if (!ak) return respond(401, ADMIN_KEY_DENIED);
+  const seg = String(body.seg || ""); if (!EM_SEGS[seg]) return respond(400, { error: "Segmen tidak dikenal" });
+  const f = Object.assign({}, EM_DEFAULTS[seg], emCleanFields(body.fields));
+  if (!f.subject.trim()) return respond(400, { error: "Subjek wajib diisi" });
+  const cur = (await emTemplates())[seg];
+  let campaignId = cur.campaignId, campaign = null;
+  if (body.pushToBrevo) {
+    const lists = await emLists();
+    const listId = await emEnsureList(seg, lists);
+    const sender = { name: EM_SEGS[seg].brand === "tp" ? "TurnamenPadel" : (process.env.BREVO_SENDER_NAME || "Trekkr"), email: process.env.BREVO_SENDER_EMAIL };
+    if (!sender.email) return respond(500, { error: "BREVO_SENDER_EMAIL belum diset" });
+    const payload = { subject: emBrevoSubject(f.subject), previewText: emBrevoSubject(f.preheader), sender, htmlContent: emRender(seg, f, "brevo"), recipients: { listIds: [listId] } };
+    let existing = null;
+    if (campaignId) { try { existing = await brevo("GET", `emailCampaigns/${campaignId}`); } catch (e) { existing = null; } }
+    if (existing && existing.status !== "draft") return respond(400, { error: `Campaign segmen ${seg} sudah berstatus "${existing.status}" — tidak bisa diubah lagi.` });
+    if (existing) await brevo("PUT", `emailCampaigns/${campaignId}`, payload);
+    else { const c = await brevo("POST", "emailCampaigns", Object.assign({ name: `${EM_KEY} · Seg ${seg} · ${EM_SEGS[seg].label}` }, payload)); campaignId = c.id; }
+    campaign = { id: campaignId, status: "draft" };
+  }
+  const row = { seg, fields: f, brevo_campaign_id: campaignId || null, updated_at: new Date().toISOString(), updated_by: ak.u };
+  await supaRest("POST", "email_templates?on_conflict=seg", [row], "resolution=merge-duplicates,return=minimal");
+  return respond(200, { ok: true, campaign });
+}
+
+// Push the segment's contacts (with personalisation attributes) into its Brevo list.
+async function emSync(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
+  const want = body.seg && EM_SEGS[body.seg] ? [body.seg] : Object.keys(EM_SEGS);
+  const aud = Object.values(await emBuildAudience());
+  // Ensure custom attributes exist (Brevo returns 400 if already there).
+  await Promise.all(EM_ATTRS.map((a) => brevo("POST", `contacts/attributes/normal/${a}`, { type: "text" }).catch(() => null)));
+  const lists = await emLists();
+  const result = {};
+  for (const seg of want) {
+    const listId = await emEnsureList(seg, lists);
+    const rows = aud.filter((c) => c.seg === seg);
+    if (!rows.length) { result[seg] = { listId, sent: 0 }; continue; }
+    const jsonBody = rows.map((c) => ({ email: c.email, attributes: {
+      FIRSTNAME: c.firstName || "", SEGMENT: seg, CITY: c.city || "", LEVEL: c.level || "", MATCHES: c.matches ? String(c.matches) : "",
+      VENUE: c.venue || "", PASSPORT_URL: emUtm(c.passport || "https://trekkr.online/join", seg), OPTIN_URL: emOptinUrl(c.email, seg),
+    } }));
+    await brevo("POST", "contacts/import", { jsonBody, listIds: [listId], updateExistingContacts: true, emptyContactsAttributes: false });
+    // A contact belongs to one segment only: drop these emails from the other segment lists.
+    for (const other of Object.keys(EM_SEGS)) {
+      if (other === seg || !lists[other]) continue;
+      for (let i = 0; i < rows.length; i += 150) {
+        await brevo("POST", `contacts/lists/${lists[other].id}/contacts/remove`, { emails: rows.slice(i, i + 150).map((c) => c.email) }).catch(() => null);
+      }
+    }
+    result[seg] = { listId, sent: rows.length };
+  }
+  return respond(200, { ok: true, result, note: "Brevo memproses impor di latar belakang (biasanya < 1 menit)." });
+}
+
+async function emTest(body) {
+  if (!verifyAdminKey(body && body.adminKey, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
+  const seg = String(body.seg || ""); const to = emNorm(body.email);
+  if (!EM_SEGS[seg] || !to) return respond(400, { error: "Segmen / email tujuan tidak valid" });
+  const t = (await emTemplates())[seg];
+  if (!t.campaignId) return respond(400, { error: "Simpan ke Brevo dulu untuk membuat campaign." });
+  // Brevo only sends tests to existing contacts.
+  await brevo("POST", "contacts", { email: to, updateEnabled: true }).catch(() => null);
+  await brevo("POST", `emailCampaigns/${t.campaignId}/sendTest`, { emailTo: [to] });
+  return respond(200, { ok: true });
+}
+
+async function emSend(body) {
+  const ak = verifyAdminKey(body && body.adminKey, ["superadmin"]);
+  if (!ak) return respond(401, ADMIN_KEY_DENIED);
+  const seg = String(body.seg || "");
+  if (!EM_SEGS[seg]) return respond(400, { error: "Segmen tidak dikenal" });
+  if (String(body.confirm || "") !== `KIRIM ${seg}`) return respond(400, { error: `Ketik "KIRIM ${seg}" untuk konfirmasi` });
+  const t = (await emTemplates())[seg];
+  if (!t.campaignId) return respond(400, { error: "Belum ada campaign untuk segmen ini." });
+  const c = await brevo("GET", `emailCampaigns/${t.campaignId}`);
+  if (c.status !== "draft") return respond(400, { error: `Campaign sudah berstatus "${c.status}".` });
+  if (body.scheduledAt) await brevo("PUT", `emailCampaigns/${t.campaignId}`, { scheduledAt: String(body.scheduledAt) });
+  else await brevo("POST", `emailCampaigns/${t.campaignId}/sendNow`);
+  console.log("[email] send", seg, t.campaignId, "by", ak.u, body.scheduledAt || "now");
+  return respond(200, { ok: true, scheduledAt: body.scheduledAt || null });
+}
+
+// Public: "Ya, kabari saya" from the email (signed per address).
+async function emOptin(body) {
+  const b = body || {};
+  let email = "";
+  try { email = emNorm(Buffer.from(String(b.e || ""), "base64url").toString("utf8")); } catch (e) {}
+  if (!email || !authSecret() || String(b.t || "") !== emOptinSig(email)) return respond(400, { error: "Link tidak valid" });
+  const seg = EM_SEGS[b.s] ? b.s : null;
+  await supaRest("POST", "email_optins?on_conflict=email", [{ email, seg, source: EM_KEY, opted_in_at: new Date().toISOString() }], "resolution=ignore-duplicates,return=minimal");
+  return respond(200, { ok: true });
+}
 
 // ── Funnel kampanye klaim (Passport terkunci → klik → mulai masuk → masuk) ──
 // Anonim: hanya nama event, nama profil yang dilihat, dan id acak per browser.

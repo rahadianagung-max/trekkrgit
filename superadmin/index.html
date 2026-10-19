@@ -167,6 +167,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
       <button class="a-tab" onclick="switchTab('schedule');loadScheduleAdmin()">Schedule</button>
       <button class="a-tab" onclick="switchTab('admins')">Admins</button>
       <button class="a-tab" onclick="switchTab('tiers');loadTiers()">Calibration</button>
+      <button class="a-tab" onclick="switchTab('email');emLoad()">Email</button>
     </div>
     <!-- PLAYERS -->
     <div class="tab-pane active" id="tab-players">
@@ -333,6 +334,53 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
         <div class="section-title">CALIBRATION FLAGS · OPEN</div>
         <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Pemain yang naik ELO tidak wajar selama masa kalibrasi (kemungkinan seed terlalu rendah / sandbagging). Tinjau, lalu <b>Resolve</b> untuk menandai sudah diperiksa.</p>
         <div id="cf-list"><p style="color:var(--muted2);font-size:12px">Memuat…</p></div>
+      </div>
+    </div>
+
+    <!-- EMAIL MARKETING -->
+    <div class="tab-pane" id="tab-email">
+      <div class="em-kpis" id="emKpis"><div class="em-kpi"><small>Memuat…</small></div></div>
+      <div class="section">
+        <div class="em-hd"><div class="section-title">SEGMEN AUDIENS</div><button class="btn btn-primary" onclick="emSyncSeg('')">⟳ Sinkron semua ke Brevo</button></div>
+        <p style="font-size:11px;color:var(--muted2);margin:0 0 12px;line-height:1.5">Satu email = satu segmen (prioritas A → B → D → C). Sinkron mengirim email, nama depan, segmen, kota, level, jumlah match, venue, link passport &amp; link opt-in ke daftar kontak Brevo. Kontak yang sudah berhenti berlangganan tetap diblokir oleh Brevo.</p>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Segmen</th><th>Kontak</th><th>Izin</th><th>Brand</th><th>Di Brevo</th><th></th></tr></thead><tbody id="emSegs"></tbody></table></div>
+        <div class="status-msg" id="emSyncSt"></div>
+      </div>
+      <div class="section">
+        <div class="em-hd"><div class="section-title">EMAIL #1 · EDITOR</div><div class="em-segbtns" id="emSegBtns"></div></div>
+        <div class="em-ed">
+          <div>
+            <div class="em-camp" id="emCamp"></div>
+            <div class="field"><label class="field-label">Subjek</label><input class="field-input em-f" data-k="subject"/></div>
+            <div class="field"><label class="field-label">Preview (teks pratinjau inbox)</label><input class="field-input em-f" data-k="preheader"/></div>
+            <div class="field"><label class="field-label">Judul</label><input class="field-input em-f" data-k="heading"/></div>
+            <div class="field"><label class="field-label">Isi (baris kosong = paragraf baru, **tebal**)</label><textarea class="field-textarea em-f" data-k="body" rows="4"></textarea></div>
+            <div class="field"><label class="field-label">Judul kotak</label><input class="field-input em-f" data-k="boxTitle"/></div>
+            <div class="field"><label class="field-label">Poin kotak (satu per baris)</label><textarea class="field-textarea em-f" data-k="bullets" rows="3"></textarea></div>
+            <div class="field-row"><div class="field"><label class="field-label">Teks tombol</label><input class="field-input em-f" data-k="buttonLabel"/></div>
+              <div class="field"><label class="field-label">Link tombol</label><input class="field-input em-f" data-k="buttonUrl"/></div></div>
+            <div class="field"><label class="field-label">Catatan kecil di bawah tombol</label><input class="field-input em-f" data-k="note"/></div>
+            <div class="field-row"><div class="field"><label class="field-label">Teks ajakan opt-in</label><input class="field-input em-f" data-k="optinText"/></div>
+              <div class="field"><label class="field-label">Tombol opt-in</label><input class="field-input em-f" data-k="optinLabel"/></div></div>
+            <p style="font-size:11px;color:var(--muted2);line-height:1.5;margin:0 0 12px">Personalisasi: <code>{nama}</code> <code>{match}</code> <code>{kota}</code> <code>{level}</code> <code>{venue}</code> · Link tombol <code>{passport}</code> = passport masing-masing pemain. Setiap link otomatis diberi penanda <code>utm_campaign=email1</code>.</p>
+            <div class="em-acts">
+              <button class="btn btn-ghost" onclick="emSave(false)">Simpan draft</button>
+              <button class="btn btn-primary" onclick="emSave(true)">Simpan ke Brevo</button>
+            </div>
+            <div class="em-acts" style="margin-top:10px">
+              <input class="field-input" id="emTestTo" type="email" placeholder="email untuk tes" style="flex:1;min-width:180px"/>
+              <button class="btn btn-ghost" onclick="emTest()">Kirim tes</button>
+              <button class="btn btn-primary" style="background:#FF5900 !important;color:#fff !important" onclick="emSendNow()">Kirim campaign…</button>
+            </div>
+            <div class="status-msg" id="emSt"></div>
+          </div>
+          <div><div class="field-label">Pratinjau (contoh data)</div><div class="em-subj" id="emSubj"></div><iframe id="emPrev" class="em-prev" title="Pratinjau email" sandbox=""></iframe></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">HASIL CAMPAIGN</div>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Segmen</th><th>Status</th><th>Terkirim</th><th>Dibuka</th><th>Klik</th><th>Opt-in</th><th>Unsub</th><th>Bounce</th></tr></thead><tbody id="emRes"></tbody></table></div>
+        <p style="font-size:11px;color:var(--muted2);margin:10px 0 0;line-height:1.5">Angka buka &amp; klik dari Brevo (bisa tertunda beberapa menit). Opt-in = klik "Ya, kabari saya" yang tercatat di Trekkr.</p>
       </div>
     </div>
   </div>
@@ -897,6 +945,106 @@ async function impSubmit(){
     prog.innerHTML='<div class="imp-done"><b>✓ '+d.imported+' match diimpor</b> — semua sekaligus, urutan benar. '+((d.players||[]).length)+' pemain diperbarui.'+(top?('<table class="imp-tbl" style="margin-top:10px"><thead><tr><th>Player</th><th>ELO</th><th>W</th><th>L</th></tr></thead><tbody>'+top+'</tbody></table>'):"")+'</div>';
     if(typeof loadPlayers==="function")loadPlayers();
   }catch(e){ prog.innerHTML='<div class="imp-note err">Error jaringan: '+erEsc(e.message||e)+'</div>'; if(btn)btn.disabled=false; }
+}
+</script>
+
+<style>
+.em-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.em-kpi{background:#fff;border:2px solid #090D14;box-shadow:4px 4px 0 #090D14;padding:14px}
+.em-kpi.dk{background:#090D14;color:#fff;box-shadow:4px 4px 0 #FF5900}
+.em-kpi small{display:block;font:800 10px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+.em-kpi.dk small{color:rgba(255,255,255,.65)}
+.em-kpi b{display:block;font:800 30px/1 'JetBrains Mono',monospace;margin-top:6px}
+.em-kpi.dk b{color:#D2F802}
+.em-kpi span{display:block;font-size:11.5px;color:#64748B;margin-top:6px}.em-kpi.dk span{color:rgba(255,255,255,.7)}
+.em-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.em-hd .section-title{margin:0}
+.em-segbtns{display:flex;border:2px solid #090D14}
+.em-segbtns button{border:0;background:#fff;padding:8px 14px;font:800 11px 'JetBrains Mono',monospace;cursor:pointer}
+.em-segbtns button+button{border-left:2px solid #090D14}
+.em-segbtns button.on{background:#090D14;color:#D2F802}
+.em-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.em-prev{width:100%;height:760px;border:2px solid #090D14;background:#F5F5F7}
+.em-subj{border:2px solid #090D14;border-bottom:0;background:#fff;padding:8px 10px;font-size:12.5px}
+.em-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.em-camp{border-left:4px solid #FF5900;background:#fff;padding:8px 10px;font-size:12px;margin-bottom:12px}
+.em-chip{display:inline-block;border:2px solid #090D14;padding:1px 6px;font:800 10px 'JetBrains Mono',monospace;text-transform:uppercase}
+.em-chip.tk{background:#FF5900;color:#fff}.em-chip.tp{background:#0A0A0B;color:#FF6A00}
+@media(max-width:900px){.em-kpis{grid-template-columns:1fr 1fr}.em-ed{grid-template-columns:1fr}.em-prev{height:620px}}
+</style>
+<script>
+// ── Email marketing (Brevo) ──
+var EM={data:null,seg:'B',fields:{},t:null};
+function emE(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function emMsg(id,t,ok){var el=document.getElementById(id);el.className='status-msg '+(ok?'success':'error');el.textContent=t;}
+async function emPost(path,body){var r=await fetch(crApi()+'/email/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({adminKey:AK()},body))});var d=await r.json().catch(function(){return {};});if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;}
+async function emLoad(){
+  document.getElementById('emKpis').innerHTML='<div class="em-kpi"><small>Memuat…</small></div>';
+  try{var r=await fetch(crApi()+'/email/overview?key='+encodeURIComponent(AK()));var d=await r.json();if(!r.ok)throw new Error(d.error||'Gagal');EM.data=d;}
+  catch(e){document.getElementById('emKpis').innerHTML='<div class="em-kpi"><small>Gagal memuat</small><span>'+emE(e.message)+'</span></div>';return;}
+  emRender();
+}
+function emRender(){
+  var d=EM.data,acc=d.account||{};
+  var pct=d.total?Math.round(d.optin/d.total*100):0;
+  document.getElementById('emKpis').innerHTML=
+    '<div class="em-kpi dk"><small>Kontak bisa dikirimi</small><b>'+d.total+'</b><span>Email unik · tanpa admin</span></div>'+
+    '<div class="em-kpi"><small>Izin marketing</small><b>'+d.optin+'</b><span>'+pct+'% dari kontak</span></div>'+
+    '<div class="em-kpi"><small>Kuota Brevo</small><b>'+(acc.credits!=null?acc.credits:'—')+'</b><span>'+(d.brevoError?'Brevo: '+emE(d.brevoError):'Paket '+emE(acc.plan||'')+' · kirim tersisa')+'</span></div>'+
+    '<div class="em-kpi"><small>Pengirim</small><b style="font-size:14px;line-height:1.3">'+emE(d.sender.email||'—')+'</b><span>'+emE(d.sender.name||'')+'</span></div>';
+  document.getElementById('emSegs').innerHTML=d.segments.map(function(s){
+    return '<tr><td><b>'+s.seg+' · '+emE(s.label)+'</b></td><td class="mono"><b>'+s.count+'</b></td><td>'+s.optin+'</td><td><span class="em-chip '+(s.brand==='tp'?'tp':'tk')+'">'+(s.brand==='tp'?'TurnamenPadel':'Trekkr')+'</span></td>'+
+      '<td>'+(s.brevoListId?(s.brevoCount!=null?s.brevoCount+' kontak':'ada'):'<span style="color:#B45309">Belum sinkron</span>')+'</td><td><button class="btn btn-ghost" onclick="emSyncSeg(\''+s.seg+'\')">Sinkron</button></td></tr>';
+  }).join('');
+  document.getElementById('emSegBtns').innerHTML=['A','B','C','D'].map(function(s){return '<button class="'+(s===EM.seg?'on':'')+'" onclick="emPick(\''+s+'\')">'+s+'</button>';}).join('');
+  var c=d.campaigns||{},op=d.optinsFromEmail||{};
+  document.getElementById('emRes').innerHTML=['A','B','C','D'].map(function(s){
+    var x=c[s];if(!x)return '<tr><td><b>'+s+'</b></td><td colspan="7" style="color:var(--muted2)">Belum ada campaign</td></tr>';
+    if(x.error)return '<tr><td><b>'+s+'</b></td><td colspan="7" style="color:#B91C1C">'+emE(x.error)+'</td></tr>';
+    var st=x.stats,p=function(n){return st.delivered?' <span style="color:var(--muted2)">('+Math.round(n/st.delivered*100)+'%)</span>':'';};
+    return '<tr><td><b>'+s+'</b></td><td>'+emE(x.status)+(x.scheduledAt&&x.status!=='sent'?' · '+emE(x.scheduledAt):'')+'</td><td>'+st.sent+'</td><td>'+st.opens+p(st.opens)+'</td><td>'+st.clicks+p(st.clicks)+'</td><td>'+(op[s]||0)+'</td><td>'+st.unsub+'</td><td>'+st.bounces+'</td></tr>';
+  }).join('');
+  emPick(EM.seg);
+}
+function emPick(s){
+  EM.seg=s;var t=EM.data.templates[s];EM.fields=Object.assign({},t.fields);
+  document.querySelectorAll('#emSegBtns button').forEach(function(b){b.classList.toggle('on',b.textContent===s);});
+  document.querySelectorAll('.em-f').forEach(function(el){el.value=EM.fields[el.dataset.k]||'';});
+  var c=(EM.data.campaigns||{})[s];
+  document.getElementById('emCamp').innerHTML='<b>Segmen '+s+'</b> · '+(t.campaignId?('Campaign Brevo #'+t.campaignId+' · status <b>'+emE(c&&c.status||'?')+'</b>'):'Belum disimpan ke Brevo')+(t.updatedAt?' · diubah '+emE(String(t.updatedAt).slice(0,16).replace('T',' '))+(t.updatedBy?' oleh '+emE(t.updatedBy):''):' · teks bawaan');
+  emPreview();
+}
+function emPreview(){
+  clearTimeout(EM.t);EM.t=setTimeout(async function(){
+    try{var d=await emPost('preview',{seg:EM.seg,fields:EM.fields});document.getElementById('emPrev').srcdoc=d.html;document.getElementById('emSubj').innerHTML='<b>Subjek:</b> '+emE(d.subject);}
+    catch(e){document.getElementById('emSubj').textContent='Pratinjau gagal: '+e.message;}
+  },300);
+}
+document.addEventListener('input',function(e){var el=e.target;if(!el.classList||!el.classList.contains('em-f'))return;EM.fields[el.dataset.k]=el.value;emPreview();});
+async function emSave(push){
+  if(push&&!confirm('Simpan segmen '+EM.seg+' ke Brevo sebagai draft campaign? Belum ada email yang dikirim.'))return;
+  try{var d=await emPost('save',{seg:EM.seg,fields:EM.fields,pushToBrevo:!!push});emMsg('emSt',push?'✓ Tersimpan di Brevo (campaign #'+d.campaign.id+', draft).':'✓ Draft tersimpan.',true);await emLoad();}
+  catch(e){emMsg('emSt',e.message,false);}
+}
+async function emSyncSeg(seg){
+  if(!confirm('Sinkron '+(seg?'segmen '+seg:'semua segmen')+' ke daftar kontak Brevo? Data yang dikirim: email, nama depan, kota, level, jumlah match, venue, link passport & opt-in.'))return;
+  emMsg('emSyncSt','Menyinkron…',true);
+  try{var d=await emPost('sync',seg?{seg:seg}:{});var r=d.result||{};emMsg('emSyncSt','✓ '+Object.keys(r).map(function(k){return k+': '+r[k].sent;}).join(' · ')+' kontak dikirim. '+(d.note||''),true);setTimeout(emLoad,4000);}
+  catch(e){emMsg('emSyncSt',e.message,false);}
+}
+async function emTest(){
+  var to=(document.getElementById('emTestTo').value||'').trim();if(!to){emMsg('emSt','Isi email tujuan tes.',false);return;}
+  try{await emPost('test',{seg:EM.seg,email:to});emMsg('emSt','✓ Email tes segmen '+EM.seg+' dikirim ke '+to+'. Personalisasi tes memakai data kontak itu (bisa kosong).',true);}
+  catch(e){emMsg('emSt',e.message,false);}
+}
+async function emSendNow(){
+  var s=EM.seg,seg=(EM.data.segments||[]).find(function(x){return x.seg===s;})||{};
+  var when=prompt('Kirim campaign segmen '+s+' ke '+(seg.brevoCount!=null?seg.brevoCount:seg.count)+' kontak.\n\nKosongkan untuk kirim SEKARANG, atau isi waktu jadwal (contoh 2026-10-21 19:30) dalam WIB:','');
+  if(when===null)return;
+  var sched=null;if(when.trim()){var m=when.trim().match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})$/);if(!m){emMsg('emSt','Format waktu: YYYY-MM-DD HH:MM',false);return;}sched=m[1]+'T'+m[2]+':'+m[3]+':00+07:00';}
+  var c=prompt('Ketik  KIRIM '+s+'  untuk konfirmasi.');if(c===null)return;
+  try{await emPost('send',{seg:s,confirm:c.trim(),scheduledAt:sched});emMsg('emSt',sched?'✓ Dijadwalkan '+when+' WIB.':'✓ Campaign segmen '+s+' sedang dikirim.',true);setTimeout(emLoad,3000);}
+  catch(e){emMsg('emSt',e.message,false);}
 }
 </script>
 

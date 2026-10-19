@@ -39,6 +39,7 @@
     { "source": "/claim", "destination": "/claim.html" },
     { "source": "/passport", "destination": "/passport.html" },
     { "source": "/match", "destination": "/match.html" },
+    { "source": "/kabari", "destination": "/kabari.html" },
     { "source": "/match/:code", "destination": "/match.html" },
     { "source": "/ranking", "destination": "/ranking.html" },
     { "source": "/series", "destination": "/series.html" },
