@@ -356,7 +356,8 @@
       });
       ((reg&&reg.matches)||[]).forEach(function(m){
         if(m.status!=='open'||m.visibility!=='public')return;
-        var c=(m.min_rating==null&&m.max_rating==null)?'':(m.min_rating!=null?m.min_rating:0)+'–'+(m.max_rating!=null?m.max_rating:'∞');
+        var lv=function(e){return PPI?PPI.tierOf(e).name:e;};
+        var c=(m.min_rating==null&&m.max_rating==null)?'All levels':(function(a,b){return a===b?a:a+' – '+b;})(m.min_rating!=null?lv(m.min_rating):'Beginner',m.max_rating!=null?lv(m.max_rating):'Platinum');
         out.push({kind:'rm',date:m.date,startTime:m.start_time,endTime:m.end_time,venue:m.venue,area:m.area,gameName:m.title||'Regular match',
           cat:m.gender==='Open'?'Mixed':m.gender,range:c,minR:m.min_rating,maxR:m.max_rating,format:m.format,capacity:m.max_players,pricePerPlayer:m.price_per_player,spotsLeft:m.spotsLeft,
           myStatus:m.me&&m.me.joined?'CONFIRMED':null,organiser:m.creator_name,href:'/match/'+encodeURIComponent(m.code)});
