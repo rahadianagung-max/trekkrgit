@@ -38,6 +38,8 @@
     { "source": "/sessions/:id", "destination": "/session.html" },
     { "source": "/claim", "destination": "/claim.html" },
     { "source": "/passport", "destination": "/passport.html" },
+    { "source": "/match", "destination": "/match.html" },
+    { "source": "/match/:code", "destination": "/match.html" },
     { "source": "/ranking", "destination": "/ranking.html" },
     { "source": "/series", "destination": "/series.html" },
     { "source": "/biz", "destination": "/kalkulator-bisnis.html" },

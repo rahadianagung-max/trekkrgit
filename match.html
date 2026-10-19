@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Regular Match — Trekkr</title>
+<meta name="description" content="Create a padel match, invite players at your level, record the result — confirmed results count toward your Trekkr rating."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
+<style>
+.rm-wrap{padding:22px 0 40px}
+.rm-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:3px solid var(--ink);padding-bottom:12px}
+.rm-top h1{margin:6px 0 0;font:700 clamp(32px,6vw,56px)/.92 var(--disp);text-transform:uppercase;letter-spacing:-.04em}
+.rm-top h1 span{color:var(--orange)}
+.rm-top p{margin:8px 0 0;font:500 14.5px/1.5 var(--body);color:#475569;max-width:58ch}
+.back{display:inline-block;font:800 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+.sec{margin-top:24px}
+.sec h2{margin:0 0 10px;font:700 22px/1 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.how div{border:2px solid var(--ink);background:var(--paper);padding:10px 12px;font:500 13px/1.45 var(--body);color:#334155}
+.how b{display:block;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--orange);margin-bottom:3px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px}
+.mc{display:flex;flex-direction:column;border:2px solid var(--ink);background:var(--paper);box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-decoration:none}
+.mc:hover{box-shadow:5px 5px 0 var(--orange)}
+.mc-d{display:flex;justify-content:space-between;gap:8px;background:var(--ink);color:#fff;padding:8px 12px;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.mc-d em{font-style:normal;color:var(--volt)}
+.mc-b{padding:12px;display:flex;flex-direction:column;gap:5px;flex:1}
+.mc-t{font:700 19px/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.mc-l{font:500 13.5px/1.4 var(--body);color:#334155}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.st{border:2px dashed var(--ink);background:var(--paper);padding:16px;display:flex;flex-direction:column;gap:6px}
+.st b{font:700 18px/1.1 var(--disp);text-transform:uppercase}
+.st span{font:500 13.5px/1.5 var(--body);color:#475569}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+/* form */
+.form{border:3px solid var(--ink);background:var(--paper);box-shadow:6px 6px 0 var(--ink);padding:16px;max-width:720px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.f{margin-top:12px}
+.f label{display:block;font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:5px}
+.f input,.f select,.f textarea{width:100%;box-sizing:border-box;border:2px solid var(--ink);background:#fff;padding:11px;font:600 15px var(--body);color:var(--ink);border-radius:0}
+.f textarea{min-height:64px;resize:vertical}
+.f small{display:block;margin-top:4px;font:500 12px/1.4 var(--body);color:var(--muted)}
+.seg{display:flex;border:2px solid var(--ink)}
+.seg button{flex:1;border:0;background:#fff;padding:10px 6px;font:800 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;color:var(--ink)}
+.seg button+button{border-left:2px solid var(--ink)}
+.seg button.on{background:var(--ink);color:var(--volt)}
+.msg{margin-top:10px;font:600 13.5px/1.5 var(--body)}
+.msg.err{color:#B91C1C}.msg.ok{color:#047857}
+/* detail */
+.dh{border:3px solid var(--ink);background:var(--ink);color:#fff;box-shadow:6px 6px 0 var(--orange);padding:16px;margin-top:14px}
+.dh .k{font:800 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--volt)}
+.dh h2{margin:6px 0 4px;font:700 clamp(24px,5vw,34px)/1 var(--disp);text-transform:uppercase;letter-spacing:-.03em}
+.dh .l{font:500 14px/1.5 var(--body);color:rgba(255,255,255,.82)}
+.dh .chips .tk-chip{background:#fff}
+.pl{display:grid;gap:8px}
+.pi{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);background:var(--paper);padding:8px 10px}
+.pi.empty{border-style:dashed;color:var(--muted);font:700 12px var(--mono);text-transform:uppercase}
+.pi .nm{flex:1;min-width:0;font:800 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi .nm small{display:block;font:700 10px var(--mono);color:var(--muted);text-transform:uppercase}
+.pi a{color:inherit;text-decoration:none}
+.x{border:2px solid var(--ink);background:#fff;font:800 11px var(--mono);padding:5px 8px;cursor:pointer}
+.box{border:2px solid var(--ink);background:var(--paper);padding:12px;margin-top:10px}
+.box.ok{background:#ECFDF5;border-color:#059669}.box.warn{background:#FFFBEB;border-color:#B45309}.box.bad{background:#FEF2F2;border-color:#DC2626}
+.box b{font-weight:800}
+/* results editor */
+.gm{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;border:2px solid var(--ink);background:var(--paper);padding:10px;margin-top:8px}
+.gm .tm{display:grid;gap:6px}
+.gm select{width:100%;border:2px solid var(--ink);padding:8px;font:700 13px var(--body);background:#fff}
+.gm .sc{display:flex;gap:4px;align-items:center}
+.gm .sc input{width:48px;border:2px solid var(--ink);padding:8px 4px;text-align:center;font:800 18px var(--mono)}
+.gm .hd{grid-column:1/-1;display:flex;justify-content:space-between;font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.res{display:grid;gap:6px;margin-top:8px}
+.res div{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;border:2px solid var(--ink);background:var(--paper);padding:8px 10px;font:700 13px var(--body)}
+.res .s{font:800 16px var(--mono);border:2px solid var(--ink);padding:2px 8px}
+.res .w{font-weight:900}
+.res .r{text-align:right}
+@media(max-width:700px){.how{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:460px){.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="tk-nav"></div>
+<main class="container rm-wrap" id="app"><div class="st"><span>Loading…</span></div></main>
+<div data-eco-footer>
+  <a href="/app">Get the App</a>
+  <a href="/rankings">Rankings</a>
+  <a href="/venues">Venues</a>
+  <a href="https://liga.trekkr.online">Liga Trekkr</a>
+  <a href="/how-trekkr-works">How it works</a>
+</div>
+<nav id="tk-tabbar"></nav>
+<script src="/trekkr-nav.js" defer></script>
+<script src="/trekkr-auth.js"></script>
+<script>
+/* Trekkr Regular Match — /match (list + create) and /match/<code> (detail,
+   join, results, confirmation). All state lives in the API (/api/regular/*);
+   ratings change only after an opposing player confirms the result, through the
+   server ELO engine. */
+(function(){
+  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+  var app=document.getElementById('app');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+  function ini(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function rp(n){return 'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');}
+  function today(){return new Date(Date.now()+7*3600e3).toISOString().slice(0,10);}
+  function dLabel(iso){try{return new Date(String(iso).slice(0,10)+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){return iso;}}
+  function tok(){return window.TrekkrAuth?TrekkrAuth.token().catch(function(){return '';}):Promise.resolve('');}
+  function api(path,body){
+    return tok().then(function(t){
+      var opt=body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token:t},body))}:{};
+      var u=BASE+'/'+path+(body?'':(path.indexOf('?')<0?'?':'&')+'token='+encodeURIComponent(t||''));
+      return fetch(u,opt).then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok){var e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e;}return d;});});
+    });
+  }
+  function range(m){if(m.min_rating==null&&m.max_rating==null)return 'Open level';return (m.min_rating!=null?m.min_rating:'0')+'–'+(m.max_rating!=null?m.max_rating:'∞');}
+  var STATUS={open:'Open',pending_confirm:'Awaiting confirmation',confirmed:'Counted ✓',disputed:'Disputed',expired:'Expired',cancelled:'Cancelled'};
+
+  var segs=location.pathname.replace(/\/+$/,'').split('/').filter(Boolean);
+  var code=segs[0]==='match'&&segs[1]?decodeURIComponent(segs[1]):'';
+  var qs=new URLSearchParams(location.search);
+
+  function loginBox(el,next){
+    el.innerHTML='<div class="form" style="max-width:520px"><div id="rmAuth"></div></div>';
+    if(window.TrekkrAuth)TrekkrAuth.renderBox(document.getElementById('rmAuth'),{title:'Sign in to continue',sub:'Use your Trekkr account. New here? Create your player profile after signing in.',next:next,onDone:function(){location.reload();}});
+  }
+
+  /* ---------------- list ---------------- */
+  function card(m){
+    var full=m.spotsLeft<=0;
+    return '<a class="mc" href="/match/'+encodeURIComponent(m.code)+'"><div class="mc-d"><span>'+esc(dLabel(m.date))+(m.start_time?' · '+esc(m.start_time):'')+'</span><em'+(full?' style="color:#F87171"':'')+'>'+(m.status!=='open'?esc(STATUS[m.status]||m.status):full?'Full':m.spotsLeft+' spot'+(m.spotsLeft===1?'':'s')+' left')+'</em></div>'+
+      '<div class="mc-b"><div class="mc-t">'+esc(m.title||'Regular match')+'</div><div class="mc-l">📍 <b>'+esc(m.venue)+'</b>'+(m.area?' · '+esc(m.area):'')+'</div>'+
+      '<div class="mc-l">Organised by '+esc(m.creator_name)+'</div>'+
+      '<div class="chips"><span class="tk-chip tk-chip--kv">Regular match</span><span class="tk-chip">'+(m.format==='fixed'?'Fixed partner':'Rotating partners')+'</span><span class="tk-chip">'+esc(m.gender)+'</span><span class="tk-chip tk-chip--v">'+esc(range(m))+'</span><span class="tk-chip">'+m.playerCount+'/'+m.max_players+' players</span>'+(m.price_per_player?'<span class="tk-chip">'+rp(m.price_per_player)+'/player</span>':'')+(m.me&&m.me.joined?'<span class="tk-chip tk-chip--ok">You\'re in</span>':'')+'</div></div></a>';
+  }
+  function renderList(){
+    app.innerHTML='<a class="back" href="/">← Home</a><div class="rm-top"><div><h1>Regular <span>match</span></h1><p>Create a match at your court, invite players at your level, record the score. Confirmed results count toward your Trekkr rating.</p></div><a class="btn btn--primary" href="/match?new=1">+ Create a match</a></div>'+
+      '<div class="how"><div><b>1 · Create</b>Book a court, set date, players and level range.</div><div><b>2 · Fill it</b>Players at your level join; share the link on WhatsApp.</div><div><b>3 · Play &amp; record</b>After the match a player enters the scores.</div><div><b>4 · Confirm</b>An opponent confirms within 48 h — then ELO updates.</div></div>'+
+      '<section class="sec" id="mine"></section><section class="sec"><h2>Open matches</h2><div class="cards" id="list"><div class="st"><span>Loading matches…</span></div></div></section>';
+    api('regular/list').then(function(d){
+      var all=d.matches||[];
+      var mine=all.filter(function(m){return m.me&&m.me.joined;}),open=all.filter(function(m){return m.status==='open'&&m.visibility==='public'&&!(m.me&&m.me.joined);});
+      document.getElementById('mine').innerHTML=mine.length?'<h2>My matches</h2><div class="cards">'+mine.map(card).join('')+'</div>':'';
+      document.getElementById('list').innerHTML=open.length?open.map(card).join(''):'<div class="st"><b>No open matches yet.</b><span>Be the first — create a match and share the link with your group.</span><div class="row"><a class="btn btn--primary" href="/match?new=1">Create a match</a></div></div>';
+    }).catch(function(){document.getElementById('list').innerHTML='<div class="st"><b>Couldn\'t load matches.</b><div class="row"><button class="btn btn--outline" onclick="location.reload()">Retry</button></div></div>';});
+  }
+
+  /* ---------------- create ---------------- */
+  function renderCreate(){
+    app.innerHTML='<a class="back" href="/match">← Regular matches</a><div class="rm-top"><div><h1>Create a <span>match</span></h1><p>You book the court; Trekkr handles players, results and ratings.</p></div></div><div class="sec" id="cf"></div>';
+    var cf=document.getElementById('cf');
+    tok().then(function(t){
+      if(!t)return loginBox(cf,'/match?new=1');
+      Promise.all([fetch(BASE+'/venues').then(function(r){return r.json();}).catch(function(){return {};}),
+        fetch(BASE+'/account/me?token='+encodeURIComponent(t)).then(function(r){return r.json();}).catch(function(){return {};})]).then(function(r){
+        var me=r[1]||{};
+        if(!me.player){cf.innerHTML='<div class="st"><b>No player profile on this account yet.</b><span>Claim or create your Trekkr profile first.</span><div class="row"><a class="btn btn--primary" href="/join">Claim / create profile</a></div></div>';return;}
+        var vs=((r[0]&&r[0].venues)||[]).filter(function(v){return v.name&&!v.hidden;}).map(function(v){return v.name;}).sort();
+        cf.innerHTML='<form class="form" id="frm" novalidate>'+
+          '<div class="f"><label for="fTitle">Match name (optional)</label><input id="fTitle" maxlength="80" placeholder="e.g. Sunday morning doubles"></div>'+
+          '<div class="f"><label for="fVenue">Venue</label><input id="fVenue" list="vlist" required placeholder="Pick a venue or type one"><datalist id="vlist">'+vs.map(function(v){return '<option value="'+esc(v)+'">';}).join('')+'</datalist><small>Trekkr venues keep the match in your venue history too.</small></div>'+
+          '<div class="g3"><div class="f"><label for="fDate">Date</label><input id="fDate" type="date" min="'+today()+'" value="'+today()+'" required></div><div class="f"><label for="fStart">Start</label><input id="fStart" type="time" value="19:00"></div><div class="f"><label for="fEnd">End</label><input id="fEnd" type="time" value="21:00"></div></div>'+
+          '<div class="f"><label>Format</label><div class="seg" id="sFmt"><button type="button" data-v="individual" class="on">Rotating partners</button><button type="button" data-v="fixed">Fixed partner</button></div><small id="fmtHint">Partners change between games — everyone plays with everyone.</small></div>'+
+          '<div class="g2"><div class="f"><label for="fMax">Players</label><input id="fMax" type="number" min="4" max="24" value="4"><small>Any number from 4. Fixed partner needs an even number.</small></div>'+
+          '<div class="f"><label for="fGender">Category</label><select id="fGender"><option>Open</option><option>Men</option><option>Women</option><option>Mixed</option></select></div></div>'+
+          '<div class="f"><label>Level range</label><div class="seg" id="sLvl"><button type="button" data-v="open" class="on">Open</button><button type="button" data-v="near">Near my level</button><button type="button" data-v="custom">Custom</button></div>'+
+          '<div class="g2" id="lvlCustom" hidden><div class="f"><label for="fMin">Min rating</label><input id="fMin" type="number" step="50" placeholder="e.g. 1200"></div><div class="f"><label for="fMaxR">Max rating</label><input id="fMaxR" type="number" step="50" placeholder="e.g. 1800"></div></div><small id="lvlHint">Anyone can join.</small></div>'+
+          '<div class="g2"><div class="f"><label for="fPrice">Price per player (Rp, optional)</label><input id="fPrice" type="number" min="0" step="5000" placeholder="Court split"></div>'+
+          '<div class="f"><label>Visibility</label><div class="seg" id="sVis"><button type="button" data-v="public" class="on">Public</button><button type="button" data-v="private">Link only</button></div></div></div>'+
+          '<div class="f"><label for="fNote">Note (optional)</label><textarea id="fNote" maxlength="400" placeholder="Court number, who brings balls, payment details…"></textarea></div>'+
+          '<button class="btn btn--primary" style="margin-top:14px;width:100%" id="fGo">Create match →</button><div class="msg" id="fMsg" role="status"></div></form>';
+        var st={fmt:'individual',lvl:'open',vis:'public'};
+        function seg(id,key,cb){document.getElementById(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st[key]=b.getAttribute('data-v');this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});if(cb)cb();});}
+        var myElo=null;
+        fetch(BASE+'/players/'+encodeURIComponent(me.player.name)).then(function(r){return r.json();}).then(function(d){var s=d&&d.stats;if(s&&s.totalMatches&&!s.unrated)myElo=s.currentElo;lvlUi();}).catch(function(){});
+        function lvlUi(){
+          document.getElementById('lvlCustom').hidden=st.lvl!=='custom';
+          var h=st.lvl==='open'?'Anyone can join.':st.lvl==='near'?(myElo?'Players rated '+(Math.round(myElo/50)*50-300)+'–'+(Math.round(myElo/50)*50+300)+' (your rating ±300).':'Players rated 1050–1650 (new players start at 1350).'):'Only players inside this range can join. Your own rating must fit.';
+          document.getElementById('lvlHint').textContent=h;
+        }
+        seg('sFmt','fmt',function(){document.getElementById('fmtHint').textContent=st.fmt==='fixed'?'Pairs stay together; pairs play each other.':'Partners change between games — everyone plays with everyone.';});
+        seg('sLvl','lvl',lvlUi);seg('sVis','vis');
+        document.getElementById('frm').addEventListener('submit',function(e){
+          e.preventDefault();var msg=document.getElementById('fMsg'),go=document.getElementById('fGo');
+          var v=function(id){return document.getElementById(id).value.trim();};
+          var minR=null,maxR=null;
+          if(st.lvl==='near'){var c=Math.round((myElo||1350)/50)*50;minR=c-300;maxR=c+300;}
+          if(st.lvl==='custom'){minR=v('fMin')?parseInt(v('fMin'),10):null;maxR=v('fMaxR')?parseInt(v('fMaxR'),10):null;}
+          var n=parseInt(v('fMax'),10)||4;
+          if(!v('fVenue')){msg.className='msg err';msg.textContent='Choose a venue.';return;}
+          if(st.fmt==='fixed'&&n%2){msg.className='msg err';msg.textContent='Fixed partner needs an even number of players.';return;}
+          go.disabled=true;go.textContent='Creating…';msg.textContent='';
+          api('regular/create',{title:v('fTitle'),venue:v('fVenue'),date:v('fDate'),startTime:v('fStart'),endTime:v('fEnd'),format:st.fmt,maxPlayers:n,gender:v('fGender'),minRating:minR,maxRating:maxR,pricePerPlayer:v('fPrice'),visibility:st.vis,note:v('fNote')})
+            .then(function(d){location.href='/match/'+encodeURIComponent(d.code)+'?created=1';})
+            .catch(function(err){go.disabled=false;go.textContent='Create match →';msg.className='msg err';msg.textContent=err.message;});
+        });
+      });
+    });
+  }
+
+  /* ---------------- detail ---------------- */
+  var M=null;
+  function loadDetail(){
+    api('regular/'+encodeURIComponent(code)).then(function(d){M=d.match;renderDetail();})
+      .catch(function(e){app.innerHTML='<a class="back" href="/match">← Regular matches</a><div class="st" style="margin-top:14px"><b>'+(e.status===404?'Match not found.':'Couldn\'t load this match.')+'</b><div class="row"><a class="btn btn--primary" href="/match">All matches</a></div></div>';});
+  }
+  function act(path,body,btn){
+    if(btn){btn.disabled=true;}
+    return api('regular/'+path,Object.assign({code:code},body||{})).then(function(r){loadDetail();return r;})
+      .catch(function(e){if(btn)btn.disabled=false;alert(e.message);});
+  }
+  function shareText(){return '🎾 '+(M.title||'Regular match')+' — '+dLabel(M.date)+(M.start_time?' '+M.start_time:'')+' @ '+M.venue+' · '+range(M)+' · '+M.spotsLeft+' spot'+(M.spotsLeft===1?'':'s')+' left. Join on Trekkr: '+location.origin+'/match/'+M.code;}
+  function renderDetail(){
+    var me=M.me||null, pl=M.players||[];
+    var h='<a class="back" href="/match">← Regular matches</a>'+(qs.get('created')?'<div class="box ok" style="margin-top:10px"><b>Match created.</b> Share the link so players can join.</div>':'')+
+      '<div class="dh"><div class="k">Regular match · '+esc(STATUS[M.status]||M.status)+'</div><h2>'+esc(M.title||'Regular match')+'</h2>'+
+      '<div class="l">'+esc(dLabel(M.date))+(M.start_time?' · '+esc(M.start_time)+(M.end_time?'–'+esc(M.end_time):''):'')+'</div><div class="l">📍 '+esc(M.venue)+(M.area?' · '+esc(M.area):'')+' · organised by '+esc(M.creator_name)+'</div>'+
+      '<div class="chips" style="margin-top:8px"><span class="tk-chip">'+(M.format==='fixed'?'Fixed partner':'Rotating partners')+'</span><span class="tk-chip">'+esc(M.gender)+'</span><span class="tk-chip tk-chip--v">'+esc(range(M))+'</span>'+(M.price_per_player?'<span class="tk-chip">'+rp(M.price_per_player)+'/player</span>':'')+(M.visibility==='private'?'<span class="tk-chip">Link only</span>':'')+'</div>'+
+      (M.note?'<div class="l" style="margin-top:8px;white-space:pre-line">'+esc(M.note)+'</div>':'')+'</div>';
+    // actions
+    h+='<div class="sec">';
+    if(M.status==='open'){
+      if(!me) h+='<div class="box"><b>Sign in to join this match.</b><div class="row"><a class="btn btn--primary" href="#" id="dLogin">Sign in to join</a></div><div id="dAuth"></div></div>';
+      else if(!me.joined) h+=me.canJoin?'<div class="box ok">Your rating '+(me.isNew?'(new player · starts at '+me.rating+')':me.rating)+' fits this match.<div class="row"><button class="btn btn--primary" id="dJoin">Join match</button></div></div>':'<div class="box bad"><b>You can\'t join.</b> '+esc(me.why||'')+'</div>';
+      else h+='<div class="box ok"><b>You\'re in.</b> '+(me.isCreator?'You\'re the organiser.':'See you on court!')+'<div class="row">'+(me.isCreator?'<button class="btn btn--outline" id="dCancel">Cancel match</button>':'<button class="btn btn--outline" id="dLeave">Leave match</button>')+'</div></div>';
+      h+='<div class="row" style="margin-top:10px"><a class="btn btn--volt" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(shareText())+'">Share on WhatsApp</a><button class="btn btn--outline" id="dCopy">Copy link</button></div>';
+    }
+    h+='</div>';
+    // players
+    h+='<div class="sec"><h2>Players · '+pl.length+'/'+M.max_players+'</h2><div class="pl">'+pl.map(function(p){
+      var rm=me&&me.isCreator&&M.status==='open'&&slug(p.player_name)!==slug(M.creator_name)?'<button class="x" data-rm="'+esc(p.player_name)+'">Remove</button>':'';
+      return '<div class="pi"><div class="tk-ph" style="width:34px;height:34px">'+esc(ini(p.display||p.player_name))+'</div><a class="nm" href="/player/'+slug(p.player_name)+'">'+esc(p.display||p.player_name)+(slug(p.player_name)===slug(M.creator_name)?'<small>Organiser</small>':'')+'</a>'+rm+'</div>';
+    }).join('')+(M.status==='open'?new Array(Math.max(0,M.max_players-pl.length)+1).join('<div class="pi empty">Open spot</div>'):'')+'</div></div>';
+    // results
+    h+='<div class="sec" id="results">'+resultsHtml()+'</div>';
+    app.innerHTML=h;
+    wire();
+  }
+  function gameRows(games){
+    return '<div class="res">'+games.map(function(g){var w1=g.s1>g.s2;return '<div><span class="'+(w1?'w':'')+'">'+esc(g.t1.join(' & '))+'</span><span class="s">'+g.s1+'–'+g.s2+'</span><span class="r '+(w1?'':'w')+'">'+esc(g.t2.join(' & '))+'</span></div>';}).join('')+'</div>';
+  }
+  function resultsHtml(){
+    var me=M.me||null,games=M.games||[];
+    if(M.status==='cancelled')return '<div class="box bad"><b>This match was cancelled.</b></div>';
+    if(M.status==='confirmed')return '<h2>Results</h2><div class="box ok"><b>Confirmed by '+esc(M.confirmed_by)+'.</b> These results counted toward everyone\'s Trekkr rating — see the changes on each player\'s passport.</div>'+gameRows(games);
+    if(M.status==='pending_confirm'){
+      var canConfirm=me&&me.joined&&slug(me.name)!==slug(M.submitted_by)&&games.some(function(g){return g.t1.concat(g.t2).some(function(n){return slug(n)===slug(me.name);});});
+      return '<h2>Results</h2><div class="box warn"><b>Waiting for confirmation.</b> Entered by '+esc(M.submitted_by)+'. A player from the opposing team must confirm within 48 hours, or the results won\'t count.'+
+        (canConfirm?'<div class="row"><button class="btn btn--primary" id="dConfirm">Confirm results</button><button class="btn btn--outline" id="dDispute">Dispute</button></div>':'')+'</div>'+gameRows(games);
+    }
+    var started=M.started, inM=me&&me.joined;
+    var pre=M.status==='disputed'?'<div class="box bad"><b>'+esc(M.disputed_by||'A player')+' disputed the results.</b> Agree on the scores and enter them again.</div>':M.status==='expired'?'<div class="box bad"><b>The last results weren\'t confirmed in time</b> and did not count. You can enter them again.</div>':'';
+    if(!inM)return pre?'<h2>Results</h2>'+pre:'';
+    if(!started)return '<h2>Results</h2><div class="box">Results can be entered once the match starts ('+esc(dLabel(M.date))+(M.start_time?' '+esc(M.start_time):'')+').</div>';
+    if((M.players||[]).length<4)return '<h2>Results</h2>'+pre+'<div class="box">At least 4 players are needed to record a game.</div>';
+    return '<h2>Enter results</h2>'+pre+'<div class="box">Add every game you played. Each game is 2 vs 2. '+(M.format==='fixed'?'Set the pairs, then use <b>Auto-fill</b> for a round robin.':'<b>Auto-fill</b> suggests a rotation where partners change.')+' You can edit everything before submitting.</div>'+
+      '<div class="row"><button class="btn btn--outline" id="gAuto">Auto-fill games</button><button class="btn btn--outline" id="gAdd">+ Add game</button></div><div id="games"></div>'+
+      '<button class="btn btn--primary" style="margin-top:12px;width:100%" id="gSubmit">Submit results for confirmation</button><div class="msg" id="gMsg"></div>';
+  }
+  /* --- results editor --- */
+  var G=[];
+  function names(){return (M.players||[]).map(function(p){return p.player_name;});}
+  function sel(v,i,k){return '<select data-i="'+i+'" data-k="'+k+'"><option value="">— player —</option>'+names().map(function(n){return '<option'+(n===v?' selected':'')+'>'+esc(n)+'</option>';}).join('')+'</select>';}
+  function drawGames(){
+    var el=document.getElementById('games');if(!el)return;
+    el.innerHTML=G.map(function(g,i){
+      return '<div class="gm"><div class="hd"><span>Game '+(i+1)+'</span><button class="x" data-del="'+i+'">✕</button></div>'+
+        '<div class="tm">'+sel(g.t1[0],i,'a0')+sel(g.t1[1],i,'a1')+'</div>'+
+        '<div class="sc"><input inputmode="numeric" data-i="'+i+'" data-k="s1" value="'+(g.s1==null?'':g.s1)+'" aria-label="Score team 1">–<input inputmode="numeric" data-i="'+i+'" data-k="s2" value="'+(g.s2==null?'':g.s2)+'" aria-label="Score team 2"></div>'+
+        '<div class="tm">'+sel(g.t2[0],i,'b0')+sel(g.t2[1],i,'b1')+'</div></div>';
+    }).join('')||'<div class="st" style="margin-top:8px"><span>No games yet — use Auto-fill or Add game.</span></div>';
+  }
+  function autoFill(){
+    var n=names().slice();
+    var out=[];
+    if(M.format==='fixed'){
+      var pairs=[];for(var i=0;i+1<n.length;i+=2)pairs.push([n[i],n[i+1]]);
+      for(var a=0;a<pairs.length;a++)for(var b=a+1;b<pairs.length;b++)out.push({t1:pairs[a].slice(),t2:pairs[b].slice(),s1:null,s2:null});
+    }else if(n.length===4){
+      out=[{t1:[n[0],n[1]],t2:[n[2],n[3]]},{t1:[n[0],n[2]],t2:[n[1],n[3]]},{t1:[n[0],n[3]],t2:[n[1],n[2]]}];
+    }else{
+      // Rotation: each round takes the 4 who played least, pairing the two who
+      // partnered least; enough rounds for everyone to play ~3 games.
+      var played={},pc={};n.forEach(function(x){played[x]=0;pc[x]={};});
+      var rounds=Math.ceil(n.length*3/4);
+      for(var r=0;r<rounds;r++){
+        var pick=n.slice().sort(function(x,y){return played[x]-played[y]||n.indexOf(x)-n.indexOf(y);}).slice(0,4);
+        var opts=[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]].map(function(o){var c=(pc[pick[o[0][0]]][pick[o[0][1]]]||0)+(pc[pick[o[1][0]]][pick[o[1][1]]]||0);return {o:o,c:c};}).sort(function(x,y){return x.c-y.c;})[0].o;
+        var t1=[pick[opts[0][0]],pick[opts[0][1]]],t2=[pick[opts[1][0]],pick[opts[1][1]]];
+        [t1,t2].forEach(function(t){pc[t[0]][t[1]]=(pc[t[0]][t[1]]||0)+1;pc[t[1]][t[0]]=(pc[t[1]][t[0]]||0)+1;});
+        pick.forEach(function(x){played[x]++;});
+        out.push({t1:t1,t2:t2});
+      }
+    }
+    G=out.map(function(g){return {t1:g.t1,t2:g.t2,s1:null,s2:null};});drawGames();
+  }
+  function wire(){
+    var $=function(id){return document.getElementById(id);};
+    if($('dLogin'))$('dLogin').onclick=function(e){e.preventDefault();loginBox($('dAuth'),'/match/'+code);};
+    if($('dJoin'))$('dJoin').onclick=function(){act('join',null,this);};
+    if($('dLeave'))$('dLeave').onclick=function(){if(confirm('Leave this match?'))act('leave',null,this);};
+    if($('dCancel'))$('dCancel').onclick=function(){if(confirm('Cancel this match for everyone?'))act('cancel',null,this);};
+    if($('dCopy'))$('dCopy').onclick=function(){var u=location.origin+'/match/'+code,b=this;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){b.textContent='Copied ✓';}).catch(function(){prompt('Copy this link',u);});};
+    app.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){if(confirm('Remove '+b.getAttribute('data-rm')+'?'))act('remove',{player:b.getAttribute('data-rm')},b);};});
+    if($('dConfirm'))$('dConfirm').onclick=function(){if(confirm('Confirm these results? They will count toward everyone\'s rating.'))act('confirm',null,this);};
+    if($('dDispute'))$('dDispute').onclick=function(){if(confirm('Dispute these results? They will not count until re-entered.'))act('dispute',null,this);};
+    if($('games')){
+      G=(M.games||[]).map(function(g){return {t1:g.t1.slice(),t2:g.t2.slice(),s1:g.s1,s2:g.s2};});drawGames();
+      $('gAuto').onclick=autoFill;
+      $('gAdd').onclick=function(){G.push({t1:['',''],t2:['',''],s1:null,s2:null});drawGames();};
+      $('games').addEventListener('change',function(e){var t=e.target,i=+t.getAttribute('data-i'),k=t.getAttribute('data-k');if(isNaN(i)||!G[i])return;
+        if(k==='a0')G[i].t1[0]=t.value;if(k==='a1')G[i].t1[1]=t.value;if(k==='b0')G[i].t2[0]=t.value;if(k==='b1')G[i].t2[1]=t.value;});
+      $('games').addEventListener('input',function(e){var t=e.target,i=+t.getAttribute('data-i'),k=t.getAttribute('data-k');if(isNaN(i)||!G[i])return;
+        if(k==='s1'||k==='s2'){var v=t.value.replace(/\D/g,'');t.value=v;G[i][k]=v===''?null:parseInt(v,10);}});
+      $('games').addEventListener('click',function(e){var b=e.target.closest('[data-del]');if(!b)return;G.splice(+b.getAttribute('data-del'),1);drawGames();});
+      $('gSubmit').onclick=function(){
+        var msg=$('gMsg'),bad=G.findIndex(function(g){var all=g.t1.concat(g.t2);return all.some(function(x){return !x;})||new Set(all).size!==4||g.s1==null||g.s2==null||g.s1===g.s2;});
+        if(!G.length){msg.className='msg err';msg.textContent='Add at least one game.';return;}
+        if(bad>=0){msg.className='msg err';msg.textContent='Game '+(bad+1)+': pick four different players and two different scores.';return;}
+        if(!confirm('Submit '+G.length+' game'+(G.length===1?'':'s')+'? An opponent must confirm before ratings change.'))return;
+        act('submit',{games:G},this);
+      };
+    }
+  }
+
+  if(code)loadDetail();else if(qs.get('new'))renderCreate();else renderList();
+})();
+</script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+</body>
+</html>

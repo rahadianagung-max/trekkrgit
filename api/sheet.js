@@ -1083,6 +1083,272 @@ async function accountActivity(params) {
   return respond(200, { player: { name: player.name, display: player.display }, upcoming }, { "Cache-Control": "no-store" });
 }
 
+// ============================================================
+// TREKKR REGULAR MATCH — player-created matches (Oct 2026). Additive.
+// A signed-in player creates a match (they book the court themselves), others
+// join within the creator's rating range, a participant enters the results and a
+// player from the opposing team confirms them. Only CONFIRMED results reach ELO,
+// through the same server engine as every other session (computeSessionElo →
+// ELO_Log); nothing here computes ratings itself. Unconfirmed results expire
+// after RM_CONFIRM_HOURS and never count.
+// Tables: regular_matches, regular_match_players (supabase/migrations/18).
+// ============================================================
+const RM_CONFIRM_HOURS = 48;
+const RM_MAX_OPEN_PER_CREATOR = 3;
+const RM_DEFAULT_RATING = 1350;   // server seed for a player with no ELO_Log rows
+const RM_PUBLIC_FIELDS = "id,code,creator_name,title,venue,venue_registered,area,date,start_time,end_time,format,gender,max_players,min_rating,max_rating,price_per_player,visibility,note,status,games,submitted_by,submitted_at,confirmed_by,confirmed_at,disputed_by,session_id,created_at";
+function rmCode() { return Math.random().toString(36).slice(2, 6) + Date.now().toString(36).slice(-4); }
+function rmInt(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
+function rmStartMs(m) {
+  const d = String(m.date || "").slice(0, 10), t = (String(m.start_time || "").match(/\d{1,2}:\d{2}/) || ["00:00"])[0];
+  const ms = Date.parse(`${d}T${t.length === 4 ? "0" + t : t}:00+07:00`);
+  return isNaN(ms) ? null : ms;
+}
+async function rmGet(code) {
+  const rows = await supaRest("GET", `regular_matches?code=eq.${encodeURIComponent(code)}&select=${RM_PUBLIC_FIELDS}&limit=1`);
+  const m = rows && rows[0];
+  if (!m) return null;
+  // Lazy expiry: results not confirmed in time never count.
+  if (m.status === "pending_confirm" && m.submitted_at && Date.now() - Date.parse(m.submitted_at) > RM_CONFIRM_HOURS * 3600e3) {
+    try { await supaRest("PATCH", `regular_matches?id=eq.${m.id}&status=eq.pending_confirm`, { status: "expired" }, "return=minimal"); m.status = "expired"; } catch (e) {}
+  }
+  const ps = await supaRest("GET", `regular_match_players?match_id=eq.${m.id}&status=eq.joined&select=player_name,display,gender,joined_at&order=id.asc`);
+  m.players = ps || [];
+  return m;
+}
+function rmIn(m, name) { return (m.players || []).some((p) => normName(p.player_name) === normName(name)); }
+function rmRatingOf(r) { return r && r.matches > 0 && r.elo > 0 ? r.elo : RM_DEFAULT_RATING; }
+function rmGenderOk(m, g) {
+  const want = String(m.gender || "Open");
+  if (/^(open|mixed)$/i.test(want) || !want) return true;
+  const pg = String(g || "").toUpperCase().charAt(0) === "F" || String(g || "").toUpperCase().charAt(0) === "W" ? "F" : "M";
+  return (/^w/i.test(want) ? "F" : "M") === pg;
+}
+function rmView(m, me) {
+  const startMs = rmStartMs(m);
+  const out = Object.assign({}, m);
+  delete out.id;
+  out.playerCount = (m.players || []).length;
+  out.spotsLeft = Math.max(0, (m.max_players || 0) - out.playerCount);
+  out.started = startMs != null && Date.now() >= startMs;
+  if (me) {
+    out.me = { name: me.name, display: me.display, joined: rmIn(m, me.name), isCreator: normName(m.creator_name) === normName(me.name) };
+  }
+  return out;
+}
+async function rmMe(token) { try { return await bookingPlayer(token); } catch (e) { return null; } }
+
+// GET /api/regular/list?token= — upcoming public open matches (+ the viewer's own).
+async function rmList(params) {
+  if (!supaOn()) return respond(200, { matches: [] });
+  const R = jakartaRanges();
+  const me = params && params.token ? await rmMe(params.token) : null;
+  let rows = [];
+  try { rows = (await supaRest("GET", `regular_matches?date=gte.${R.today}&status=eq.open&visibility=eq.public&select=${RM_PUBLIC_FIELDS}&order=date.asc,start_time.asc&limit=60`)) || []; } catch (e) { return respond(200, { matches: [] }); }
+  let mine = [];
+  if (me) {
+    try {
+      const pj = (await supaRest("GET", `regular_match_players?player_name=ilike.${encodeURIComponent(String(me.name).replace(/[\\%_*(),]/g, ""))}&status=eq.joined&select=match_id`)) || [];
+      const ids = pj.map((x) => x.match_id).filter((id) => !rows.some((r) => r.id === id));
+      if (ids.length) mine = (await supaRest("GET", `regular_matches?id=in.(${ids.join(",")})&status=in.(open,pending_confirm,disputed)&select=${RM_PUBLIC_FIELDS}`)) || [];
+    } catch (e) {}
+  }
+  const all = rows.concat(mine);
+  const ids = all.map((m) => m.id);
+  let ps = [];
+  if (ids.length) { try { ps = (await supaRest("GET", `regular_match_players?match_id=in.(${ids.join(",")})&status=eq.joined&select=match_id,player_name,display,gender`)) || []; } catch (e) {} }
+  all.forEach((m) => { m.players = ps.filter((p) => p.match_id === m.id).map((p) => ({ player_name: p.player_name, display: p.display, gender: p.gender })); });
+  return respond(200, { matches: all.map((m) => rmView(m, me)), me: me ? { name: me.name, display: me.display } : null }, { "Cache-Control": "no-store" });
+}
+
+// GET /api/regular/<code>?token=
+async function rmDetail(code, params) {
+  if (!supaOn()) return respond(503, { error: "Not available" });
+  const m = await rmGet(code);
+  if (!m) return respond(404, { error: "Match not found" });
+  const me = params && params.token ? await rmMe(params.token) : null;
+  const v = rmView(m, me);
+  if (me && !v.me.joined && m.status === "open") {
+    const r = await ligaPlayerRating(me.name);
+    const rating = rmRatingOf(r);
+    let canJoin = true, why = "";
+    if (v.spotsLeft <= 0) { canJoin = false; why = "This match is full."; }
+    else if (!rmGenderOk(m, me.gender)) { canJoin = false; why = `This match is for ${m.gender} players.`; }
+    else if (m.min_rating != null && rating < m.min_rating) { canJoin = false; why = `Rating range is ${m.min_rating}–${m.max_rating != null ? m.max_rating : "∞"}; your rating is ${rating}.`; }
+    else if (m.max_rating != null && rating > m.max_rating) { canJoin = false; why = `Rating range is ${m.min_rating != null ? m.min_rating : 0}–${m.max_rating}; your rating is ${rating}.`; }
+    v.me.rating = rating; v.me.isNew = !(r.matches > 0); v.me.canJoin = canJoin; v.me.why = why;
+  }
+  return respond(200, { match: v }, { "Cache-Control": "no-store" });
+}
+
+// POST /api/regular/create
+async function rmCreate(body) {
+  const b = body || {};
+  const me = await rmMe(b.token);
+  if (!me) return respond(401, { error: "Sign in with your Trekkr profile to create a match" });
+  const venue = String(b.venue || "").trim().slice(0, 120);
+  const date = String(b.date || "").slice(0, 10);
+  if (!venue) return respond(400, { error: "Venue is required" });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return respond(400, { error: "Date is required" });
+  if (date < jakartaRanges().today) return respond(400, { error: "Date is in the past" });
+  const format = b.format === "fixed" ? "fixed" : "individual";
+  const maxPlayers = Math.max(4, Math.min(24, rmInt(b.maxPlayers) || 4));
+  if (format === "fixed" && maxPlayers % 2) return respond(400, { error: "Fixed partner needs an even number of players" });
+  const gender = ["Men", "Women", "Mixed", "Open"].includes(b.gender) ? b.gender : "Open";
+  let minR = rmInt(b.minRating), maxR = rmInt(b.maxRating);
+  if (minR != null && maxR != null && minR > maxR) return respond(400, { error: "Rating range: minimum is above maximum" });
+  const r = rmRatingOf(await ligaPlayerRating(me.name));
+  if ((minR != null && r < minR) || (maxR != null && r > maxR)) return respond(400, { error: `Your own rating (${r}) must be inside the range` });
+  if (!rmGenderOk({ gender }, me.gender)) return respond(400, { error: `You can't create a ${gender} match` });
+  try {
+    const open = (await supaRest("GET", `regular_matches?creator_name=ilike.${encodeURIComponent(String(me.name).replace(/[\\%_*(),]/g, ""))}&status=in.(open,pending_confirm)&select=id`)) || [];
+    if (open.length >= RM_MAX_OPEN_PER_CREATOR) return respond(400, { error: `You already have ${open.length} active matches — finish or cancel one first` });
+  } catch (e) {}
+  let registered = false;
+  try { registered = ((JSON.parse((await getVenues()).body).venues) || []).some((v) => normName(v.name) === normName(venue)); } catch (e) {}
+  const code = rmCode();
+  const row = {
+    code, creator_name: me.name, title: String(b.title || "").trim().slice(0, 80) || null, venue, venue_registered: registered,
+    area: String(b.area || "").trim().slice(0, 80) || null, date,
+    start_time: (String(b.startTime || "").match(/\d{1,2}:\d{2}/) || [""])[0] || null,
+    end_time: (String(b.endTime || "").match(/\d{1,2}:\d{2}/) || [""])[0] || null,
+    format, gender, max_players: maxPlayers, min_rating: minR, max_rating: maxR,
+    price_per_player: Math.max(0, rmInt(b.pricePerPlayer) || 0) || null,
+    visibility: b.visibility === "private" ? "private" : "public", note: String(b.note || "").trim().slice(0, 400) || null, status: "open",
+  };
+  const ins = await supaRest("POST", "regular_matches", [row], "return=representation");
+  const m = ins && ins[0];
+  if (!m) return respond(500, { error: "Could not create the match" });
+  await supaRest("POST", "regular_match_players", [{ match_id: m.id, player_name: me.name, display: me.display, gender: me.gender }], "return=minimal");
+  return respond(200, { ok: true, code });
+}
+
+// POST /api/regular/join | leave | remove | cancel
+async function rmMembership(action, body) {
+  const b = body || {};
+  const me = await rmMe(b.token);
+  if (!me) return respond(401, { error: "Sign in with your Trekkr profile" });
+  const m = await rmGet(String(b.code || ""));
+  if (!m) return respond(404, { error: "Match not found" });
+  const isCreator = normName(m.creator_name) === normName(me.name);
+  if (action === "cancel") {
+    if (!isCreator) return respond(403, { error: "Only the organiser can cancel" });
+    if (!["open", "disputed"].includes(m.status)) return respond(400, { error: "This match can't be cancelled now" });
+    await supaRest("PATCH", `regular_matches?id=eq.${m.id}`, { status: "cancelled" }, "return=minimal");
+    return respond(200, { ok: true });
+  }
+  if (m.status !== "open") return respond(400, { error: "This match is no longer open" });
+  if (action === "join") {
+    if (rmIn(m, me.name)) return respond(200, { ok: true, already: true });
+    const det = JSON.parse((await rmDetail(m.code, { token: b.token })).body).match;
+    if (!det.me || !det.me.canJoin) return respond(400, { error: (det.me && det.me.why) || "You can't join this match" });
+    await supaRest("POST", "regular_match_players", [{ match_id: m.id, player_name: me.name, display: me.display, gender: me.gender }], "return=minimal");
+    return respond(200, { ok: true });
+  }
+  if (action === "leave") {
+    if (isCreator) return respond(400, { error: "The organiser can't leave — cancel the match instead" });
+    await supaRest("PATCH", `regular_match_players?match_id=eq.${m.id}&player_name=ilike.${encodeURIComponent(String(me.name).replace(/[\\%_*(),]/g, ""))}&status=eq.joined`, { status: "left" }, "return=minimal");
+    return respond(200, { ok: true });
+  }
+  if (action === "remove") {
+    if (!isCreator) return respond(403, { error: "Only the organiser can remove players" });
+    const who = String(b.player || "");
+    if (!who || normName(who) === normName(me.name)) return respond(400, { error: "Choose a player to remove" });
+    await supaRest("PATCH", `regular_match_players?match_id=eq.${m.id}&player_name=ilike.${encodeURIComponent(who.replace(/[\\%_*(),]/g, ""))}&status=eq.joined`, { status: "removed" }, "return=minimal");
+    return respond(200, { ok: true });
+  }
+  return respond(400, { error: "Unknown action" });
+}
+
+// POST /api/regular/submit { token, code, games:[{t1:[a,b], t2:[c,d], s1, s2}] }
+async function rmSubmit(body) {
+  const b = body || {};
+  const me = await rmMe(b.token);
+  if (!me) return respond(401, { error: "Sign in with your Trekkr profile" });
+  const m = await rmGet(String(b.code || ""));
+  if (!m) return respond(404, { error: "Match not found" });
+  if (!rmIn(m, me.name)) return respond(403, { error: "Only players in this match can enter results" });
+  if (!["open", "disputed", "expired"].includes(m.status)) return respond(400, { error: "Results are already submitted for this match" });
+  const st = rmStartMs(m);
+  if (st != null && Date.now() < st) return respond(400, { error: "Results can be entered once the match has started" });
+  const canon = {}; (m.players || []).forEach((p) => { canon[normName(p.player_name)] = p.player_name; });
+  const games = [];
+  for (const g of (Array.isArray(b.games) ? b.games : []).slice(0, 60)) {
+    const names = [].concat(g.t1 || [], g.t2 || []).map((n) => canon[normName(n)]);
+    if (names.length !== 4 || names.some((n) => !n)) return respond(400, { error: "Every game needs four players from this match" });
+    if (new Set(names.map(normName)).size !== 4) return respond(400, { error: "A player can't appear twice in one game" });
+    const s1 = rmInt(g.s1), s2 = rmInt(g.s2);
+    if (s1 == null || s2 == null || s1 < 0 || s2 < 0 || s1 > 99 || s2 > 99) return respond(400, { error: "Enter both scores for every game" });
+    if (s1 === s2) return respond(400, { error: "A game can't end in a draw" });
+    games.push({ t1: [names[0], names[1]], t2: [names[2], names[3]], s1, s2 });
+  }
+  if (!games.length) return respond(400, { error: "Add at least one game" });
+  await supaRest("PATCH", `regular_matches?id=eq.${m.id}`, { games, status: "pending_confirm", submitted_by: me.name, submitted_at: new Date().toISOString(), disputed_by: null }, "return=minimal");
+  return respond(200, { ok: true, status: "pending_confirm" });
+}
+
+// Who may confirm: another participant who played, and — when the submitter
+// played too — who faced the submitter in at least one game.
+function rmCanConfirm(m, name) {
+  if (normName(name) === normName(m.submitted_by)) return false;
+  const games = m.games || [];
+  const inG = (g, n) => g.t1.concat(g.t2).some((x) => normName(x) === normName(n));
+  if (!games.some((g) => inG(g, name))) return false;
+  const subPlayed = games.some((g) => inG(g, m.submitted_by));
+  if (!subPlayed) return true;
+  return games.some((g) => {
+    const a = g.t1.some((x) => normName(x) === normName(name)), bb = g.t2.some((x) => normName(x) === normName(name));
+    const sa = g.t1.some((x) => normName(x) === normName(m.submitted_by)), sb = g.t2.some((x) => normName(x) === normName(m.submitted_by));
+    return (a && sb) || (bb && sa);
+  });
+}
+
+// POST /api/regular/confirm | dispute { token, code }
+async function rmConfirm(action, body) {
+  const b = body || {};
+  const me = await rmMe(b.token);
+  if (!me) return respond(401, { error: "Sign in with your Trekkr profile" });
+  const m = await rmGet(String(b.code || ""));
+  if (!m) return respond(404, { error: "Match not found" });
+  if (m.status !== "pending_confirm") return respond(400, { error: m.status === "expired" ? "Confirmation window has passed — the results did not count" : "Nothing to confirm" });
+  if (!rmCanConfirm(m, me.name)) return respond(403, { error: "Only a player from the opposing team can confirm" });
+  if (action === "dispute") {
+    await supaRest("PATCH", `regular_matches?id=eq.${m.id}&status=eq.pending_confirm`, { status: "disputed", disputed_by: me.name }, "return=minimal");
+    return respond(200, { ok: true, status: "disputed" });
+  }
+  // Claim the confirmation atomically so ELO is written exactly once.
+  const claimed = await supaRest("PATCH", `regular_matches?id=eq.${m.id}&status=eq.pending_confirm`, { status: "confirmed", confirmed_by: me.name, confirmed_at: new Date().toISOString() }, "return=representation");
+  if (!claimed || !claimed.length) return respond(409, { error: "Already confirmed" });
+  try {
+    const sheets = getSheets();
+    const matches = (m.games || []).map((g) => ({ p1t1: g.t1[0], p2t1: g.t1[1], p1t2: g.t2[0], p2t2: g.t2[1], scoreT1: g.s1, scoreT2: g.s2 }));
+    const results = await computeSessionElo(sheets, matches);
+    if (!results || !results.length) throw new Error("no results");
+    const sessionId = `SES_${Date.now()}`, now = new Date().toISOString();
+    const names = new Set(); (m.games || []).forEach((g) => g.t1.concat(g.t2).forEach((n) => names.add(n)));
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.sessions}!A:I`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[sessionId, `Regular Match – ${m.title || m.venue} – ${m.date}`, `regular:${m.code}`, "Regular Match", "N/A", m.venue, names.size, matches.length, now]] } });
+    await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${TABS.elo_log}!A:G`, valueInputOption: "USER_ENTERED",
+      requestBody: { values: results.map((r) => [sessionId, r.player, r.new_elo, r.elo_change || 0, r.w || 0, r.l || 0, now]) } });
+    // Match history (passport) for registered venues.
+    if (m.venue_registered) {
+      try {
+        const pmap = await playerLookup();
+        const gOf = (n) => (pmap[normName(n)] || {}).gender || "M";
+        const rows = matches.map((x) => buildVenueRow({ week: `W${getWeekNumber(new Date(m.date + "T00:00:00Z"))}`, date: m.date, p1t1: x.p1t1, p2t1: x.p2t1, p1t2: x.p1t2, p2t2: x.p2t2, scoreT1: x.scoreT1, scoreT2: x.scoreT2, genders: [gOf(x.p1t1), gOf(x.p2t1), gOf(x.p1t2), gOf(x.p2t2)], source: `regular:${m.code}` }));
+        await sheets.spreadsheets.values.append({ spreadsheetId: SHEET_ID, range: `${venueTabName(m.venue)}!A:M`, valueInputOption: "USER_ENTERED", requestBody: { values: rows } });
+      } catch (e) { console.error("[regular] venue rows:", e.message); }
+    }
+    const flags = detectCalibrationFlags(results); await raiseCalibrationFlags(flags);
+    await supaRest("PATCH", `regular_matches?id=eq.${m.id}`, { session_id: sessionId }, "return=minimal");
+    return respond(200, { ok: true, status: "confirmed", sessionId, results: results.map((r) => ({ player: r.player, new_elo: r.new_elo, elo_change: r.elo_change, w: r.w, l: r.l })) });
+  } catch (e) {
+    console.error("[regular] confirm:", e.message);
+    await supaRest("PATCH", `regular_matches?id=eq.${m.id}&status=eq.confirmed`, { status: "pending_confirm", confirmed_by: null, confirmed_at: null }, "return=minimal").catch(() => {});
+    return respond(500, { error: "Couldn't record the results — try again" });
+  }
+}
+
 // POST /api/venue/book { token, sessionId }
 async function bookSession(body) {
   const b = body || {};
@@ -1479,6 +1745,12 @@ const netlifyHandler = async (event) => {
     if (path === "liga/sessions" && method === "GET") return await ligaSessions(params);
     if (path === "liga/check" && method === "POST") return await ligaCheck(body);
     if (path === "account/activity" && method === "GET") return await accountActivity(params);
+    if (path === "regular/list" && method === "GET") return await rmList(params);
+    if (path === "regular/create" && method === "POST") return await rmCreate(body);
+    if (["regular/join", "regular/leave", "regular/remove", "regular/cancel"].includes(path) && method === "POST") return await rmMembership(path.slice(8), body);
+    if (path === "regular/submit" && method === "POST") return await rmSubmit(body);
+    if ((path === "regular/confirm" || path === "regular/dispute") && method === "POST") return await rmConfirm(path.slice(8), body);
+    if (path.startsWith("regular/") && method === "GET") return await rmDetail(decodeURIComponent(path.slice(8)), params);
     if (path === "liga/players" && method === "GET") return await ligaPlayerSearch(params);
     if (path === "venue/booking/cancel" && method === "POST") return await cancelBooking(body);
     if (path === "venue/bookings" && method === "GET") return await listVenueBookings(params);
