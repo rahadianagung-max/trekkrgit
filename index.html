@@ -147,7 +147,7 @@
 
     <!-- Find a match -->
     <section class="hm-sec" id="play">
-      <div class="hm-head"><div><h2>Find a match</h2><p class="lead">Upcoming sessions at Trekkr venues. Every match counts toward your rating.</p></div><a href="/venues">All venues →</a></div>
+      <div class="hm-head"><div><h2>Find a match</h2><p class="lead">Upcoming sessions and player-created matches. Every match counts toward your rating.</p></div><a class="btn btn--primary" href="/match?new=1" style="color:#fff">+ Create a match</a></div>
       <div class="fl" id="filters" role="group" aria-label="Filter sessions"></div>
       <div class="acts" id="acts" aria-live="polite"></div>
     </section>
@@ -269,10 +269,11 @@
   var FILTERS=[
     {k:'all',l:'All'},
     {k:'week',l:'This week',f:function(a){return a.date<=addDays(today(),6);}},
-    {k:'beg',l:'Beginner-friendly',f:function(a){return a.kind==='liga'?a.division==='D1':/beginner/i.test(a.level||'');}},
+    {k:'beg',l:'Beginner-friendly',f:function(a){return a.kind==='liga'?a.division==='D1':a.kind==='rm'?(a.minR==null||a.minR<=900):/beginner/i.test(a.level||'');}},
     {k:'lvl',l:'My level',need:'rated',f:function(a){
       var e=ST.stats&&ST.stats.currentElo;if(!e)return false;
       if(a.kind==='liga'){var dv=PPI.divisionOf(e).name;return DIVN[a.division]===dv;}
+      if(a.kind==='rm')return (a.minR==null||e>=a.minR)&&(a.maxR==null||e<=a.maxR);
       return !a.level||/open/i.test(a.level)||a.level.toLowerCase()===PPI.tierOf(e).name.toLowerCase();}},
     {k:'men',l:'Men',f:function(a){return a.cat==='Men'||a.cat==='Mixed';}},
     {k:'women',l:'Women',f:function(a){return a.cat==='Women'||a.cat==='Mixed';}}
@@ -285,22 +286,24 @@
   }
   function card(a){
     var when=dLabel(a.date)+(a.startTime?' · '+a.startTime:'');
-    var right=a.kind==='liga'?(a.spotsLeft>0?a.spotsLeft+' spot'+(a.spotsLeft===1?'':'s')+' left':'Full'):(a.cat||'');
+    var right=(a.kind==='liga'||a.kind==='rm')?(a.spotsLeft>0?a.spotsLeft+' spot'+(a.spotsLeft===1?'':'s')+' left':'Full'):(a.cat||'');
     var chips=[];
     if(a.kind==='liga'){chips.push('<span class="tk-chip tk-chip--v">⚡ Liga · '+esc(DIVN[a.division]||'')+'</span>','<span class="tk-chip">8 matches</span>');}
+    else if(a.kind==='rm'){chips.push('<span class="tk-chip tk-chip--kv">Regular match</span>','<span class="tk-chip">'+(a.format==='fixed'?'Fixed partner':'Rotating')+'</span>');if(a.range)chips.push('<span class="tk-chip">'+esc(a.range)+'</span>');}
     else{chips.push('<span class="tk-chip tk-chip--kv">PlayRank</span>');if(a.level)chips.push('<span class="tk-chip">'+esc(a.level)+'</span>');}
     if(a.capacity)chips.push('<span class="tk-chip">Up to '+a.capacity+' players</span>');
     if(a.prizePool)chips.push('<span class="tk-chip tk-chip--g">🏆 '+esc(a.prizePool)+'</span>');
     if(a.myStatus)chips.push('<span class="tk-chip tk-chip--ok">'+(a.myStatus==='CONFIRMED'?'✓ You\'re in':'You\'re on the list')+'</span>');
     var title=a.gameName||(a.kind==='liga'?'Liga Trekkr · '+(DIVN[a.division]||''):'PlayRank session');
     var where=[a.courtName||a.venue,a.courtName&&a.courtName!==a.venue?a.venue:'',a.area?String(a.area).split(',')[0]:''].filter(Boolean).join(' · ');
-    var cta=a.kind==='liga'?(a.myStatus?'View':(a.spotsLeft>0?'Join':'Waitlist')):'View & book';
+    var cta=a.kind==='liga'?(a.myStatus?'View':(a.spotsLeft>0?'Join':'Waitlist')):a.kind==='rm'?(a.myStatus?'View':(a.spotsLeft>0?'Join':'View')):'View & book';
+    if(a.kind==='rm'&&a.organiser&&!a.note)a.note='Organised by '+a.organiser;
     return '<a class="ac" href="'+esc(a.href)+'">'+
       '<div class="ac-d"><span>'+esc(when)+'</span><em'+(a.kind==='liga'&&a.spotsLeft<=0?' style="color:#F87171"':'')+'>'+esc(right)+'</em></div>'+
       '<div class="ac-b"><div class="ac-t">'+esc(title)+'</div><div class="ac-l">📍 <b>'+esc(where)+'</b>'+(a.endTime?' · until '+esc(a.endTime):'')+'</div>'+
       (a.note?'<div class="ac-n">'+esc(a.note.length>140?a.note.slice(0,137)+'…':a.note)+'</div>':'')+
       '<div class="ac-m">'+chips.join('')+'</div></div>'+
-      '<div class="ac-f"><div class="ac-p">'+(a.pricePerPlayer?rp(a.pricePerPlayer)+'<small>per player</small>':'<small>Price at venue</small>')+'</div><span class="ac-go'+(a.kind==='liga'?'':' k')+'">'+cta+' →</span></div></a>';
+      '<div class="ac-f"><div class="ac-p">'+(a.pricePerPlayer?rp(a.pricePerPlayer)+'<small>per player</small>':'<small>Price at venue</small>')+'</div><span class="ac-go'+(a.kind==='pr'?' k':'')+'">'+cta+' →</span></div></a>';
   }
   function renderFilters(){
     var areas={};ST.acts.forEach(function(a){var x=areaOf(a);if(x)areas[x]=(areas[x]||0)+1;});
@@ -331,11 +334,14 @@
     token().then(function(t){
       return Promise.all([
         getJSON(BASE+'/schedule?from='+today()).catch(function(){return null;}),
-        getJSON(BASE+'/liga/sessions'+(t?'?token='+encodeURIComponent(t):'')).catch(function(){return null;})
+        getJSON(BASE+'/liga/sessions'+(t?'?token='+encodeURIComponent(t):'')).catch(function(){return null;}),
+        getJSON(BASE+'/regular/list'+(t?'?token='+encodeURIComponent(t):'')).catch(function(){return null;})
       ]);
     }).then(function(r){
-      var sched=r[0],liga=r[1];
-      if(!sched&&!liga){$('acts').innerHTML='<div class="st"><b>Couldn\'t load sessions.</b><span>Check your connection and try again.</span><div class="row"><button type="button" class="btn btn--primary" id="actRetry">Retry</button></div></div>';$('actRetry').onclick=loadActs;return;}
+      var sched=r[0],liga=r[1],reg=r[2];
+      ST.myRegular=((reg&&reg.matches)||[]).filter(function(m){return m.me&&m.me.joined;});
+      if(ST.maData!==undefined)renderMa(ST.maData);
+      if(!sched&&!liga&&!reg){$('acts').innerHTML='<div class="st"><b>Couldn\'t load sessions.</b><span>Check your connection and try again.</span><div class="row"><button type="button" class="btn btn--primary" id="actRetry">Retry</button></div></div>';$('actRetry').onclick=loadActs;return;}
       var out=[];
       ((sched&&sched.schedule)||[]).forEach(function(s){
         if(String(s.type).toUpperCase()==='LIGA'||String(s.status).toUpperCase()!=='OPEN')return;
@@ -347,6 +353,13 @@
         out.push({kind:'liga',date:s.date,startTime:s.startTime,endTime:s.endTime,venue:s.venue,area:s.area,courtName:s.courtName,gameName:s.gameName,
           division:s.division,cat:cat(s.gender),capacity:s.capacity,pricePerPlayer:s.pricePerPlayer,prizePool:s.prizePool,spotsLeft:s.spotsLeft,myStatus:s.myStatus,
           href:'/liga-trekkr-v2?join='+encodeURIComponent(s.id)});
+      });
+      ((reg&&reg.matches)||[]).forEach(function(m){
+        if(m.status!=='open'||m.visibility!=='public')return;
+        var c=(m.min_rating==null&&m.max_rating==null)?'':(m.min_rating!=null?m.min_rating:0)+'–'+(m.max_rating!=null?m.max_rating:'∞');
+        out.push({kind:'rm',date:m.date,startTime:m.start_time,endTime:m.end_time,venue:m.venue,area:m.area,gameName:m.title||'Regular match',
+          cat:m.gender==='Open'?'Mixed':m.gender,range:c,minR:m.min_rating,maxR:m.max_rating,format:m.format,capacity:m.max_players,pricePerPlayer:m.price_per_player,spotsLeft:m.spotsLeft,
+          myStatus:m.me&&m.me.joined?'CONFIRMED':null,organiser:m.creator_name,href:'/match/'+encodeURIComponent(m.code)});
       });
       out.sort(function(a,b){return (a.date+(a.startTime||''))<(b.date+(b.startTime||''))?-1:1;});
       ST.acts=out;renderActs();
@@ -361,13 +374,17 @@
     if(!ST.me.player){el.innerHTML='<div class="st"><b>No player profile linked yet.</b><span>Claim or create your Trekkr profile to book sessions.</span><div class="row"><a class="btn btn--primary" href="/join">Claim / create profile</a></div></div>';return;}
     if(d==='loading'){el.innerHTML='<div class="ma"><a class="ac sk" style="min-height:64px"></a></div>';return;}
     if(d==='error'){el.innerHTML='<div class="st"><b>Couldn\'t load your bookings.</b><div class="row"><button type="button" class="btn btn--outline" id="maRetry">Retry</button></div></div>';$('maRetry').onclick=loadMa;return;}
-    var up=(d&&d.upcoming)||[];
+    ST.maData=d;
+    var up=((d&&d.upcoming)||[]).slice();
+    (ST.myRegular||[]).forEach(function(m){up.push({type:'REGULAR',code:m.code,date:m.date,startTime:m.start_time,venue:m.venue,gameName:m.title||'Regular match',gender:m.gender==='Open'?'':m.gender,
+      status:m.status==='open'?'CONFIRMED':m.status==='pending_confirm'?'PENDING_RESULT':m.status==='disputed'?'DISPUTED':'CONFIRMED'});});
+    up.sort(function(a,b){return (a.date+(a.startTime||''))<(b.date+(b.startTime||''))?-1:1;});
     if(!up.length){el.innerHTML='<div class="st"><b>No upcoming sessions.</b><span>Book a PlayRank or Liga session and it shows up here.</span><div class="row"><a class="btn btn--primary" href="#play">Find a match</a></div></div>';return;}
     el.innerHTML='<div class="ma">'+up.slice(0,6).map(function(u){
       var dt=new Date(String(u.date).slice(0,10)+'T00:00:00');
       var liga=String(u.type).toUpperCase()==='LIGA';
-      var st=u.status==='CONFIRMED'?'<span class="tk-chip tk-chip--ok">Confirmed</span>':u.status==='WAITING'?'<span class="tk-chip">Waiting list</span>':'<span class="tk-chip tk-chip--g">Verify profile</span>';
-      var href=liga?'/liga-trekkr-v2?join='+encodeURIComponent(u.sessionId):'/app?venue='+encodeURIComponent(u.venueSlug);
+      var st=u.status==='PENDING_RESULT'?'<span class="tk-chip tk-chip--v">Confirm result</span>':u.status==='DISPUTED'?'<span class="tk-chip">Disputed</span>':u.status==='CONFIRMED'?'<span class="tk-chip tk-chip--ok">'+(u.type==='REGULAR'?'Joined':'Confirmed')+'</span>':u.status==='WAITING'?'<span class="tk-chip">Waiting list</span>':'<span class="tk-chip tk-chip--g">Verify profile</span>';
+      var href=u.type==='REGULAR'?'/match/'+encodeURIComponent(u.code):liga?'/liga-trekkr-v2?join='+encodeURIComponent(u.sessionId):'/app?venue='+encodeURIComponent(u.venueSlug);
       return '<a href="'+esc(href)+'"><div class="dt"><small>'+dt.toLocaleDateString('en-GB',{month:'short'})+'</small><b>'+dt.getDate()+'</b></div>'+
         '<div><div class="t">'+esc(u.gameName||(liga?'Liga Trekkr · '+(DIVN[u.division]||''):'PlayRank'))+'</div><div class="s">'+esc([u.startTime,u.courtName||u.venue,cat(u.gender),u.partner?'with '+u.partner:''].filter(Boolean).join(' · '))+'</div></div>'+st+'</a>';
     }).join('')+'</div>';
