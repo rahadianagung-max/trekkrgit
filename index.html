@@ -109,13 +109,27 @@
 .fres a{display:flex;align-items:center;gap:10px;padding:8px 12px;border:2px solid var(--ink);border-top-width:0;background:var(--paper);color:var(--ink);text-decoration:none}
 .fres .pn{flex:1;min-width:0;font:800 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fres .none{padding:10px 12px;border:2px dashed var(--ink);border-top-width:0;font:700 12px var(--mono);color:var(--muted)}
-.nums{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.nums b{color:var(--ink);font-size:14px}
+/* community: player count + newest players */
+.cm{display:grid;grid-template-columns:auto 1fr;gap:14px;margin-top:22px;align-items:stretch}
+.cm:empty{display:none}
+.cm-n{border:3px solid var(--ink);background:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--orange);padding:14px 18px;display:flex;flex-direction:column;justify-content:center;min-width:170px}
+.cm-n b{font:800 40px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--volt)}
+.cm-n small{display:block;margin-top:6px;font:800 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.cm-n span{display:block;margin-top:10px;font:700 11px var(--mono);color:rgba(255,255,255,.85)}
+.cm-k{font:800 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:8px}
+.np{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.np a{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);background:var(--paper);padding:10px;color:var(--ink);text-decoration:none;min-width:0}
+.np a:hover{background:var(--warm)}
+.np .i{flex:1;min-width:0}
+.np .n{font:800 13.5px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np .m{font:700 10px var(--mono);color:var(--muted);text-transform:uppercase;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hm-end{height:34px}
 .pg-wrap{max-width:640px}
 @media(max-width:900px){
   .hm-hero .container{padding:24px 0 22px}
   .mo{grid-template-columns:1fr 1fr}
+  .cm{grid-template-columns:1fr}
+  .np{grid-template-columns:1fr}
 }
 @media(max-width:480px){.pg-row{grid-template-columns:1fr}}
 @media(max-width:420px){.hm-cta{grid-template-columns:1fr}}
@@ -172,7 +186,7 @@
       </div>
       <div class="find" role="search"><input id="homeFind" type="search" placeholder="Find a player by name…" autocomplete="off" aria-label="Find a player"/></div>
       <div class="fres" id="homeFindRes" aria-live="polite"></div>
-      <div class="nums" id="nums"></div>
+      <div class="cm" id="nums"></div>
     </section>
     <div class="hm-end"></div>
   </div>
@@ -425,7 +439,12 @@
   })();
   getJSON(BASE+'/home-summary').then(function(d){
     if(!d||!d.playerCount)return;
-    $('nums').innerHTML='<span><b>'+fmt(d.playerCount)+'</b> players rated</span><span><b>'+fmt(d.totalMatches)+'</b> matches recorded</span>';
+    var np=(d.newPlayers||[]).slice(0,3);
+    $('nums').innerHTML='<div class="cm-n"><b>'+fmt(d.playerCount)+'</b><small>Players on Trekkr</small>'+(d.totalMatches?'<span>'+fmt(d.totalMatches)+' matches recorded</span>':'')+'</div>'+
+      (np.length?'<div><div class="cm-k">Just joined</div><div class="np">'+np.map(function(p){
+        var meta=[p.region,p.level].filter(Boolean).join(' · ');
+        return '<a href="/player/'+slug(p.name)+'">'+av(p.display||p.name,p.photoUrl,40)+'<div class="i"><div class="n">'+esc(p.display||p.name)+'</div>'+(meta?'<div class="m">'+esc(meta)+'</div>':'')+'</div><span class="tk-chip tk-chip--ok">New</span></a>';
+      }).join('')+'</div></div>':'');
   }).catch(function(){});
 
   /* ---------- boot ---------- */
