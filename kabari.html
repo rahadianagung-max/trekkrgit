@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kabari saya — Trekkr</title>
+<meta name="robots" content="noindex"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/trekkr-theme.css"/>
+<link rel="stylesheet" href="/ecosystem.css"/>
+<style>
+.kb{width:min(560px,calc(100% - 32px));margin:0 auto;padding:48px 0 64px}
+.kb-k{font:800 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}
+.kb h1{font:700 clamp(32px,8vw,48px)/.95 var(--disp);letter-spacing:-.04em;text-transform:uppercase;margin:10px 0 12px}
+.kb h1 span{color:var(--orange)}
+.kb-card{background:#fff;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:20px}
+.kb-card p{margin:0 0 12px;font:500 15px/1.6 var(--body);color:#334155}
+.kb-brands{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 16px}
+.kb-card .btn{width:100%}
+.kb-msg{margin-top:12px;font:600 14px/1.5 var(--body)}
+.kb-msg.err{color:#B91C1C}
+.kb-fine{margin-top:14px;font-size:12.5px;color:#64748B;line-height:1.5}
+.kb-fine a{color:var(--orange);font-weight:700}
+</style>
+</head>
+<body>
+<div id="tk-nav"></div>
+<main class="kb">
+  <div class="kb-k">SportsActvd · Email</div>
+  <h1>Kabari <span>saya</span></h1>
+  <div class="kb-card" id="kbCard">
+    <p>Satu langkah lagi: konfirmasi bahwa kamu mau menerima kabar dari ekosistem SportsActvd lewat email — jadwal main, liga, turnamen, kelas, dan promo.</p>
+    <div class="kb-brands"><span class="tk-chip">Trekkr</span><span class="tk-chip">TurnamenPadel</span><span class="tk-chip">Stellar Squad Academy</span></div>
+    <button class="btn btn--primary" id="kbGo" type="button">Ya, kabari saya</button>
+    <div class="kb-msg" id="kbMsg" role="status"></div>
+    <p class="kb-fine">Bisa berhenti kapan saja lewat link "Berhenti berlangganan" di setiap email. Lihat <a href="/privacy">Kebijakan Privasi</a>.</p>
+  </div>
+</main>
+<script src="/trekkr-nav.js" defer></script>
+<script>
+(function(){
+  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
+  var q=new URLSearchParams(location.search), e=q.get('e'), t=q.get('t'), s=q.get('s');
+  var go=document.getElementById('kbGo'), msg=document.getElementById('kbMsg');
+  if(!e||!t){go.disabled=true;msg.className='kb-msg err';msg.textContent='Link tidak lengkap. Buka lagi tombol "Ya, kabari saya" dari email kami.';return;}
+  go.onclick=function(){
+    go.disabled=true;go.textContent='Menyimpan…';msg.textContent='';
+    fetch(BASE+'/email/optin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({e:e,t:t,s:s})})
+      .then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||'Gagal');});})
+      .then(function(){document.getElementById('kbCard').innerHTML='<p><b>Terima kasih! 🎾</b></p><p>Kamu akan menerima kabar dari Trekkr, TurnamenPadel &amp; Stellar Squad Academy. Setiap email punya link berhenti berlangganan.</p><a class="btn btn--primary" href="/" style="width:100%">Ke Trekkr →</a>';})
+      .catch(function(err){go.disabled=false;go.textContent='Ya, kabari saya';msg.className='kb-msg err';msg.textContent=err.message==='Link tidak valid'?'Link ini tidak valid atau terpotong. Buka lagi dari email kami.':'Gagal menyimpan. Coba lagi sebentar lagi.';});
+  };
+})();
+</script>
+<script src="/ecosystem.js" data-site="trekkr"></script>
+</body>
+</html>
