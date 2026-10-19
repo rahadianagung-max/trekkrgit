@@ -12,7 +12,7 @@
 <style>
 /* ── Home · activity-first (PlayRank League theme) ── */
 .hm-hero{border-bottom:3px solid var(--ink);background:var(--paper)}
-.hm-hero .container{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:end;padding:34px 0 30px}
+.hm-hero .container{padding:34px 0 30px}
 .hm-hi{font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);min-height:14px}
 .hm-hero h1{margin:8px 0 0;font:700 clamp(46px,9vw,92px)/.9 var(--disp);letter-spacing:-.05em;text-transform:uppercase}
 .hm-hero h1 span{color:var(--orange)}
@@ -112,11 +112,9 @@
 .nums{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .nums b{color:var(--ink);font-size:14px}
 .hm-end{height:34px}
-.only-m{display:none}
+.pg-wrap{max-width:640px}
 @media(max-width:900px){
-  .hm-hero .container{grid-template-columns:1fr;padding:24px 0 22px}
-  .hm-hero .pg-slot{display:none}
-  .only-m{display:block}
+  .hm-hero .container{padding:24px 0 22px}
   .mo{grid-template-columns:1fr 1fr}
 }
 @media(max-width:480px){.pg-row{grid-template-columns:1fr}}
@@ -134,23 +132,22 @@
         <p class="sub">Find a match, join a competition, and keep progressing.</p>
         <div class="hm-cta">
           <a class="btn btn--primary" href="#play" id="ctaFind"><span>Find a Match →<small>Sessions you can join</small></span></a>
-          <a class="btn btn--ink" href="#compete"><span>Competitions<small>Liga · tournaments</small></span></a>
+          <a class="btn btn--ink" href="/match?new=1"><span>+ Create a Match<small>Invite players at your level</small></span></a>
         </div>
       </div>
-      <div class="pg-slot" id="pgDesk"></div>
     </div>
   </section>
 
   <div class="container">
-    <!-- Progress (mobile position) -->
-    <section class="hm-sec only-m" id="progress"><div id="pgMob"></div></section>
-
     <!-- Find a match -->
     <section class="hm-sec" id="play">
-      <div class="hm-head"><div><h2>Find a match</h2><p class="lead">Upcoming sessions and player-created matches. Every match counts toward your rating.</p></div><a class="btn btn--primary" href="/match?new=1" style="color:#fff">+ Create a match</a></div>
+      <div class="hm-head"><div><h2>Find a match</h2><p class="lead">Upcoming sessions and player-created matches. Every match counts toward your rating.</p></div></div>
       <div class="fl" id="filters" role="group" aria-label="Filter sessions"></div>
       <div class="acts" id="acts" aria-live="polite"></div>
     </section>
+
+    <!-- Progress / passport -->
+    <section class="hm-sec" id="progress"><div id="pgMob" class="pg-wrap"></div></section>
 
     <!-- My activity -->
     <section class="hm-sec" id="my-activity">
@@ -256,7 +253,7 @@
       '<div class="pg-grid"><div><b class="e">'+fmt(s.currentElo)+'</b><small>'+(cal?'Provisional':'Trekkr rating')+'</small></div><div><b>'+fmt(n)+'</b><small>Matches</small></div><div><b>'+(s.winRate||0)+'%</b><small>Win rate</small></div></div>'+
       '<p class="pg-tr">'+tr+'</p><a class="btn btn--volt" href="/player/'+slug(p.name)+'">Open my passport →</a></div>';
   }
-  function renderPg(){var h=pgHtml();$('pgDesk').innerHTML=h;$('pgMob').innerHTML=h;}
+  function renderPg(){$('pgMob').innerHTML=pgHtml();}
   function loadStats(){
     var p=ST.me&&ST.me.player;if(!p){renderPg();return;}
     ST.stats=null;renderPg();
