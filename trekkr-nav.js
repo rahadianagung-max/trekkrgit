@@ -130,6 +130,14 @@
       '@media(max-width:900px){.tk-nav{display:none}.tk-burger{display:flex}}' +
       '@media(max-width:560px){.tk-mename{display:none}.tk-me{padding:5px}}' +
       '@media(max-width:560px){.tk-getapp{display:none}}' +
+      // Mobile bottom tab bar (opt-in: a page adds <nav id="tk-tabbar"></nav>).
+      '.tk-tabbar{display:none}' +
+      '@media(max-width:760px){.tk-tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;border-top:3px solid #090D14;padding-bottom:env(safe-area-inset-bottom)}' +
+      'body.tk-has-tabbar{padding-bottom:calc(64px + env(safe-area-inset-bottom))}}' +
+      '.tk-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;padding:6px 2px;color:#475569;text-decoration:none;font:800 9.5px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;position:relative}' +
+      '.tk-tab svg{width:22px;height:22px}' +
+      '.tk-tab.on{color:#090D14}.tk-tab.on:before{content:"";position:absolute;top:-3px;left:18%;right:18%;height:4px;background:#FF5900}' +
+      '.tk-tab:active{background:#F4F6F9}' +
       "</style>";
   }
 
@@ -158,7 +166,43 @@
       };
     });
     d.addEventListener("click", function () { Array.prototype.forEach.call(d.querySelectorAll(".tk-drop.open,.tk-acct.open"), function (x) { x.classList.remove("open"); }); });
+    var cachedMe = null; try { cachedMe = ls(TK) ? JSON.parse(ls(ME) || "null") : null; } catch (e) {}
+    renderTabbar(cachedMe);
     account();
+  }
+
+  // ---- Mobile bottom tab bar (Home · Explore · My activity · Rankings · Profile) ----
+  // Every tab is an existing route: Explore = venues & communities, My activity =
+  // the homepage section that lists the player's bookings, Profile = own passport
+  // (or sign-in for guests).
+  var TAB_ICONS = {
+    home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+    explore: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+    act: '<rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    rank: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'
+  };
+  var _tabMe = null;
+  function renderTabbar(me) {
+    if (me !== undefined) _tabMe = me; me = _tabMe;
+    var el = d.getElementById("tk-tabbar"); if (!el) return;
+    var p = me && me.player;
+    var prof = p ? SITE + "/player/" + slug(p.name) : me ? SITE + "/join" : SITE + "/login";
+    var home = path === "/" || path === "/index.html";
+    var tabs = [
+      ["home", "Home", SITE + "/", home && location.hash !== "#my-activity"],
+      ["explore", "Explore", SITE + "/venues", path === "/venues"],
+      ["act", "My activity", SITE + "/#my-activity", home && location.hash === "#my-activity"],
+      ["rank", "Rankings", SITE + "/rankings", path === "/rankings"],
+      ["me", me ? "Profile" : "Sign in", prof, /^\/player\//.test(path) || path === "/login" || path === "/join"],
+    ];
+    el.className = "tk-tabbar"; el.setAttribute("aria-label", "Main");
+    el.innerHTML = tabs.map(function (t) {
+      return '<a class="tk-tab' + (t[3] ? " on" : "") + '" href="' + esc(t[2]) + '"' + (t[3] ? ' aria-current="page"' : "") + '>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[t[0]] + "</svg>" + esc(t[1]) + "</a>";
+    }).join("");
+    d.body.classList.add("tk-has-tabbar");
+    if (!el._hash) { el._hash = 1; w.addEventListener("hashchange", function () { renderTabbar(); }); }
   }
 
   // ---- Player account (top-right) ----
@@ -168,6 +212,8 @@
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
   function slug(n) { return String(n || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
   function renderAcct(me) {
+    renderTabbar(me);
+    try { w.dispatchEvent(new CustomEvent("trekkr:me", { detail: me || null })); } catch (e) {}
     var box = d.getElementById("tkAcct"); if (!box) return;
     box.className = "tk-acct";
     if (!me) { box.innerHTML = '<a class="tk-login" href="' + SITE + '/login">Masuk</a>'; return; }

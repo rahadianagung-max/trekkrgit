@@ -1055,6 +1055,34 @@ async function ligaPlayerSearch(params) {
   return respond(200, { players: out });
 }
 
+// GET /api/account/activity?token=<player token> — the signed-in player's
+// upcoming bookings (as booker or Mixed partner) joined with the schedule, for
+// the homepage "My activity" section. Read-only; additive.
+async function accountActivity(params) {
+  const player = await bookingPlayer(params && params.token);
+  if (!player) return respond(401, { error: "Sign in to see your activity" });
+  if (!supaOn()) return respond(200, { player: { name: player.name, display: player.display }, upcoming: [] });
+  const R = jakartaRanges();
+  const nm = String(player.name || "").replace(/[\\%_*(),]/g, "");
+  let rows = [];
+  try {
+    rows = (await supaRest("GET", `session_bookings?or=(player_name.ilike.${encodeURIComponent(nm)},partner_name.ilike.${encodeURIComponent(nm)})&status=in.(PENDING_VERIFY,WAITING,CONFIRMED)&select=*&order=id.desc&limit=50`)) || [];
+  } catch (e) { console.error("[activity] bookings:", e.message); }
+  const sres = await getSchedule({ from: R.today });
+  const byId = {}; ((JSON.parse(sres.body).schedule) || []).forEach((s) => { byId[String(s.id)] = s; });
+  const upcoming = rows.map((b) => {
+    const s = byId[String(b.session_id)]; if (!s) return null;
+    const liga = isLigaSession(s);
+    return {
+      bookingId: b.booking_id, status: b.status, sessionId: s.id, type: s.type, venue: s.venue, venueSlug: slugifyVenue(s.venue),
+      area: s.area, courtName: s.courtName, gameName: s.gameName, date: s.date, startTime: s.startTime, endTime: s.endTime,
+      gender: s.gender, level: liga ? "" : s.level, division: liga ? (ligaDivCode(s.division) || "D2") : "",
+      partner: b.partner_name ? (normName(b.partner_name) === normName(player.name) ? b.player_display || b.player_name : b.partner_name) : "",
+    };
+  }).filter(Boolean).sort((a, b) => (a.date + a.startTime < b.date + b.startTime ? -1 : 1));
+  return respond(200, { player: { name: player.name, display: player.display }, upcoming }, { "Cache-Control": "no-store" });
+}
+
 // POST /api/venue/book { token, sessionId }
 async function bookSession(body) {
   const b = body || {};
@@ -1450,6 +1478,7 @@ const netlifyHandler = async (event) => {
     if (path === "venue/book" && method === "POST") return await bookSession(body);
     if (path === "liga/sessions" && method === "GET") return await ligaSessions(params);
     if (path === "liga/check" && method === "POST") return await ligaCheck(body);
+    if (path === "account/activity" && method === "GET") return await accountActivity(params);
     if (path === "liga/players" && method === "GET") return await ligaPlayerSearch(params);
     if (path === "venue/booking/cancel" && method === "POST") return await cancelBooking(body);
     if (path === "venue/bookings" && method === "GET") return await listVenueBookings(params);
