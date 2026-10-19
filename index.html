@@ -2,189 +2,183 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Trekkr — What's your ELO? Padel ELO rating &amp; rankings Indonesia</title>
-<meta name="description" content="Trekkr is the rating and competition platform for padel. National rankings, PlayRank, tournaments, and a player passport for every match you play."/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Trekkr — Play padel, join competitions, track your ELO</title>
+<meta name="description" content="Find a padel match, join Liga Trekkr and tournaments, and track your progress with the Trekkr ELO rating and player passport."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css"/>
 <link rel="stylesheet" href="/trekkr-theme.css"/>
 <link rel="stylesheet" href="/ecosystem.css"/>
 <style>
-/* ── Home (PlayRank League theme) ── */
-.tick{background:var(--ink);color:#fff;font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
-.tick .container{display:flex;justify-content:space-between;gap:10px;padding:7px 0;white-space:nowrap;overflow:hidden}
-.tick .v{color:var(--volt)} .tick .d{color:rgba(255,255,255,.45)}
-.tick .dot{display:inline-block;width:7px;height:7px;background:var(--orange);margin-right:6px;vertical-align:1px;animation:tkPulse 1.4s infinite}
-@keyframes tkPulse{50%{opacity:.35}}
-.hero{border-bottom:3px solid var(--ink)}
-.hero .container{display:grid;grid-template-columns:1.25fr .9fr;gap:40px;align-items:center;padding:46px 0 42px}
-.hero h1{margin:14px 0 0;font:700 clamp(52px,8.4vw,96px)/.9 var(--disp);letter-spacing:-.05em;text-transform:uppercase}
-.hero h1 span{color:var(--orange)}
-.hero .sub{margin:16px 0 22px;font:500 16px/1.55 var(--body);color:#334155;max-width:540px}
-.hero .sub b{color:var(--ink)}
-.find{position:relative;display:flex;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:var(--paper);max-width:600px}
-.find input{flex:1;min-width:0;border:0;outline:0;padding:16px;font:700 16px var(--body);background:transparent;color:var(--ink)}
-.find button{border:0;border-left:3px solid var(--ink);background:var(--orange);color:#fff;font:800 13px var(--mono);letter-spacing:.06em;padding:0 20px;text-transform:uppercase}
-.fres{max-width:600px;margin-top:12px}
+/* ── Home · activity-first (PlayRank League theme) ── */
+.hm-hero{border-bottom:3px solid var(--ink);background:var(--paper)}
+.hm-hero .container{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:end;padding:34px 0 30px}
+.hm-hi{font:800 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);min-height:14px}
+.hm-hero h1{margin:8px 0 0;font:700 clamp(46px,9vw,92px)/.9 var(--disp);letter-spacing:-.05em;text-transform:uppercase}
+.hm-hero h1 span{color:var(--orange)}
+.hm-hero .sub{margin:12px 0 0;font:500 16px/1.5 var(--body);color:#334155;max-width:46ch}
+.hm-cta{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-top:20px;max-width:520px}
+.hm-cta .btn{padding:16px 14px;font-size:13px}
+.hm-cta .btn small{display:block;font:700 9.5px var(--mono);letter-spacing:.06em;opacity:.85;text-transform:none}
+.hm-cta .btn span{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+/* progress card (hero right on desktop, own section on mobile) */
+.pg{border:3px solid var(--ink);background:var(--ink);color:#fff;box-shadow:6px 6px 0 var(--orange);padding:16px}
+.pg-k{font:800 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.pg-top{display:flex;align-items:center;gap:12px;margin-top:10px}
+.pg-top .tk-ph{border-color:#fff}
+.pg-nm{font:800 16px var(--body);line-height:1.2}
+.pg-lv{font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--volt);margin-top:2px}
+.pg-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;border-top:2px solid rgba(255,255,255,.14)}
+.pg-grid div{padding:10px 4px 0}
+.pg-grid div+div{border-left:2px solid rgba(255,255,255,.14);padding-left:10px}
+.pg-grid b{display:block;font:800 24px/1 var(--mono);font-variant-numeric:tabular-nums}
+.pg-grid b.e{color:var(--orange)}
+.pg-grid small{display:block;margin-top:4px;font:700 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.pg-tr{margin-top:12px;font:500 13px/1.45 var(--body);color:rgba(255,255,255,.82)}
+.pg-tr .up{color:#4ADE80;font-weight:800}.pg-tr .dn{color:#F87171;font-weight:800}
+.pg .btn{margin-top:14px;width:100%}
+.pg h3{margin:8px 0 6px;font:700 24px/1.05 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.pg p{margin:0;font:500 13.5px/1.5 var(--body);color:rgba(255,255,255,.78)}
+.pg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.pg-row .btn{margin:0}
+.pg .sk{display:block;height:12px;background:rgba(255,255,255,.12);margin-top:10px}
+/* sections */
+.hm-sec{padding:28px 0 6px}
+.hm-sec h2{margin:0;font:700 clamp(24px,4vw,34px)/1 var(--disp);text-transform:uppercase;letter-spacing:-.03em}
+.hm-sec .lead{margin:6px 0 0;font:500 14px/1.5 var(--body);color:var(--muted)}
+.hm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.hm-head a{font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+/* filters */
+.fl{display:flex;gap:6px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.fl::-webkit-scrollbar{display:none}
+.fl button,.fl select{flex:none;min-height:40px;padding:0 13px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);font:800 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+.fl button.on{background:var(--ink);color:var(--volt)}
+.fl button[disabled]{opacity:.4;cursor:default}
+.fl button i{font-style:normal;opacity:.6;margin-left:4px}
+.fl select{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 14px) 17px,calc(100% - 9px) 17px;background-size:5px 5px;background-repeat:no-repeat}
+/* activity cards */
+.acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px;margin-top:12px}
+.ac{display:flex;flex-direction:column;border:2px solid var(--ink);background:var(--paper);box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-decoration:none}
+.ac:hover{box-shadow:5px 5px 0 var(--orange)}
+.ac-d{display:flex;justify-content:space-between;gap:8px;background:var(--ink);color:#fff;padding:8px 12px;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.ac-d em{font-style:normal;color:var(--volt)}
+.ac-b{padding:12px;display:flex;flex-direction:column;gap:5px;flex:1}
+.ac-t{font:700 19px/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.ac-l{font:500 13.5px/1.4 var(--body);color:#334155}
+.ac-l b{color:var(--ink)}
+.ac-n{font:500 12px/1.45 var(--body);color:var(--muted);border-left:3px solid var(--volt);padding-left:8px;margin-top:2px}
+.ac-m{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.ac-f{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:2px solid var(--ink);padding:10px 12px}
+.ac-p{font:800 15px var(--mono)}
+.ac-p small{display:block;font:700 9.5px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ac-go{font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;background:var(--orange);color:#fff;border:2px solid var(--ink);padding:9px 12px;white-space:nowrap}
+.ac-go.k{background:var(--ink)}
+.ac.sk{min-height:190px;box-shadow:none;border-style:dashed;background:repeating-linear-gradient(135deg,#F4F6F9 0 10px,#fff 10px 20px)}
+.st{border:2px dashed var(--ink);background:var(--paper);padding:16px;display:flex;flex-direction:column;gap:6px}
+.st b{font:700 18px/1.1 var(--disp);text-transform:uppercase}
+.st span{font:500 13.5px/1.5 var(--body);color:#475569}
+.st .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.acts .st{grid-column:1/-1}
+/* my activity */
+.ma{display:grid;gap:10px;margin-top:12px}
+.ma a{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:center;border:2px solid var(--ink);background:var(--paper);padding:10px 12px;color:var(--ink);text-decoration:none}
+.ma .dt{border:2px solid var(--ink);text-align:center;padding:4px 0;background:var(--volt)}
+.ma .dt b{display:block;font:800 22px/1 var(--mono)}
+.ma .dt small{font:800 9.5px var(--mono);text-transform:uppercase}
+.ma .t{font:800 14px var(--body)}.ma .s{font:600 12px var(--body);color:var(--muted);margin-top:2px}
+/* competitions */
+.cp{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;margin-top:12px}
+.cp a{display:flex;flex-direction:column;gap:6px;border:2px solid var(--ink);background:var(--paper);box-shadow:4px 4px 0 var(--ink);padding:14px;color:var(--ink);text-decoration:none}
+.cp a.k{background:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--volt)}
+.cp a.k p{color:rgba(255,255,255,.75)}
+.cp h3{margin:0;font:700 19px/1.1 var(--disp);text-transform:uppercase;letter-spacing:-.02em}
+.cp p{margin:0;font:500 13px/1.45 var(--body);color:#475569}
+.cp .go{margin-top:auto;padding-top:6px;font:800 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+.cp a.k .go{color:var(--volt)}
+/* more */
+.mo{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.mo a{display:flex;gap:10px;align-items:center;border:2px solid var(--ink);background:var(--paper);padding:12px;color:var(--ink);text-decoration:none;min-height:60px}
+.mo a:hover{background:var(--warm)}
+.mo .ic{width:34px;height:34px;flex:none;border:2px solid var(--ink);background:var(--volt);display:grid;place-items:center;font-size:16px}
+.mo b{display:block;font:800 13px var(--body);text-transform:uppercase}
+.mo small{display:block;font:600 11.5px var(--body);color:var(--muted)}
+.find{display:flex;border:2px solid var(--ink);background:var(--paper);margin-top:12px;max-width:560px}
+.find input{flex:1;min-width:0;border:0;outline:0;padding:13px;font:700 15px var(--body);background:transparent;color:var(--ink)}
+.fres{max-width:560px}
 .fres:empty{display:none}
-.fres a{display:flex;align-items:center;gap:10px;padding:8px 12px;border:2px solid var(--ink);border-top-width:0;background:var(--paper)}
-.fres a:first-child{border-top-width:2px}
-.fres a:hover{background:var(--warm)}
+.fres a{display:flex;align-items:center;gap:10px;padding:8px 12px;border:2px solid var(--ink);border-top-width:0;background:var(--paper);color:var(--ink);text-decoration:none}
 .fres .pn{flex:1;min-width:0;font:800 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fres .none{padding:10px 12px;border:2px dashed var(--ink);font:700 12px var(--mono);color:var(--muted)}
-.hero-app{margin-top:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.hero-app span{font:700 11px var(--mono);color:var(--muted);text-transform:uppercase}
-/* stats board (hero) */
-.sb{position:relative;background:var(--ink);color:#fff;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--orange);overflow:hidden;
-  background-image:linear-gradient(to right,rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px}
-.sb-h{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:2px solid rgba(255,255,255,.14);font:800 10px var(--mono);letter-spacing:.14em;text-transform:uppercase}
-.sb-h .live{color:var(--volt);display:inline-flex;align-items:center;gap:6px}
-.sb-h .live i{width:7px;height:7px;background:var(--volt);display:inline-block;animation:tkPulse 1.4s infinite}
-.sb-main{padding:20px 18px 16px;border-bottom:2px solid rgba(255,255,255,.14)}
-.sb-k{font:800 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6)}
-.sb-main b{display:block;margin-top:6px;font:700 clamp(58px,7.6vw,88px)/.86 var(--disp);letter-spacing:-.05em;color:var(--volt);font-variant-numeric:tabular-nums}
-.sb-main .u{display:inline-block;margin-top:10px;background:var(--volt);color:var(--ink);font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:3px 8px}
-.sb-row{display:grid;grid-template-columns:1fr 1fr}
-.sb-c{padding:14px 18px 16px}
-.sb-c+.sb-c{border-left:2px solid rgba(255,255,255,.14)}
-.sb-c b{display:block;margin-top:6px;font:800 clamp(28px,3.4vw,38px)/1 var(--mono);letter-spacing:-.04em;color:var(--orange);font-variant-numeric:tabular-nums}
-.sb-c.w b{color:#fff}
-.sb-bar{height:8px;background:repeating-linear-gradient(90deg,var(--orange) 0 10px,transparent 10px 14px);opacity:.9}
-.sb-f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--volt);color:var(--ink);font:800 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.sb-f a{color:var(--ink);border-bottom:2px solid var(--ink)}
-.sb .sk{display:inline-block;width:60%;height:.8em;background:rgba(255,255,255,.12)}
-/* journey */
-.jr{border-bottom:3px solid var(--ink);background:var(--paper)}
-.jr .container{display:grid;grid-template-columns:repeat(3,1fr)}
-.jr .st{padding:26px 26px 28px;border-right:3px solid var(--ink)}
-.jr .st:first-child{border-left:3px solid var(--ink)}
-.jr .n{display:inline-block;font:700 40px/1 var(--disp);background:var(--volt);border:2px solid var(--ink);padding:0 8px}
-.jr h3{margin:12px 0 6px;font:900 20px var(--body);text-transform:uppercase}
-.jr p{margin:0 0 14px;font:500 14px/1.5 var(--body);color:#334155}
-/* flagship */
-.flag{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin:40px 0;background:var(--ink);color:#fff;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--volt);padding:26px 28px}
-.flag h2{margin:10px 0 6px;font:700 clamp(26px,3.6vw,38px)/1 var(--disp);text-transform:uppercase;letter-spacing:-.03em}
-.flag h2 span{color:var(--volt)}
-.flag p{margin:0;color:rgba(255,255,255,.72);font:500 14px/1.5 var(--body);max-width:640px}
-/* two columns */
-.two{display:grid;grid-template-columns:1.2fr 1fr;gap:30px;padding-bottom:40px}
-.tbl{border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);background:var(--paper)}
-.tr{display:grid;grid-template-columns:30px 40px minmax(0,1fr) auto 64px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border-soft)}
-.tr:last-child{border-bottom:0}
-a.tr:hover{background:var(--warm)}
-.tr.th{background:var(--ink);color:#fff;font:800 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:7px 12px}
-.tr .p{width:28px;height:28px;display:grid;place-items:center;font:800 11px var(--mono);border:2px solid #CBD5E1;color:#475569}
-.tr.r1 .p{background:var(--orange);color:#fff;border-color:var(--ink)} .tr.r2 .p{background:var(--ink);color:#fff;border-color:var(--ink)} .tr.r3 .p{background:var(--volt);color:var(--ink);border-color:var(--ink)}
-.tr .n{min-width:0} .tr .n b{display:block;font:800 13.5px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tr .n span{font:700 10px var(--mono);color:var(--muted);text-transform:uppercase}
-.tr .m{font:700 11px var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
-.tr .e{text-align:right;font:800 15px var(--mono);color:var(--orange);font-variant-numeric:tabular-nums}
-.tr.sk{height:50px;background:repeating-linear-gradient(90deg,#F4F6F9 0 12px,#fff 12px 24px)}
-.empty{border:2px dashed var(--ink);padding:18px;text-align:center;font:700 12px var(--mono);color:var(--muted);text-transform:uppercase}
-.aud{display:grid;gap:12px}
-.aud a{display:flex;gap:14px;align-items:flex-start;border:2px solid var(--ink);background:var(--paper);box-shadow:4px 4px 0 var(--ink);padding:14px}
-.aud a:hover{background:var(--warm)}
-.aud .ic{width:40px;height:40px;flex:none;border:2px solid var(--ink);background:var(--volt);display:grid;place-items:center;font-size:19px}
-.aud h4{margin:0;font:900 14px var(--body);text-transform:uppercase}
-.aud p{margin:3px 0 6px;font:500 12.5px/1.45 var(--body);color:#475569}
-.aud .l{font:800 10.5px var(--mono);color:var(--orange);text-transform:uppercase}
-/* new players */
-.np-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-bottom:44px}
-.np-card{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:10px;background:var(--paper)}
-.np-card:hover{background:var(--warm)}
-.np-info{flex:1;min-width:0}
-.np-name{font:800 13.5px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.np-meta{font:700 10px var(--mono);color:var(--muted);text-transform:uppercase;margin-top:2px}
-.eco-footer{margin-top:0}
+.fres .none{padding:10px 12px;border:2px dashed var(--ink);border-top-width:0;font:700 12px var(--mono);color:var(--muted)}
+.nums{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.nums b{color:var(--ink);font-size:14px}
+.hm-end{height:34px}
+.only-m{display:none}
 @media(max-width:900px){
-  .hero .container{grid-template-columns:1fr;gap:30px;padding:30px 0 34px}
-  .jr .container{grid-template-columns:1fr}
-  .jr .st{border-left:3px solid var(--ink);border-bottom:3px solid var(--ink)}
-  .jr .st:last-child{border-bottom:0}
-  .flag{grid-template-columns:1fr}
-  .two{grid-template-columns:1fr}
-  .np-grid{grid-template-columns:1fr 1fr}
+  .hm-hero .container{grid-template-columns:1fr;padding:24px 0 22px}
+  .hm-hero .pg-slot{display:none}
+  .only-m{display:block}
+  .mo{grid-template-columns:1fr 1fr}
 }
-@media(max-width:560px){
-  .tick .container>span:last-child{display:none}
-  .find button{padding:0 14px}
-  .tr{grid-template-columns:28px 36px minmax(0,1fr) 58px;gap:8px}
-  .tr .m{display:none}
-  .np-grid{grid-template-columns:1fr}
-}
-@media(prefers-reduced-motion:reduce){.tick .dot,.sb-h .live i{animation:none}}
+@media(max-width:480px){.pg-row{grid-template-columns:1fr}}
+@media(max-width:420px){.hm-cta{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div id="tk-nav"></div>
 <main>
-  <div class="tick"><div class="container"><span><span class="dot tk-round" style="border-radius:50%"></span><span class="v">Padel ELO</span> <span class="d">//</span> Every match at a partner venue counts</span><span class="d">Updated after every match</span></div></div>
-
-  <section class="hero">
+  <section class="hm-hero">
     <div class="container">
       <div>
-        <span class="tk-chip tk-chip--kv">// Padel ELO rating · Indonesia</span>
-        <h1>What's your <span>ELO?</span></h1>
-        <p class="sub">Trekkr rates you with the <b>same ELO standard used across world sport</b> — not just wins and losses, but how strong your opponents were and how convincing the win.</p>
-        <div class="find" role="search">
-          <input id="homeFind" type="search" placeholder="Search your name…" autocomplete="off" aria-label="Search players"/>
-          <button id="homeFindBtn" type="button">Search →</button>
-        </div>
-        <div class="fres" id="homeFindRes" aria-live="polite"></div>
-        <div class="hero-app"><a href="/app" id="getAppBtn" class="btn btn--volt"><i class="ti ti-device-mobile"></i> Get the Player App</a><span>Free · Android &amp; iPhone</span></div>
-      </div>
-      <div>
-        <div class="tk-lbl" style="margin-bottom:10px">// Trekkr by the numbers</div>
-        <div class="sb" aria-label="Trekkr statistics">
-          <div class="sb-h"><span>Trekkr // National board</span><span class="live"><i></i>Live</span></div>
-          <div class="sb-main"><span class="sb-k">Registered players</span><b id="statPlayers"><span class="sk"></span></b><span class="u">Rated on one ELO scale</span></div>
-          <div class="sb-row">
-            <div class="sb-c"><span class="sb-k">Matches recorded</span><b id="statMatches"><span class="sk"></span></b></div>
-            <div class="sb-c w"><span class="sb-k">Avg / player</span><b id="statAvg"><span class="sk"></span></b></div>
-          </div>
-          <div class="sb-bar" aria-hidden="true"></div>
-          <div class="sb-f"><span>Updated after every match</span><a href="/rankings">Rankings →</a></div>
+        <div class="hm-hi" id="hmHi"></div>
+        <h1>Ready to <span>play?</span></h1>
+        <p class="sub">Find a match, join a competition, and keep progressing.</p>
+        <div class="hm-cta">
+          <a class="btn btn--primary" href="#play" id="ctaFind"><span>Find a Match →<small>Sessions you can join</small></span></a>
+          <a class="btn btn--ink" href="#compete"><span>Competitions<small>Liga · tournaments</small></span></a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="jr">
-    <div class="container">
-      <div class="st"><span class="n">01</span><h3>Play</h3><p>Any match at a partner venue or community counts toward your rating.</p><a class="btn btn--outline" href="/venues">Find venues →</a></div>
-      <div class="st"><span class="n">02</span><h3>Prove</h3><p>Enter a TurnamenPadel event — results are verified and synced to your passport.</p><a class="btn btn--ink" href="https://turnamenpadel.com/?ref=trekkr">See tournaments →</a></div>
-      <div class="st"><span class="n">03</span><h3>Progress</h3><p>Train at Stellar Academy — your ELO gain is measured, not promised.</p><a class="btn btn--ink" href="https://stellarsquadacademy.com/?ref=trekkr">Visit academy →</a></div>
+      <div class="pg-slot" id="pgDesk"></div>
     </div>
   </section>
 
   <div class="container">
-    <a class="flag" href="/playrank">
-      <div><span class="tk-chip tk-chip--v">PlayRank — our flagship</span>
-        <h2>Turn padel night into a <span>competition</span></h2>
-        <p>Players are matched into balanced games, every result feeds one live ranking, and the winners rise to the top of the board. Weekly PlayRank or League · Fixed Partner.</p></div>
-      <span class="btn btn--volt">Learn now →</span>
-    </a>
+    <!-- Progress (mobile position) -->
+    <section class="hm-sec only-m" id="progress"><div id="pgMob"></div></section>
 
-    <div class="two">
-      <div>
-        <div class="tk-sec"><span class="tk-sec__t">Most active players</span><a class="tk-sec__more" href="/rankings">View all →</a></div>
-        <div id="activePlayersEl"></div>
-      </div>
-      <div>
-        <div class="tk-sec"><span class="tk-sec__t">Start here</span></div>
-        <div class="aud">
-          <a href="/how-trekkr-works"><span class="ic">🎾</span><div><h4>For players</h4><p>What Trekkr is, how we track your matches, and how ELO &amp; tiers work. See your full progress in the app.</p><span class="l">How it works →</span></div></a>
-          <a href="/get-listed"><span class="ic">🏟️</span><div><h4>Venues &amp; community</h4><p>Host Ranked Play, get your venue or community listed, and manage everything from the admin console.</p><span class="l">Join / Get listed →</span></div></a>
-          <a href="https://liga.trekkr.online"><span class="ic">🏆</span><div><h4>Liga Trekkr</h4><p>Weekly league at your venue: 8 matches a night, play at your own level, win the month and get promoted.</p><span class="l">The league →</span></div></a>
-        </div>
-      </div>
-    </div>
+    <!-- Find a match -->
+    <section class="hm-sec" id="play">
+      <div class="hm-head"><div><h2>Find a match</h2><p class="lead">Upcoming sessions at Trekkr venues. Every match counts toward your rating.</p></div><a href="/venues">All venues →</a></div>
+      <div class="fl" id="filters" role="group" aria-label="Filter sessions"></div>
+      <div class="acts" id="acts" aria-live="polite"></div>
+    </section>
 
-    <div class="tk-sec"><span class="tk-sec__t">New players</span><a class="tk-sec__more" href="/app">Join Trekkr →</a></div>
-    <div id="newPlayersEl" class="np-grid"></div>
+    <!-- My activity -->
+    <section class="hm-sec" id="my-activity">
+      <div class="hm-head"><div><h2>My activity</h2><p class="lead" id="maLead">Sessions you've booked.</p></div></div>
+      <div id="ma"></div>
+    </section>
+
+    <!-- Competitions -->
+    <section class="hm-sec" id="compete">
+      <div class="hm-head"><div><h2>Competitions</h2><p class="lead">Leagues and tournaments that feed your Trekkr record.</p></div><a href="/tournament">Overview →</a></div>
+      <div class="cp" id="cp"></div>
+    </section>
+
+    <!-- More -->
+    <section class="hm-sec" id="more">
+      <div class="hm-head"><div><h2>Explore Trekkr</h2></div></div>
+      <div class="mo">
+        <a href="/rankings"><span class="ic">📊</span><span><b>Rankings</b><small>National ELO board</small></span></a>
+        <a href="/venues"><span class="ic">🏟️</span><span><b>Venues</b><small>Venues &amp; communities</small></span></a>
+        <a href="https://stellarsquadacademy.com/?ref=trekkr"><span class="ic">🎓</span><span><b>Academy</b><small>Stellar Squad training</small></span></a>
+        <a href="/how-trekkr-works"><span class="ic">⚙️</span><span><b>How it works</b><small>ELO, levels &amp; calibration</small></span></a>
+      </div>
+      <div class="find" role="search"><input id="homeFind" type="search" placeholder="Find a player by name…" autocomplete="off" aria-label="Find a player"/></div>
+      <div class="fres" id="homeFindRes" aria-live="polite"></div>
+      <div class="nums" id="nums"></div>
+    </section>
+    <div class="hm-end"></div>
   </div>
-
 </main>
 <div data-eco-footer>
   <a href="/app">Get the App</a>
@@ -194,97 +188,247 @@ a.tr:hover{background:var(--warm)}
   <a href="/how-trekkr-works">How it works</a>
   <a href="https://admin.trekkr.online">Venue login</a>
 </div>
+<nav id="tk-tabbar"></nav>
 <script src="/trekkr-nav.js" defer></script>
-<script src="/trekkr-loader.js"></script>
+<script src="/trekkr-auth.js"></script>
+<script src="/passport-insights.js"></script>
 <script>
+/* Home — activity-first. Every number and card comes from the live API:
+   /api/schedule (PlayRank sessions) · /api/liga/sessions (Liga) ·
+   /api/competitions · /api/account/activity (my bookings) ·
+   /api/players/<name> (my rating) · /api/home-summary · /api/elo/leaderboard.
+   Nothing here writes data or changes ratings. */
 (function(){
   var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
-  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  var PPI=window.PPI;
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function slug(n){return String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
-  function initials(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
-  // The website always shows the player's full name (aliases are app-only).
-  function dnm(p){return (p&&(p.name||p.display))||'';}
-  // Square photo with an initials fallback.
-  function av(p,sz){
-    var u=p.photoUrl||p.photo||'', st=sz?' style="width:'+sz+'px;height:'+sz+'px"':'';
-    if(u)return'<div class="tk-ph"'+st+'><img src="'+esc(u)+'" alt="" loading="lazy" onerror="this.parentNode.textContent=\''+esc(initials(dnm(p)))+'\'"/></div>';
-    return'<div class="tk-ph"'+st+'>'+esc(initials(dnm(p)))+'</div>';
-  }
-  function fmt(n){return(n||0).toLocaleString('en-US');}
-  // Scoreboard count-up for the hero stats (instant when reduced motion is on).
-  function countUp(el,to){
-    if(!el)return;
-    var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(rm||!to||!window.requestAnimationFrame){el.textContent=fmt(to);return;}
-    var t0=null,dur=1100;
-    function step(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmt(Math.round(to*e));if(k<1)requestAnimationFrame(step);}
-    requestAnimationFrame(step);
-  }
-  window.TK_HOME={esc:esc,slug:slug,dnm:dnm,av:av};
-  var ael=document.getElementById('activePlayersEl');
-  ael.innerHTML='<div class="tbl">'+[0,1,2,3,4].map(function(){return '<div class="tr sk"></div>';}).join('')+'</div>';
-  // One slim, CDN-cached call powers the whole homepage below the hero (5 most
-  // active + 4 newest + the 3 hero numbers).
-  fetch(BASE+'/home-summary').then(function(r){return r.json();}).then(function(d){
-    d=d||{};
-    var active=d.topActive||[], newPlayers=d.newPlayers||[];
-    // --- Most Active Players ---
-    ael.innerHTML=active.length?'<div class="tbl"><div class="tr th"><span>#</span><span></span><span>Player</span><span class="m">Played</span><span style="text-align:right">ELO</span></div>'+active.map(function(p,i){
-        return'<a class="tr'+(i===0?' r1':i===1?' r2':i===2?' r3':'')+'" href="/player/'+slug(p.name)+'"><span class="p">'+String(i+1).padStart(2,'0')+'</span>'+av(p,36)+
-          '<span class="n"><b>'+esc(dnm(p))+'</b><span>'+esc([p.region,p.level].filter(Boolean).join(' · '))+'</span></span>'+
-          '<span class="m">'+fmt(p.totalMatches||0)+' M</span><span class="e">'+(p.elo?p.elo:'—')+'</span></a>';
-      }).join('')+'</div>':'<div class="empty">No data yet.</div>';
-    // --- New Players ---
-    var newEl=document.getElementById('newPlayersEl');
-    if(newEl){
-      newEl.innerHTML=newPlayers.length?newPlayers.map(function(p){
-        var meta=[p.region,p.level].filter(Boolean).join(' · ');
-        return'<a class="np-card" href="/player/'+slug(p.name)+'">'+av({display:dnm(p),name:p.name,photoUrl:p.photoUrl||''},40)+
-          '<div class="np-info"><div class="np-name">'+esc(dnm(p))+'</div>'+(meta?'<div class="np-meta">'+esc(meta)+'</div>':'')+'</div><span class="tk-chip tk-chip--ok">New</span></a>';
-      }).join(''):'<div class="empty" style="grid-column:1/-1">No new players yet.</div>';
+  function ini(n){return(String(n||'').trim().split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('')||'?').toUpperCase();}
+  function fmt(n){return Math.round(Number(n)||0).toLocaleString('en-US');}
+  function elo(n){return '<span class="tk-elo">'+fmt(n)+'</span>';}
+  function rp(n){return 'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');}
+  function getJSON(u){return fetch(u).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+  function av(name,photo,sz){var st=' style="width:'+sz+'px;height:'+sz+'px"';
+    return photo?'<div class="tk-ph"'+st+'><img src="'+esc(photo)+'" alt="" loading="lazy" onerror="this.parentNode.textContent=\''+esc(ini(name))+'\'"/></div>':'<div class="tk-ph"'+st+'>'+esc(ini(name))+'</div>';}
+  var DAY=864e5;
+  function today(){var d=new Date(Date.now()+7*3600e3);return d.toISOString().slice(0,10);} // Asia/Jakarta date
+  function addDays(iso,n){var d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+  function dLabel(iso){try{var d=new Date(String(iso).slice(0,10)+'T00:00:00');var t=today();
+    if(iso===t)return 'Today';if(iso===addDays(t,1))return 'Tomorrow';
+    return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){return iso;}}
+  var DIVN={D1:'Division 1',D2:'Division 2',D3:'Division 3'};
+  function cat(g){g=String(g||'').toUpperCase();return /^MIX/.test(g)?'Mixed':(g.charAt(0)==='W'||g.charAt(0)==='F')?'Women':g?'Men':'';}
+
+  /* ---------- who is viewing ---------- */
+  var ST={me:null,stats:null,acts:[],filter:'all',area:''};
+  function cachedMe(){try{return localStorage.getItem('trekkr_player_token')?JSON.parse(localStorage.getItem('trekkr_player_me')||'null')||{player:null}:null;}catch(e){return null;}}
+  function token(){return window.TrekkrAuth?TrekkrAuth.token().catch(function(){return '';}):Promise.resolve('');}
+
+  /* ---------- progress card ---------- */
+  function pgHtml(){
+    var me=ST.me,p=me&&me.player,s=ST.stats;
+    if(!me){ // guest
+      return '<div class="pg"><div class="pg-k">Your Trekkr passport</div><h3>Your padel journey starts here.</h3>'+
+        '<p>Play at a Trekkr venue and every match builds your rating, level and match history — all in one player passport.</p>'+
+        '<div class="pg-row"><a class="btn btn--primary" href="#play">Find your first match</a><a class="btn btn--volt" href="/login">Sign in</a></div></div>';
     }
-    // --- The Numbers ---
-    [['statPlayers',d.playerCount],['statMatches',d.totalMatches],['statAvg',d.avg]].forEach(function(x){
-      countUp(document.getElementById(x[0]),Number(x[1])||0);
-    });
-  }).catch(function(){
-    ael.innerHTML='<div class="empty">Couldn\'t load right now. Refresh to try again.</div>';
-    ['statPlayers','statMatches','statAvg'].forEach(function(id){var el=document.getElementById(id); if(el) el.textContent='—';});
-  });
-})();
-</script>
-<script>
-(function(){
-  var BASE=(location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api';
-  var H=window.TK_HOME;
-  var inp=document.getElementById('homeFind'),btn=document.getElementById('homeFindBtn'),res=document.getElementById('homeFindRes'),t;
-  function search(){
-    var q=(inp.value||'').trim();
-    if(q.length<2){res.innerHTML='';return;}
-    fetch(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:8}).toString()).then(function(r){return r.json();}).then(function(d){
-      var list=(d&&d.leaderboard)||[];
-      if(!list.length){res.innerHTML='<div class="none">No players found.</div>';return;}
-      res.innerHTML=list.map(function(p){
-        return'<a href="/player/'+H.slug(p.name)+'">'+H.av(p,34)+'<span class="pn">'+H.esc(H.dnm(p))+'</span><span class="tk-elo" style="font-size:15px">'+(p.elo||0)+'</span></a>';
-      }).join('');
-    }).catch(function(){res.innerHTML='';});
+    if(!p){ // signed in, no player profile yet
+      return '<div class="pg"><div class="pg-k">Signed in</div><h3>Claim your player profile.</h3>'+
+        '<p>Link your account to your Trekkr player record (or create one) to see your rating and book sessions.</p>'+
+        '<div class="pg-row"><a class="btn btn--primary" href="/join">Claim / create profile</a><a class="btn btn--volt" href="#play">Find a match</a></div></div>';
+    }
+    var head='<div class="pg-k">My progress</div><div class="pg-top">'+av(p.display_name||p.name,p.photo_url,46)+'<div><div class="pg-nm">'+esc(p.display_name||p.name)+'</div>';
+    if(!s) return head+'<div class="pg-lv">Loading…</div></div></div><span class="sk"></span><span class="sk" style="width:60%"></span>';
+    if(s.error) return head+'</div></div><p class="pg-tr">Couldn\'t load your stats right now.</p><a class="btn btn--volt" href="/player/'+slug(p.name)+'">Open my passport →</a></div>';
+    var n=s.totalMatches||0;
+    if(!n||s.unrated){ // no rated history yet: no rating shown
+      return head+'<div class="pg-lv">No rated matches yet</div></div></div>'+
+        '<p class="pg-tr">Your rating appears after your first recorded match and settles after 16.</p>'+
+        '<div class="pg-row"><a class="btn btn--primary" href="#play">Find your first match</a><a class="btn btn--volt" href="/player/'+slug(p.name)+'">My passport</a></div></div>';
+    }
+    var cal=n<16, tier=PPI?PPI.tierOf(s.currentElo):null;
+    var lv=cal?'Calibrating · '+n+' of 16 matches':(tier?tier.name:'');
+    var ch=PPI&&s.history?PPI.ratingChange(s.history,s.currentElo,30):null;
+    var tr=ch&&ch.matches>=3&&ch.spansPeriod?('Last 30 days: <span class="'+(ch.delta>=0?'up':'dn')+'">'+(ch.delta>=0?'▲ +':'▼ ')+ch.delta+'</span> over '+ch.matches+' rated matches.'):
+      (ch&&ch.matches>0?'Only '+ch.matches+' rated match'+(ch.matches===1?'':'es')+' in the last 30 days — too few for a trend.':'No rated matches in the last 30 days.');
+    return head+'<div class="pg-lv">'+esc(lv)+'</div></div></div>'+
+      '<div class="pg-grid"><div><b class="e">'+fmt(s.currentElo)+'</b><small>'+(cal?'Provisional':'Trekkr rating')+'</small></div><div><b>'+fmt(n)+'</b><small>Matches</small></div><div><b>'+(s.winRate||0)+'%</b><small>Win rate</small></div></div>'+
+      '<p class="pg-tr">'+tr+'</p><a class="btn btn--volt" href="/player/'+slug(p.name)+'">Open my passport →</a></div>';
   }
-  inp&&inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
-  btn&&btn.addEventListener('click',search);
-  inp&&inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
-})();
-</script>
-<script>
-/* "Get the Player App" — open the /app PWA. If this browser happens to offer a
-   native install prompt on the home page, use it; otherwise just go to /app,
-   where the app captures the prompt (Android) or shows Add-to-Home-Screen (iOS). */
-(function(){
-  var deferred=null,btn=document.getElementById('getAppBtn');
-  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;});
-  if(!btn)return;
-  btn.addEventListener('click',function(e){
-    if(deferred){e.preventDefault();deferred.prompt();deferred.userChoice.then(function(){deferred=null;});}
+  function renderPg(){var h=pgHtml();$('pgDesk').innerHTML=h;$('pgMob').innerHTML=h;}
+  function loadStats(){
+    var p=ST.me&&ST.me.player;if(!p){renderPg();return;}
+    ST.stats=null;renderPg();
+    getJSON(BASE+'/players/'+encodeURIComponent(p.name)).then(function(d){
+      ST.stats=Object.assign({},(d&&d.stats)||{},{history:(d&&d.history)||[]});renderPg();renderActs();
+    }).catch(function(){ST.stats={error:1};renderPg();});
+  }
+
+  /* ---------- activities ---------- */
+  var FILTERS=[
+    {k:'all',l:'All'},
+    {k:'week',l:'This week',f:function(a){return a.date<=addDays(today(),6);}},
+    {k:'beg',l:'Beginner-friendly',f:function(a){return a.kind==='liga'?a.division==='D1':/beginner/i.test(a.level||'');}},
+    {k:'lvl',l:'My level',need:'rated',f:function(a){
+      var e=ST.stats&&ST.stats.currentElo;if(!e)return false;
+      if(a.kind==='liga'){var dv=PPI.divisionOf(e).name;return DIVN[a.division]===dv;}
+      return !a.level||/open/i.test(a.level)||a.level.toLowerCase()===PPI.tierOf(e).name.toLowerCase();}},
+    {k:'men',l:'Men',f:function(a){return a.cat==='Men'||a.cat==='Mixed';}},
+    {k:'women',l:'Women',f:function(a){return a.cat==='Women'||a.cat==='Mixed';}}
+  ];
+  function rated(){return !!(ST.stats&&ST.stats.currentElo&&ST.stats.totalMatches&&!ST.stats.unrated);}
+  function areaOf(a){return a.area?String(a.area).split(',')[0].trim():a.venue;}
+  function visible(){
+    var f=FILTERS.filter(function(x){return x.k===ST.filter;})[0];
+    return ST.acts.filter(function(a){return (!f||!f.f||f.f(a))&&(!ST.area||areaOf(a)===ST.area);});
+  }
+  function card(a){
+    var when=dLabel(a.date)+(a.startTime?' · '+a.startTime:'');
+    var right=a.kind==='liga'?(a.spotsLeft>0?a.spotsLeft+' spot'+(a.spotsLeft===1?'':'s')+' left':'Full'):(a.cat||'');
+    var chips=[];
+    if(a.kind==='liga'){chips.push('<span class="tk-chip tk-chip--v">⚡ Liga · '+esc(DIVN[a.division]||'')+'</span>','<span class="tk-chip">8 matches</span>');}
+    else{chips.push('<span class="tk-chip tk-chip--kv">PlayRank</span>');if(a.level)chips.push('<span class="tk-chip">'+esc(a.level)+'</span>');}
+    if(a.capacity)chips.push('<span class="tk-chip">Up to '+a.capacity+' players</span>');
+    if(a.prizePool)chips.push('<span class="tk-chip tk-chip--g">🏆 '+esc(a.prizePool)+'</span>');
+    if(a.myStatus)chips.push('<span class="tk-chip tk-chip--ok">'+(a.myStatus==='CONFIRMED'?'✓ You\'re in':'You\'re on the list')+'</span>');
+    var title=a.gameName||(a.kind==='liga'?'Liga Trekkr · '+(DIVN[a.division]||''):'PlayRank session');
+    var where=[a.courtName||a.venue,a.courtName&&a.courtName!==a.venue?a.venue:'',a.area?String(a.area).split(',')[0]:''].filter(Boolean).join(' · ');
+    var cta=a.kind==='liga'?(a.myStatus?'View':(a.spotsLeft>0?'Join':'Waitlist')):'View & book';
+    return '<a class="ac" href="'+esc(a.href)+'">'+
+      '<div class="ac-d"><span>'+esc(when)+'</span><em'+(a.kind==='liga'&&a.spotsLeft<=0?' style="color:#F87171"':'')+'>'+esc(right)+'</em></div>'+
+      '<div class="ac-b"><div class="ac-t">'+esc(title)+'</div><div class="ac-l">📍 <b>'+esc(where)+'</b>'+(a.endTime?' · until '+esc(a.endTime):'')+'</div>'+
+      (a.note?'<div class="ac-n">'+esc(a.note.length>140?a.note.slice(0,137)+'…':a.note)+'</div>':'')+
+      '<div class="ac-m">'+chips.join('')+'</div></div>'+
+      '<div class="ac-f"><div class="ac-p">'+(a.pricePerPlayer?rp(a.pricePerPlayer)+'<small>per player</small>':'<small>Price at venue</small>')+'</div><span class="ac-go'+(a.kind==='liga'?'':' k')+'">'+cta+' →</span></div></a>';
+  }
+  function renderFilters(){
+    var areas={};ST.acts.forEach(function(a){var x=areaOf(a);if(x)areas[x]=(areas[x]||0)+1;});
+    var akeys=Object.keys(areas).sort();
+    var h=FILTERS.filter(function(f){return f.need!=='rated'||rated();}).map(function(f){
+      var n=f.f?ST.acts.filter(f.f).length:ST.acts.length;
+      return '<button type="button" data-f="'+f.k+'" class="'+(ST.filter===f.k?'on':'')+'"'+(!n&&f.k!=='all'?' disabled':'')+' aria-pressed="'+(ST.filter===f.k)+'">'+f.l+'<i>'+n+'</i></button>';
+    }).join('');
+    if(akeys.length>1)h+='<select id="flArea" aria-label="Area"><option value="">All areas</option>'+akeys.map(function(k){return '<option'+(ST.area===k?' selected':'')+'>'+esc(k)+'</option>';}).join('')+'</select>';
+    $('filters').innerHTML=ST.acts.length?h:'';
+    var sel=$('flArea');if(sel)sel.onchange=function(){ST.area=sel.value;renderActs();};
+  }
+  function renderActs(){
+    renderFilters();
+    var list=visible();
+    if(!ST.acts.length){
+      $('acts').innerHTML='<div class="st"><b>No open sessions right now.</b><span>Venues publish new PlayRank and Liga sessions every week. Browse venues to see their regular schedules, or check back soon.</span>'+
+        '<div class="row"><a class="btn btn--primary" href="/venues">Browse venues</a><a class="btn btn--outline" href="https://liga.trekkr.online">About Liga Trekkr</a></div></div>';
+      return;
+    }
+    $('acts').innerHTML=list.length?list.slice(0,12).map(card).join(''):
+      '<div class="st"><b>Nothing matches this filter.</b><span>Try another filter or show all sessions.</span><div class="row"><button type="button" class="btn btn--outline" id="flReset">Show all</button></div></div>';
+    var r=$('flReset');if(r)r.onclick=function(){ST.filter='all';ST.area='';renderActs();};
+  }
+  $('filters').addEventListener('click',function(e){var b=e.target.closest('button[data-f]');if(!b||b.disabled)return;ST.filter=b.getAttribute('data-f');renderActs();});
+  function loadActs(){
+    $('acts').innerHTML=[0,1,2].map(function(){return '<div class="ac sk" aria-hidden="true"></div>';}).join('');
+    token().then(function(t){
+      return Promise.all([
+        getJSON(BASE+'/schedule?from='+today()).catch(function(){return null;}),
+        getJSON(BASE+'/liga/sessions'+(t?'?token='+encodeURIComponent(t):'')).catch(function(){return null;})
+      ]);
+    }).then(function(r){
+      var sched=r[0],liga=r[1];
+      if(!sched&&!liga){$('acts').innerHTML='<div class="st"><b>Couldn\'t load sessions.</b><span>Check your connection and try again.</span><div class="row"><button type="button" class="btn btn--primary" id="actRetry">Retry</button></div></div>';$('actRetry').onclick=loadActs;return;}
+      var out=[];
+      ((sched&&sched.schedule)||[]).forEach(function(s){
+        if(String(s.type).toUpperCase()==='LIGA'||String(s.status).toUpperCase()!=='OPEN')return;
+        out.push({kind:'pr',date:s.date,startTime:s.startTime,endTime:s.endTime,venue:s.venue,area:s.area,courtName:s.courtName,gameName:s.gameName,
+          level:s.level,cat:cat(s.gender),capacity:s.capacity,pricePerPlayer:s.pricePerPlayer,prizePool:s.prizePool,note:s.note,
+          href:'/app?venue='+slug(s.venue)});
+      });
+      ((liga&&liga.sessions)||[]).forEach(function(s){
+        out.push({kind:'liga',date:s.date,startTime:s.startTime,endTime:s.endTime,venue:s.venue,area:s.area,courtName:s.courtName,gameName:s.gameName,
+          division:s.division,cat:cat(s.gender),capacity:s.capacity,pricePerPlayer:s.pricePerPlayer,prizePool:s.prizePool,spotsLeft:s.spotsLeft,myStatus:s.myStatus,
+          href:'/liga-trekkr-v2?join='+encodeURIComponent(s.id)});
+      });
+      out.sort(function(a,b){return (a.date+(a.startTime||''))<(b.date+(b.startTime||''))?-1:1;});
+      ST.acts=out;renderActs();
+    });
+  }
+
+  /* ---------- my activity ---------- */
+  function renderMa(d){
+    var el=$('ma');
+    if(!ST.me){$('maLead').textContent='Sign in to see the sessions you\'ve booked.';
+      el.innerHTML='<div class="st"><b>Your bookings live here.</b><span>Sign in with your Trekkr account to book sessions and keep track of them.</span><div class="row"><a class="btn btn--primary" href="/login">Sign in</a><a class="btn btn--outline" href="#play">Browse sessions</a></div></div>';return;}
+    if(!ST.me.player){el.innerHTML='<div class="st"><b>No player profile linked yet.</b><span>Claim or create your Trekkr profile to book sessions.</span><div class="row"><a class="btn btn--primary" href="/join">Claim / create profile</a></div></div>';return;}
+    if(d==='loading'){el.innerHTML='<div class="ma"><a class="ac sk" style="min-height:64px"></a></div>';return;}
+    if(d==='error'){el.innerHTML='<div class="st"><b>Couldn\'t load your bookings.</b><div class="row"><button type="button" class="btn btn--outline" id="maRetry">Retry</button></div></div>';$('maRetry').onclick=loadMa;return;}
+    var up=(d&&d.upcoming)||[];
+    if(!up.length){el.innerHTML='<div class="st"><b>No upcoming sessions.</b><span>Book a PlayRank or Liga session and it shows up here.</span><div class="row"><a class="btn btn--primary" href="#play">Find a match</a></div></div>';return;}
+    el.innerHTML='<div class="ma">'+up.slice(0,6).map(function(u){
+      var dt=new Date(String(u.date).slice(0,10)+'T00:00:00');
+      var liga=String(u.type).toUpperCase()==='LIGA';
+      var st=u.status==='CONFIRMED'?'<span class="tk-chip tk-chip--ok">Confirmed</span>':u.status==='WAITING'?'<span class="tk-chip">Waiting list</span>':'<span class="tk-chip tk-chip--g">Verify profile</span>';
+      var href=liga?'/liga-trekkr-v2?join='+encodeURIComponent(u.sessionId):'/app?venue='+encodeURIComponent(u.venueSlug);
+      return '<a href="'+esc(href)+'"><div class="dt"><small>'+dt.toLocaleDateString('en-GB',{month:'short'})+'</small><b>'+dt.getDate()+'</b></div>'+
+        '<div><div class="t">'+esc(u.gameName||(liga?'Liga Trekkr · '+(DIVN[u.division]||''):'PlayRank'))+'</div><div class="s">'+esc([u.startTime,u.courtName||u.venue,cat(u.gender),u.partner?'with '+u.partner:''].filter(Boolean).join(' · '))+'</div></div>'+st+'</a>';
+    }).join('')+'</div>';
+  }
+  function loadMa(){
+    if(!ST.me||!ST.me.player){renderMa();return;}
+    renderMa('loading');
+    token().then(function(t){if(!t)throw new Error('no token');return getJSON(BASE+'/account/activity?token='+encodeURIComponent(t));})
+      .then(function(d){renderMa(d);}).catch(function(){renderMa('error');});
+  }
+
+  /* ---------- competitions ---------- */
+  function loadCp(){
+    var base='<a class="k" href="https://liga.trekkr.online"><span class="tk-chip tk-chip--v" style="align-self:flex-start">⚡ Liga Trekkr</span><h3>Play at your level</h3><p>Weekly league nights by division: 8 matches each, win the night, win the month, get promoted.</p><span class="go">Liga Trekkr →</span></a>'+
+      '<a href="https://turnamenpadel.com/?ref=trekkr"><span class="tk-chip" style="align-self:flex-start">TurnamenPadel</span><h3>Tournaments</h3><p>Register for upcoming tournaments. Verified results sync to your Trekkr passport.</p><span class="go">See tournaments →</span></a>';
+    $('cp').innerHTML=base;
+    getJSON(BASE+'/competitions').then(function(d){
+      var list=(d&&d.competitions)||[];
+      var live=list.filter(function(c){return /ongoing|live/i.test(c.status||'');});
+      var done=list.filter(function(c){return /complet|finish/i.test(c.status||'')&&c.date;}).sort(function(a,b){return a.date<b.date?1:-1;}).slice(0,Math.max(0,2-live.length));
+      var more=live.concat(done).map(function(c){
+        var href='https://venue.trekkr.online/'+(c.type==='league'?'league':'tournament')+'/'+encodeURIComponent(c.slug);
+        var isLive=/ongoing|live/i.test(c.status||'');
+        return '<a href="'+esc(href)+'"><span class="tk-chip'+(isLive?' tk-chip--ok':'')+'" style="align-self:flex-start">'+(isLive?'● Ongoing ':'Results · ')+(c.type==='league'?'League':'Tournament')+'</span><h3>'+esc(c.name)+'</h3><p>'+esc([c.location,isLive?'':dLabel(c.date)].filter(Boolean).join(' · '))+'</p><span class="go">'+(isLive?'Standings →':'Results →')+'</span></a>';
+      }).join('');
+      $('cp').innerHTML=base+more;
+    }).catch(function(){});
+  }
+
+  /* ---------- player search + numbers ---------- */
+  (function(){
+    var inp=$('homeFind'),res=$('homeFindRes'),t,seq=0;
+    function search(){var q=(inp.value||'').trim();if(q.length<2){res.innerHTML='';return;}var my=++seq;
+      getJSON(BASE+'/elo/leaderboard?'+new URLSearchParams({search:q,limit:6}).toString()).then(function(d){if(my!==seq)return;
+        var list=((d&&d.leaderboard)||[]).filter(function(p){return !(PPI&&PPI.isWalkoverName(p.name));});
+        res.innerHTML=list.length?list.map(function(p){return '<a href="/player/'+slug(p.name)+'">'+av(p.name,p.photoUrl,32)+'<span class="pn">'+esc(p.name)+'</span>'+elo(p.elo)+'</a>';}).join(''):'<div class="none">No players found.</div>';
+      }).catch(function(){res.innerHTML='';});}
+    inp.addEventListener('input',function(){clearTimeout(t);t=setTimeout(search,250);});
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter')search();});
+  })();
+  getJSON(BASE+'/home-summary').then(function(d){
+    if(!d||!d.playerCount)return;
+    $('nums').innerHTML='<span><b>'+fmt(d.playerCount)+'</b> players rated</span><span><b>'+fmt(d.totalMatches)+'</b> matches recorded</span>';
+  }).catch(function(){});
+
+  /* ---------- boot ---------- */
+  function applyMe(me){
+    var had=JSON.stringify(ST.me&&ST.me.player&&ST.me.player.name||null);
+    ST.me=me;
+    var p=me&&me.player;
+    $('hmHi').textContent=p?'Hi, '+(p.display_name||p.name).split(' ')[0]+' 👋':'';
+    if(had!==JSON.stringify(p&&p.name||null)||!ST.stats){loadStats();loadMa();}
+  }
+  ST.me=cachedMe();
+  applyMe(ST.me);
+  // trekkr-nav.js re-checks the account (≤ every 5 min) and broadcasts the result.
+  window.addEventListener('trekkr:me',function(e){
+    var me=e.detail&&(e.detail.player||e.detail.email)?e.detail:(localStorage.getItem('trekkr_player_token')?{player:null}:null);
+    if(JSON.stringify(me&&me.player&&me.player.name||null)!==JSON.stringify(ST.me&&ST.me.player&&ST.me.player.name||null)||(!!me)!==(!!ST.me))applyMe(me);
   });
+  loadActs();loadCp();
 })();
 </script>
 <script src="/ecosystem.js" data-site="trekkr"></script>
