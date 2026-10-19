@@ -38,6 +38,7 @@
 .form{border:3px solid var(--ink);background:var(--paper);box-shadow:6px 6px 0 var(--ink);padding:16px;max-width:720px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g2>*,.g3>*{min-width:0}
 .f{margin-top:12px}
 .f label{display:block;font:800 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:5px}
 .f input,.f select,.f textarea{width:100%;box-sizing:border-box;border:2px solid var(--ink);background:#fff;padding:11px;font:600 15px var(--body);color:var(--ink);border-radius:0}
@@ -116,7 +117,14 @@
       return fetch(u,opt).then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok){var e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e;}return d;});});
     });
   }
-  function range(m){if(m.min_rating==null&&m.max_rating==null)return 'Open level';return (m.min_rating!=null?m.min_rating:'0')+'–'+(m.max_rating!=null?m.max_rating:'∞');}
+  // Official Trekkr levels (same bands as the rest of the site).
+  var TIERS=[['Beginner',0],['Upper Beginner',900],['Lower Bronze',1200],['Bronze',1500],['Upper Bronze',1800],['Silver',2100],['Gold',2500],['Platinum',3000]];
+  function tierIdx(e){var i=0;TIERS.forEach(function(t,k){if(e>=t[1])i=k;});return i;}
+  function range(m){
+    if(m.min_rating==null&&m.max_rating==null)return 'All levels';
+    var a=m.min_rating!=null?TIERS[tierIdx(m.min_rating)][0]:TIERS[0][0], b=m.max_rating!=null?TIERS[tierIdx(m.max_rating)][0]:TIERS[TIERS.length-1][0];
+    return a===b?a:a+' – '+b;
+  }
   var STATUS={open:'Open',pending_confirm:'Awaiting confirmation',confirmed:'Counted ✓',disputed:'Disputed',expired:'Expired',cancelled:'Cancelled'};
 
   var segs=location.pathname.replace(/\/+$/,'').split('/').filter(Boolean);
@@ -166,8 +174,9 @@
           '<div class="f"><label>Format</label><div class="seg" id="sFmt"><button type="button" data-v="individual" class="on">Rotating partners</button><button type="button" data-v="fixed">Fixed partner</button></div><small id="fmtHint">Partners change between games — everyone plays with everyone.</small></div>'+
           '<div class="g2"><div class="f"><label for="fMax">Players</label><input id="fMax" type="number" min="4" max="24" value="4"><small>Any number from 4. Fixed partner needs an even number.</small></div>'+
           '<div class="f"><label for="fGender">Category</label><select id="fGender"><option>Open</option><option>Men</option><option>Women</option><option>Mixed</option></select></div></div>'+
-          '<div class="f"><label>Level range</label><div class="seg" id="sLvl"><button type="button" data-v="open" class="on">Open</button><button type="button" data-v="near">Near my level</button><button type="button" data-v="custom">Custom</button></div>'+
-          '<div class="g2" id="lvlCustom" hidden><div class="f"><label for="fMin">Min rating</label><input id="fMin" type="number" step="50" placeholder="e.g. 1200"></div><div class="f"><label for="fMaxR">Max rating</label><input id="fMaxR" type="number" step="50" placeholder="e.g. 1800"></div></div><small id="lvlHint">Anyone can join.</small></div>'+
+          '<div class="f"><label>Level</label><div class="seg" id="sLvl"><button type="button" data-v="open" class="on">Open · all levels</button><button type="button" data-v="pick">Choose levels</button></div>'+
+          '<div class="g2" id="lvlPick" style="display:none"><div class="f"><label for="fFrom">From</label><select id="fFrom">'+TIERS.map(function(t,i){return '<option value="'+i+'">'+t[0]+'</option>';}).join('')+'</select></div>'+
+          '<div class="f"><label for="fTo">To</label><select id="fTo">'+TIERS.map(function(t,i){return '<option value="'+i+'">'+t[0]+'</option>';}).join('')+'</select></div></div><small id="lvlHint">Anyone can join.</small></div>'+
           '<div class="g2"><div class="f"><label for="fPrice">Price per player (Rp, optional)</label><input id="fPrice" type="number" min="0" step="5000" placeholder="Court split"></div>'+
           '<div class="f"><label>Visibility</label><div class="seg" id="sVis"><button type="button" data-v="public" class="on">Public</button><button type="button" data-v="private">Link only</button></div></div></div>'+
           '<div class="f"><label for="fNote">Note (optional)</label><textarea id="fNote" maxlength="400" placeholder="Court number, who brings balls, payment details…"></textarea></div>'+
@@ -176,19 +185,30 @@
         function seg(id,key,cb){document.getElementById(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st[key]=b.getAttribute('data-v');this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});if(cb)cb();});}
         var myElo=null;
         fetch(BASE+'/players/'+encodeURIComponent(me.player.name)).then(function(r){return r.json();}).then(function(d){var s=d&&d.stats;if(s&&s.totalMatches&&!s.unrated)myElo=s.currentElo;lvlUi();}).catch(function(){});
+        var lvlInit=false;
         function lvlUi(){
-          document.getElementById('lvlCustom').hidden=st.lvl!=='custom';
-          var h=st.lvl==='open'?'Anyone can join.':st.lvl==='near'?(myElo?'Players rated '+(Math.round(myElo/50)*50-300)+'–'+(Math.round(myElo/50)*50+300)+' (your rating ±300).':'Players rated 1050–1650 (new players start at 1350).'):'Only players inside this range can join. Your own rating must fit.';
-          document.getElementById('lvlHint').textContent=h;
+          document.getElementById('lvlPick').style.display=st.lvl==='pick'?'':'none';
+          var f=document.getElementById('fFrom'),t=document.getElementById('fTo');
+          if(!lvlInit){var mi=tierIdx(myElo||1350);f.value=String(mi);t.value=String(mi);lvlInit=true;}
+          if(+t.value<+f.value)t.value=f.value;
+          var mine=TIERS[tierIdx(myElo||1350)][0];
+          document.getElementById('lvlHint').textContent=st.lvl==='open'?'Anyone can join.':
+            'Only '+(f.value===t.value?TIERS[+f.value][0]:TIERS[+f.value][0]+' to '+TIERS[+t.value][0])+' players can join. Your level ('+mine+(myElo?'':', new player')+') must be inside.';
         }
+        document.getElementById('fFrom').onchange=lvlUi;document.getElementById('fTo').onchange=lvlUi;
         seg('sFmt','fmt',function(){document.getElementById('fmtHint').textContent=st.fmt==='fixed'?'Pairs stay together; pairs play each other.':'Partners change between games — everyone plays with everyone.';});
         seg('sLvl','lvl',lvlUi);seg('sVis','vis');
         document.getElementById('frm').addEventListener('submit',function(e){
           e.preventDefault();var msg=document.getElementById('fMsg'),go=document.getElementById('fGo');
           var v=function(id){return document.getElementById(id).value.trim();};
           var minR=null,maxR=null;
-          if(st.lvl==='near'){var c=Math.round((myElo||1350)/50)*50;minR=c-300;maxR=c+300;}
-          if(st.lvl==='custom'){minR=v('fMin')?parseInt(v('fMin'),10):null;maxR=v('fMaxR')?parseInt(v('fMaxR'),10):null;}
+          if(st.lvl==='pick'){
+            var fi=+v('fFrom'),ti=+v('fTo');if(ti<fi){var x=fi;fi=ti;ti=x;}
+            minR=fi>0?TIERS[fi][1]:null;               // Beginner = no floor
+            maxR=ti<TIERS.length-1?TIERS[ti+1][1]-1:null; // Platinum = no ceiling
+            var me2=myElo||1350;
+            if((minR!=null&&me2<minR)||(maxR!=null&&me2>maxR)){msg.className='msg err';msg.textContent='Your own level ('+TIERS[tierIdx(me2)][0]+') must be inside the chosen levels.';return;}
+          }
           var n=parseInt(v('fMax'),10)||4;
           if(!v('fVenue')){msg.className='msg err';msg.textContent='Choose a venue.';return;}
           if(st.fmt==='fixed'&&n%2){msg.className='msg err';msg.textContent='Fixed partner needs an even number of players.';return;}
