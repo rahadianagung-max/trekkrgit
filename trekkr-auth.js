@@ -90,7 +90,7 @@
       if (!t) return;
       return fetch(API + "/account/consent", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: t, marketing: c === "1", source: "web" }),
+        body: JSON.stringify({ token: t, marketing: c === "1", source: "web-ekosistem-v1" }),
       }).then(function (r) { if (r.ok) ls(CK, null); });
     }).catch(function () {});
   }
@@ -109,16 +109,17 @@
   // Instagram / Facebook / Line / TikTok webviews: Google refuses OAuth there.
   function inApp() { return /Instagram|FBAN|FBAV|FB_IAB|Line\/|TikTok|musical_ly|; wv\)/i.test(navigator.userAgent || ""); }
   function googleSignIn(next, marketing) {
-    setNext(next); ls(CK, marketing ? "1" : "0");
+    // Only an explicit opt-in is recorded; leaving the box unticked never revokes an earlier yes.
+    setNext(next); ls(CK, marketing ? "1" : null);
     var back = w.location.origin + "/login";
     if (!/^https:\/\/(trekkr\.online|[a-z0-9-]+\.vercel\.app)$/.test(w.location.origin)) back = "https://trekkr.online/login";
     w.location.href = SUPA_URL + "/auth/v1/authorize?provider=google&redirect_to=" + encodeURIComponent(back);
   }
   function sendLink(email, marketing, next) {
-    setNext(next); ls(CK, marketing ? "1" : "0"); ls(MK, email);
+    setNext(next); ls(CK, marketing ? "1" : null); ls(MK, email);
     return fetch(API + "/account/magic-link", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, marketing: !!marketing, source: "magic-link" }),
+      body: JSON.stringify(marketing ? { email: email, marketing: true, source: "magic-link-ekosistem-v1" } : { email: email }),
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) {
         if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
@@ -153,7 +154,7 @@
       + '<div id="' + id + 'g"></div>'
       + '<div class="ta-field"><label for="' + id + 'e">Email</label>'
       + '<input id="' + id + 'e" type="email" inputmode="email" autocomplete="email" placeholder="email@contoh.com" value="' + esc(ls(MK)) + '"/></div>'
-      + '<label class="ta-consent"><input type="checkbox" id="' + id + 'c" checked/> <span>Saya mau menerima kabar ELO, hasil turnamen &amp; info event Trekkr lewat email. Bisa berhenti kapan saja.</span></label>'
+      + '<label class="ta-consent"><input type="checkbox" id="' + id + 'c"/> <span>Saya mau menerima kabar dari Trekkr, TurnamenPadel &amp; Stellar Squad Academy lewat email: jadwal main, liga, turnamen, kelas, dan promo. Bisa berhenti kapan saja.</span></label>'
       + '<button class="btn ta-send" id="' + id + 's" type="button">Kirim link masuk</button>'
       + '<div class="ta-msg" id="' + id + 'm" role="status"></div>'
       + '<div class="ta-code" id="' + id + 'k" hidden>'
@@ -162,7 +163,7 @@
       + '<button class="btn" id="' + id + 'v" type="button">Masuk</button></div>'
       + '<button class="ta-link" id="' + id + 'r" type="button">Kirim ulang</button>'
       + '</div>'
-      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/privacy" target="_blank" rel="noopener">kebijakan privasi</a> Trekkr.</p>'
+      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/privacy" target="_blank" rel="noopener">Kebijakan Privasi SportsActvd</a> yang berlaku untuk Trekkr, TurnamenPadel, dan Stellar Squad Academy.</p>'
       + '</div>';
     var $ = function (s) { return document.getElementById(id + s); };
     function msg(t, k) { var m = $("m"); m.textContent = t || ""; m.className = "ta-msg" + (k ? " " + k : ""); }
