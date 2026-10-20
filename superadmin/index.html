@@ -342,7 +342,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
       <div class="em-kpis" id="emKpis"><div class="em-kpi"><small>Memuat…</small></div></div>
       <div class="section">
         <div class="em-hd"><div class="section-title">SEGMEN AUDIENS</div><button class="btn btn-primary" onclick="emSyncSeg('')">⟳ Sinkron semua ke Brevo</button></div>
-        <p style="font-size:11px;color:var(--muted2);margin:0 0 12px;line-height:1.5">Satu email = satu segmen (prioritas A → B → D → C). Sinkron mengirim email, nama depan, segmen, kota, level, jumlah match, venue, link passport &amp; link opt-in ke daftar kontak Brevo. Kontak yang sudah berhenti berlangganan tetap diblokir oleh Brevo.</p>
+        <p style="font-size:11px;color:var(--muted2);margin:0 0 12px;line-height:1.5">Satu email = satu segmen (prioritas A/E → B → D → C). Sinkron mengirim email, nama depan, segmen, kota, level, jumlah match, venue, link passport &amp; link opt-in ke daftar kontak Brevo. Kontak yang sudah berhenti berlangganan tetap diblokir oleh Brevo.</p>
         <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Segmen</th><th>Kontak</th><th>Izin</th><th>Brand</th><th>Di Brevo</th><th></th></tr></thead><tbody id="emSegs"></tbody></table></div>
         <div class="status-msg" id="emSyncSt"></div>
       </div>
@@ -996,9 +996,9 @@ function emRender(){
     return '<tr><td><b>'+s.seg+' · '+emE(s.label)+'</b></td><td class="mono"><b>'+s.count+'</b></td><td>'+s.optin+'</td><td><span class="em-chip '+(s.brand==='tp'?'tp':'tk')+'">'+(s.brand==='tp'?'TurnamenPadel':'Trekkr')+'</span></td>'+
       '<td>'+(s.brevoListId?(s.brevoCount!=null?s.brevoCount+' kontak':'ada'):'<span style="color:#B45309">Belum sinkron</span>')+'</td><td><button class="btn btn-ghost" onclick="emSyncSeg(\''+s.seg+'\')">Sinkron</button></td></tr>';
   }).join('');
-  document.getElementById('emSegBtns').innerHTML=['A','B','C','D'].map(function(s){return '<button class="'+(s===EM.seg?'on':'')+'" onclick="emPick(\''+s+'\')">'+s+'</button>';}).join('');
+  document.getElementById('emSegBtns').innerHTML=d.segments.map(function(x){return x.seg;}).map(function(s){return '<button class="'+(s===EM.seg?'on':'')+'" onclick="emPick(\''+s+'\')">'+s+'</button>';}).join('');
   var c=d.campaigns||{},op=d.optinsFromEmail||{};
-  document.getElementById('emRes').innerHTML=['A','B','C','D'].map(function(s){
+  document.getElementById('emRes').innerHTML=d.segments.map(function(x){return x.seg;}).map(function(s){
     var x=c[s];if(!x)return '<tr><td><b>'+s+'</b></td><td colspan="7" style="color:var(--muted2)">Belum ada campaign</td></tr>';
     if(x.error)return '<tr><td><b>'+s+'</b></td><td colspan="7" style="color:#B91C1C">'+emE(x.error)+'</td></tr>';
     var st=x.stats,p=function(n){return st.delivered?' <span style="color:var(--muted2)">('+Math.round(n/st.delivered*100)+'%)</span>':'';};

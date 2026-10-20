@@ -2253,8 +2253,9 @@ const ADMIN_KEY_DENIED = { error: "Sesi admin tidak valid / kedaluwarsa. Silakan
 // kecuali email/optin (publik, ditandatangani HMAC per email).
 const EM_KEY = "email1";
 const EM_SEGS = {
-  A: { label: "Punya akun login", brand: "trekkr", list: "Trekkr · Seg A · Akun login" },
-  B: { label: "Klaim profil, belum login", brand: "trekkr", list: "Trekkr · Seg B · Klaim profil" },
+  A: { label: "Akun login, profil sudah diklaim", brand: "trekkr", list: "Trekkr · Seg A · Akun login" },
+  E: { label: "Akun login, belum klaim profil", brand: "trekkr", list: "Trekkr · Seg E · Login tanpa profil" },
+  B: { label: "Profil ada, belum diklaim (belum login)", brand: "trekkr", list: "Trekkr · Seg B · Klaim profil" },
   C: { label: "Lead TurnamenPadel", brand: "tp", list: "TurnamenPadel · Seg C · Lead" },
   D: { label: "Lead venue", brand: "trekkr", list: "Trekkr · Seg D · Lead venue" },
 };
@@ -2283,6 +2284,12 @@ const EM_DEFAULTS = {
     body: "Venue yang sudah memakai Trekkr menjalankan sesi PlayRank dan **Liga Trekkr** — malam liga mingguan per divisi, 8 match per pemain, dengan leaderboard dan promosi tiap bulan.",
     boxTitle: "Untuk venue", bullets: "📊 Halaman venue + leaderboard pemain\n⚡ Liga mingguan dengan pendaftaran online\n🖥️ Admin skor & layar TV gratis",
     buttonLabel: "Lihat simulasi satu bulan Liga →", buttonUrl: "https://liga.trekkr.online/simulasi", note: "",
+    optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
+  E: { subject: "Satu langkah lagi: klaim profil padel kamu", preheader: "Hubungkan akunmu ke profil pemain supaya rating & riwayat match-mu muncul.",
+    heading: "Halo {nama}, akun Trekkr kamu belum terhubung ke profil pemain",
+    body: "Kamu sudah punya akun Trekkr, tapi belum mengklaim profil pemainmu. Setelah diklaim, **rating, level, dan riwayat match** kamu tampil di satu tempat — dan kamu bisa booking sesi serta ikut Liga.",
+    boxTitle: "Setelah klaim profil", bullets: "📈 Rating & level kamu terlihat\n🗂️ Riwayat match dari venue & turnamen tergabung\n🎾 Bisa booking sesi, Regular Match & Liga",
+    buttonLabel: "Klaim profil saya →", buttonUrl: "https://trekkr.online/join", note: "Belum pernah main di venue Trekkr? Kamu bisa membuat profil baru di halaman yang sama.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
 };
 const EM_FIELDS = Object.keys(EM_DEFAULTS.A);
@@ -2318,7 +2325,7 @@ async function brevo(method, path, body) {
   return d;
 }
 
-// Build { email → contact } with exactly one segment per email (priority A, B, D, C).
+// Build { email → contact } with exactly one segment per email (priority A/E, B, D, C; A = account linked to a player profile, E = account without one).
 async function emBuildAudience() {
   const get = (q) => supaRest("GET", q).catch((e) => { console.error("[email]", e.message); return []; });
   const [users, players, pclaims, rclaims, calc, calcRes, tl, tll, venues, admins, optins, consents] = await Promise.all([
@@ -2356,7 +2363,7 @@ async function emBuildAudience() {
     out[e] = Object.assign({ email: e, seg, name: "", city: "", matches: 0, level: "", venue: "", passport: "" }, info || {});
   }
   users.forEach((u) => { const e = emNorm(u.email); const p = pByUser[u.id] || pByEmail[e];
-    add(e, "A", Object.assign({ name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || "" }, playerAttrs(p))); });
+    add(e, p ? "A" : "E",Object.assign({ name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || "" }, playerAttrs(p))); });
   players.forEach((p) => { if (p.claim_email) add(p.claim_email, "B", playerAttrs(p)); });
   const byName = {}; players.forEach((p) => { byName[normName(p.name)] = p; });
   pclaims.concat(rclaims).forEach((c) => add(c.email, "B", playerAttrs(byName[normName(c.player_name)]) || {}));
