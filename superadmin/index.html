@@ -343,7 +343,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
       <div class="section">
         <div class="em-hd"><div class="section-title">SEGMEN AUDIENS</div><button class="btn btn-primary" onclick="emSyncSeg('')">⟳ Sinkron semua ke Brevo</button></div>
         <p style="font-size:11px;color:var(--muted2);margin:0 0 12px;line-height:1.5">Satu email = satu segmen (prioritas A/E → B → D → C). Sinkron mengirim email, nama depan, segmen, kota, level, jumlah match, venue, link passport &amp; link opt-in ke daftar kontak Brevo. Kontak yang sudah berhenti berlangganan tetap diblokir oleh Brevo.</p>
-        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Segmen</th><th>Kontak</th><th>Izin</th><th>Brand</th><th>Di Brevo</th><th></th></tr></thead><tbody id="emSegs"></tbody></table></div>
+        <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Segmen</th><th>Kontak</th><th>Izin promo</th><th>Brand</th><th>Di Brevo</th><th></th></tr></thead><tbody id="emSegs"></tbody></table></div>
         <div class="status-msg" id="emSyncSt"></div>
       </div>
       <div class="section">
@@ -351,6 +351,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
         <div class="em-ed">
           <div>
             <div class="em-camp" id="emCamp"></div>
+            <div class="field"><label class="field-label">Penerima</label><select class="field-select em-f" data-k="audience"><option value="all">Semua di segmen — email informasi</option><option value="optin">Hanya yang memberi izin marketing — email promo</option></select><small id="emAudHint" style="display:block;font-size:11px;color:var(--muted2);margin-top:4px"></small></div>
             <div class="field"><label class="field-label">Subjek</label><input class="field-input em-f" data-k="subject"/></div>
             <div class="field"><label class="field-label">Preview (teks pratinjau inbox)</label><input class="field-input em-f" data-k="preheader"/></div>
             <div class="field"><label class="field-label">Judul</label><input class="field-input em-f" data-k="heading"/></div>
@@ -1017,7 +1018,7 @@ function emRender(){
     '<div class="em-kpi"><small>Kuota Brevo</small><b>'+(acc.credits!=null?acc.credits:'—')+'</b><span>'+(d.brevoError?'Brevo: '+emE(d.brevoError):'Paket '+emE(acc.plan||'')+' · kirim tersisa')+'</span></div>'+
     '<div class="em-kpi"><small>Pengirim</small><b style="font-size:14px;line-height:1.3">'+emE(d.sender.email||'—')+'</b><span>'+emE(d.sender.name||'')+'</span></div>';
   document.getElementById('emSegs').innerHTML=d.segments.map(function(s){
-    return '<tr><td><b>'+s.seg+' · '+emE(s.label)+'</b></td><td class="mono"><b>'+s.count+'</b></td><td>'+s.optin+'</td><td><span class="em-chip '+(s.brand==='tp'?'tp':'tk')+'">'+(s.brand==='tp'?'TurnamenPadel':'Trekkr')+'</span></td>'+
+    return '<tr><td><b>'+s.seg+' · '+emE(s.label)+'</b></td><td class="mono"><b>'+s.count+'</b></td><td>'+s.promo+(s.brevoPromoCount!=null?' <span style="color:var(--muted2)">('+s.brevoPromoCount+' di Brevo)</span>':'')+'</td><td><span class="em-chip '+(s.brand==='tp'?'tp':'tk')+'">'+(s.brand==='tp'?'TurnamenPadel':'Trekkr')+'</span></td>'+
       '<td>'+(s.brevoListId?(s.brevoCount!=null?s.brevoCount+' kontak':'ada'):'<span style="color:#B45309">Belum sinkron</span>')+'</td><td><button class="btn btn-ghost" onclick="emSyncSeg(\''+s.seg+'\')">Sinkron</button></td></tr>';
   }).join('');
   document.getElementById('emSegBtns').innerHTML=d.segments.map(function(x){return x.seg;}).map(function(s){return '<button class="'+(s===EM.seg?'on':'')+'" onclick="emPick(\''+s+'\')">'+s+'</button>';}).join('');
@@ -1033,10 +1034,15 @@ function emRender(){
 function emPick(s){
   EM.seg=s;var t=EM.data.templates[s];EM.fields=Object.assign({},t.fields);
   document.querySelectorAll('#emSegBtns button').forEach(function(b){b.classList.toggle('on',b.textContent===s);});
-  document.querySelectorAll('.em-f').forEach(function(el){el.value=EM.fields[el.dataset.k]||'';});
+  document.querySelectorAll('.em-f').forEach(function(el){el.value=EM.fields[el.dataset.k]||(el.dataset.k==='audience'?'all':'');});
+  emAudHint();
   var c=(EM.data.campaigns||{})[s];
   document.getElementById('emCamp').innerHTML='<b>Segmen '+s+'</b> · '+(t.campaignId?('Campaign Brevo #'+t.campaignId+' · status <b>'+emE(c&&c.status||'?')+'</b>'):'Belum disimpan ke Brevo')+(t.updatedAt?' · diubah '+emE(String(t.updatedAt).slice(0,16).replace('T',' '))+(t.updatedBy?' oleh '+emE(t.updatedBy):''):' · teks bawaan');
   emPreview();
+}
+function emAudHint(){
+  var s=(EM.data.segments||[]).find(function(x){return x.seg===EM.seg;})||{}, el=document.getElementById('emAudHint');if(!el)return;
+  el.textContent=(EM.fields.audience==='optin')?('Promo: hanya '+s.promo+' dari '+s.count+' kontak segmen '+EM.seg+' yang sudah memberi izin.'+(s.brand==='tp'?' Untuk TurnamenPadel hanya izin ekosistem yang dihitung.':'')+' Klik "Simpan ke Brevo" lagi setelah mengganti penerima.'):('Informasi: semua '+s.count+' kontak segmen '+EM.seg+'.');
 }
 function emPreview(){
   clearTimeout(EM.t);EM.t=setTimeout(async function(){
@@ -1044,7 +1050,8 @@ function emPreview(){
     catch(e){document.getElementById('emSubj').textContent='Pratinjau gagal: '+e.message;}
   },300);
 }
-document.addEventListener('input',function(e){var el=e.target;if(!el.classList||!el.classList.contains('em-f'))return;EM.fields[el.dataset.k]=el.value;emPreview();});
+document.addEventListener('input',function(e){var el=e.target;if(!el.classList||!el.classList.contains('em-f'))return;EM.fields[el.dataset.k]=el.value;if(el.dataset.k==='audience')emAudHint();emPreview();});
+document.addEventListener('change',function(e){var el=e.target;if(el&&el.dataset&&el.dataset.k==='audience'&&el.classList.contains('em-f')){EM.fields.audience=el.value;emAudHint();}});
 async function emSave(push){
   if(push&&!confirm('Simpan segmen '+EM.seg+' ke Brevo sebagai draft campaign? Belum ada email yang dikirim.'))return;
   try{var d=await emPost('save',{seg:EM.seg,fields:EM.fields,pushToBrevo:!!push});emMsg('emSt',push?'✓ Tersimpan di Brevo (campaign #'+d.campaign.id+', draft).':'✓ Draft tersimpan.',true);await emLoad();}
@@ -1053,7 +1060,7 @@ async function emSave(push){
 async function emSyncSeg(seg){
   if(!confirm('Sinkron '+(seg?'segmen '+seg:'semua segmen')+' ke daftar kontak Brevo? Data yang dikirim: email, nama depan, kota, level, jumlah match, venue, link passport & opt-in.'))return;
   emMsg('emSyncSt','Menyinkron…',true);
-  try{var d=await emPost('sync',seg?{seg:seg}:{});var r=d.result||{};emMsg('emSyncSt','✓ '+Object.keys(r).map(function(k){return k+': '+r[k].sent;}).join(' · ')+' kontak dikirim. '+(d.note||''),true);setTimeout(emLoad,4000);}
+  try{var d=await emPost('sync',seg?{seg:seg}:{});var r=d.result||{};emMsg('emSyncSt','✓ '+Object.keys(r).map(function(k){return k+': '+r[k].sent+(r[k].promo!=null?' (izin '+r[k].promo+')':'');}).join(' · ')+' kontak dikirim. '+(d.note||''),true);setTimeout(emLoad,4000);}
   catch(e){emMsg('emSyncSt',e.message,false);}
 }
 async function emTest(){
@@ -1063,7 +1070,9 @@ async function emTest(){
 }
 async function emSendNow(){
   var s=EM.seg,seg=(EM.data.segments||[]).find(function(x){return x.seg===s;})||{};
-  var when=prompt('Kirim campaign segmen '+s+' ke '+(seg.brevoCount!=null?seg.brevoCount:seg.count)+' kontak.\n\nKosongkan untuk kirim SEKARANG, atau isi waktu jadwal (contoh 2026-10-21 19:30) dalam WIB:','');
+  var opt=(EM.data.templates[s]&&EM.data.templates[s].fields.audience)==='optin';
+  var n=opt?(seg.brevoPromoCount!=null?seg.brevoPromoCount:seg.promo):(seg.brevoCount!=null?seg.brevoCount:seg.count);
+  var when=prompt('Kirim campaign segmen '+s+(opt?' (PROMO — hanya yang memberi izin)':' (informasi)')+' ke '+n+' kontak.\n\nKosongkan untuk kirim SEKARANG, atau isi waktu jadwal (contoh 2026-10-21 19:30) dalam WIB:','');
   if(when===null)return;
   var sched=null;if(when.trim()){var m=when.trim().match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})$/);if(!m){emMsg('emSt','Format waktu: YYYY-MM-DD HH:MM',false);return;}sched=m[1]+'T'+m[2]+':'+m[3]+':00+07:00';}
   var c=prompt('Ketik  KIRIM '+s+'  untuk konfirmasi.');if(c===null)return;

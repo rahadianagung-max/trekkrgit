@@ -2315,6 +2315,8 @@ const EM_DEFAULTS = {
     buttonLabel: "Klaim profil saya →", buttonUrl: "https://trekkr.online/join", note: "Klaim ditinjau admin, biasanya kurang dari 24 jam. Kamu akan dapat email begitu disetujui.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
 };
+// Penerima: "all" = semua anggota segmen (email info), "optin" = hanya yang memberi izin marketing (email promo).
+Object.values(EM_DEFAULTS).forEach((d) => { d.audience = "all"; });
 const EM_FIELDS = Object.keys(EM_DEFAULTS.A);
 // {token} → nama atribut kontak Brevo + contoh untuk pratinjau.
 const EM_TOKENS = {
@@ -2359,7 +2361,7 @@ async function emBuildAudience() {
     get("calculator_leads?select=email,name"), get("calculator_results?select=email"),
     get("tournament_leads?select=email,pic_name,location"), get("tournament_leads_legacy?select=email,name,city"),
     get("venue_leads?select=email,pic_name,region,venue_community"), get("admins?select=email"),
-    get("email_optins?select=email"), get("account_consents?select=email,marketing&marketing=eq.true"),
+    get("email_optins?select=email"), get("account_consents?select=email,marketing,source&marketing=eq.true"),
   ]);
   let lb = [];
   try { lb = JSON.parse((await cached60("leaderboard:" + JSON.stringify({ limit: "5000" }), () => getNationalLeaderboard({ limit: "5000" }))).body).leaderboard || []; } catch (e) {}
@@ -2367,7 +2369,11 @@ async function emBuildAudience() {
   const pByUser = {}, pByEmail = {};
   players.forEach((p) => { if (p.user_id) pByUser[p.user_id] = p; const e = emNorm(p.claim_email); if (e) pByEmail[e] = p; });
   const adminSet = new Set(admins.map((a) => emNorm(a.email)).filter(Boolean));
-  const optSet = new Set(optins.map((o) => emNorm(o.email)).concat(consents.map((c) => emNorm(c.email))).filter(Boolean));
+  // Ecosystem consent (all three brands): "Ya, kabari saya" or the new login checkbox.
+  // Older checkbox consent named Trekkr only, so it covers Trekkr promos but not TurnamenPadel.
+  const isEco = (c) => /ekosistem/i.test(String(c.source || ""));
+  const ecoSet = new Set(optins.map((o) => emNorm(o.email)).concat(consents.filter(isEco).map((c) => emNorm(c.email))).filter(Boolean));
+  const legacySet = new Set(consents.filter((c) => !isEco(c)).map((c) => emNorm(c.email)).filter(Boolean));
   const out = {};
   const first = (s) => String(s || "").trim().split(/\s+/)[0] || "";
   function playerAttrs(p) {
@@ -2397,14 +2403,21 @@ async function emBuildAudience() {
   tl.forEach((c) => add(c.email, "C", { name: c.pic_name || "", city: c.location || "" }));
   tll.forEach((c) => add(c.email, "C", { name: c.name || "", city: c.city || "" }));
   calcRes.forEach((c) => add(c.email, "C", {}));
-  Object.values(out).forEach((c) => { c.firstName = first(c.name); c.optin = optSet.has(c.email); });
+  Object.values(out).forEach((c) => {
+    c.firstName = first(c.name);
+    c.optin = ecoSet.has(c.email) || legacySet.has(c.email);
+    c.promoOk = ecoSet.has(c.email) || (EM_SEGS[c.seg].brand === "trekkr" && legacySet.has(c.email));
+  });
   return out;
 }
 
 async function emLists() {
   const d = await brevo("GET", "contacts/lists?limit=50");
   const by = {};
-  ((d && d.lists) || []).forEach((l) => { Object.keys(EM_SEGS).forEach((s) => { if (l.name === EM_SEGS[s].list) by[s] = l; }); });
+  ((d && d.lists) || []).forEach((l) => { Object.keys(EM_SEGS).forEach((s) => {
+    if (l.name === EM_SEGS[s].list) by[s] = l;
+    if (l.name === EM_SEGS[s].list + " · Izin") by[s + "+"] = l;   // consented members only (promo)
+  }); });
   return by;
 }
 async function emEnsureList(seg, lists) {
@@ -2412,8 +2425,9 @@ async function emEnsureList(seg, lists) {
   const f = await brevo("GET", "contacts/folders?limit=50");
   let folder = ((f && f.folders) || []).find((x) => x.name === "Trekkr Email") || null;
   if (!folder) folder = await brevo("POST", "contacts/folders", { name: "Trekkr Email" });
-  const l = await brevo("POST", "contacts/lists", { name: EM_SEGS[seg].list, folderId: folder.id });
-  lists[seg] = { id: l.id, name: EM_SEGS[seg].list, uniqueSubscribers: 0 };
+  const name = EM_SEGS[seg.replace("+", "")].list + (seg.endsWith("+") ? " · Izin" : "");
+  const l = await brevo("POST", "contacts/lists", { name, folderId: folder.id });
+  lists[seg] = { id: l.id, name, uniqueSubscribers: 0 };
   return l.id;
 }
 
@@ -2475,15 +2489,19 @@ async function emOverview(params) {
   if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const aud = await emBuildAudience();
   const segs = {};
-  Object.keys(EM_SEGS).forEach((s) => { segs[s] = Object.assign({ seg: s, count: 0, optin: 0, brevoListId: null, brevoCount: null }, EM_SEGS[s]); });
-  Object.values(aud).forEach((c) => { segs[c.seg].count++; if (c.optin) segs[c.seg].optin++; });
+  Object.keys(EM_SEGS).forEach((s) => { segs[s] = Object.assign({ seg: s, count: 0, optin: 0, promo: 0, brevoListId: null, brevoCount: null, brevoPromoCount: null }, EM_SEGS[s]); });
+  Object.values(aud).forEach((c) => { segs[c.seg].count++; if (c.optin) segs[c.seg].optin++; if (c.promoOk) segs[c.seg].promo++; });
   const tpl = await emTemplates();
   let account = null, brevoErr = null;
   try {
     const [acc, lists] = await Promise.all([brevo("GET", "account"), emLists()]);
     const plan = (acc.plan || []).find((p) => p.creditsType === "sendLimit") || (acc.plan || [])[0] || {};
     account = { plan: plan.type || "", credits: plan.credits != null ? plan.credits : null };
-    Object.keys(lists).forEach((s) => { segs[s].brevoListId = lists[s].id; segs[s].brevoCount = lists[s].uniqueSubscribers != null ? lists[s].uniqueSubscribers : null; });
+    Object.keys(lists).forEach((k) => {
+      const s = segs[k.replace("+", "")]; if (!s) return;
+      const n = lists[k].uniqueSubscribers != null ? lists[k].uniqueSubscribers : null;
+      if (k.endsWith("+")) s.brevoPromoCount = n; else { s.brevoListId = lists[k].id; s.brevoCount = n; }
+    });
   } catch (e) { brevoErr = e.message; }
   const camps = {};
   await Promise.all(Object.keys(tpl).filter((s) => tpl[s].campaignId).map(async (s) => {
@@ -2523,12 +2541,13 @@ async function emSave(body) {
   if (!ak) return respond(401, ADMIN_KEY_DENIED);
   const seg = String(body.seg || ""); if (!EM_SEGS[seg]) return respond(400, { error: "Segmen tidak dikenal" });
   const f = Object.assign({}, EM_DEFAULTS[seg], emCleanFields(body.fields));
+  f.audience = f.audience === "optin" ? "optin" : "all";
   if (!f.subject.trim()) return respond(400, { error: "Subjek wajib diisi" });
   const cur = (await emTemplates())[seg];
   let campaignId = cur.campaignId, campaign = null;
   if (body.pushToBrevo) {
     const lists = await emLists();
-    const listId = await emEnsureList(seg, lists);
+    const listId = await emEnsureList(f.audience === "optin" ? seg + "+" : seg, lists);
     const sender = { name: EM_SEGS[seg].brand === "tp" ? "TurnamenPadel" : (process.env.BREVO_SENDER_NAME || "Trekkr"), email: process.env.BREVO_SENDER_EMAIL };
     if (!sender.email) return respond(500, { error: "BREVO_SENDER_EMAIL belum diset" });
     const payload = { subject: emBrevoSubject(f.subject), previewText: emBrevoSubject(f.preheader), sender, htmlContent: emRender(seg, f, "brevo"), recipients: { listIds: [listId] } };
@@ -2563,14 +2582,21 @@ async function emSync(body) {
       CLAIM_URL: emUtm(c.claim || "https://trekkr.online/join", seg), OPTIN_URL: emOptinUrl(c.email, seg),
     } }));
     await brevo("POST", "contacts/import", { jsonBody, listIds: [listId], updateExistingContacts: true, emptyContactsAttributes: false });
-    // A contact belongs to one segment only: drop these emails from the other segment lists.
+    // Consented members also go into the segment's promo list ("<list> · Izin").
+    const promoId = await emEnsureList(seg + "+", lists);
+    const promo = jsonBody.filter((j, i) => rows[i].promoOk);
+    if (promo.length) await brevo("POST", "contacts/import", { jsonBody: promo, listIds: [promoId], updateExistingContacts: true, emptyContactsAttributes: false });
+    // A contact belongs to one segment only: drop these emails from the other segments' lists.
     for (const other of Object.keys(EM_SEGS)) {
-      if (other === seg || !lists[other]) continue;
-      for (let i = 0; i < rows.length; i += 150) {
-        await brevo("POST", `contacts/lists/${lists[other].id}/contacts/remove`, { emails: rows.slice(i, i + 150).map((c) => c.email) }).catch(() => null);
+      if (other === seg) continue;
+      for (const key of [other, other + "+"]) {
+        if (!lists[key]) continue;
+        for (let i = 0; i < rows.length; i += 150) {
+          await brevo("POST", `contacts/lists/${lists[key].id}/contacts/remove`, { emails: rows.slice(i, i + 150).map((c) => c.email) }).catch(() => null);
+        }
       }
     }
-    result[seg] = { listId, sent: rows.length };
+    result[seg] = { listId, sent: rows.length, promo: promo.length };
   }
   return respond(200, { ok: true, result, note: "Brevo memproses impor di latar belakang (biasanya < 1 menit)." });
 }
