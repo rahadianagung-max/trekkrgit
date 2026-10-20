@@ -2259,7 +2259,7 @@ const EM_SEGS = {
   C: { label: "Lead TurnamenPadel", brand: "tp", list: "TurnamenPadel · Seg C · Lead" },
   D: { label: "Lead venue", brand: "trekkr", list: "Trekkr · Seg D · Lead venue" },
 };
-const EM_ATTRS = ["SEGMENT", "CITY", "LEVEL", "MATCHES", "VENUE", "PASSPORT_URL", "OPTIN_URL"];
+const EM_ATTRS = ["SEGMENT", "CITY", "LEVEL", "MATCHES", "VENUE", "PASSPORT_URL", "CLAIM_URL", "OPTIN_URL"];
 const EM_DEFAULTS = {
   A: { subject: "Cara baru main padel di level kamu", preheader: "Buat match sendiri, ajak pemain selevel, hasilnya masuk rating.",
     heading: "Halo {nama}, ada yang baru di Trekkr",
@@ -2267,11 +2267,11 @@ const EM_DEFAULTS = {
     boxTitle: "Baru di Trekkr", bullets: "➕ Regular Match — buat & bagikan lewat WhatsApp\n⚡ Liga Trekkr — 8 match per malam, sesuai divisi\n📅 Jadwal sesi PlayRank di venue sekitar {kota}",
     buttonLabel: "Cari match minggu ini →", buttonUrl: "https://trekkr.online/#play", note: "Level kamu sekarang: **{level}**.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
-  B: { subject: "Rating padel kamu sudah ada di Trekkr", preheader: "{match} match tercatat atas nama kamu — lihat level & perkembanganmu.",
-    heading: "Halo {nama}, profil padel kamu sudah siap 🎾",
-    body: "Trekkr mencatat **{match} match** atas nama kamu dari sesi PlayRank, turnamen, dan liga di venue seperti **{venue}**.",
-    boxTitle: "Di profil kamu", bullets: "📈 Level & perkembangan rating\n🗂️ Riwayat setiap match & partner\n🎯 Match yang pas dengan level kamu",
-    buttonLabel: "Lihat profil saya →", buttonUrl: "{passport}", note: "Cukup login dengan email ini — tanpa password.",
+  B: { subject: "Profil padel kamu sudah ada — klaim & pasang fotomu", preheader: "{match} match tercatat atas nama kamu. Klaim profilnya, tambah foto & lengkapi datamu.",
+    heading: "Halo {nama}, ini profil padel kamu 🎾",
+    body: "Trekkr sudah mencatat **{match} match** atas nama kamu dari sesi PlayRank, turnamen, dan liga di venue seperti **{venue}**. Profilnya belum diklaim, jadi foto dan datanya belum bisa kamu atur sendiri.\n\nKlaim sekarang supaya profil ini resmi milikmu — lalu pasang foto dan lengkapi datamu.",
+    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & masuk dengan email ini (tanpa password)\n2️⃣ Konfirmasi klaim — admin meninjau, biasanya kurang dari 24 jam\n3️⃣ Buka Edit profil: pasang foto, nama tampilan, kota, Instagram",
+    buttonLabel: "Klaim profil saya →", buttonUrl: "{klaim}", note: "Kamu akan dapat email begitu klaim disetujui. Setelah itu rating, level, dan riwayat match-mu tampil lengkap dengan fotomu.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
   C: { subject: "Rencana turnamen padel kamu", preheader: "Hitung ulang biaya, jadwal & jumlah lapangan dalam 1 menit.",
     heading: "Halo {nama}, masih merencanakan turnamen?",
@@ -2285,11 +2285,11 @@ const EM_DEFAULTS = {
     boxTitle: "Untuk venue", bullets: "📊 Halaman venue + leaderboard pemain\n⚡ Liga mingguan dengan pendaftaran online\n🖥️ Admin skor & layar TV gratis",
     buttonLabel: "Lihat simulasi satu bulan Liga →", buttonUrl: "https://liga.trekkr.online/simulasi", note: "",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
-  E: { subject: "Satu langkah lagi: klaim profil padel kamu", preheader: "Hubungkan akunmu ke profil pemain supaya rating & riwayat match-mu muncul.",
+  E: { subject: "Satu langkah lagi: klaim profil padel kamu & pasang foto", preheader: "Akunmu sudah ada — hubungkan ke profil pemainmu, tambah foto & lengkapi datamu.",
     heading: "Halo {nama}, akun Trekkr kamu belum terhubung ke profil pemain",
-    body: "Kamu sudah punya akun Trekkr, tapi belum mengklaim profil pemainmu. Setelah diklaim, **rating, level, dan riwayat match** kamu tampil di satu tempat — dan kamu bisa booking sesi serta ikut Liga.",
-    boxTitle: "Setelah klaim profil", bullets: "📈 Rating & level kamu terlihat\n🗂️ Riwayat match dari venue & turnamen tergabung\n🎾 Bisa booking sesi, Regular Match & Liga",
-    buttonLabel: "Klaim profil saya →", buttonUrl: "https://trekkr.online/join", note: "Belum pernah main di venue Trekkr? Kamu bisa membuat profil baru di halaman yang sama.",
+    body: "Kamu sudah punya akun Trekkr, tapi belum mengklaim profil pemainmu. Setelah diklaim, **rating, level, dan riwayat match** kamu tampil di satu tempat — lengkap dengan fotomu.",
+    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & cari namamu (pakai nama yang biasa dipakai saat main)\n2️⃣ Ketemu? Klaim. Belum ada? Buat profil baru di halaman yang sama\n3️⃣ Buka Edit profil: pasang foto, nama tampilan, kota, Instagram",
+    buttonLabel: "Klaim profil saya →", buttonUrl: "https://trekkr.online/join", note: "Klaim ditinjau admin, biasanya kurang dari 24 jam. Kamu akan dapat email begitu disetujui.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
 };
 const EM_FIELDS = Object.keys(EM_DEFAULTS.A);
@@ -2298,6 +2298,7 @@ const EM_TOKENS = {
   nama: ["FIRSTNAME", "kamu", "Budi"], match: ["MATCHES", "beberapa", "24"], kota: ["CITY", "kotamu", "Jakarta"],
   level: ["LEVEL", "-", "Bronze"], venue: ["VENUE", "venue favoritmu", "Padel Club"],
   passport: ["PASSPORT_URL", "https://trekkr.online/join", "https://trekkr.online/player/budi"],
+  klaim: ["CLAIM_URL", "https://trekkr.online/join", "https://trekkr.online/join?name=Budi&act=claim"],
 };
 
 function emNorm(e) { const s = String(e || "").trim().toLowerCase(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : ""; }
@@ -2355,12 +2356,13 @@ async function emBuildAudience() {
       matches: n, level: n >= CALIB_MATCHES ? (l.level || "") : n ? "Kalibrasi" : "Belum ada rating",
       venue: String(p.clubs || l.clubs || "").split(/[,;]/)[0].trim(),
       passport: "https://trekkr.online/player/" + String(p.name || "").toLowerCase().replace(/[^a-z0-9]+/g, ""),
+      claim: "https://trekkr.online/join?name=" + encodeURIComponent(p.name || "") + "&act=claim",
     };
   }
   function add(email, seg, info) {
     const e = emNorm(email);
     if (!e || adminSet.has(e) || out[e]) return;
-    out[e] = Object.assign({ email: e, seg, name: "", city: "", matches: 0, level: "", venue: "", passport: "" }, info || {});
+    out[e] = Object.assign({ email: e, seg, name: "", city: "", matches: 0, level: "", venue: "", passport: "", claim: "" }, info || {});
   }
   users.forEach((u) => { const e = emNorm(u.email); const p = pByUser[u.id] || pByEmail[e];
     add(e, p ? "A" : "E",Object.assign({ name: (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || "" }, playerAttrs(p))); });
@@ -2410,8 +2412,10 @@ function emRender(seg, f, mode) {
     return `{{ contact.${t[0]} | default : '${t[1]}' }}`;
   });
   const txt = (s) => tok(escHtml(s)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-  const btnUrl = /^\{passport\}$/.test(String(f.buttonUrl || "").trim())
-    ? (mode === "preview" ? EM_TOKENS.passport[2] : `{{ contact.PASSPORT_URL | default : '${emUtm("https://trekkr.online/join", seg)}' }}`)
+  // A button link that is exactly {passport} / {klaim} uses the contact's own URL (synced with UTM already).
+  const urlTok = (String(f.buttonUrl || "").trim().match(/^\{(passport|klaim)\}$/) || [])[1];
+  const btnUrl = urlTok
+    ? (mode === "preview" ? EM_TOKENS[urlTok][2] : `{{ contact.${EM_TOKENS[urlTok][0]} | default : '${emUtm(EM_TOKENS[urlTok][1], seg)}' }}`)
     : emUtm(tok(f.buttonUrl), seg);
   const optUrl = mode === "preview" ? "#" : `{{ contact.OPTIN_URL }}`;
   const P = (h) => `<p style="margin:0 0 14px;font-family:${EMAIL_FONT};font-size:15px;line-height:1.6;color:#27272A">${h}</p>`;
@@ -2532,7 +2536,8 @@ async function emSync(body) {
     if (!rows.length) { result[seg] = { listId, sent: 0 }; continue; }
     const jsonBody = rows.map((c) => ({ email: c.email, attributes: {
       FIRSTNAME: c.firstName || "", SEGMENT: seg, CITY: c.city || "", LEVEL: c.level || "", MATCHES: c.matches ? String(c.matches) : "",
-      VENUE: c.venue || "", PASSPORT_URL: emUtm(c.passport || "https://trekkr.online/join", seg), OPTIN_URL: emOptinUrl(c.email, seg),
+      VENUE: c.venue || "", PASSPORT_URL: emUtm(c.passport || "https://trekkr.online/join", seg),
+      CLAIM_URL: emUtm(c.claim || "https://trekkr.online/join", seg), OPTIN_URL: emOptinUrl(c.email, seg),
     } }));
     await brevo("POST", "contacts/import", { jsonBody, listIds: [listId], updateExistingContacts: true, emptyContactsAttributes: false });
     // A contact belongs to one segment only: drop these emails from the other segment lists.
