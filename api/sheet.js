@@ -2166,12 +2166,20 @@ async function accountClaimSession(body) {
   const pl = await supaRest("GET", `players?name=eq.${encodeURIComponent(wanted)}&select=name,user_id&limit=1`);
   if (!pl || !pl.length) return respond(404, { error: "Pemain tidak ditemukan" });
   if (pl[0].user_id) return respond(400, { error: "Profil ini sudah diklaim akun lain" });
-  const open = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&status=eq.pending&select=player_name&limit=1`);
+  // Optional profile changes (photo, display name, …) filed with the claim; they are
+  // applied only when an admin approves it.
+  let updates = null;
+  try { updates = await claimUpdatesFrom(body && body.updates, pl[0].name); }
+  catch (e) { return respond(500, { error: "Gagal mengunggah foto: " + e.message }); }
+  const open = await supaRest("GET", `profile_claims?user_id=eq.${user.id}&status=eq.pending&select=id,player_name&limit=1`);
   if (open && open.length) {
-    if (open[0].player_name === pl[0].name) return respond(200, { ok: true, pending: true });
+    if (open[0].player_name === pl[0].name) {
+      if (updates) await supaRest("PATCH", `profile_claims?id=eq.${open[0].id}`, { updates });
+      return respond(200, { ok: true, pending: true });
+    }
     return respond(400, { error: `Kamu masih punya klaim yang sedang ditinjau (${open[0].player_name}).` });
   }
-  await supaRest("POST", "profile_claims", [{ user_id: user.id, email: user.email, player_name: pl[0].name, status: "pending" }], "return=minimal");
+  await supaRest("POST", "profile_claims", [{ user_id: user.id, email: user.email, player_name: pl[0].name, status: "pending", updates }], "return=minimal");
   await notifyOwner(
     `🙋 New profile claim: ${pl[0].name}`,
     `<h2>A player wants to claim a profile</h2>` +
@@ -2180,6 +2188,21 @@ async function accountClaimSession(body) {
     `<p>Review &amp; approve in the superadmin console.</p>`
   );
   return respond(200, { ok: true });
+}
+// Whitelisted profile edits a claimant may file; the photo is uploaded now and kept as a URL.
+async function claimUpdatesFrom(u, playerName) {
+  if (!u || typeof u !== "object") return null;
+  const out = {};
+  const txt = (v, n) => String(v == null ? "" : v).trim().slice(0, n);
+  if (u.display_name != null && txt(u.display_name, 60)) out.display_name = txt(u.display_name, 60);
+  if (u.gender != null) { const g = txt(u.gender, 1).toUpperCase(); if (g === "M" || g === "F") out.gender = g; }
+  if (u.region != null && txt(u.region, 60)) out.region = txt(u.region, 60);
+  if (u.ig != null && txt(u.ig, 40)) out.ig = txt(u.ig, 40).replace(/^@+/, "");
+  if (u.photo) {
+    const url = await uploadImage(u.photo, `profile_${playerSlug(playerName)}_${Date.now()}.jpg`);
+    if (url) out.photo_url = ibbHostFix(url);
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 // Create a NEW player profile for an account that is already signed in. The
@@ -2270,8 +2293,8 @@ const EM_DEFAULTS = {
   B: { subject: "Profil padel kamu sudah ada — klaim & pasang fotomu", preheader: "{match} match tercatat atas nama kamu. Klaim profilnya, tambah foto & lengkapi datamu.",
     heading: "Halo {nama}, ini profil padel kamu 🎾",
     body: "Trekkr sudah mencatat **{match} match** atas nama kamu dari sesi PlayRank, turnamen, dan liga di venue seperti **{venue}**. Profilnya belum diklaim, jadi foto dan datanya belum bisa kamu atur sendiri.\n\nKlaim sekarang supaya profil ini resmi milikmu — lalu pasang foto dan lengkapi datamu.",
-    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & masuk dengan email ini (tanpa password)\n2️⃣ Konfirmasi klaim — admin meninjau, biasanya kurang dari 24 jam\n3️⃣ Buka Edit profil: pasang foto, nama tampilan, kota, Instagram",
-    buttonLabel: "Klaim profil saya →", buttonUrl: "{klaim}", note: "Kamu akan dapat email begitu klaim disetujui. Setelah itu rating, level, dan riwayat match-mu tampil lengkap dengan fotomu.",
+    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & masuk dengan email ini (tanpa password)\n2️⃣ Pasang foto & cek datamu — nama tampilan, kota, Instagram — lalu ajukan klaim\n3️⃣ Admin menyetujui, biasanya kurang dari 24 jam — foto & datamu langsung tampil",
+    buttonLabel: "Klaim profil saya →", buttonUrl: "{klaim}", note: "Kamu akan dapat email begitu klaim disetujui. Setelah itu kamu juga bisa mengubah foto & data kapan saja lewat Edit profil.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
   C: { subject: "Rencana turnamen padel kamu", preheader: "Hitung ulang biaya, jadwal & jumlah lapangan dalam 1 menit.",
     heading: "Halo {nama}, masih merencanakan turnamen?",
@@ -2288,7 +2311,7 @@ const EM_DEFAULTS = {
   E: { subject: "Satu langkah lagi: klaim profil padel kamu & pasang foto", preheader: "Akunmu sudah ada — hubungkan ke profil pemainmu, tambah foto & lengkapi datamu.",
     heading: "Halo {nama}, akun Trekkr kamu belum terhubung ke profil pemain",
     body: "Kamu sudah punya akun Trekkr, tapi belum mengklaim profil pemainmu. Setelah diklaim, **rating, level, dan riwayat match** kamu tampil di satu tempat — lengkap dengan fotomu.",
-    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & cari namamu (pakai nama yang biasa dipakai saat main)\n2️⃣ Ketemu? Klaim. Belum ada? Buat profil baru di halaman yang sama\n3️⃣ Buka Edit profil: pasang foto, nama tampilan, kota, Instagram",
+    boxTitle: "3 langkah, kurang dari 2 menit", bullets: "1️⃣ Klik tombol di bawah & cari namamu (pakai nama yang biasa dipakai saat main)\n2️⃣ Ketemu? Pasang foto, cek datamu, lalu ajukan klaim. Belum ada? Buat profil baru di halaman yang sama\n3️⃣ Admin menyetujui, biasanya kurang dari 24 jam — foto & datamu langsung tampil",
     buttonLabel: "Klaim profil saya →", buttonUrl: "https://trekkr.online/join", note: "Klaim ditinjau admin, biasanya kurang dari 24 jam. Kamu akan dapat email begitu disetujui.",
     optinText: "Mau tetap dapat kabar dari Trekkr, TurnamenPadel & Stellar Squad Academy? Klik sekali, berhenti kapan saja.", optinLabel: "Ya, kabari saya" },
 };
@@ -2616,8 +2639,20 @@ async function funnelStats(params) {
 async function accountClaimsList(params) {
   if (!verifyAdminKey(params && params.key, ["superadmin"])) return respond(401, ADMIN_KEY_DENIED);
   const status = String((params && params.status) || "pending");
-  const rows = await supaRest("GET", `profile_claims?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,player_name,status,created_at`);
-  return respond(200, { claims: rows || [] });
+  const rows = await supaRest("GET", `profile_claims?status=eq.${encodeURIComponent(status)}&order=created_at.desc&select=id,email,player_name,status,created_at,updates`) || [];
+  // email_match: the signed-in (verified) email equals the email already on the profile.
+  const names = [...new Set(rows.map((r) => r.player_name).filter(Boolean))];
+  const onFile = {};
+  if (names.length) {
+    const pls = await supaRest("GET", `players?name=in.(${names.map((n) => `"${String(n).replace(/"/g, '\\"')}"`).map(encodeURIComponent).join(",")})&select=name,claim_email`).catch(() => []);
+    (pls || []).forEach((p) => { onFile[p.name] = String(p.claim_email || "").trim().toLowerCase(); });
+  }
+  rows.forEach((r) => {
+    const f = onFile[r.player_name] || "";
+    r.profile_has_email = !!f;
+    r.email_match = !!f && f === String(r.email || "").trim().toLowerCase();
+  });
+  return respond(200, { claims: rows });
 }
 
 async function accountClaimsResolve(body) {
@@ -2627,13 +2662,23 @@ async function accountClaimsResolve(body) {
   const action = String((body && body.action) || "").toLowerCase();
   const admin = ak.u;
   if (!claimId || (action !== "approve" && action !== "reject")) return respond(400, { error: "claimId & action wajib" });
-  const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,email,player_name,status&limit=1`);
+  const cr = await supaRest("GET", `profile_claims?id=eq.${claimId}&select=id,user_id,email,player_name,status,updates&limit=1`);
   if (!cr || !cr.length) return respond(404, { error: "Klaim tidak ditemukan" });
   const claim = cr[0];
   const now = new Date().toISOString();
   if (action === "approve") {
     // Link the player row only if still unclaimed (guards a race / double-claim).
     await supaRest("PATCH", `players?name=eq.${encodeURIComponent(claim.player_name)}&user_id=is.null`, { user_id: claim.user_id });
+    // Apply the photo / details the player filed with the claim (whitelisted fields only).
+    const up = claim.updates && typeof claim.updates === "object" ? claim.updates : null;
+    if (up) {
+      const patch = {};
+      ["display_name", "gender", "region", "ig", "photo_url"].forEach((k) => { if (up[k]) patch[k] = String(up[k]); });
+      if (Object.keys(patch).length) {
+        try { await supaRest("PATCH", `players?name=eq.${encodeURIComponent(claim.player_name)}&user_id=eq.${claim.user_id}`, patch); }
+        catch (e) { console.error("claim updates:", e.message); }
+      }
+    }
     // Auto-confirm the account's email so they can log in right away.
     try { await supaAdmin("PUT", `users/${claim.user_id}`, { email_confirm: true }); } catch (e) { console.error("confirm email:", e.message); }
     await supaRest("PATCH", `profile_claims?id=eq.${claimId}`, { status: "approved", resolved_at: now, resolved_by: admin });

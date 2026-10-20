@@ -1204,7 +1204,8 @@ function onEditBtn(){
   if(_session.owns){ openEditModal(); return; }
   // Already claimed by someone else → not claimable.
   if(playerData&&playerData.player&&playerData.player.claimed){ showToast('Profil ini sudah diklaim & terverifikasi.'); return; }
-  if(ppSignedInUnlinked()){ ppClaimHere(); return; }
+  // Signed in → claim form (photo & details can be filed with the claim).
+  if(ppSignedInUnlinked()){ const n=(playerData&&playerData.player&&playerData.player.name)||''; location.href=`${PP_HOME}/join?name=${encodeURIComponent(n)}&act=claim`; return; }
   // Not the owner (or not logged in) → go claim/register this name.
   const nm=(playerData&&playerData.player&&playerData.player.name)||'';
   location.href=`${PP_HOME}/join?name=${encodeURIComponent(nm)}`;

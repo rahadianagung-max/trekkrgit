@@ -161,18 +161,60 @@ function renderClaim(name){
   $("dyn").innerHTML=`
     <div class="banner claim"><b>"${esc(name)}"</b> sudah ada di Trekkr. Klaim profil ini untuk mengelolanya — riwayat pertandingan &amp; ELO-mu tetap. Klaim ditinjau admin dulu.</div>
     <div id="cAuth"></div>
+    <div id="cForm" ${_me?"":"hidden"}>
+      <p class="cap" style="margin:4px 0 12px">Sekalian lengkapi profilmu <span class="opt">(opsional)</span> — berlaku begitu klaim disetujui.</p>
+      <div class="field"><label>Foto</label>
+        <div class="photo">
+          <img id="nPhotoPrev" class="pv" alt="" style="display:none">
+          <span class="pv" id="nPhotoPh">👤</span>
+          <div>
+            <label class="btn ghost sm" style="cursor:pointer;display:inline-block">Unggah foto<input type="file" id="nPhoto" accept="image/*" style="display:none"></label>
+            <div class="note">Foto wajah — dikecilkan otomatis.</div>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Nama tampilan</label><input id="cDisp" maxlength="60" autocomplete="off"/></div>
+      <div class="row2">
+        <div class="field"><label>Gender</label><select id="nGender"><option value="M">Male</option><option value="F">Female</option></select></div>
+        <div class="field"><label>Region / Kota</label><input id="nRegion" placeholder="cth. Jakarta" autocomplete="off"/></div>
+      </div>
+      <div class="field"><label>Instagram</label><input id="nIg" placeholder="username tanpa @" autocomplete="off"/></div>
+    </div>
     <button class="btn" id="cGo" ${_me?"":"hidden"}>Ajukan klaim</button>
     <div class="msg" id="cMsg"></div>`;
-  if(_me){ $("cGo").onclick=submitClaim; if(_autoClaim && _autoClaim.toLowerCase()===String(name).toLowerCase()){ _autoClaim=""; submitClaim(); } }
-  else renderAuth($("cAuth"), `/join?name=${encodeURIComponent(name)}&act=claim`, async()=>{ _me=await loadMe(); submitClaim(); });
+  $("nPhoto").addEventListener("change",onPhoto);
+  prefillClaim(name);
+  if(_me){ $("cGo").onclick=submitClaim; _autoClaim=""; }
+  else renderAuth($("cAuth"), `/join?name=${encodeURIComponent(name)}&act=claim`, async()=>{ _me=await loadMe(); $("cAuth").innerHTML=""; $("cForm").hidden=false; const b=$("cGo"); b.hidden=false; b.onclick=submitClaim; });
+}
+// Fill the claim form with what the profile already shows, so the player only changes what's wrong.
+async function prefillClaim(name){
+  try{
+    const r=await fetch(`${API}/players/${encodeURIComponent(name)}`); if(!r.ok) return;
+    const d=await r.json(), p=(d&&d.player)||{};
+    if($("cDisp")&&!$("cDisp").value) $("cDisp").value=p.displayName||p.name||"";
+    if($("nGender")&&p.gender) $("nGender").value=String(p.gender).toUpperCase()==="F"?"F":"M";
+    if($("nRegion")&&!$("nRegion").value) $("nRegion").value=p.region||"";
+    if($("nIg")&&!$("nIg").value) $("nIg").value=String(p.ig||"").replace(/^@+/,"");
+    if(p.photoUrl&&!_photoData){ const pv=$("nPhotoPrev"); pv.src=p.photoUrl; pv.style.display=""; $("nPhotoPh").style.display="none"; }
+    _claimOrig={display_name:$("cDisp").value,gender:$("nGender").value,region:$("nRegion").value,ig:$("nIg").value};
+  }catch(e){}
+}
+let _claimOrig={};
+function claimUpdates(){
+  const u={}, v={display_name:($("cDisp").value||"").trim(),gender:$("nGender").value,region:($("nRegion").value||"").trim(),ig:($("nIg").value||"").trim().replace(/^@+/,"")};
+  Object.keys(v).forEach(k=>{ if(v[k] && v[k]!==(_claimOrig[k]||"")) u[k]=v[k]; });
+  if(_photoData) u.photo=_photoData;
+  return Object.keys(u).length?u:null;
 }
 async function submitClaim(){
   const m=$("cMsg"), b=$("cGo");
-  if(b){ b.hidden=false; b.disabled=true; b.textContent="Mengirim…"; }
+  if(b){ b.hidden=false; b.disabled=true; b.textContent=_photoData?"Mengunggah…":"Mengirim…"; }
   m.className="msg";
   const t=await authToken();
   if(!t){ m.className="msg err"; m.textContent="Sesi berakhir — silakan masuk lagi."; if(b){b.disabled=false;b.textContent="Ajukan klaim";} return; }
-  const {ok,d}=await apiSend("account/claim-session","POST",{token:t,player_name:_existingName});
+  const body={token:t,player_name:_existingName}, up=claimUpdates(); if(up) body.updates=up;
+  const {ok,d}=await apiSend("account/claim-session","POST",body);
   if(ok){ viewDoneClaim(_existingName); }
   else { m.className="msg err"; m.textContent=(d&&d.error)||"Gagal mengajukan klaim."; if(b){b.disabled=false; b.textContent="Ajukan klaim";} }
 }
@@ -228,7 +270,7 @@ function renderNew(){
 }
 function onPhoto(e){
   const f=e.target.files&&e.target.files[0]; if(!f) return;
-  const m=$("nMsg");
+  const m=$("nMsg")||$("cMsg");
   if(!/^image\//.test(f.type)){ m.className="msg err"; m.textContent="File harus berupa gambar."; return; }
   const r=new FileReader();
   r.onload=function(){
@@ -294,7 +336,7 @@ function viewDoneClaim(name){
       <div class="ic">⏳</div>
       <h2>Klaim diajukan</h2>
       <p>Permintaan klaim profil <b>${esc(name)}</b> sudah kami terima dan sedang ditinjau admin.</p>
-      <div class="box">Begitu disetujui, kamu akan menerima <b>email konfirmasi</b>. Sementara itu kamu sudah masuk — analitik lengkap di semua profil sudah terbuka untukmu.</div>
+      <div class="box">Begitu disetujui, foto &amp; data yang kamu isi langsung dipasang dan kamu menerima <b>email konfirmasi</b>. Sementara itu kamu sudah masuk — analitik lengkap di semua profil sudah terbuka untukmu.</div>
       <p style="margin-top:18px"><a class="link" href="${HOME}/player/${slug(name)}">Lihat profil ${esc(name)} &rarr;</a></p>
     </div>`;
 }
