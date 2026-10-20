@@ -769,9 +769,15 @@ async function resolveEdit(reqId,action){
 // ---- Claim Requests (Supabase-backed profile claims) ----
 function crApi(){ return (location.hostname==='trekkr.online'||(location.hostname.endsWith('.vercel.app')&&location.hostname.startsWith('trekkrgit')))?'/api':'https://trekkr.online/api'; }
 function renderCR(c){
+  var u=c.updates||{}, lab={display_name:'Nama tampilan',gender:'Gender',region:'Kota',ig:'Instagram'};
+  var ch=Object.keys(lab).filter(function(k){return u[k];}).map(function(k){return '<div style="font-size:12px"><span style="color:var(--muted2)">'+lab[k]+':</span> <b>'+erEsc(u[k])+'</b></div>';}).join('');
+  var ph=u.photo_url?'<img src="'+erEsc(u.photo_url)+'" alt="" style="width:56px;height:56px;object-fit:cover;border:2px solid #090D14;flex:none">':'';
+  var badge=c.email_match?'<span style="display:inline-block;margin-top:4px;border:2px solid #047857;color:#047857;background:#ECFDF5;font:800 10px \'JetBrains Mono\',monospace;padding:1px 6px">✓ EMAIL COCOK DENGAN PROFIL</span>'
+    :(c.profile_has_email?'<span style="display:inline-block;margin-top:4px;border:2px solid #B91C1C;color:#B91C1C;background:#FEF2F2;font:800 10px \'JetBrains Mono\',monospace;padding:1px 6px">⚠ EMAIL BERBEDA DARI PROFIL</span>':'<span style="display:inline-block;margin-top:4px;border:2px solid #64748B;color:#64748B;font:800 10px \'JetBrains Mono\',monospace;padding:1px 6px">PROFIL TANPA EMAIL — CEK MANUAL</span>');
   return '<div class="er-card"><div class="er-top"><div><b>'+erEsc(c.player_name)+'</b>'
-    +'<div style="font-size:11px;color:var(--muted2)">'+erEsc(c.email||"")+' · '+erEsc((c.created_at||"").slice(0,10))+'</div></div>'
+    +'<div style="font-size:11px;color:var(--muted2)">'+erEsc(c.email||"")+' · '+erEsc((c.created_at||"").slice(0,10))+'</div>'+badge+'</div>'
     +'<span class="er-pend">Pending</span></div>'
+    +((ch||ph)?'<div style="display:flex;gap:10px;align-items:center;margin:8px 0;padding:8px;background:#F8FAFC;border:1px dashed #94A3B8">'+ph+'<div><div style="font:800 10px \'JetBrains Mono\',monospace;color:var(--muted2);margin-bottom:2px">PERUBAHAN SAAT DISETUJUI</div>'+(ch||'<div style="font-size:12px">Foto baru</div>')+'</div></div>':'')
     +'<div class="er-btns"><button class="er-rej" onclick="resolveClaim('+Number(c.id)+',\'reject\')">Reject</button>'
     +'<button class="er-app" onclick="resolveClaim('+Number(c.id)+',\'approve\')">Approve</button></div></div>';
 }
@@ -800,8 +806,26 @@ async function loadClaimRequests(){
   loadFunnel();
   var box=document.getElementById("cr-list"); if(!box)return; box.innerHTML='<p style="color:var(--muted2);font-size:12px">Memuat…</p>';
   try{ var r=await fetch(crApi()+"/account/claims?status=pending&key="+encodeURIComponent(AK())); var d=await r.json(); var cl=(d&&d.claims)||[];
-    box.innerHTML=cl.length?cl.map(renderCR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan klaim pending.</p>';
+    _crList=cl;
+    var nm=cl.filter(function(c){return c.email_match;}).length;
+    box.innerHTML=(nm?'<div style="margin-bottom:12px"><button class="btn btn-primary" onclick="approveMatchingClaims()">✓ Setujui semua yang emailnya cocok ('+nm+')</button></div>':'')
+      +(cl.length?cl.map(renderCR).join(""):'<p style="color:var(--muted2);font-size:13px">Tidak ada permintaan klaim pending.</p>');
   }catch(e){ box.innerHTML='<p style="color:var(--coral,#e03b30);font-size:12px">Gagal memuat.</p>'; }
+}
+var _crList=[];
+// Bulk-approve claims whose verified sign-in email equals the email already on the profile.
+async function approveMatchingClaims(){
+  var todo=_crList.filter(function(c){return c.email_match;});
+  if(!todo.length)return;
+  if(!confirm('Setujui '+todo.length+' klaim yang email login-nya sama dengan email di profil?\nFoto & data yang mereka isi ikut dipasang, dan masing-masing dapat email konfirmasi.'))return;
+  var admin=(TrekkrAPI.getSession().username)||"admin", ok=0, fail=[];
+  for(var i=0;i<todo.length;i++){
+    try{ var r=await fetch(crApi()+"/account/claims/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({claimId:todo[i].id,action:"approve",admin:admin,adminKey:AK()})});
+      var d=await r.json(); if(d&&d.ok)ok++; else fail.push(todo[i].player_name+': '+((d&&d.error)||'gagal')); }
+    catch(e){ fail.push(todo[i].player_name+': error jaringan'); }
+  }
+  alert('✓ '+ok+' klaim disetujui.'+(fail.length?'\n\nGagal:\n'+fail.join('\n'):''));
+  loadClaimRequests(); if(typeof loadPlayers==="function")loadPlayers();
 }
 async function resolveClaim(claimId,action){
   var admin=(TrekkrAPI.getSession().username)||"admin";
