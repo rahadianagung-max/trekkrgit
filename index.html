@@ -415,12 +415,15 @@
     $('cp').innerHTML=base;
     getJSON(BASE+'/competitions').then(function(d){
       var list=(d&&d.competitions)||[];
-      var live=list.filter(function(c){return /ongoing|live/i.test(c.status||'');});
-      var done=list.filter(function(c){return /complet|finish/i.test(c.status||'')&&c.date;}).sort(function(a,b){return a.date<b.date?1:-1;}).slice(0,Math.max(0,2-live.length));
-      var more=live.concat(done).map(function(c){
-        var href='https://venue.trekkr.online/'+(c.type==='league'?'league':'tournament')+'/'+encodeURIComponent(c.slug);
+      // The 3 most recently RECORDED tournaments. /api/competitions returns
+      // competitions in recorded order (oldest→newest), so the last entries are
+      // the newest records. The retired Asean Padel Tournament is excluded.
+      var tn=list.filter(function(c){return String(c.type||'').toLowerCase()==='tournament'&&String(c.slug||'').toLowerCase()!=='aseanpadeltournament';});
+      var recent=tn.slice(-3).reverse();
+      var more=recent.map(function(c){
+        var href='https://venue.trekkr.online/tournament/'+encodeURIComponent(c.slug);
         var isLive=/ongoing|live/i.test(c.status||'');
-        return '<a href="'+esc(href)+'"><span class="tk-chip'+(isLive?' tk-chip--ok':'')+'" style="align-self:flex-start">'+(isLive?'● Ongoing ':'Results · ')+(c.type==='league'?'League':'Tournament')+'</span><h3>'+esc(c.name)+'</h3><p>'+esc([c.location,isLive?'':dLabel(c.date)].filter(Boolean).join(' · '))+'</p><span class="go">'+(isLive?'Standings →':'Results →')+'</span></a>';
+        return '<a href="'+esc(href)+'"><span class="tk-chip'+(isLive?' tk-chip--ok':'')+'" style="align-self:flex-start">'+(isLive?'● Ongoing Tournament':'Results · Tournament')+'</span><h3>'+esc(c.name)+'</h3>'+(c.location?'<p>'+esc(c.location)+'</p>':'')+'<span class="go">'+(isLive?'Standings →':'Results →')+'</span></a>';
       }).join('');
       $('cp').innerHTML=base+more;
     }).catch(function(){});
