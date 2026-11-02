@@ -155,6 +155,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
     <div class="logout-bar"><span class="user-info" id="userLabel">—</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button></div>
     <div class="admin-tabs">
       <button class="a-tab active" onclick="switchTab('players')">Players</button>
+      <button class="a-tab" onclick="switchTab('export');loadExportPlayers()">Export Data</button>
       <button class="a-tab" onclick="switchTab('edits');loadEditRequests()">Edit Requests</button>
       <button class="a-tab" onclick="switchTab('claims');loadClaimRequests()">Claim Requests</button>
       <button class="a-tab" onclick="switchTab('names');loadNameRequests()">Name Changes</button>
@@ -176,6 +177,30 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
         <div style="margin-bottom:12px"><input class="field-input" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()"></div>
         <div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Photo</th><th>Name</th><th>Gender</th><th>ELO</th><th>IG</th><th>Region</th><th>Actions</th></tr></thead><tbody id="playersTbody"></tbody></table></div>
         <div class="status-msg" id="playerActionStatus"></div>
+      </div>
+    </div>
+    <!-- EXPORT DATA (pilih beberapa nama pemain → tarik seluruh data ke CSV) -->
+    <div class="tab-pane" id="tab-export">
+      <div class="section">
+        <div class="section-title">EXPORT DATA PEMAIN · CSV</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Cari &amp; centang nama pemain yang ada di database, lalu tarik <b>seluruh data yang tersedia</b> untuk mereka ke satu file CSV (profil, ELO terkini, statistik, pencapaian). Bisa juga ekspor <b>riwayat match</b> (1 baris per pertandingan). File UTF‑8 siap dibuka di Excel / Google Sheets.</p>
+        <div style="margin-bottom:10px"><input class="field-input" id="expSearch" placeholder="Cari nama / display / IG…" oninput="renderExportList()"></div>
+        <div class="field-row" style="align-items:center;gap:10px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="expSelAll(true)">Pilih semua (hasil cari)</button>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="expSelAll(false)">Kosongkan</button>
+          <span class="field-label" id="expCount" style="margin:0">0 pemain dipilih</span>
+        </div>
+        <div id="expList" style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:12px"><p style="color:var(--muted2);font-size:12px;margin:0">Memuat pemain…</p></div>
+        <div class="field"><label class="field-label">Jenis data</label>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="summary" checked style="width:auto">Ringkasan — 1 baris/pemain (profil + ELO + statistik + pencapaian)</label>
+            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="matches" style="width:auto">Riwayat match — 1 baris/pertandingan</label>
+          </div>
+        </div>
+        <div class="field-row" style="align-items:center;gap:10px;margin-top:12px">
+          <button class="btn btn-primary" type="button" onclick="exportSelectedCsv()" id="expBtn">⬇ Download CSV</button>
+        </div>
+        <div class="status-msg" id="expStatus"></div>
       </div>
     </div>
     <div class="tab-pane" id="tab-import">
@@ -413,6 +438,88 @@ async function loadPlayers(){
 }
 function renderPlayers(pl){document.getElementById('playersTbody').innerHTML=pl.map(p=>{const nm=p.name.replace(/'/g,"\\'");return `<tr><td class="photo-cell"><img src="${p.photoUrl||DA}" onerror="this.src='${DA}'"></td><td><strong>${p.displayName||p.name}</strong></td><td><span class="badge ${p.gender==='F'?'badge-lime':'badge-muted'}">${p.gender}</span></td><td>${p.elo}</td><td>${p.ig||'—'}</td><td>${p.region||'—'}</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editPlayer('${nm}')">Edit</button> <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,56,48,.4);color:#e03b30" onclick="deletePlayerUI('${nm}')">Delete</button></td></tr>`;}).join('')}
 function filterPlayers(){const q=document.getElementById('playerSearch').value.toLowerCase();renderPlayers(allPC.filter(p=>p.name.toLowerCase().includes(q)||(p.displayName||'').toLowerCase().includes(q)||(p.ig||'').toLowerCase().includes(q)))}
+
+/* ===== EXPORT DATA: pilih beberapa nama → tarik seluruh data ke CSV ===== */
+let EXP_SEL=new Set();
+function expEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function expNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');}
+async function loadExportPlayers(){
+  if(!allPC||!allPC.length){ try{ await loadPlayers(); }catch(e){} }
+  renderExportList();
+}
+function renderExportList(){
+  const host=document.getElementById('expList'); if(!host) return;
+  const q=((document.getElementById('expSearch')||{}).value||'').toLowerCase().trim();
+  const list=(allPC||[]).filter(p=>!q||String(p.name||'').toLowerCase().includes(q)||String(p.displayName||'').toLowerCase().includes(q)||String(p.ig||'').toLowerCase().includes(q));
+  if(!(allPC||[]).length){ host.innerHTML='<p style="color:var(--muted2);font-size:12px;margin:0">Belum ada pemain termuat.</p>'; expCountUpd(); return; }
+  host.innerHTML=list.length? list.map(p=>{
+    const nm=expEsc(p.name);
+    return `<label style="display:flex;gap:8px;align-items:center;font-size:12px;padding:5px 2px;border-bottom:1px solid var(--border)">
+      <input type="checkbox" class="expPick" value="${nm}" ${EXP_SEL.has(p.name)?'checked':''} onchange="expToggle(this)" style="width:auto">
+      <span><strong>${expEsc(p.displayName||p.name)}</strong>${p.region?' · '+expEsc(p.region):''}${p.ig?' · '+expEsc(p.ig):''} <span style="color:var(--muted2)">· ELO ${p.elo!=null?p.elo:'—'}</span></span></label>`;
+  }).join(''):'<p style="color:var(--muted2);font-size:12px;margin:0">Tidak ada yang cocok.</p>';
+  expCountUpd();
+}
+function expToggle(cb){ if(cb.checked) EXP_SEL.add(cb.value); else EXP_SEL.delete(cb.value); expCountUpd(); }
+function expSelAll(on){ document.querySelectorAll('#expList .expPick').forEach(cb=>{ cb.checked=on; if(on) EXP_SEL.add(cb.value); else EXP_SEL.delete(cb.value); }); expCountUpd(); }
+function expCountUpd(){ const el=document.getElementById('expCount'); if(el) el.textContent=EXP_SEL.size+' pemain dipilih'; }
+function expCsvCell(v){ const s=String(v==null?'':v); return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function expDownload(name,text){
+  const csv='﻿'+text; const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+async function exportSelectedCsv(){
+  const st=document.getElementById('expStatus'); const btn=document.getElementById('expBtn');
+  const names=[...EXP_SEL];
+  if(!names.length){ st.className='status-msg error'; st.textContent='Centang minimal satu pemain.'; return; }
+  const kind=(document.querySelector('input[name="expKind"]:checked')||{}).value||'summary';
+  btn.disabled=true;
+  const stamp=new Date().toISOString().slice(0,10);
+  try{
+    if(kind==='summary'){
+      const header=['Name','Display Name','Gender','Region','IG','Clubs','Verified','Created At','Current ELO','Unrated','Total Matches','Wins','Losses','Win Rate %','Streak','Tournaments Played','Best Placement','Achievements','Photo URL'];
+      const lines=[header.map(expCsvCell).join(',')];
+      for(let i=0;i<names.length;i++){
+        st.className='status-msg'; st.textContent='Mengambil data '+(i+1)+'/'+names.length+'…';
+        let d; try{ d=await TrekkrAPI.getPlayerDetail(names[i]); }catch(e){ d=null; }
+        const p=(d&&d.player)||{}, s=(d&&d.stats)||{}, ach=(d&&d.achievements)||[], th=(d&&d.tournamentHistory)||[];
+        const achTxt=ach.map(a=>[a.placement,a.eventName,a.category?('('+a.category+')'):''].filter(Boolean).join(' ')).join(' | ');
+        const best=(ach[0]&&ach[0].placement)||'';
+        lines.push([p.name||names[i],p.displayName||'',p.gender||'',p.region||'',p.ig||'',p.clubs||'',
+          p.verified?'TRUE':'FALSE',p.createdAt||'',s.currentElo!=null?s.currentElo:'',s.unrated?'TRUE':'FALSE',
+          s.totalMatches!=null?s.totalMatches:'',s.totalW!=null?s.totalW:'',s.totalL!=null?s.totalL:'',
+          s.winRate!=null?s.winRate:'',s.streak||'',th.length||'',best,achTxt,p.photoUrl||''].map(expCsvCell).join(','));
+      }
+      expDownload('trekkr_players_'+stamp+'.csv', lines.join('\r\n'));
+      st.className='status-msg success'; st.textContent='✓ '+names.length+' pemain diekspor.';
+    } else {
+      const header=['Player','Date','Week','Venue','Category','Partner','Opponent 1','Opponent 2','Score For','Score Against','Result','Source URL'];
+      const lines=[header.map(expCsvCell).join(',')]; let total=0;
+      for(let i=0;i<names.length;i++){
+        st.className='status-msg'; st.textContent='Mengambil riwayat '+(i+1)+'/'+names.length+'…';
+        let mm=[]; try{ const r=await fetch(crApi()+'/players/'+encodeURIComponent(names[i])+'/matches'); const j=await r.json(); mm=(j&&j.matches)||[]; }catch(e){ mm=[]; }
+        const target=expNorm(names[i]);
+        mm.forEach(m=>{
+          const slots=[m.p1t1,m.p2t1,m.p1t2,m.p2t2]; const inT1=[m.p1t1,m.p2t1].some(n=>expNorm(n)===target);
+          const inT2=[m.p1t2,m.p2t2].some(n=>expNorm(n)===target);
+          let partner='',o1='',o2='',sf='',sa='',res='';
+          if(inT1||inT2){
+            if(inT1){ partner=expNorm(m.p1t1)===target?m.p2t1:m.p1t1; o1=m.p1t2; o2=m.p2t2; sf=m.scoreT1; sa=m.scoreT2; }
+            else{ partner=expNorm(m.p1t2)===target?m.p2t2:m.p1t2; o1=m.p1t1; o2=m.p2t1; sf=m.scoreT2; sa=m.scoreT1; }
+            res=sf>sa?'Menang':(sf<sa?'Kalah':'Seri');
+          } else { partner=m.p2t1; o1=m.p1t2; o2=m.p2t2; sf=m.scoreT1; sa=m.scoreT2; } // alias drift: dump raw
+          total++;
+          lines.push([names[i],m.date||'',m.week||'',m.venue||'',m.category||'',partner||'',o1||'',o2||'',sf,sa,res,m.sourceUrl||''].map(expCsvCell).join(','));
+        });
+      }
+      if(total===0){ st.className='status-msg error'; st.textContent='Tidak ada riwayat match untuk pemain terpilih.'; btn.disabled=false; return; }
+      expDownload('trekkr_player_matches_'+stamp+'.csv', lines.join('\r\n'));
+      st.className='status-msg success'; st.textContent='✓ '+total+' baris match dari '+names.length+' pemain diekspor.';
+    }
+  }catch(e){ st.className='status-msg error'; st.textContent=(e&&e.message)||'Gagal mengekspor.'; }
+  finally{ btn.disabled=false; }
+}
 async function deletePlayerUI(name){
   const st=document.getElementById('playerActionStatus');
   if(!confirm('Hapus pemain "'+name+'"?\n\nBaris pemain + seluruh riwayat ELO_Log-nya akan dihapus permanen. Untuk menggabungkan pemain dobel, pakai tab Duplicates.'))return;
