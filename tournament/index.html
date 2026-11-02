@@ -129,7 +129,7 @@
     }
     var html='<div class="trk-list">';
     list.forEach(function(e){
-      var inner='<div class="trk-av">'+esc(inits(e.name))+(e.logoUrl?'<img src="'+esc(e.logoUrl)+'" alt="" onerror="this.remove()"/>':'')+'</div>'
+      var inner='<div class="trk-av">'+esc(inits(e.name))+(e.logoUrl?'<img loading="lazy" decoding="async" src="'+esc(e.logoUrl)+'" alt="" onerror="this.remove()"/>':'')+'</div>'
         +'<div class="trk-info"><div class="trk-name">'+esc(e.name)+'</div>'+(e.monthYear?'<div class="trk-meta">'+esc(e.monthYear)+'</div>':'')+'</div>'
         +(e.location?'<span class="trk-region">'+esc(e.location)+'</span>':'');
       if(e.url){
