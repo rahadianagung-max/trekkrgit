@@ -1482,13 +1482,25 @@ function onVenueLogoPick(e){
   if(!file) return;
   if(!/^image\//.test(file.type)){ tStatus(st,'error','Please choose an image file.'); return; }
   if(file.size > 5*1024*1024){ tStatus(st,'error','Image is too large (max 5 MB).'); e.target.value=''; return; }
-  const reader=new FileReader();
-  reader.onload=function(){
-    venueLogoData=reader.result;               // data URL, sent to the API on save
+  // Shrink + re-encode client-side before upload so logos don't bloat Storage/egress.
+  var done=function(dataUrl){
+    venueLogoData=dataUrl;                      // data URL, sent to the API on save
     renderVenueLogo(venueLogoData);
     document.getElementById('venueLogoCancel').style.display='inline-flex';
   };
-  reader.readAsDataURL(file);
+  var url=URL.createObjectURL(file), img=new Image();
+  img.onload=function(){ try{
+      var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      var s=Math.min(1,512/Math.max(w,h||1)); w=Math.max(1,Math.round(w*s)); h=Math.max(1,Math.round(h*s));
+      var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      // Keep PNG (transparency) for PNG sources; JPEG for the rest.
+      done(cv.toDataURL(/png/i.test(file.type)?'image/png':'image/jpeg',0.85));
+    }catch(err){ URL.revokeObjectURL(url); var rd=new FileReader(); rd.onload=function(){done(rd.result);}; rd.readAsDataURL(file); }
+  };
+  img.onerror=function(){ URL.revokeObjectURL(url); var rd=new FileReader(); rd.onload=function(){done(rd.result);}; rd.readAsDataURL(file); };
+  img.src=url;
 }
 function cancelVenueLogo(){
   venueLogoData=null;
