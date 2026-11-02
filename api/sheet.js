@@ -1695,6 +1695,9 @@ const netlifyHandler = async (event) => {
     if (path === "players/edit-requests" && method === "GET") return await listEditRequests(params);
     if (path === "players/edit-requests/resolve" && method === "POST") return gate() || await resolveEditRequest(body);
     if (path === "players/delete" && method === "POST") return await deletePlayer(body);
+    // Superadmin-only: full registration + contact record per player (PII: email,
+    // marketing consent). Must be matched BEFORE the generic players/<name> GET.
+    if (path === "players/registrations" && method === "GET") return gate(SUPER) || await getPlayerRegistrations();
     if (path.startsWith("players/") && path.endsWith("/matches") && method === "GET") {
       return await getPlayerMatches(decodeURIComponent(path.replace("players/", "").replace("/matches", "")));
     }
@@ -2891,6 +2894,45 @@ async function getPlayers(params) {
     const q = params.search.toLowerCase();
     players = players.filter((p) => p.name.toLowerCase().includes(q) || p.displayName.toLowerCase().includes(q) || p.ig.toLowerCase().includes(q));
   }
+  return respond(200, { players });
+}
+
+// Full registration + contact record for every player, for the superadmin
+// "Export Data → Registrasi" option. Includes PII (claim_email + marketing
+// consent), so this is superadmin-gated at the route. Additive endpoint — no
+// existing contract is changed.
+async function getPlayerRegistrations() {
+  if (supaOn()) {
+    const [rows, consents] = await Promise.all([
+      supaRest("GET", "players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email&order=name.asc").catch(() => []),
+      supaRest("GET", "account_consents?select=email,marketing").catch(() => []),
+    ]);
+    // Marketing consent keyed by email (latest choice already stored one-per-user).
+    const cmap = {};
+    (consents || []).forEach((c) => { const e = String(c.email || "").trim().toLowerCase(); if (e) cmap[e] = !!c.marketing; });
+    const players = (rows || []).map((r) => {
+      const email = String(r.claim_email || "").trim();
+      const ekey = email.toLowerCase();
+      return {
+        name: r.name || "", displayName: r.display_name || r.name || "", gender: (r.gender || "M").toUpperCase(),
+        region: r.region || "", ig: r.ig || "", clubs: r.clubs || "",
+        verified: r.verified === true || String(r.verified).toUpperCase() === "TRUE",
+        createdAt: r.created_at || "", winnerAt: r.winner_at || "", tournaments: r.tournaments || "",
+        photoUrl: ibbHostFix(r.photo_url || ""), email,
+        marketing: ekey ? cmap[ekey] === true : false, hasConsentRecord: ekey ? (ekey in cmap) : false,
+      };
+    });
+    return respond(200, { players });
+  }
+  // Sheets fallback: claim_email is col L; marketing consent lives only in Supabase.
+  const sheets = getSheets();
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
+  const players = (res.data.values || []).map((r) => ({
+    name: r[0] || "", displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
+    region: r[5] || "", ig: r[1] || "", clubs: r[7] || "", verified: r[2] === "TRUE",
+    createdAt: r[8] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
+    photoUrl: ibbHostFix(r[6] || ""), email: String(r[11] || "").trim(), marketing: false, hasConsentRecord: false,
+  }));
   return respond(200, { players });
 }
 
