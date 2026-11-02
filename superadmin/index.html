@@ -195,7 +195,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
           <div style="display:flex;gap:16px;flex-wrap:wrap">
             <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="summary" checked style="width:auto">Ringkasan — 1 baris/pemain (profil + ELO + statistik + pencapaian)</label>
             <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="matches" style="width:auto">Riwayat match — 1 baris/pertandingan</label>
-            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="registration" style="width:auto">Registrasi lengkap + kontak (email &amp; izin promo)</label>
+            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="expKind" value="registration" style="width:auto">Registrasi lengkap + kontak (email, no HP, ukuran jersey, bukti transfer, izin promo)</label>
           </div>
         </div>
         <div class="field-row" style="align-items:center;gap:10px;margin-top:12px">
@@ -500,14 +500,14 @@ async function exportSelectedCsv(){
       try{ const r=await fetch(crApi()+'/players/registrations'); const j=await r.json(); if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); (j.players||[]).forEach(p=>{ regMap[String(p.name||'').toLowerCase()]=p; }); }
       catch(e){ st.className='status-msg error'; st.textContent='Gagal ambil data registrasi: '+((e&&e.message)||e); btn.disabled=false; return; }
       const eloOf=nm=>{ const p=(allPC||[]).find(x=>String(x.name||'').toLowerCase()===String(nm).toLowerCase()); return p&&p.elo!=null?p.elo:''; };
-      const header=['Name','Display Name','Gender','Region','IG','Clubs','Verified','Registered At','Winner At','Tournaments','Current ELO','Email','Izin Promo','Photo URL'];
+      const header=['Name','Display Name','Gender','Region','IG','No HP','Clubs','Verified','Registered At','Winner At','Tournaments','Current ELO','Email','Izin Promo','Ukuran Jersey','Bukti Transfer','Photo URL'];
       const lines=[header.map(expCsvCell).join(',')];
       names.forEach(nm=>{
         const r=regMap[nm.toLowerCase()]||{name:nm};
         const promo=r.email?(r.marketing?'Ya':(r.hasConsentRecord?'Tidak':'Belum ada')):'Belum ada';
-        lines.push([r.name||nm,r.displayName||'',r.gender||'',r.region||'',r.ig||'',r.clubs||'',
+        lines.push([r.name||nm,r.displayName||'',r.gender||'',r.region||'',r.ig||'',r.phone||'',r.clubs||'',
           r.verified?'TRUE':'FALSE',r.createdAt||'',r.winnerAt||'',r.tournaments||'',eloOf(nm),
-          r.email||'',promo,r.photoUrl||''].map(expCsvCell).join(','));
+          r.email||'',promo,r.jersey||'',r.paymentProofUrl||'',r.photoUrl||''].map(expCsvCell).join(','));
       });
       expDownload('trekkr_registrations_'+stamp+'.csv', lines.join('\r\n'));
       st.className='status-msg success'; st.textContent='✓ '+names.length+' data registrasi diekspor.';
