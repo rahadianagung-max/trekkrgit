@@ -2897,22 +2897,58 @@ async function getPlayers(params) {
   return respond(200, { players });
 }
 
+// Pull the jersey size out of a registration's free-form form values (the key
+// name varies by form: "jersey", "Ukuran Jersey", "size"…). Checks flat keys and
+// a nested player1/player2 object. Returns "" when nothing matches.
+function regExtractJersey(data) {
+  let v = data;
+  if (typeof v === "string") { try { v = JSON.parse(v || "{}"); } catch (e) { return ""; } }
+  if (!v || typeof v !== "object") return "";
+  const scan = (obj) => {
+    if (!obj || typeof obj !== "object") return "";
+    for (const k of Object.keys(obj)) {
+      if (/jersey|ukuran|size/i.test(k)) { const val = obj[k]; if (val != null && String(val).trim()) return String(val).trim(); }
+    }
+    return "";
+  };
+  return scan(v) || scan(v.player1) || scan(v.player2) || "";
+}
+// Index registrations by normalized player name -> { phone, jersey, paymentProofUrl }.
+// Rows arrive oldest-first so later (more recent) non-empty values win.
+function regIndexFromRows(rows) {
+  const idx = {};
+  (rows || []).forEach((reg) => {
+    const key = normName(reg.name);
+    if (!key) return;
+    const cur = idx[key] || { phone: "", jersey: "", paymentProofUrl: "" };
+    if (reg.phone) cur.phone = String(reg.phone).trim();
+    const j = regExtractJersey(reg.data);
+    if (j) cur.jersey = j;
+    if (reg.paymentProofUrl) cur.paymentProofUrl = ibbHostFix(String(reg.paymentProofUrl));
+    idx[key] = cur;
+  });
+  return idx;
+}
+
 // Full registration + contact record for every player, for the superadmin
 // "Export Data → Registrasi" option. Includes PII (claim_email + marketing
-// consent), so this is superadmin-gated at the route. Additive endpoint — no
-// existing contract is changed.
+// consent, plus phone / jersey / payment proof from Registrations), so this is
+// superadmin-gated at the route. Additive endpoint — no existing contract changed.
 async function getPlayerRegistrations() {
   if (supaOn()) {
-    const [rows, consents] = await Promise.all([
+    const [rows, consents, regs] = await Promise.all([
       supaRest("GET", "players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email&order=name.asc").catch(() => []),
       supaRest("GET", "account_consents?select=email,marketing").catch(() => []),
+      supaRest("GET", "registrations?select=name,phone,payment_proof_url,data,timestamp&order=timestamp.asc").catch(() => []),
     ]);
     // Marketing consent keyed by email (latest choice already stored one-per-user).
     const cmap = {};
     (consents || []).forEach((c) => { const e = String(c.email || "").trim().toLowerCase(); if (e) cmap[e] = !!c.marketing; });
+    const regIdx = regIndexFromRows((regs || []).map((r) => ({ name: r.name, phone: r.phone, paymentProofUrl: r.payment_proof_url, data: r.data })));
     const players = (rows || []).map((r) => {
       const email = String(r.claim_email || "").trim();
       const ekey = email.toLowerCase();
+      const reg = regIdx[normName(r.name)] || {};
       return {
         name: r.name || "", displayName: r.display_name || r.name || "", gender: (r.gender || "M").toUpperCase(),
         region: r.region || "", ig: r.ig || "", clubs: r.clubs || "",
@@ -2920,19 +2956,30 @@ async function getPlayerRegistrations() {
         createdAt: r.created_at || "", winnerAt: r.winner_at || "", tournaments: r.tournaments || "",
         photoUrl: ibbHostFix(r.photo_url || ""), email,
         marketing: ekey ? cmap[ekey] === true : false, hasConsentRecord: ekey ? (ekey in cmap) : false,
+        phone: reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
       };
     });
     return respond(200, { players });
   }
   // Sheets fallback: claim_email is col L; marketing consent lives only in Supabase.
   const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` });
-  const players = (res.data.values || []).map((r) => ({
-    name: r[0] || "", displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
-    region: r[5] || "", ig: r[1] || "", clubs: r[7] || "", verified: r[2] === "TRUE",
-    createdAt: r[8] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
-    photoUrl: ibbHostFix(r[6] || ""), email: String(r[11] || "").trim(), marketing: false, hasConsentRecord: false,
-  }));
+  const [pRes, rRes] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` }).catch(() => ({ data: { values: [] } })),
+  ]);
+  // Registrations cols: A reg_id,B form_id,C timestamp,D name,E gender,F phone,
+  // G photo_url,H payment_proof_url,I data(JSON),J linked,K status.
+  const regIdx = regIndexFromRows((rRes.data.values || []).map((x) => ({ name: x[3], phone: x[5], paymentProofUrl: x[7], data: x[8] })));
+  const players = (pRes.data.values || []).map((r) => {
+    const reg = regIdx[normName(r[0])] || {};
+    return {
+      name: r[0] || "", displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
+      region: r[5] || "", ig: r[1] || "", clubs: r[7] || "", verified: r[2] === "TRUE",
+      createdAt: r[8] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
+      photoUrl: ibbHostFix(r[6] || ""), email: String(r[11] || "").trim(), marketing: false, hasConsentRecord: false,
+      phone: reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
+    };
+  });
   return respond(200, { players });
 }
 
