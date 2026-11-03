@@ -2934,10 +2934,27 @@ function regIndexFromRows(rows) {
 // "Export Data → Registrasi" option. Includes PII (claim_email + marketing
 // consent, plus phone / jersey / payment proof from Registrations), so this is
 // superadmin-gated at the route. Additive endpoint — no existing contract changed.
+// Fetch every row of a PostgREST select, 1000 at a time (PostgREST caps one
+// response at db-max-rows, ~1000), so large tables aren't silently truncated.
+// `base` already carries ?select=...&order=... . A stable order is required for
+// correct offset paging.
+async function supaSelectAll(base) {
+  const PAGE = 1000; let out = [], off = 0;
+  for (;;) {
+    const sep = base.includes("?") ? "&" : "?";
+    const rows = await supaRest("GET", `${base}${sep}limit=${PAGE}&offset=${off}`).catch(() => []);
+    const arr = Array.isArray(rows) ? rows : [];
+    out = out.concat(arr);
+    if (arr.length < PAGE) break;
+    off += PAGE;
+  }
+  return out;
+}
 async function getPlayerRegistrations() {
   if (supaOn()) {
     const [rows, consents, regs] = await Promise.all([
-      supaRest("GET", "players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email,phone&order=name.asc").catch(() => []),
+      // Paginated: there are >1000 players, so a single request would drop the rest.
+      supaSelectAll("players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email,phone&order=id.asc"),
       supaRest("GET", "account_consents?select=email,marketing").catch(() => []),
       supaRest("GET", "registrations?select=name,phone,payment_proof_url,data,timestamp&order=timestamp.asc").catch(() => []),
     ]);
