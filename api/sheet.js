@@ -2937,7 +2937,7 @@ function regIndexFromRows(rows) {
 async function getPlayerRegistrations() {
   if (supaOn()) {
     const [rows, consents, regs] = await Promise.all([
-      supaRest("GET", "players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email&order=name.asc").catch(() => []),
+      supaRest("GET", "players?select=name,ig,verified,display_name,gender,region,photo_url,clubs,created_at,winner_at,tournaments,claim_email,phone&order=name.asc").catch(() => []),
       supaRest("GET", "account_consents?select=email,marketing").catch(() => []),
       supaRest("GET", "registrations?select=name,phone,payment_proof_url,data,timestamp&order=timestamp.asc").catch(() => []),
     ]);
@@ -2956,7 +2956,9 @@ async function getPlayerRegistrations() {
         createdAt: r.created_at || "", winnerAt: r.winner_at || "", tournaments: r.tournaments || "",
         photoUrl: ibbHostFix(r.photo_url || ""), email,
         marketing: ekey ? cmap[ekey] === true : false, hasConsentRecord: ekey ? (ekey in cmap) : false,
-        phone: reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
+        // Phone lives on the player record (players.phone); the Registrations tab
+        // is only a fallback. Jersey & payment proof exist only on registrations.
+        phone: String(r.phone || "").trim() || reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
       };
     });
     return respond(200, { players });
