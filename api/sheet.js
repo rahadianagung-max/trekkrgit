@@ -2897,35 +2897,45 @@ async function getPlayers(params) {
   return respond(200, { players });
 }
 
-// Pull the jersey size out of a registration's free-form form values (the key
-// name varies by form: "jersey", "Ukuran Jersey", "size"…). Checks flat keys and
-// a nested player1/player2 object. Returns "" when nothing matches.
-function regExtractJersey(data) {
-  let v = data;
-  if (typeof v === "string") { try { v = JSON.parse(v || "{}"); } catch (e) { return ""; } }
-  if (!v || typeof v !== "object") return "";
-  const scan = (obj) => {
-    if (!obj || typeof obj !== "object") return "";
-    for (const k of Object.keys(obj)) {
-      if (/jersey|ukuran|size/i.test(k)) { const val = obj[k]; if (val != null && String(val).trim()) return String(val).trim(); }
-    }
-    return "";
-  };
-  return scan(v) || scan(v.player1) || scan(v.player2) || "";
+// Extract { phone, email, jersey } from one registration player/values object.
+// The jersey key name varies by form ("jersey", "Ukuran Jersey", "size"…).
+function regFieldsFromObj(o) {
+  if (!o || typeof o !== "object") return { phone: "", email: "", jersey: "" };
+  let jersey = "";
+  for (const k of Object.keys(o)) {
+    if (/jersey|ukuran|size/i.test(k)) { const v = o[k]; if (v != null && String(v).trim()) { jersey = String(v).trim(); break; } }
+  }
+  const pick = (k) => { const v = o[k]; return v != null ? String(v).trim() : ""; };
+  return { phone: pick("phone"), email: pick("email"), jersey };
 }
-// Index registrations by normalized player name -> { phone, jersey, paymentProofUrl }.
+// Index registrations by normalized player name -> { phone, email, jersey, paymentProofUrl }.
+// Team registrations keep the two players inside data.player1 / data.player2 (the
+// row's own `name` is the TEAM name), so index each player from there; older
+// single-player registrations store flat values keyed by the row's own name.
 // Rows arrive oldest-first so later (more recent) non-empty values win.
 function regIndexFromRows(rows) {
   const idx = {};
-  (rows || []).forEach((reg) => {
-    const key = normName(reg.name);
-    if (!key) return;
-    const cur = idx[key] || { phone: "", jersey: "", paymentProofUrl: "" };
-    if (reg.phone) cur.phone = String(reg.phone).trim();
-    const j = regExtractJersey(reg.data);
-    if (j) cur.jersey = j;
-    if (reg.paymentProofUrl) cur.paymentProofUrl = ibbHostFix(String(reg.paymentProofUrl));
+  const put = (name, f, pay) => {
+    const key = normName(name); if (!key) return;
+    const cur = idx[key] || { phone: "", email: "", jersey: "", paymentProofUrl: "" };
+    if (f.phone) cur.phone = f.phone;
+    if (f.email) cur.email = f.email;
+    if (f.jersey) cur.jersey = f.jersey;
+    if (pay) cur.paymentProofUrl = ibbHostFix(String(pay));
     idx[key] = cur;
+  };
+  (rows || []).forEach((reg) => {
+    let data = reg.data;
+    if (typeof data === "string") { try { data = JSON.parse(data || "{}"); } catch (e) { data = {}; } }
+    data = data && typeof data === "object" ? data : {};
+    const pay = reg.paymentProofUrl || "";
+    if (data.player1 || data.player2) {
+      [data.player1, data.player2].forEach((p) => { if (p && p.name) put(p.name, regFieldsFromObj(p), pay); });
+    } else {
+      const f = regFieldsFromObj(data);
+      if (!f.phone && reg.phone) f.phone = String(reg.phone).trim();
+      put(reg.name, f, pay);
+    }
   });
   return idx;
 }
@@ -2971,10 +2981,12 @@ async function getPlayerRegistrations() {
         region: r.region || "", ig: r.ig || "", clubs: r.clubs || "",
         verified: r.verified === true || String(r.verified).toUpperCase() === "TRUE",
         createdAt: r.created_at || "", winnerAt: r.winner_at || "", tournaments: r.tournaments || "",
-        photoUrl: ibbHostFix(r.photo_url || ""), email,
+        // Email: verified claim_email first, else the email given at registration.
+        photoUrl: ibbHostFix(r.photo_url || ""), email: email || reg.email || "",
+        // Marketing consent is keyed on the verified account email only.
         marketing: ekey ? cmap[ekey] === true : false, hasConsentRecord: ekey ? (ekey in cmap) : false,
-        // Phone lives on the player record (players.phone); the Registrations tab
-        // is only a fallback. Jersey & payment proof exist only on registrations.
+        // Phone lives on the player record (players.phone); the registration is a
+        // fallback. Jersey & payment proof exist only on the registration.
         phone: String(r.phone || "").trim() || reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
       };
     });
@@ -2983,7 +2995,7 @@ async function getPlayerRegistrations() {
   // Sheets fallback: claim_email is col L; marketing consent lives only in Supabase.
   const sheets = getSheets();
   const [pRes, rRes] = await Promise.all([
-    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:L` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.players}!A2:M` }),
     sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${TABS.registrations}!A2:K` }).catch(() => ({ data: { values: [] } })),
   ]);
   // Registrations cols: A reg_id,B form_id,C timestamp,D name,E gender,F phone,
@@ -2995,8 +3007,8 @@ async function getPlayerRegistrations() {
       name: r[0] || "", displayName: r[3] || r[0] || "", gender: (r[4] || "M").toUpperCase(),
       region: r[5] || "", ig: r[1] || "", clubs: r[7] || "", verified: r[2] === "TRUE",
       createdAt: r[8] || "", winnerAt: r[9] || "", tournaments: r[10] || "",
-      photoUrl: ibbHostFix(r[6] || ""), email: String(r[11] || "").trim(), marketing: false, hasConsentRecord: false,
-      phone: reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
+      photoUrl: ibbHostFix(r[6] || ""), email: String(r[11] || "").trim() || reg.email || "", marketing: false, hasConsentRecord: false,
+      phone: String(r[12] || "").trim() || reg.phone || "", jersey: reg.jersey || "", paymentProofUrl: reg.paymentProofUrl || "",
     };
   });
   return respond(200, { players });
