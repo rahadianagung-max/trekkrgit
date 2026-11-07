@@ -209,6 +209,7 @@ body{background-color:#fff;background-image:linear-gradient(to right,rgba(9,13,2
         <div class="section-title">IMPORT TOURNAMENT · XLSX</div>
         <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.5">Upload file .xlsx (template baku). Nama dicek ke database; pemain baru diberi <b>satu level</b> untuk seluruh turnamen. Baris error <b>wajib diperbaiki</b> dulu — submit terkunci sampai 0 error. Urutan baris atas→bawah = kronologis (ELO dihitung berurutan).</p>
         <div class="imp-drop"><input type="file" id="imp-file" accept=".xlsx,.xls" onchange="impLoad(event)"><label for="imp-file">⬆ Pilih file .xlsx</label></div>
+        <p style="font-size:11px;color:var(--muted2);margin:6px 0 0">Maks ~5 MB · hanya .xlsx/.xls. Jika terlalu besar, pecah jadi beberapa file.</p>
         <div id="imp-summary"></div><div id="imp-newplayers"></div><div id="imp-preview"></div><div id="imp-actions"></div><div id="imp-progress"></div>
       </div>
     </div>

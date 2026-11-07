@@ -133,7 +133,7 @@ function renderField(f,i){
       <div class="upbox" id="${id}_box" onclick="document.getElementById('${id}').click()">
         <div class="ico">${round?'📷':'🧾'}</div>
         <div class="t">Ketuk untuk ${round?'unggah foto':'unggah bukti'}</div>
-        <div class="s">JPG/PNG · maks ~8MB</div>
+        <div class="s">JPG/PNG · otomatis diperkecil (jika gagal, pakai screenshot / perkecil)</div>
       </div>
       <input type="file" id="${id}" accept="image/*" style="display:none" onchange="onFile(this,'${f.key}','${t}','${id}')"/>${help}</div>`;
   }
@@ -149,7 +149,9 @@ function selOpt(el){
 
 function onFile(input,key,type,id){
   const file=input.files[0]; if(!file) return;
+  if(!/^image\//.test(file.type||'')){ alert('File harus berupa foto/gambar (JPG/PNG).'); input.value=''; return; }
   compress(file, type==='photo'?900:1400, type==='photo'?0.85:0.8).then(dataUrl=>{
+    if(dataUrl && Math.floor((String(dataUrl).split(',')[1]||'').length*3/4) > 3.5*1024*1024){ alert('Foto terlalu besar (maks 3,5 MB). Pakai screenshot atau perkecil ukurannya.'); input.value=''; return; }
     uploads[key]={type,dataUrl};
     const box=document.getElementById(id+'_box');
     box.innerHTML = type==='photo'
