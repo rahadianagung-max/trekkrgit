@@ -8128,11 +8128,25 @@ function reconstructVenueFormat(rows, pinfo) {
   }
   return { format: { groups, brackets }, podium: podium.map((k) => teams[k]) };
 }
+// Temporary per-competition category hide. Keyed by competition slug; any
+// category whose label contains one of these substrings (case-insensitive) is
+// withheld from the public tournament page. This is a Trekkr-display filter
+// only — the underlying engine/results data is untouched, so deleting an entry
+// here brings the category straight back.
+const HIDDEN_COMPETITION_CATEGORIES = { "moruspadeltournamentvol7": ["mixed"] };
+function filterHiddenCategories(comp, cats) {
+  const hide = HIDDEN_COMPETITION_CATEGORIES[String((comp && comp.slug) || "").trim().toLowerCase()] || [];
+  if (!hide.length) return cats || [];
+  return (cats || []).filter((c) => {
+    const l = String((c && c.label) || "").toLowerCase();
+    return !hide.some((h) => l.indexOf(h) >= 0);
+  });
+}
 async function getTournamentCompetition(sheets, comp) {
   const base = { slug: comp.slug, type: "tournament", name: comp.name, location: comp.location, logoUrl: comp.logoUrl, status: comp.status };
   if (comp.eventId) {
     const cats = await tournamentFromEngine(sheets, comp, base);
-    if (cats.length) return respond(200, { ...base, categories: cats });
+    if (cats.length) return respond(200, { ...base, categories: filterHiddenCategories(comp, cats) });
     // Engine rows gone (neither live nor archived): fall back to the matches the
     // event logged into its venue tab so the page still shows standings.
   }
@@ -8164,7 +8178,7 @@ async function getTournamentCompetition(sheets, comp) {
       return c;
     });
 
-  return respond(200, { ...base, categories });
+  return respond(200, { ...base, categories: filterHiddenCategories(comp, categories) });
 }
 
 // League page: Men / Women rankings by W/L. Each Week in the venue tab is a
