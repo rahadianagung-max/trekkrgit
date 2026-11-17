@@ -7833,9 +7833,13 @@ function buildPlayers(rows, pinfo) {
 // Bracket-aware final standings for one engine tournament (category): placement
 // follows the playoff (champion -> runner-up -> 3rd -> 4th -> earlier-out), then
 // group-only entrants by wins. This respects the bracket instead of raw win counts.
-function buildEngineCategory(tid, catStr, groupRows, allMatches, pinfo) {
+function buildEngineCategory(tid, catStr, groupRows, allMatches, pinfo, enById) {
   const entrants = {};
   for (const g of groupRows) if (g[0] === tid) entrants[g[3]] = { players: [g[4] || "", g[5] || ""], seedElo: parseInt(g[6]) || 0 };
+  // Prefer the LIVE entrant record's player names over the frozen group-draw
+  // snapshot, so names edited after the draw (a swap or correction) show
+  // correctly. The group snapshot stays the fallback. Mirrors the live board.
+  if (enById) for (const id of Object.keys(entrants)) { const ep = enById[id]; if (ep && (ep[0] || ep[1])) entrants[id].players = [ep[0] || "", ep[1] || ""]; }
   const ids = Object.keys(entrants);
   const has = (v) => v !== "" && v !== null && v !== undefined && !isNaN(Number(v));
   const done = allMatches.filter((m) => m.tournamentId === tid && has(m.scoreA) && has(m.scoreB) && m.entrantA && m.entrantB);
@@ -7983,7 +7987,7 @@ async function loadArchivedTournamentRows(sheets, eventId, preloaded) {
   const res = preloaded || await sheets.spreadsheets.values
     .get({ spreadsheetId: SHEET_ID, range: `Tournament_Archive!A2:D` })
     .catch(() => ({ data: { values: [] } }));
-  const out = { [TABS.t_tournaments]: [], [TABS.t_groups]: [], [TABS.t_matches]: [] };
+  const out = { [TABS.t_tournaments]: [], [TABS.t_groups]: [], [TABS.t_matches]: [], [TABS.t_entrants]: [] };
   let eventName = "";
   for (const r of (res.data.values || [])) {
     if (r[1] !== eventId) continue;            // col B = Event_ID
@@ -7992,17 +7996,17 @@ async function loadArchivedTournamentRows(sheets, eventId, preloaded) {
     if (!(tab in out)) continue;
     try { const row = JSON.parse(r[3]); if (Array.isArray(row)) out[tab].push(row); } catch (e) { /* skip bad row */ }
   }
-  return { tournaments: out[TABS.t_tournaments], groups: out[TABS.t_groups], matches: out[TABS.t_matches], eventName };
+  return { tournaments: out[TABS.t_tournaments], groups: out[TABS.t_groups], matches: out[TABS.t_matches], entrants: out[TABS.t_entrants], eventName };
 }
 
 async function tournamentFromEngine(sheets, comp, base) {
   const br = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: SHEET_ID,
-    ranges: [`${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:K`, `${TABS.elo_log}!A2:G`, `${TABS.t_events}!A2:B`],
+    ranges: [`${TABS.t_tournaments}!A2:J`, `${TABS.t_groups}!A2:G`, `${TABS.t_matches}!A2:P`, `${TABS.players}!A2:K`, `${TABS.elo_log}!A2:G`, `${TABS.t_events}!A2:B`, `${TABS.t_entrants}!A2:F`],
   });
   const vr = br.data.valueRanges || [];
   const val = (i) => (vr[i] && vr[i].values) || [];
-  let trRows = val(0), grRows = val(1), mRows = val(2);
+  let trRows = val(0), grRows = val(1), mRows = val(2), enRows = val(6);
   const plRows = val(3), elRows = val(4);
   const evIds = (comp.eventIds && comp.eventIds.length) ? comp.eventIds : [comp.eventId];
   const evName = {};
@@ -8014,7 +8018,7 @@ async function tournamentFromEngine(sheets, comp, base) {
     if (trRows.some((t) => t[1] === ev)) continue;
     if (!archRes) archRes = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `Tournament_Archive!A2:D` }).catch(() => ({ data: { values: [] } }));
     const arch = await loadArchivedTournamentRows(sheets, ev, archRes);
-    if (arch.tournaments.length) { trRows = trRows.concat(arch.tournaments); grRows = grRows.concat(arch.groups); mRows = mRows.concat(arch.matches); }
+    if (arch.tournaments.length) { trRows = trRows.concat(arch.tournaments); grRows = grRows.concat(arch.groups); mRows = mRows.concat(arch.matches); enRows = enRows.concat(arch.entrants || []); }
     if (arch.eventName && !evName[ev]) evName[ev] = arch.eventName;
   }
   const info = {};
@@ -8027,9 +8031,13 @@ async function tournamentFromEngine(sheets, comp, base) {
   // Multi-event page: tell same-named categories apart by their event name
   // ("Padel On Tourney Vol 2 - Men UB" -> "Men UB").
   const suffix = (ev) => { const n = String(evName[ev] || ""); const i = n.lastIndexOf(" - "); return i >= 0 ? n.slice(i + 3).trim() : n.trim(); };
+  // entrant_id -> [player1, player2] from the live/archived entrant record, used
+  // to override stale group-draw names (see buildEngineCategory).
+  const enById = {};
+  for (const r of enRows) { if (r && r[1]) enById[r[1]] = [r[2] || "", r[4] || ""]; }
   const categories = tournaments
     .map((t) => {
-      const c = buildEngineCategory(t[0], t[2] || "", grRows, allMatches, pinfo);
+      const c = buildEngineCategory(t[0], t[2] || "", grRows, allMatches, pinfo, enById);
       if (evIds.length > 1 && suffix(t[1])) c.label = suffix(t[1]);
       return c;
     })
