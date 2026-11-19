@@ -21,7 +21,7 @@
   var SITES = [
     { key: "trekkr",      name: "Trekkr",        tag: "Rankings",    role: "Check your rating",          url: "https://trekkr.online" },
     { key: "turnamen",    name: "TurnamenPadel", tag: "Tournaments", role: "Play verified tournaments",  url: "https://turnamenpadel.com" },
-    { key: "stellar",     name: "Stellar",       tag: "Academy",     role: "Train with champions",       url: "https://stellarsquadacademy.com" },
+    { key: "stellar",     name: "Stellar",       tag: "Academy",     role: "Train with champions",       url: "https://academy.trekkr.online" },
     { key: "sportsactvd", name: "SportsActvd",   tag: "",            role: "Partner with us",            url: "https://sportsactvd.com" }
   ];
 
