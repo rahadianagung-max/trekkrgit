@@ -21,7 +21,7 @@
   var SITES = [
     { key: "trekkr",      name: "Trekkr",        tag: "Rankings",    role: "Check your rating",          url: "https://trekkr.online" },
     { key: "turnamen",    name: "TurnamenPadel", tag: "Tournaments", role: "Play verified tournaments",  url: "https://turnamenpadel.com" },
-    { key: "stellar",     name: "Stellar",       tag: "Academy",     role: "Train with champions",       url: "https://academy.trekkr.online" },
+    { key: "stellar",     name: "Trekkr Academy", tag: "",            role: "Train with champions",       url: "https://academy.trekkr.online" },
     { key: "sportsactvd", name: "SportsActvd",   tag: "",            role: "Partner with us",            url: "https://sportsactvd.com" }
   ];
 
@@ -188,7 +188,7 @@
       '<div class="eco-footer__cols">' + cols + "</div>" +
       utility +
       '<div class="eco-footer__bottom">' +
-        '<span>© 2026 <span class="eco-footer__mark">SportsActvd</span> — Trekkr · TurnamenPadel · Stellar Academy</span>' +
+        '<span>© 2026 <span class="eco-footer__mark">SportsActvd</span> — Trekkr · TurnamenPadel · Trekkr Academy</span>' +
       "</div></div>";
   }
 

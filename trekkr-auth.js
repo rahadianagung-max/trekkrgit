@@ -154,7 +154,7 @@
       + '<div id="' + id + 'g"></div>'
       + '<div class="ta-field"><label for="' + id + 'e">Email</label>'
       + '<input id="' + id + 'e" type="email" inputmode="email" autocomplete="email" placeholder="email@contoh.com" value="' + esc(ls(MK)) + '"/></div>'
-      + '<label class="ta-consent"><input type="checkbox" id="' + id + 'c"/> <span>Saya mau menerima kabar dari Trekkr, TurnamenPadel &amp; Stellar Squad Academy lewat email: jadwal main, liga, turnamen, kelas, dan promo. Bisa berhenti kapan saja.</span></label>'
+      + '<label class="ta-consent"><input type="checkbox" id="' + id + 'c"/> <span>Saya mau menerima kabar dari Trekkr, TurnamenPadel &amp; Trekkr Academy lewat email: jadwal main, liga, turnamen, kelas, dan promo. Bisa berhenti kapan saja.</span></label>'
       + '<button class="btn ta-send" id="' + id + 's" type="button">Kirim link masuk</button>'
       + '<div class="ta-msg" id="' + id + 'm" role="status"></div>'
       + '<div class="ta-code" id="' + id + 'k" hidden>'
@@ -163,7 +163,7 @@
       + '<button class="btn" id="' + id + 'v" type="button">Masuk</button></div>'
       + '<button class="ta-link" id="' + id + 'r" type="button">Kirim ulang</button>'
       + '</div>'
-      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/privacy" target="_blank" rel="noopener">Kebijakan Privasi SportsActvd</a> yang berlaku untuk Trekkr, TurnamenPadel, dan Stellar Squad Academy.</p>'
+      + '<p class="ta-fine">Tanpa password. Dengan masuk, kamu menyetujui <a href="' + HOME + '/privacy" target="_blank" rel="noopener">Kebijakan Privasi SportsActvd</a> yang berlaku untuk Trekkr, TurnamenPadel, dan Trekkr Academy.</p>'
       + '</div>';
     var $ = function (s) { return document.getElementById(id + s); };
     function msg(t, k) { var m = $("m"); m.textContent = t || ""; m.className = "ta-msg" + (k ? " " + k : ""); }

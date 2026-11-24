@@ -32,7 +32,7 @@
   <h1>Kabari <span>saya</span></h1>
   <div class="kb-card" id="kbCard">
     <p>Satu langkah lagi: konfirmasi bahwa kamu mau menerima kabar dari ekosistem SportsActvd lewat email — jadwal main, liga, turnamen, kelas, dan promo.</p>
-    <div class="kb-brands"><span class="tk-chip">Trekkr</span><span class="tk-chip">TurnamenPadel</span><span class="tk-chip">Stellar Squad Academy</span></div>
+    <div class="kb-brands"><span class="tk-chip">Trekkr</span><span class="tk-chip">TurnamenPadel</span><span class="tk-chip">Trekkr Academy</span></div>
     <button class="btn btn--primary" id="kbGo" type="button">Ya, kabari saya</button>
     <div class="kb-msg" id="kbMsg" role="status"></div>
     <p class="kb-fine">Bisa berhenti kapan saja lewat link "Berhenti berlangganan" di setiap email. Lihat <a href="/privacy">Kebijakan Privasi</a>.</p>
@@ -49,7 +49,7 @@
     go.disabled=true;go.textContent='Menyimpan…';msg.textContent='';
     fetch(BASE+'/email/optin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({e:e,t:t,s:s})})
       .then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||'Gagal');});})
-      .then(function(){document.getElementById('kbCard').innerHTML='<p><b>Terima kasih! 🎾</b></p><p>Kamu akan menerima kabar dari Trekkr, TurnamenPadel &amp; Stellar Squad Academy. Setiap email punya link berhenti berlangganan.</p><a class="btn btn--primary" href="/" style="width:100%">Ke Trekkr →</a>';})
+      .then(function(){document.getElementById('kbCard').innerHTML='<p><b>Terima kasih! 🎾</b></p><p>Kamu akan menerima kabar dari Trekkr, TurnamenPadel &amp; Trekkr Academy. Setiap email punya link berhenti berlangganan.</p><a class="btn btn--primary" href="/" style="width:100%">Ke Trekkr →</a>';})
       .catch(function(err){go.disabled=false;go.textContent='Ya, kabari saya';msg.className='kb-msg err';msg.textContent=err.message==='Link tidak valid'?'Link ini tidak valid atau terpotong. Buka lagi dari email kami.':'Gagal menyimpan. Coba lagi sebentar lagi.';});
   };
 })();
