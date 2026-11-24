@@ -1592,8 +1592,8 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
   var cur=Number(s.currentElo||0), n0=Number(s.totalMatches||0), calib=isCalibrating(n0);
   var ch30=PPI.ratingChange(history, cur, 30);
   var club=ppListArr(p.clubs)[0]||'', sub=[club,p.region].filter(Boolean).map(pp3Esc).join(' · ');
-  var coach=((p.badges||[]).indexOf('certified-coach')>-1)?'<span class="ppc coach" title="Pelatih bersertifikat Stellar Squad Academy">Certified Coach</span>'
-      :(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih Stellar Squad Academy">Coach</span>':'');
+  var coach=((p.badges||[]).indexOf('certified-coach')>-1)?'<span class="ppc coach" title="Pelatih bersertifikat Trekkr Academy">Certified Coach</span>'
+      :(((p.badges||[]).indexOf('coach')>-1)?'<span class="ppc coach" title="Pelatih Trekkr Academy">Coach</span>':'');
   var stand=(d&&d.standing)||null, top=stand&&stand.items&&stand.items[0];
   var wo=Number((d&&d.walkovers)||0);
   var h='';
@@ -1787,7 +1787,7 @@ function renderPlayerV2(p,s,history,bestPartner,historyTable,badges,playedVenues
     else A('Play Liga Trekkr · Open', 'Weekly league nights against the strongest players.', 'JOIN', 'https://liga.trekkr.online','player_league_cta_click');
     var tn=(st.next||st.name); A('Enter '+(/^[AEIOU]/i.test(tn)?'an ':'a ')+tn+' tournament','Tournament categories by level on TurnamenPadel.','FIND','https://www.turnamenpadel.com','player_tournament_cta_click');
     var isStellar=/stellar/i.test(String(p.clubs||''));
-    A('Train at Stellar Squad Academy', isStellar?'Your club. Coaching built around your level.':'Coaching built around your level.','EXPLORE','https://stellarsquadacademy.com','player_academy_cta_click');
+    A('Train at Trekkr Academy', isStellar?'Your club. Coaching built around your level.':'Coaching built around your level.','EXPLORE','https://stellarsquadacademy.com','player_academy_cta_click');
     h+='<div class="pp3-sec'+late+'"><div class="pp3-q"><h3>Your next goal</h3></div>'+gh+'<div class="pp3-acts">'+acts.join('')+'</div></div>';
     h+=ppLockCta(alias, bestRank);
   } else {
