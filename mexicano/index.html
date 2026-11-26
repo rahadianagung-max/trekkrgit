@@ -2,7 +2,17 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6PGLZP7EPD"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+// Buang parameter sensitif (email, token, kode login) dari URL sebelum dikirim ke GA.
+(function(){var u;try{u=new URL(location.href);}catch(e){gtag('config','G-6PGLZP7EPD');return;}
+['e','email','t','token','code','key','access_token','refresh_token'].forEach(function(k){u.searchParams.delete(k);});
+u.hash='';gtag('config','G-6PGLZP7EPD',{page_location:u.toString()});})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#FF6A00" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
