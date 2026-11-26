@@ -2,6 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6PGLZP7EPD"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+// Buang parameter sensitif (email, token, kode login) dari URL sebelum dikirim ke GA.
+(function(){var u;try{u=new URL(location.href);}catch(e){gtag('config','G-6PGLZP7EPD');return;}
+['e','email','t','token','code','key','access_token','refresh_token'].forEach(function(k){u.searchParams.delete(k);});
+u.hash='';gtag('config','G-6PGLZP7EPD',{page_location:u.toString()});})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trekkr · Scorer (Semua Court)</title>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>

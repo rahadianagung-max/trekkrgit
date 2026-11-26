@@ -2,6 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6PGLZP7EPD"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+// Buang parameter sensitif (email, token, kode login) dari URL sebelum dikirim ke GA.
+(function(){var u;try{u=new URL(location.href);}catch(e){gtag('config','G-6PGLZP7EPD');return;}
+['e','email','t','token','code','key','access_token','refresh_token'].forEach(function(k){u.searchParams.delete(k);});
+u.hash='';gtag('config','G-6PGLZP7EPD',{page_location:u.toString()});})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Kebijakan Privasi — SportsActvd (Trekkr, TurnamenPadel, Trekkr Academy)</title>
 <meta name="description" content="Kebijakan privasi bersama Trekkr, TurnamenPadel & Trekkr Academy: data apa yang disimpan, untuk apa, siapa yang bisa melihatnya, dan hak kamu atas datamu."/>
@@ -63,7 +73,7 @@
     <li><b>Data akademi:</b> kelas yang diikuti, jadwal, dan catatan perkembangan dari pelatih — dari Trekkr Academy. Tidak ditampilkan.</li>
     <li><b>Penyelenggara &amp; venue:</b> nama PIC, kontak, dan rencana turnamen (kalkulator) — dari form lead. Tidak ditampilkan.</li>
     <li><b>Data akun:</b> email login, metode masuk (Google atau link/kode email), serta riwayat persetujuan email.</li>
-    <li><b>Data penggunaan anonim:</b> halaman dibuka dan tombol diklik, memakai ID acak per browser — tanpa nama atau kontak.</li>
+    <li><b>Data penggunaan anonim:</b> halaman dibuka dan tombol diklik, memakai ID acak per browser (termasuk cookie Google Analytics di trekkr.online) — tanpa nama atau kontak.</li>
   </ul>
 
   <h2>4. Untuk apa data dipakai</h2>
@@ -99,7 +109,8 @@
     <li><b>Supabase</b> — database dan sistem login (server di Australia).</li>
     <li><b>Vercel</b> — hosting ketiga situs (jaringan global).</li>
     <li><b>Brevo</b> — pengiriman email: kode masuk, notifikasi, kabar, dan promo (server di Uni Eropa).</li>
-    <li><b>Google</b> — hanya jika kamu memilih "Lanjutkan dengan Google" (kami menerima nama dan email akun Google-mu).</li>
+    <li><b>Google Analytics</b> — statistik kunjungan trekkr.online (halaman dibuka, perangkat, asal kunjungan) memakai cookie; email dan token login dibuang dari alamat halaman sebelum dikirim.</li>
+    <li><b>Google</b> — login: hanya jika kamu memilih "Lanjutkan dengan Google" (kami menerima nama dan email akun Google-mu).</li>
     <li><b>Venue dan penyelenggara mitra</b> — mencatat hasil match dan pendaftaran event mereka.</li>
   </ul>
   <p>Sebagian penyedia menyimpan data di luar Indonesia. Kami memilih penyedia yang menerapkan perlindungan data setara atau lebih tinggi dari UU PDP.</p>

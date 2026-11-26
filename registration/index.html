@@ -2,7 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Bundled Page</title>
+  <!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6PGLZP7EPD"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());
+// Buang parameter sensitif (email, token, kode login) dari URL sebelum dikirim ke GA.
+(function(){var u;try{u=new URL(location.href);}catch(e){gtag('config','G-6PGLZP7EPD');return;}
+['e','email','t','token','code','key','access_token','refresh_token'].forEach(function(k){u.searchParams.delete(k);});
+u.hash='';gtag('config','G-6PGLZP7EPD',{page_location:u.toString()});})();
+</script>
+<title>Bundled Page</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0E2545; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
